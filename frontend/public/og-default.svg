@@ -1,0 +1,8 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#1a56db"/>
+  <circle cx="600" cy="200" r="80" fill="rgba(255,255,255,0.1)"/>
+  <text x="600" y="280" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="white" text-anchor="middle">AfriBiz</text>
+  <text x="600" y="360" font-family="Arial, sans-serif" font-size="32" fill="rgba(255,255,255,0.85)" text-anchor="middle">Le super-héros des TPE africaines</text>
+  <text x="600" y="430" font-family="Arial, sans-serif" font-size="22" fill="rgba(255,255,255,0.6)" text-anchor="middle">Commandes · Réservations · Paiements · Marketing</text>
+  <rect x="440" y="500" width="320" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+</svg>

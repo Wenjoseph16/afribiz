@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: afribiz-api
+    runtime: node
+    buildCommand: pnpm install && pnpm run build:backend
+    startCommand: pnpm start --filter backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://afribiz.vercel.app

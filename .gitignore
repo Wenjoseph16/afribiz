@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production
+build/
+dist/
+.next/
+out/
+
+# Misc
+*.log
+.DS_Store
+.env
+.env.local
+.env.*.local
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# Prisma (keep migrations tracked for production deployments)
+# prisma/migrations/
+
+# Testing
+coverage/
+.jest/
+
+# Sensitive / Test data files
+*.json
+!package.json
+!pnpm-workspace.yaml
+!tsconfig*.json
+!*.code-workspace
+!.eslintrc.json
+!.prettierrc.json
+!frontend/tsconfig*.json
+!backend/tsconfig*.json
+!shared/tsconfig.json
+!backend/prisma/schema.prisma
+!backend/src/**/*.json
+!shared/src/**/*.json
+!docs/**/*.json
+cookies*
+*.txt
+!pnpm-lock.yaml
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.docker
+
+# Logs
+*.log
+backend/logs/
+frontend/logs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Uploads (user-generated content)
+backend/uploads/
+
+# Docker compose local overrides
+docker-compose.override.yml
+
+# Test artifacts
+test-results/
+playwright-report/

@@ -1,0 +1,16 @@
+{
+  "name": "@afribiz/shared",
+  "version": "1.0.0",
+  "description": "AfriBiz Shared Types and Utilities",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "lint": "echo \"No linting configured for shared workspace.\""
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

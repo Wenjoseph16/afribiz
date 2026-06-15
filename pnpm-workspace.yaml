@@ -1,0 +1,13 @@
+packages:
+  - frontend
+  - backend
+  - shared
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@scarf/scarf': true
+  '@sentry/cli': true
+  esbuild: true
+  prisma: true
+  sharp: true
+  'unrs-resolver': true
