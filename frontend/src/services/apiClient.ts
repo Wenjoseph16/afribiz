@@ -2648,6 +2648,14 @@ class ApiClient {
   async deleteBusinessPaymentMethod(id: string) {
     return this.instance.delete<ApiResponse>(`/business/payment-methods/${id}`);
   }
+
+  async getBusinessFunnel() {
+    return this.instance.get<ApiResponse>('/business/analytics/funnel');
+  }
+
+  async getBusinessEngagement() {
+    return this.instance.get<ApiResponse>('/business/analytics/engagement');
+  }
 }
 
 export const apiClient = new ApiClient();

@@ -6,13 +6,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Globe, Image, MapPin, Phone, Mail, MessageCircle, Clock,
   Camera, Share2, ExternalLink, Play, Save,
-  Eye, Plus, Loader2, Palette,
+  Eye, Plus, Loader2, Palette, Trash2,
   ShoppingBag, Hand, UtensilsCrossed, Calendar, Car,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/dashboard/PageHeader';
+import { useToast } from '@/components/ui/ToastProvider';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useBusinessStore } from '@/stores/businessStore';
@@ -34,6 +35,7 @@ const DAYS: { key: DayKey; label: string }[] = [
 export default function PublicPageManagement() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const { user } = useAuthStore();
   const { business, setBusiness } = useBusinessStore();
   const [activeTab, setActiveTab] = useState('identity');
@@ -224,37 +226,128 @@ export default function PublicPageManagement() {
                         <Image className="h-8 w-8 text-gray-300" />
                       )}
                     </div>
-                    <Button variant="outline" size="sm">
-                      Changer le logo
-                    </Button>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="file"
+                        id="logo-upload"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              setSaving(true);
+                              const res = await apiClient.uploadMedia(file);
+                              updateForm('logo', res.data.data.url);
+                              addToast('Logo téléchargé avec succès', 'success');
+                            } catch (err) {
+                              addToast('Erreur lors du téléchargement du logo', 'error');
+                            } finally {
+                              setSaving(false);
+                            }
+                          }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" onClick={() => document.getElementById('logo-upload')?.click()}>
+                        <Camera className="h-4 w-4 mr-1.5" />
+                        Changer le logo
+                      </Button>
+                      <p className="text-[10px] text-gray-400">PNG, JPG ou SVG. Max 2Mo.</p>
+                    </div>
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Image de couverture
                   </label>
-                  <div className="aspect-[3/1] max-h-48 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-200 dark:border-gray-700 relative">
+                  <div className="relative aspect-[3/1] max-h-48 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-200 dark:border-gray-700">
                     {business?.coverImage ? (
                       <NextImage src={business.coverImage} alt="cover" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" unoptimized />
                     ) : (
                       <div className="text-center">
                         <Image className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">Cliquez pour ajouter une couverture</p>
+                        <p className="text-sm text-gray-400">Image de couverture recommandée</p>
                       </div>
                     )}
+                    <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                       <Button size="sm" onClick={() => document.getElementById('cover-upload')?.click()}>
+                         <Camera className="h-4 w-4 mr-1.5" /> Modifier
+                       </Button>
+                    </div>
                   </div>
+                  <input
+                    type="file"
+                    id="cover-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        try {
+                          setSaving(true);
+                          const res = await apiClient.uploadMedia(file);
+                          updateForm('coverImage', res.data.data.url);
+                          addToast('Image de couverture mise à jour', 'success');
+                        } catch (err) {
+                          addToast('Erreur lors du téléchargement', 'error');
+                        } finally {
+                          setSaving(false);
+                        }
+                      }
+                    }}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-2">Format recommandé : 1200x400px. Max 5Mo.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Galerie photos
                   </label>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="aspect-square rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-700 cursor-pointer hover:border-brand transition-colors">
-                        <Plus className="h-6 w-6 text-gray-300" />
-                      </div>
+                    {(business as any)?.gallery?.map((url: string, i: number) => (
+                       <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
+                         <NextImage src={url} alt={`gallery-${i}`} fill className="object-cover" unoptimized />
+                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button onClick={() => {
+                              const newGallery = (business as any).gallery.filter((_: any, idx: number) => idx !== i);
+                              updateForm('gallery', newGallery);
+                            }} className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                         </div>
+                       </div>
                     ))}
+                    <div
+                      onClick={() => document.getElementById('gallery-upload')?.click()}
+                      className="aspect-square rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-700 cursor-pointer hover:border-brand transition-colors"
+                    >
+                      <Plus className="h-6 w-6 text-gray-300" />
+                    </div>
                   </div>
+                  <input
+                    type="file"
+                    id="gallery-upload"
+                    className="hidden"
+                    multiple
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) {
+                        try {
+                          setSaving(true);
+                          const res = await apiClient.uploadMultipleMedia(files);
+                          const newUrls = res.data.data.map((f: any) => f.url);
+                          const currentGallery = (business as any)?.gallery || [];
+                          updateForm('gallery', [...currentGallery, ...newUrls]);
+                          addToast(`${files.length} photo(s) ajoutée(s)`, 'success');
+                        } catch (err) {
+                          addToast('Erreur lors de l\'envoi des photos', 'error');
+                        } finally {
+                          setSaving(false);
+                        }
+                      }
+                    }}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-2">Vous pouvez ajouter jusqu&apos;à 10 photos. Max 5Mo par photo.</p>
                 </div>
               </div>
             </Card>

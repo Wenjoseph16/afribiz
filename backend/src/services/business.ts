@@ -297,6 +297,24 @@ export async function getAggregatedDashboardStats(ownerId: string) {
 
   const todayRevenue = todayPaidOrdersSum + todayPaymentsSum;
 
+  // Last 7 days history
+  const history = await Promise.all(
+    Array.from({ length: 7 }).map(async (_, i) => {
+      const dayStart = new Date(startOfDay.getTime() - i * 86400000);
+      const dayEnd = new Date(dayStart.getTime() + 86400000);
+      const [ordersCount, paidOrdersSum, paymentsSum] = await Promise.all([
+        prisma.order.count({ where: { businessId, createdAt: { gte: dayStart, lt: dayEnd } } }),
+        prisma.order.aggregate({ where: { businessId, paidAt: { gte: dayStart, lt: dayEnd } }, _sum: { totalAmount: true } }).then(r => Number(r._sum.totalAmount || 0)),
+        prisma.payment.aggregate({ where: { order: { businessId }, status: 'COMPLETED', paidAt: { gte: dayStart, lt: dayEnd } }, _sum: { amount: true } }).then(r => Number(r._sum.amount || 0)),
+      ]);
+      return {
+        date: dayStart.toISOString(),
+        revenue: paidOrdersSum + paymentsSum,
+        orders: ordersCount,
+      };
+    })
+  );
+
   return {
     today: {
       ordersCount: todayOrdersCount,
@@ -323,6 +341,7 @@ export async function getAggregatedDashboardStats(ownerId: string) {
       ordersThisWeek: ordersThisWeekCount,
       bookingsThisWeek: bookingsThisWeekCount,
     },
+    history: history.reverse(),
   };
 }
 

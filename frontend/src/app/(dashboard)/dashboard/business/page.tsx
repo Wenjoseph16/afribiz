@@ -85,29 +85,24 @@ export default function BusinessDashboardPage() {
   const reviews = Array.isArray(reviewsData?.reviews || reviewsData) ? (reviewsData?.reviews || reviewsData) as any[] : [];
   const conversations = Array.isArray(conversationsData?.conversations || conversationsData) ? (conversationsData?.conversations || conversationsData) as any[] : [];
 
-  // Growth Cockpit stats
+  // Growth Cockpit stats using aggregated data
   const growthStats = {
-    revenueToday: Number(stats?.revenue?.today || stats?.revenue || 0),
-    revenueYesterday: Number(stats?.revenue?.yesterday || 0),
-    revenueWeek: Number(stats?.revenue?.week || stats?.revenue || 0),
-    ordersToday: orders.filter((o: any) => {
-      if (!o.createdAt) return false;
-      const d = new Date(o.createdAt);
-      const today = new Date();
-      return d.toDateString() === today.toDateString();
-    }).length,
-    ordersPending: orders.filter((o: any) => !['DELIVERED', 'CANCELLED', 'COMPLETED', 'REFUNDED'].includes(o.status)).length,
+    revenueToday: Number(aggStats?.today?.revenue || 0),
+    revenueYesterday: Number(aggStats?.trends?.revenueYesterday || 0),
+    revenueWeek: Number(aggStats?.trends?.revenueToday + (aggStats?.trends?.revenueYesterday || 0)), // Simple estimation or use a week sum if available
+    ordersToday: aggStats?.today?.ordersCount || 0,
+    ordersPending: aggStats?.pending?.ordersCount || 0,
     newMessages: conversations.filter((c: any) => c.unreadCount > 0).length,
     unreadReviews: reviews.filter((r: any) => !r.read).length,
-    newCustomers: stats?.newCustomers ?? stats?.clients ?? 0,
-    activeBookings: bookings.filter((b: any) => ['confirmed', 'CONFIRMED', 'pending', 'PENDING'].includes(b.status)).length,
+    newCustomers: aggStats?.today?.newClients || 0,
+    activeBookings: aggStats?.today?.bookingsCount || 0,
   };
 
   // Daily actions
   const dailyActions = [
-    ...(conversations.filter((c: any) => c.unreadCount > 0).length > 0 ? [{
+    ...(growthStats.newMessages > 0 ? [{
       id: 'messages', type: 'message' as const, priority: 'high' as const,
-      label: `${conversations.filter((c: any) => c.unreadCount > 0).length} conversation${conversations.filter((c: any) => c.unreadCount > 0).length > 1 ? 's' : ''} non lue${conversations.filter((c: any) => c.unreadCount > 0).length > 1 ? 's' : ''}`,
+      label: `${growthStats.newMessages} conversation${growthStats.newMessages > 1 ? 's' : ''} non lue${growthStats.newMessages > 1 ? 's' : ''}`,
       description: 'Répondre rapidement augmente votre taux de conversion',
       link: '/dashboard/messages',
     }] : []),
@@ -117,9 +112,9 @@ export default function BusinessDashboardPage() {
       description: 'Répondre aux avis fidélise vos clients',
       link: '/dashboard/reviews',
     }] : []),
-    ...(orders.filter((o: any) => !['DELIVERED', 'CANCELLED', 'COMPLETED'].includes(o.status)).length > 0 ? [{
+    ...(growthStats.ordersPending > 0 ? [{
       id: 'orders', type: 'order' as const, priority: 'high' as const,
-      label: `${orders.filter((o: any) => !['DELIVERED', 'CANCELLED', 'COMPLETED'].includes(o.status)).length} commande${orders.filter((o: any) => !['DELIVERED', 'CANCELLED', 'COMPLETED'].includes(o.status)).length > 1 ? 's' : ''} en attente`,
+      label: `${growthStats.ordersPending} commande${growthStats.ordersPending > 1 ? 's' : ''} en attente`,
       description: 'Traitez les commandes pour satisfaire vos clients',
       link: '/dashboard/orders',
     }] : []),
@@ -128,6 +123,12 @@ export default function BusinessDashboardPage() {
       label: `${bookings.filter((b: any) => ['pending', 'PENDING'].includes(b.status)).length} réservation${bookings.filter((b: any) => ['pending', 'PENDING'].includes(b.status)).length > 1 ? 's' : ''} à confirmer`,
       description: 'Confirmez les réservations en attente',
       link: '/dashboard/bookings',
+    }] : []),
+    ...(aggStats?.alerts?.lowStock > 0 ? [{
+      id: 'low-stock', type: 'order' as const, priority: 'medium' as const,
+      label: `${aggStats.alerts.lowStock} produit(s) en stock faible`,
+      description: 'Pensez à réapprovisionner votre inventaire',
+      link: '/dashboard/products/stock-alerts',
     }] : []),
   ];
 

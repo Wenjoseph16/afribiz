@@ -112,13 +112,25 @@ function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) 
     </text>
   );
 }
-
 // ── Main Component ──
 export function DashboardCharts({ stats, orders = [] }: DashboardChartsProps) {
-  // Generate last 7 days revenue mock from trends if available
+  // Generate last 7 days revenue from history or fallback to mock
   const revenueData = useMemo<DailyRevenue[]>(() => {
+    if ((stats as any)?.history && Array.isArray((stats as any).history)) {
+      return (stats as any).history.map((h: any) => {
+        const d = new Date(h.date);
+        const dayLabel = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+        return {
+          day: dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1),
+          revenue: h.revenue,
+          orders: h.orders,
+        };
+      });
+    }
+
     const todayRev = stats?.trends?.revenueToday ?? 0;
     const yesterdayRev = stats?.trends?.revenueYesterday ?? 0;
+...
     const days: DailyRevenue[] = [];
     const now = new Date();
     for (let i = 6; i >= 0; i--) {

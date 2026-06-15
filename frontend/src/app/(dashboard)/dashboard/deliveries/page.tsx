@@ -77,9 +77,21 @@ export default function DeliveriesPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Livraisons</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gérez vos livraisons et suivez les expéditions</p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link href="/dashboard/deliveries/new">
-            <Button size="sm"><Plus className="h-4 w-4 mr-1.5" />Nouvelle livraison</Button>
+        <div className=\"flex items-center gap-3 shrink-0\">
+          <Link href=\"/dashboard/deliveries/zones\">
+            <Button variant=\"outline\" size=\"sm\">
+              <MapPin className=\"h-4 w-4 mr-1.5\" />
+              Zones
+            </Button>
+          </Link>
+          <Link href=\"/dashboard/deliveries/drivers\">
+            <Button variant=\"outline\" size=\"sm\">
+              <User className=\"h-4 w-4 mr-1.5\" />
+              Chauffeurs
+            </Button>
+          </Link>
+          <Link href=\"/dashboard/deliveries/new\">
+            <Button size=\"sm\"><Plus className=\"h-4 w-4 mr-1.5\" />Nouvelle livraison</Button>
           </Link>
         </div>
       </div>

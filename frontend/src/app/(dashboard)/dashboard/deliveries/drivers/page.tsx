@@ -60,10 +60,17 @@ export default function DeliveryDriversPage() {
       vehicleType: form.vehicleType || undefined,
       vehiclePlate: form.vehiclePlate || undefined,
     };
-    if (editingId) {
-      await updateMutation.mutateAsync({ id: editingId, data: payload });
-    } else {
-      await createMutation.mutateAsync(payload);
+    try {
+      if (editingId) {
+        await updateMutation.mutateAsync({ id: editingId, data: payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      setShowModal(false);
+      setForm(emptyForm);
+      refetch();
+    } catch (err) {
+      console.error(err);
     }
   };
 

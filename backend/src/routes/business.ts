@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getPublicBusiness, getBusinessProducts, getBusinessServices, getBusinessMenu, getBusinessRooms, getBusinessEvents, getBusinessRentals, getBusinessPortfolio, getBusinessPromotions, getBusinessPartners, getBusinessReviews, getMyBusiness, getMyBusinessClients, getMyBusinessStats, getAggregatedStats, createBusiness, toggleBusinessModule, updatePublicPage, getPublicPagePreview, listBusinessDocuments, getBusinessDocument, createBusinessDocument, updateBusinessDocument, deleteBusinessDocument, listBusinessDisputes, getBusinessDispute, createBusinessDispute, updateBusinessDispute, getBusinessInstalledModules, submitBusinessVerification, getBusinessCommissionStats, getBusinessPaymentMethods, addBusinessPaymentMethod, updateBusinessPaymentMethod, deleteBusinessPaymentMethod } from '../controllers/business';
+import { getPublicBusiness, getBusinessProducts, getBusinessServices, getBusinessMenu, getBusinessRooms, getBusinessEvents, getBusinessRentals, getBusinessPortfolio, getBusinessPromotions, getBusinessPartners, getBusinessReviews, getMyBusiness, getMyBusinessClients, getMyBusinessStats, getAggregatedStats, createBusiness, toggleBusinessModule, updatePublicPage, getPublicPagePreview, listBusinessDocuments, getBusinessDocument, createBusinessDocument, updateBusinessDocument, deleteBusinessDocument, listBusinessDisputes, getBusinessDispute, createBusinessDispute, updateBusinessDispute, getBusinessInstalledModules, submitBusinessVerification, getBusinessCommissionStats, getBusinessPaymentMethods, addBusinessPaymentMethod, updateBusinessPaymentMethod, deleteBusinessPaymentMethod, getBusinessFunnel, getBusinessEngagement } from '../controllers/business';
 import { getPublicEvent, registerPublicParticipant } from '../controllers/events';
 import { searchAll } from '../controllers/search';
 import { validateBody } from '../middlewares/validators';
@@ -29,6 +29,8 @@ router.get('/me', authMiddleware, getMyBusiness);
   router.get('/stats', authMiddleware, getMyBusinessStats);
 router.get('/stats/aggregated', authMiddleware, getAggregatedStats);
 router.get('/finance/stats', authMiddleware, getBusinessCommissionStats);
+router.get('/analytics/funnel', authMiddleware, getBusinessFunnel);
+router.get('/analytics/engagement', authMiddleware, getBusinessEngagement);
 router.post('/onboarding', authMiddleware, validateBody(onboardingSchema), createBusiness);
 router.put('/public-page', authMiddleware, validateBody(publicPageSchema), updatePublicPage);
 router.get('/public-page-preview', authMiddleware, getPublicPagePreview);

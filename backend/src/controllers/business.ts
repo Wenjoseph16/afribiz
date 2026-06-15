@@ -1,12 +1,32 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/db';
 import { Prisma } from '@prisma/client';
-import { catchAsyncErrors } from '../middlewares/errorHandler';
+import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import * as businessService from '../services/business';
 import * as documentService from '../services/documents';
 import * as disputeService from '../services/disputes';
+import * as analyticsService from '../services/dataHubAnalytics';
 import { getTransactionCommissionRate, getEscrowCommissionRate } from '../services/monetizationConfig';
+
+async function getBusinessId(req: AuthenticatedRequest) {
+  if (!req.user) throw new AppError('Non authentifié', 401);
+  const business = await prisma.business.findUnique({ where: { ownerId: req.user.id }, select: { id: true } });
+  if (!business) throw new AppError('Business non trouvé', 404);
+  return business.id;
+}
+
+export const getBusinessFunnel = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const businessId = await getBusinessId(req);
+  const data = await analyticsService.getConversionFunnel(businessId);
+  res.json({ success: true, data });
+});
+
+export const getBusinessEngagement = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const businessId = await getBusinessId(req);
+  const data = await analyticsService.getEngagementAnalytics(businessId);
+  res.json({ success: true, data });
+});
 
 export const getPublicBusiness = catchAsyncErrors(async (req: Request, res: Response, _next: NextFunction) => {
   const { slug } = req.params;

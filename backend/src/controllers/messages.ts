@@ -26,7 +26,19 @@ export const getConversations = catchAsyncErrors(async (req: AuthenticatedReques
       },
     },
   });
-  res.json(successResponse({ conversations }));
+
+  const conversationsWithUnread = await Promise.all(conversations.map(async (conv) => {
+    const unreadCount = await prisma.message.count({
+      where: {
+        conversationId: conv.id,
+        senderId: { not: req.user!.id },
+        read: false,
+      },
+    });
+    return { ...conv, unreadCount };
+  }));
+
+  res.json(successResponse({ conversations: conversationsWithUnread }));
 });
 
 export const getMessages = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
