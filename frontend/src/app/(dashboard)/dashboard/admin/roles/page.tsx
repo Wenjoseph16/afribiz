@@ -184,21 +184,20 @@ export default function AdminRolesPage() {
     if (!selectedRoleId) return;
     if (selectedRole?.isSystem) return;
 
+    const newActions = { ...((permGrid as any)?.[selectedRoleId]?.[resource] || {}) };
+    newActions[action] = !newActions[action];
     setPermGrid((prev) => {
-      const resourcePerms = { ...(prev[selectedRoleId]?.[resource] ? { [resource]: prev[selectedRoleId][resource] } : {}) };
-      const actions = { ...((prev[selectedRoleId] as any)?.[resource] || {}) };
-      actions[action] = !actions[action];
       const updated = {
         ...prev,
         [selectedRoleId]: {
           ...prev[selectedRoleId],
-          [resource]: actions,
+          [resource]: newActions,
         },
       };
-      try {
-        apiClient.put(`/admin/roles/${selectedRoleId}`, { permissions: updated[selectedRoleId] });
-      } catch {}
       return updated;
+    });
+    apiClient.put(`/admin/roles/${selectedRoleId}`, { permissions: { [resource]: newActions } }).catch((err) => {
+      console.error('Failed to update permissions:', err);
     });
   };
 

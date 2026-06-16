@@ -22,7 +22,6 @@ interface Category {
 
 export default function CategoriesPage() {
   const { data: catsData, isLoading, error, refetch } = useProductCategories();
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
   const createCategory = useCreateProductCategory();
   const updateCategory = useUpdateProductCategory();
@@ -94,6 +93,7 @@ export default function CategoriesPage() {
     await deleteCategory.mutateAsync(cat.id);
   };
 
+  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[400px]"><Loader className="h-8 w-8 animate-spin text-brand" /></div>;
   }

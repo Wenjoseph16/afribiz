@@ -12,6 +12,7 @@ interface ToastMessage {
 
 interface ToastContextValue {
   notify: (message: ToastMessage) => void;
+  addToast: (title: string, variant?: 'success' | 'error', description?: string) => void;
 }
 
 const ToastContext = React.createContext<ToastContextValue | undefined>(undefined);
@@ -26,8 +27,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     window.requestAnimationFrame(() => setOpen(true));
   }, []);
 
+  const addToast = React.useCallback((title: string, variant: 'success' | 'error' = 'success', description?: string) => {
+    notify({ title, variant, description });
+  }, [notify]);
+
   return (
-    <ToastContext.Provider value={{ notify }}>
+    <ToastContext.Provider value={{ notify, addToast }}>
       <ToastPrimitive.Provider swipeDirection="right">
         {children}
         <ToastPrimitive.Viewport className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 p-2 outline-none" />

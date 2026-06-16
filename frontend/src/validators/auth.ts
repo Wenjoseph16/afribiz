@@ -4,7 +4,7 @@ export const loginSchema = z.object({
   identifier: z
     .string()
     .min(3, 'Email ou téléphone requis')
-    .regex(/^[\w@.-]+$/, 'Entrez un email ou téléphone valide'),
+    .regex(/^[-\w@.+]+$/, 'Entrez un email ou téléphone valide'),
   password: z.string().min(1, 'Mot de passe requis'),
   rememberMe: z.boolean().optional(),
 });

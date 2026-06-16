@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   CreditCard, Check, Shield, Sparkles, ArrowLeft, Award, BadgeCheck,
-  CheckCircle, AlertTriangle,
+  CheckCircle, AlertTriangle, XCircle, XOctagon,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
@@ -83,6 +83,24 @@ export default function DeveloperSubscriptionPage() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.post('/subscriptions/my-subscription/cancel');
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['subscriptions'] });
+      qc.invalidateQueries({ queryKey: ['developer', 'my-subscription'] });
+      setToast({ message: 'Abonnement résilié. Vous repassez en mode gratuit.', type: 'success' });
+      setShowCancelConfirm(false);
+    },
+    onError: (err: any) => {
+      setToast({ message: err?.response?.data?.error || 'Erreur lors de la résiliation', type: 'error' });
+    },
+  });
+
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
   const plans: SubscriptionPlan[] = Array.isArray(plansData) ? plansData : [];
   const hasActiveSub = !!currentSub;
   const isLoading = plansLoading || subLoading;
@@ -140,9 +158,9 @@ export default function DeveloperSubscriptionPage() {
               )}>
                 <Award className={cn('h-6 w-6', hasActiveSub ? 'text-emerald-600' : 'text-indigo-600')} />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
                     {currentSub?.plan?.name || 'Développeur AfriBiz'}
                   </h2>
                   <Badge variant={hasActiveSub ? 'success' : 'default'} size="xs">
@@ -151,10 +169,13 @@ export default function DeveloperSubscriptionPage() {
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {hasActiveSub
-                    ? `Abonnement ${currentSub.plan.name} actif jusqu'au ${new Date(currentSub.endDate).toLocaleDateString('fr-FR')}`
+                    ? `Abonnement ${currentSub.plan.name} actif jusqu'au ${new Date(currentSub.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
                     : 'Vous êtes sur le plan Gratuit. Publiez vos modules et gagnez des commissions sur chaque vente.'
                   }
                 </p>
+                {hasActiveSub && currentSub?.autoRenew && (
+                  <p className="text-xs text-emerald-600 font-medium mt-1">Renouvellement automatique actif</p>
+                )}
                 <div className="flex flex-wrap gap-4 mt-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <Check className="h-4 w-4 text-emerald-500" />
@@ -177,9 +198,54 @@ export default function DeveloperSubscriptionPage() {
                 <p className="text-xs text-gray-500">
                   {currentSub?.plan?.price ? '/ mois' : '0 FCFA / mois'}
                 </p>
+                {hasActiveSub && (
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="mt-2 text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition-colors flex items-center gap-1 justify-end"
+                  >
+                    <XOctagon className="h-3 w-3" />
+                    Résilier
+                  </button>
+                )}
               </div>
             </div>
           </Card>
+
+          {/* Cancel confirmation modal */}
+          {showCancelConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowCancelConfirm(false)}>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/30">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Résilier l&apos;abonnement ?</h3>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                  Vous allez perdre l&apos;accès aux avantages de votre plan {currentSub?.plan?.name || 'actuel'}. Cette action est irréversible.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Garder mon abonnement
+                  </button>
+                  <button
+                    onClick={() => cancelMutation.mutate()}
+                    disabled={cancelMutation.isPending}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {cancelMutation.isPending ? (
+                      <><span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" /> Résiliation...</>
+                    ) : (
+                      <><XCircle className="h-4 w-4" /> Oui, résilier</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Available plans */}
           <div>

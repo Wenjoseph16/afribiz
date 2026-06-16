@@ -238,7 +238,7 @@ export default function PublicPageManagement() {
                             try {
                               setSaving(true);
                               const res = await apiClient.uploadMedia(file);
-                              updateForm('logo', res.data.data.url);
+                              if (res.data?.data?.url) updateForm('logo', res.data.data.url);
                               addToast('Logo téléchargé avec succès', 'success');
                             } catch (err) {
                               addToast('Erreur lors du téléchargement du logo', 'error');
@@ -286,7 +286,7 @@ export default function PublicPageManagement() {
                         try {
                           setSaving(true);
                           const res = await apiClient.uploadMedia(file);
-                          updateForm('coverImage', res.data.data.url);
+                          if (res.data?.data?.url) updateForm('coverImage', res.data.data.url);
                           addToast('Image de couverture mise à jour', 'success');
                         } catch (err) {
                           addToast('Erreur lors du téléchargement', 'error');
@@ -335,7 +335,7 @@ export default function PublicPageManagement() {
                         try {
                           setSaving(true);
                           const res = await apiClient.uploadMultipleMedia(files);
-                          const newUrls = res.data.data.map((f: any) => f.url);
+                          const newUrls = (res.data?.data as Array<{ url: string }>)?.map((f: any) => f.url) || [];
                           const currentGallery = (business as any)?.gallery || [];
                           updateForm('gallery', [...currentGallery, ...newUrls]);
                           addToast(`${files.length} photo(s) ajoutée(s)`, 'success');

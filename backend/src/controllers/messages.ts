@@ -85,8 +85,10 @@ export const sendMessage = catchAsyncErrors(async (req: AuthenticatedRequest, re
 
   // Broadcast new message via Socket.IO to all conversation participants
   const io = getIO();
-  io.to(`conversation:${conversationId}`).emit('message:new', message);
-  io.to(`user:${req.user.id}`).emit('message:sent', message);
+  if (io) {
+    io.to(`conversation:${conversationId}`).emit('message:new', message);
+    io.to(`user:${req.user.id}`).emit('message:sent', message);
+  }
 
   const fromName = req.user.email.split('@')[0] || 'Utilisateur';
   const recipientIds = conversation.participants.filter((id: string) => id !== req.user!.id);
@@ -119,8 +121,10 @@ export const sendMessageByBody = catchAsyncErrors(async (req: AuthenticatedReque
 
   // Broadcast new message via Socket.IO
   const io = getIO();
-  io.to(`conversation:${conversationId}`).emit('message:new', message);
-  io.to(`user:${req.user.id}`).emit('message:sent', message);
+  if (io) {
+    io.to(`conversation:${conversationId}`).emit('message:new', message);
+    io.to(`user:${req.user.id}`).emit('message:sent', message);
+  }
 
   const fromName = req.user.email.split('@')[0] || 'Utilisateur';
   const recipientIds = conversation.participants.filter((id: string) => id !== req.user!.id);

@@ -31,6 +31,7 @@ const MOBILE_MONEY_PROVIDERS = [
   { id: 'MTN_MOMO', label: 'MTN MoMo', color: 'bg-red-500', countries: 'Ghana, Ouganda, Rwanda' },
   { id: 'AIRTEL_MONEY', label: 'Airtel Money', color: 'bg-red-600', countries: 'Ghana, Ouganda' },
   { id: 'MPESA', label: 'M-Pesa', color: 'bg-green-600', countries: 'Kenya, Tanzanie, RDC' },
+  { id: 'FEDAPAY', label: 'FedaPay', color: 'bg-violet-500', countries: 'Multi-pays (cartes + Mobile Money)' },
 ];
 
 export default function CheckoutPage() {
@@ -68,7 +69,7 @@ export default function CheckoutPage() {
   const price = Number(mod?.price) || 0;
 
   const validatePhone = (phone: string) => {
-    const cleaned = phone.replace(/[\s\-]/g, '');
+    const cleaned = phone.replace(/[\s-]/g, '');
     if (cleaned.length < 8) return 'Numéro trop court';
     if (!/^\+?\d{8,15}$/.test(cleaned)) return 'Format invalide (ex: +22890123456)';
     return '';
@@ -89,7 +90,7 @@ export default function CheckoutPage() {
     try {
       const res = await purchaseMutation.mutateAsync({
         moduleId: mod.id,
-        data: { provider: selectedProvider, phone: phoneNumber.replace(/[\s\-]/g, '') },
+        data: { provider: selectedProvider, phone: phoneNumber.replace(/[\s-]/g, '') },
       });
 
       const data = res.data?.data;

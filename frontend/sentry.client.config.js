@@ -1,8 +1,8 @@
-const { init } = require('@sentry/nextjs');
-
 const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
 
 if (SENTRY_DSN) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { init } = require('@sentry/nextjs');
   init({
     dsn: SENTRY_DSN,
     tracesSampleRate: 0.1,

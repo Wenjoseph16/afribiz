@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   CreditCard, CheckCircle, Clock, AlertTriangle,
-  ArrowLeft, Sparkles, XCircle,
+  ArrowLeft, Sparkles, XCircle, XOctagon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -73,6 +73,24 @@ export default function BusinessSubscriptionPage() {
     },
   });
 
+  // Cancel subscription mutation
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.post('/subscriptions/my-subscription/cancel');
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['subscriptions'] });
+      setToast({ message: 'Abonnement résilié avec succès. Vous repassez en mode gratuit (pay-as-you-go).', type: 'success' });
+      setShowCancelConfirm(false);
+    },
+    onError: (err: any) => {
+      setToast({ message: err?.response?.data?.error || 'Erreur lors de la résiliation', type: 'error' });
+    },
+  });
+
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
   const plans: Plan[] = Array.isArray(plansData) ? plansData : [];
   const hasActiveSub = !!currentSub;
 
@@ -106,40 +124,90 @@ export default function BusinessSubscriptionPage() {
       <Card padding="lg" className={cn(
         'bg-gradient-to-br',
         hasActiveSub ? 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/50' : 'from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900'
-      )}>
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className={cn('p-3 rounded-xl', hasActiveSub ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-brand-50 dark:bg-brand-900/20')}>
-              <CreditCard className={cn('h-6 w-6', hasActiveSub ? 'text-emerald-600' : 'text-brand')} />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {currentSub?.plan?.name || 'Plan Gratuit'}
-              </h3>
-              <p className="text-sm text-gray-500">
-                {hasActiveSub ? 'Abonnement actif' : 'Aucun abonnement actif'}
-              </p>
-              <div className="flex items-center gap-2 mt-1">
-                {hasActiveSub ? (
-                  <Badge variant="success" size="sm">Actif</Badge>
-                ) : (
-                  <Badge variant="default" size="sm">Pay-as-you-go</Badge>
-                )}
-                {currentSub?.endDate && (
-                  <span className="text-xs text-gray-400">
-                    Expire le {new Date(currentSub.endDate).toLocaleDateString('fr-FR')}
-                  </span>
-                )}
+      )}>          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className={cn('p-3 rounded-xl shrink-0', hasActiveSub ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-brand-50 dark:bg-brand-900/20')}>
+                <CreditCard className={cn('h-6 w-6', hasActiveSub ? 'text-emerald-600' : 'text-brand')} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  {currentSub?.plan?.name || 'Plan Gratuit'}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {hasActiveSub ? 'Abonnement actif' : 'Aucun abonnement actif — facturé à l\'usage (1% par transaction)'}
+                </p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {hasActiveSub ? (
+                    <Badge variant="success" size="sm">Actif</Badge>
+                  ) : (
+                    <Badge variant="default" size="sm">Pay-as-you-go</Badge>
+                  )}
+                  {currentSub?.endDate && (
+                    <span className="text-xs text-gray-400">
+                      Prochaine échéance : {new Date(currentSub.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                  )}
+                  {currentSub?.autoRenew && (
+                    <span className="text-xs text-emerald-600 font-medium">Renouvellement automatique</span>
+                  )}
+                </div>
               </div>
             </div>
+            <div className="text-right shrink-0">
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {currentSub?.plan?.price ? `${Number(currentSub.plan.price).toLocaleString()} FCFA` : '0 FCFA'}
+              </p>
+              <p className="text-xs text-gray-500">/ mois</p>
+              {hasActiveSub && (
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  className="mt-2 text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition-colors flex items-center gap-1"
+                >
+                  <XOctagon className="h-3 w-3" />
+                  Résilier l\'abonnement
+                </button>
+              )}
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {currentSub?.plan?.price ? `${Number(currentSub.plan.price).toLocaleString()} FCFA` : '0 FCFA'}
-            </p>
-            <p className="text-xs text-gray-500">/ mois</p>
-          </div>
-        </div>
+
+          {/* Cancel confirmation modal */}
+          {showCancelConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowCancelConfirm(false)}>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/30">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Résilier l&apos;abonnement ?</h3>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Vous allez perdre l&apos;accès aux avantages de votre plan {currentSub?.plan?.name || 'actuel'}.
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  Vous repasserez en mode <strong>Pay-as-you-go</strong> : 1% de commission sur chaque transaction, sans engagement.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Conserver mon abonnement
+                  </button>
+                  <button
+                    onClick={() => cancelMutation.mutate()}
+                    disabled={cancelMutation.isPending}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {cancelMutation.isPending ? (
+                      <><span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" /> Résiliation...</>
+                    ) : (
+                      <><XCircle className="h-4 w-4" /> Oui, résilier</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
       </Card>
 
       {/* Plans disponibles */}

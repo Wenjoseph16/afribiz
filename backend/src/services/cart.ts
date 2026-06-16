@@ -1,7 +1,7 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { publishCartItemAdded, publishCheckoutInitiated, publishCheckoutCompleted } from '../events/publishers';
-import { processMobileMoney, processStripePayment, saveTransaction } from './paymentProcessor';
+import { processMobileMoney, processStripePayment, processFedaPayPayment, saveTransaction } from './paymentProcessor';
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -290,6 +290,14 @@ export async function checkout(userId: string, data: {
       let paymentResult;
       if (data.paymentMethod === 'STRIPE') {
         paymentResult = await processStripePayment(total, 'usd', data.paymentMethod, `Commande ${orderNumber}`);
+      } else if (data.paymentMethod === 'FEDAPAY') {
+        paymentResult = await processFedaPayPayment({
+          amount: total,
+          mode: 'mtn_open',
+          description: `Commande ${orderNumber}`,
+          customerPhone: data.contactPhone,
+          customerName: data.contactName,
+        });
       } else {
         // Mobile Money (TMONEY, FLOOZ, WAVE, MOOV_MONEY)
         paymentResult = await processMobileMoney(data.paymentMethod, data.contactPhone || '', total, `Commande ${orderNumber}`);

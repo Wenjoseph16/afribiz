@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   UtensilsCrossed, Plus, Search, Eye, Pencil, Clock, Star,
@@ -48,8 +48,7 @@ export default function MenuPage() {
   const [typeFilter, setTypeFilter] = useState('Tous');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
+  const notifyError = useNotifyError();
 
   const items: MenuItem[] = Array.isArray(itemsData) ? itemsData : (itemsData?.items || itemsData?.data || []);
 
@@ -65,8 +64,6 @@ export default function MenuPage() {
       await toggleActive.mutateAsync(id);
     } catch (err) { notifyError(err, 'Erreur', 'Impossible de modifier le statut'); }
   };
-
-  const notifyError = useNotifyError();
 
   const handleBulkToggle = async (isActive: boolean) => {
     for (const id of selectedIds) {
@@ -143,6 +140,8 @@ export default function MenuPage() {
     }
     return f;
   }, [items, typeFilter, searchQuery]);
+
+  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[400px]"><Loader className="h-8 w-8 animate-spin text-brand" /></div>;

@@ -1,5 +1,4 @@
 import { prisma } from '../lib/db';
-import { AppError } from '../middlewares/errorHandler';
 
 /**
  * Track a module analytics event

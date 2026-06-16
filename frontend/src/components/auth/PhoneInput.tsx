@@ -10,16 +10,20 @@ interface PhoneInputProps {
   onChange?: (value: string) => void;
   error?: string;
   disabled?: boolean;
+  defaultDial?: string;
 }
 
-export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, error, disabled }) => {
+export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, error, disabled, defaultDial }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [dialOverride, setDialOverride] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const currentDial = value ? `+${value.replace(/^\+/, '').match(/^\d{1,4}/)?.[0] || ''}` : '+228';
+  // Use defaultDial when provided (from LocationSelect), fallback to +228
+  const effectiveDial = dialOverride || defaultDial || '+228';
+  const currentDial = value ? `+${value.replace(/^\+/, '').match(/^\d{1,4}/)?.[0] || ''}` : effectiveDial;
   const selectedCountry = getCountryByDial(currentDial) || sortedCountryCodes[0];
 
   useEffect(() => {
@@ -52,6 +56,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, er
   }, []);
 
   const selectCountry = useCallback((country: CountryCode) => {
+    setDialOverride(country.dial);
     const fullNumber = `${country.dial}${phoneNumber}`;
     onChange?.(fullNumber);
     setIsOpen(false);

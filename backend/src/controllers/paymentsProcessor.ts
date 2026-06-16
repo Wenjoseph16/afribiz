@@ -14,6 +14,17 @@ export const initiatePayment = catchAsyncErrors(async (req: AuthenticatedRequest
   let result;
   if (provider === 'STRIPE') {
     result = await paymentProc.processStripePayment(amount, currency || 'FCFA', paymentMethodId, `Paiement ${orderId || ''}`);
+  } else if (provider === 'FEDAPAY') {
+    result = await paymentProc.processFedaPayPayment({
+      amount,
+      currency: currency || 'XOF',
+      mode: req.body.mode || 'mtn_open',
+      description: `Paiement ${orderId || ''}`,
+      callbackUrl: req.body.callbackUrl,
+      customerPhone: phone,
+      customerName: req.body.customerName,
+      customerEmail: req.body.customerEmail,
+    });
   } else {
     result = await paymentProc.processMobileMoney(provider, phone, amount);
   }

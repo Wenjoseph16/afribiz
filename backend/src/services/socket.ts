@@ -4,14 +4,20 @@ import { verifyAccessToken, JWTPayload } from '../lib/jwt';
 import { config } from '../config/env';
 import { logger } from '../lib/logger';
 
+const isVercel = !!process.env.VERCEL;
+
 let io: Server | null = null;
 
-export function getIO(): Server {
-  if (!io) throw new Error('Socket.IO not initialized');
+export function getIO(): Server | null {
   return io;
 }
 
-export function initSocket(httpServer: HttpServer): Server {
+export function initSocket(httpServer: HttpServer): Server | null {
+  if (isVercel) {
+    logger.info('Socket.IO désactivé (environnement Vercel serverless)');
+    return null;
+  }
+
   io = new Server(httpServer, {
     cors: {
       origin: config.FRONTEND_URL,

@@ -1,4 +1,3 @@
-import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,14 +23,45 @@ interface ProcessedImage {
   height: number;
 }
 
+async function getSharp() {
+  try {
+    const m = await import('sharp');
+    return m.default;
+  } catch {
+    return null;
+  }
+}
+
+function copyFileFallback(inputPath: string, outputPath: string, originalname: string): ProcessedImage {
+  const ext = path.extname(originalname).toLowerCase();
+  const outputFilename = path.basename(outputPath);
+  const stat = fs.statSync(inputPath);
+  fs.copyFileSync(inputPath, outputPath);
+  if (inputPath !== outputPath) {
+    fs.unlink(inputPath, () => {});
+  }
+  return {
+    filename: outputFilename,
+    mimetype: (IMAGE_MIME_MAP[ext] || 'application/octet-stream'),
+    size: stat.size,
+    width: 0,
+    height: 0,
+  };
+}
+
 export async function processImage(
   inputPath: string,
   originalname: string,
   options?: { avatar?: boolean }
 ): Promise<ProcessedImage> {
+  const sharp = await getSharp();
   const ext = path.extname(originalname).toLowerCase();
   const outputFilename = `${uuidv4()}.webp`;
   const outputPath = path.join(config.UPLOAD_DIR, outputFilename);
+
+  if (!sharp) {
+    return copyFileFallback(inputPath, path.join(config.UPLOAD_DIR, `${uuidv4()}${ext}`), originalname);
+  }
 
   let pipeline = sharp(inputPath).rotate();
 
@@ -66,8 +96,20 @@ export async function processImageBuffer(
   originalname: string,
   options?: { avatar?: boolean }
 ): Promise<ProcessedImage> {
+  const sharp = await getSharp();
   const outputFilename = `${uuidv4()}.webp`;
   const outputPath = path.join(config.UPLOAD_DIR, outputFilename);
+
+  if (!sharp) {
+    fs.writeFileSync(outputPath, buffer);
+    return {
+      filename: outputFilename,
+      mimetype: 'image/webp',
+      size: buffer.length,
+      width: 0,
+      height: 0,
+    };
+  }
 
   let pipeline = sharp(buffer).rotate();
 

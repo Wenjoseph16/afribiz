@@ -72,12 +72,12 @@ export default function DevelopersPage() {
                 </div>
                 <div className="p-5 font-mono text-xs sm:text-sm leading-relaxed">
                   <div><span className="text-purple-400">import</span><span className="text-gray-300">{String.fromCharCode(123)} </span><span className="text-cyan-300">AfriBizAPI</span><span className="text-gray-300">{String.fromCharCode(125)} </span><span className="text-purple-400">from</span><span className="text-emerald-300"> '@afribiz/sdk'</span><span className="text-gray-500">;</span></div>
-                  <div className="mt-2"><span className="text-gray-500">// Module Orange Money Pro</span></div>
+                  <div className="mt-2"><span className="text-gray-500">{'// Module Orange Money Pro'}</span></div>
                   <div><span className="text-purple-400">const</span><span className="text-gray-300"> api = </span><span className="text-purple-400">new</span><span className="text-cyan-300"> AfriBizAPI</span><span className="text-gray-500">(</span><span className="text-gray-500">{String.fromCharCode(123)}</span></div>
                   <div className="ml-4"><span className="text-gray-500">  apiKey: process</span><span className="text-gray-300">.</span><span className="text-cyan-300">env</span><span className="text-gray-300">.</span><span className="text-amber-300">AFRIBIZ_API_KEY</span><span className="text-gray-500">,</span></div>
                   <div className="ml-4"><span className="text-gray-500">  region: </span><span className="text-emerald-300">'africa-west'</span><span className="text-gray-500">,</span></div>
                   <div><span className="text-gray-500">{String.fromCharCode(125)});</span></div>
-                  <div className="mt-2"><span className="text-gray-500">// Nouveau module de paiement</span></div>
+                  <div className="mt-2"><span className="text-gray-500">{'// Nouveau module de paiement'}</span></div>
                   <div><span className="text-purple-400">const</span><span className="text-gray-300"> module = </span><span className="text-purple-400">await</span><span className="text-gray-300"> api.</span><span className="text-cyan-300">registerModule</span><span className="text-gray-500">({String.fromCharCode(123)}</span></div>
                   <div className="ml-4"><span className="text-gray-500">  name: </span><span className="text-emerald-300">'Orange Money Pro'</span><span className="text-gray-500">,</span></div>
                   <div className="ml-4"><span className="text-gray-500">  type: </span><span className="text-emerald-300">'payment'</span><span className="text-gray-500">,</span></div>

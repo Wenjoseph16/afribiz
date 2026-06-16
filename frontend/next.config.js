@@ -1,4 +1,4 @@
-const { withSentryConfig } = require('@sentry/nextjs');
+const { withSentryConfig } = require("@sentry/nextjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -14,7 +14,6 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
-  // 🔥 ICI : On ignore les erreurs d'analyse de code pour forcer le build en production
   eslint: { 
     ignoreDuringBuilds: true 
   },
@@ -55,17 +54,17 @@ const nextConfig = {
   },
 };
 
-// Sentry uniquement si les variables d'env sont configurées (évite les erreurs en build)
-const sentryOptions = {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
+module.exports = withSentryConfig(nextConfig, {
+  org: "afribiz-9t",
+  project: "afribiz-frontend",
   silent: !process.env.CI,
   widenClientFileUpload: true,
   hideSourceMaps: true,
-  automaticVercelMonitors: false,
-  webpack: { automaticVercelMonitors: false },
-};
-
-module.exports = process.env.SENTRY_ORG
-  ? withSentryConfig(nextConfig, sentryOptions)
-  : nextConfig;
+  tunnelRoute: "/monitoring",
+  webpack: {
+    automaticVercelMonitors: true,
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});

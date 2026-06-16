@@ -14,6 +14,7 @@ const inter = Inter({
 // Next.js optimise automatiquement : pages statiques si possible, dynamiques si fetch/auth
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://afribiz.com'),
   title: { default: 'AfriBiz - Marketplace SaaS Africaine', template: '%s | AfriBiz' },
   description: 'Gérez votre business, vendez vos produits et développez votre activité avec AfriBiz, la marketplace SaaS africaine.',
   keywords: ['marketplace africaine', 'SaaS', 'e-commerce', 'gestion d\'entreprise', 'Afrique', 'business'],

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, Search, Plus, ChevronRight, Clock, Package, Truck, CheckCircle2, XCircle, DollarSign, Loader, Store, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -64,12 +64,10 @@ export default function OrdersPage() {
     totalSpent: allOrders.reduce((a: number, o: any) => a + Number(o.totalAmount || 0), 0),
   };
 
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
-
   const suggestions = useMemo(() => {
     const items: {
       type: string; title: string; description: string; count: string;
-      link: string; icon: React.ReactNode; bg: string; border: string; iconBg: string; countColor: string;
+      link: string; icon: ReactNode; bg: string; border: string; iconBg: string; countColor: string;
     }[] = [];
 
     const pending = allOrders.filter((o: any) => o.status === 'PENDING');
@@ -131,6 +129,8 @@ export default function OrdersPage() {
     }
     return true;
   });
+
+  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
   if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><Loader className="h-8 w-8 animate-spin text-brand" /></div>;
 

@@ -10,6 +10,7 @@ const BACKUP_DIR = path.resolve(process.cwd(), 'backups');
 const BACKUP_MANIFEST = path.join(BACKUP_DIR, 'manifest.json');
 
 function ensureBackupDir(): void {
+  if (process.env.VERCEL) return;
   if (!fs.existsSync(BACKUP_DIR)) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
   }
@@ -852,7 +853,7 @@ export async function createBackup() {
       try {
         const rows = await prisma.$queryRawUnsafe(`SELECT * FROM "${tableName}"`);
         backupData[tableName] = rows;
-      } catch { }
+      } catch { /* empty - table may not exist */ }
     }
     fs.writeFileSync(fallbackFilepath, JSON.stringify(backupData, null, 2), 'utf-8');
     const stat = fs.statSync(fallbackFilepath);

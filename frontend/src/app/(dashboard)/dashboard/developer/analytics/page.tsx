@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import {
   Download, DollarSign, Activity, AlertTriangle, CheckCircle2,
   BarChart3, RefreshCw, TrendingUp,
@@ -54,7 +54,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 function ChartSection({ title, icon: Icon, children, className }: {
-  title: string; icon?: any; children: React.ReactNode; className?: string;
+  title: string; icon?: any; children: ReactNode; className?: string;
 }) {
   return (
     <Card padding="lg" className={cn('hover:border-brand/20 transition-all', className)}>
@@ -116,20 +116,13 @@ export default function AnalyticsPage() {
 
   const isLoading = viewTab === 'overview' ? (dashLoading || overviewLoading) : moduleAnalyticsLoading;
 
-  if (dashError) return <ErrorState message={dashError.message} onRetry={refetchDash} />;
-  if (dashLoading) return <Loader variant="spinner" size="md" fullScreen />;
-  if (!overview) return null;
-
-  const formatCurrency = (v: number) =>
-    new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v) + ' FCFA';
-
-  const formatNumber = (v: number) => new Intl.NumberFormat('fr-FR').format(v);
-
-  // Build chart data from daily analytics
+  // Hooks must be called before any early return
   const rawDaily = moduleAnalytics?.daily || [];
   const chartData = useMemo(() => {
+    const rev = overview?.totalRevenue || 0;
+    const inst = overview?.totalInstalls || 0;
+    const apiCalls = overview?.totalApiCalls || 0;
     if (rawDaily.length === 0) {
-      // Generate mock data for overview from dashboard aggregates when no module selected
       const days: any[] = [];
       const now = new Date();
       for (let i = period - 1; i >= 0; i--) {
@@ -139,10 +132,10 @@ export default function AnalyticsPage() {
         const multiplier = 0.3 + Math.random() * 0.7;
         days.push({
           date: label,
-          revenue: Math.round(overview.totalRevenue / period * multiplier),
-          installs: Math.round(overview.totalInstalls / period * multiplier),
+          revenue: Math.round(rev / period * multiplier),
+          installs: Math.round(inst / period * multiplier),
           errors: Math.round(Math.random() * 3),
-          apiCalls: Math.round(overview.totalApiCalls / period * multiplier || Math.random() * 50),
+          apiCalls: Math.round(apiCalls / period * multiplier || Math.random() * 50),
         });
       }
       return days;
@@ -156,13 +149,8 @@ export default function AnalyticsPage() {
     }));
   }, [rawDaily, period, overview]);
 
-  // Aggregate KPIs
-  const totalRev = chartData.reduce((s, d) => s + d.revenue, 0);
-  const totalInst = chartData.reduce((s, d) => s + d.installs, 0);
-
-  // Error distribution for pie chart
   const errorDist = useMemo(() => {
-    if (!overview.recentErrors || overview.recentErrors.length === 0) return [];
+    if (!overview?.recentErrors || overview.recentErrors.length === 0) return [];
     const counts: Record<string, number> = {};
     overview.recentErrors.forEach((e: ModuleErrorLog) => {
       const t = e.errorType || 'UNKNOWN';
@@ -173,7 +161,19 @@ export default function AnalyticsPage() {
       value,
       color: PIE_COLORS[i % PIE_COLORS.length],
     }));
-  }, [overview.recentErrors]);
+  }, [overview?.recentErrors]);
+
+  if (dashError) return <ErrorState message={dashError.message} onRetry={refetchDash} />;
+  if (dashLoading) return <Loader variant="spinner" size="md" fullScreen />;
+  if (!overview) return null;
+
+  const totalRev = chartData.reduce((s, d) => s + d.revenue, 0);
+  const totalInst = chartData.reduce((s, d) => s + d.installs, 0);
+
+  const formatCurrency = (v: number) =>
+    new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v) + ' FCFA';
+
+  const formatNumber = (v: number) => new Intl.NumberFormat('fr-FR').format(v);
 
   const handleResolveError = async (errorId: string) => {
     try { await resolveError.mutateAsync(errorId); } catch (e) { console.error(e); }
@@ -268,17 +268,17 @@ export default function AnalyticsPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600"><Activity className="h-5 w-5" /></div>
               </div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatNumber(overview.totalApiCalls)}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatNumber(overview?.totalApiCalls || 0)}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Appels API (total)</p>
             </Card>
             <Card className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className={cn(
                   'p-2 rounded-lg',
-                  overview.unresolvedErrors > 0 ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600'
+                  (overview?.unresolvedErrors || 0) > 0 ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600'
                 )}><AlertTriangle className="h-5 w-5" /></div>
               </div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview.unresolvedErrors}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview?.unresolvedErrors || 0}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Erreurs non résolues</p>
             </Card>
           </div>

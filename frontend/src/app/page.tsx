@@ -329,7 +329,7 @@ export default function LandingPage() {
                   <div className="ml-4"><span className="text-gray-500">  apiKey: </span><span className="text-emerald-300">'afribiz_sk_...'</span><span className="text-gray-500">,</span></div>
                   <div className="ml-4"><span className="text-gray-500">  region: </span><span className="text-emerald-300">'africa-west'</span><span className="text-gray-500">,</span></div>
                   <div><span className="text-gray-500">);</span></div>
-                  <div className="mt-3"><span className="text-gray-500">// Créer un module de paiement</span></div>
+                  <div className="mt-3"><span className="text-gray-500">{'// Créer un module de paiement'}</span></div>
                   <div className="mt-1"><span className="text-purple-400">const</span><span className="text-gray-300"> payment = </span><span className="text-purple-400">await</span><span className="text-gray-300"> api</span><span className="text-gray-500">.</span><span className="text-cyan-300">createModule</span><span className="text-gray-500">(</span><span className="text-gray-500">{String.fromCharCode(123)}</span></div>
                   <div className="ml-4"><span className="text-gray-500">  name: </span><span className="text-emerald-300">'Orange Money Pro'</span><span className="text-gray-500">,</span></div>
                   <div className="ml-4"><span className="text-gray-500">  revenue: </span><span className="text-purple-300">0.05</span><span className="text-gray-500">,</span></div>

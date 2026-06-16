@@ -10,7 +10,7 @@ const router = Router();
 router.use(authMiddleware);
 
 // Avatar upload
-const avatarsDir = path.join(__dirname, '../../uploads/avatars');
+const avatarsDir = process.env.VERCEL ? '/tmp/uploads/avatars' : path.join(__dirname, '../../uploads/avatars');
 if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
 
 const storage = multer.diskStorage({

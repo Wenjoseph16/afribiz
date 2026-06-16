@@ -9,11 +9,12 @@ import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
 import { PhoneInput } from '@/components/auth/PhoneInput';
+import { LocationSelect } from '@/components/auth/LocationSelect';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/components/ui/ToastProvider';
 import { signupSchema } from '@/validators/auth';
-import { Eye, EyeOff, Mail, Lock, User, UserPlus, Loader2, MapPin, Calendar, Globe, Phone } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, UserPlus, Loader2, Calendar } from 'lucide-react';
 
 const inputBase =
   'w-full h-11 px-4 text-sm rounded-xl border bg-white dark:bg-gray-950/90 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 ' +
@@ -34,6 +35,7 @@ export default function SignupPage() {
   const {
     register,
     watch,
+    setValue,
     handleSubmit,
     control,
     formState: { errors },
@@ -56,6 +58,13 @@ export default function SignupPage() {
   });
 
   const passwordValue = watch('password');
+  const countryValue = watch('country');
+  const regionValue = watch('region');
+  const cityValue = watch('city');
+  const neighborhoodValue = watch('neighborhood');
+
+  // State for dial code from selected country (fed to PhoneInput)
+  const [countryDialCode, setCountryDialCode] = useState('+228');
 
   const onSubmit = async (data: SignupForm) => {
     setIsSubmitting(true);
@@ -235,6 +244,31 @@ export default function SignupPage() {
 
               <hr className="border-gray-200 dark:border-gray-700" />
 
+              {/* ════════════════════════════════════════════ */}
+              {/* ÉTAPE 1 — Pays (seul Togo disponible) */}
+              {/* ════════════════════════════════════════════ */}
+              <LocationSelect
+                country={countryValue}
+                region={regionValue}
+                city={cityValue}
+                neighborhood={neighborhoodValue}
+                onCountryChange={(v) => setValue('country', v)}
+                onRegionChange={(v) => setValue('region', v)}
+                onCityChange={(v) => setValue('city', v)}
+                onNeighborhoodChange={(v) => setValue('neighborhood', v)}
+                errors={{
+                  country: errors.country?.message,
+                  region: errors.region?.message,
+                  city: errors.city?.message,
+                  neighborhood: errors.neighborhood?.message,
+                }}
+                onCountryCodeChange={(code) => setCountryDialCode(`+${code}`)}
+                showFields="country"
+              />
+
+              {/* ════════════════════════════════════════════ */}
+              {/* ÉTAPE 2 — Téléphone (indicatif + drapeau du pays choisi) */}
+              {/* ════════════════════════════════════════════ */}
               <Controller
                 name="phone"
                 control={control}
@@ -247,54 +281,35 @@ export default function SignupPage() {
                       value={field.value}
                       onChange={field.onChange}
                       error={errors.phone?.message}
+                      defaultDial={countryDialCode}
                     />
                   </div>
                 )}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Pays <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                    <input type="text" placeholder="Togo" {...register('country')} className={`${inputBase} pl-10`} />
-                  </div>
-                  {fieldError(errors.country?.message)}
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Région <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                    <input type="text" placeholder="Maritime" {...register('region')} className={`${inputBase} pl-10`} />
-                  </div>
-                  {fieldError(errors.region?.message)}
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Ville <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                    <input type="text" placeholder="Lomé" {...register('city')} className={`${inputBase} pl-10`} />
-                  </div>
-                  {fieldError(errors.city?.message)}
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Quartier <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                    <input type="text" placeholder="Adidogomé" {...register('neighborhood')} className={`${inputBase} pl-10`} />
-                  </div>
-                  {fieldError(errors.neighborhood?.message)}
-                </div>
-              </div>
+              {/* ════════════════════════════════════════════ */}
+              {/* ÉTAPE 3 — Région + Ville + Quartier */}
+              {/* ════════════════════════════════════════════ */}
+              <LocationSelect
+                country={countryValue}
+                region={regionValue}
+                city={cityValue}
+                neighborhood={neighborhoodValue}
+                onCountryChange={(v) => setValue('country', v)}
+                onRegionChange={(v) => setValue('region', v)}
+                onCityChange={(v) => setValue('city', v)}
+                onNeighborhoodChange={(v) => setValue('neighborhood', v)}
+                errors={{
+                  region: errors.region?.message,
+                  city: errors.city?.message,
+                  neighborhood: errors.neighborhood?.message,
+                }}
+                showFields="location"
+              />
 
+              {/* ════════════════════════════════════════════ */}
+              {/* ÉTAPE 4 — Date de naissance + Genre */}
+              {/* ════════════════════════════════════════════ */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date de naissance</label>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   Calendar, Search, Clock, ChevronRight, CheckCircle2, XCircle,
@@ -49,8 +49,6 @@ export default function ClientBookingsPage() {
   const todayStr = now.toISOString().split('T')[0];
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
-
   const stats = {
     total: allBookings.length,
     today: allBookings.filter((b: any) => (b.startDate || '').startsWith(todayStr)).length,
@@ -62,7 +60,7 @@ export default function ClientBookingsPage() {
   const suggestions = useMemo(() => {
     const items: {
       type: string; title: string; description: string; count: string;
-      link: string; icon: React.ReactNode; bg: string; border: string; iconBg: string; countColor: string;
+      link: string; icon: ReactNode; bg: string; border: string; iconBg: string; countColor: string;
     }[] = [];
 
     const pending = allBookings.filter((b: any) => b.status === 'PENDING');
@@ -113,6 +111,8 @@ export default function ClientBookingsPage() {
 
     return items;
   }, [allBookings, todayStr, weekAgo]);
+
+  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
   const filtered = allBookings.filter((b: any) => {
     if (activeTab === 'today' && !(b.startDate || '').startsWith(todayStr)) return false;

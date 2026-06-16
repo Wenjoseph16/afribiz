@@ -130,7 +130,6 @@ export function DashboardCharts({ stats, orders = [] }: DashboardChartsProps) {
 
     const todayRev = stats?.trends?.revenueToday ?? 0;
     const yesterdayRev = stats?.trends?.revenueYesterday ?? 0;
-...
     const days: DailyRevenue[] = [];
     const now = new Date();
     for (let i = 6; i >= 0; i--) {

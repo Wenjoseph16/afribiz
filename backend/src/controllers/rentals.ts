@@ -34,7 +34,7 @@ export const downloadRentalContract = catchAsyncErrors(async (req: Authenticated
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
-  } catch (error) {
+  } catch {
     throw new AppError('Erreur lors de la génération du contrat', 500);
   }
 });

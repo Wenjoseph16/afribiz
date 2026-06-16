@@ -110,7 +110,7 @@ export class CronService {
     logger.info('CronService: all jobs scheduled');
   }
 
-  private static async checkBookingReminders(): Promise<void> {
+  public static async checkBookingReminders(): Promise<void> {
     const now = new Date();
     const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const bookings = await prisma.booking.findMany({
@@ -126,7 +126,7 @@ export class CronService {
     if (bookings.length > 0) logger.info(`Cron: sent ${bookings.length} booking reminders`);
   }
 
-  private static async checkPendingOrders(): Promise<void> {
+  public static async checkPendingOrders(): Promise<void> {
     const now = Date.now();
     const windowMs = 5 * 60 * 1000; // 5-minute window per reminder level
     const firstReminderStart = 15 * 60 * 1000;
@@ -182,7 +182,7 @@ export class CronService {
     if (pendingOrders.length > 0) logger.info('Cron: checked ' + pendingOrders.length + ' pending orders');
   }
 
-  private static async checkOverdueDebts(): Promise<void> {
+  public static async checkOverdueDebts(): Promise<void> {
     const overdue = await prisma.debt.findMany({
       where: { status: 'ACTIVE', dueDate: { lt: new Date() }, remainingAmount: { gt: 0 } },
     });
@@ -194,7 +194,7 @@ export class CronService {
     if (overdue.length > 0) logger.info(`Cron: flagged ${overdue.length} overdue debts`);
   }
 
-  private static async dispatchCampaigns(): Promise<void> {
+  public static async dispatchCampaigns(): Promise<void> {
     const now = new Date();
     const campaigns = await prisma.marketingCampaign.findMany({
       where: { status: 'SCHEDULED', scheduledAt: { lte: now } },
@@ -208,7 +208,7 @@ export class CronService {
     if (campaigns.length > 0) logger.info(`Cron: dispatched ${campaigns.length} campaigns`);
   }
 
-  private static async checkAbandonedCarts(): Promise<void> {
+  public static async checkAbandonedCarts(): Promise<void> {
     const threshold = new Date(Date.now() - 2 * 60 * 60 * 1000);
     const orders = await prisma.order.findMany({
       where: { status: 'PENDING', createdAt: { lt: threshold }, buyerId: { not: null }, businessId: { not: null } },
@@ -222,7 +222,7 @@ export class CronService {
     if (orders.length > 0) logger.info(`Cron: detected ${orders.length} abandoned carts`);
   }
 
-  private static async checkInactiveClients(): Promise<void> {
+  public static async checkInactiveClients(): Promise<void> {
     const threshold = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const orders = await prisma.order.findMany({
       where: { createdAt: { lt: threshold }, buyerId: { not: null }, businessId: { not: null } },
@@ -237,7 +237,7 @@ export class CronService {
     }
   }
 
-  private static async checkExpiringTrials(): Promise<void> {
+  public static async checkExpiringTrials(): Promise<void> {
     const in2Days = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
     const now = new Date();
     const installations = await prisma.developerModuleInstallation.findMany({
@@ -300,7 +300,7 @@ export class CronService {
     }
   }
 
-  private static async checkExpiringSubscriptions(): Promise<void> {
+  public static async checkExpiringSubscriptions(): Promise<void> {
     const in7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const subs = await prisma.businessSubscription.findMany({
       where: { status: 'ACTIVE', endDate: { lte: in7Days, gte: new Date() } },
@@ -315,12 +315,12 @@ export class CronService {
     }
   }
 
-  private static async checkOverdueRentals(): Promise<void> {
+  public static async checkOverdueRentals(): Promise<void> {
     const rentals = await prisma.rental.findMany({ where: { isActive: true } });
     if (rentals.length > 0) logger.debug(`Cron: found ${rentals.length} active rentals (overdue check requires schema extension)`);
   }
 
-  private static async checkLowStock(): Promise<void> {
+  public static async checkLowStock(): Promise<void> {
     const products = await prisma.product.findMany({
       where: { stock: { lte: 5 }, isActive: true, businessId: { not: null } },
     });
@@ -337,7 +337,7 @@ export class CronService {
     if (products.length > 0) logger.info(`Cron: sent ${products.length} stock alerts`);
   }
 
-  private static async checkSetupIncomplete(): Promise<void> {
+  public static async checkSetupIncomplete(): Promise<void> {
     const threshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const bizs = await prisma.business.findMany({
       where: { createdAt: { lt: threshold } },
@@ -354,7 +354,7 @@ export class CronService {
     }
   }
 
-  private static async expireStories(): Promise<void> {
+  public static async expireStories(): Promise<void> {
     const storiesCount = await expireOldStories();
     const feedCount = await expireOldFeedItems();
     if (storiesCount > 0 || feedCount > 0) {
@@ -362,7 +362,7 @@ export class CronService {
     }
   }
 
-  private static async recalculateScores(): Promise<void> {
+  public static async recalculateScores(): Promise<void> {
     try {
       await recomputeAllScores();
       logger.info('Cron: weekly score recalculation completed');
@@ -371,7 +371,7 @@ export class CronService {
     }
   }
 
-  private static async checkBirthdays(): Promise<void> {
+  public static async checkBirthdays(): Promise<void> {
     // Requête directe via SQL raw pour filtrer par jour/mois de birthDate
     const today = new Date();
     const day = today.getDate();
@@ -396,7 +396,7 @@ export class CronService {
     }
   }
 
-  private static async checkRentalReturns(): Promise<void> {
+  public static async checkRentalReturns(): Promise<void> {
     const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const bookings = await prisma.booking.findMany({
       where: {
@@ -422,7 +422,7 @@ export class CronService {
     if (bookings.length > 0) logger.info(`Cron: sent ${bookings.length} rental return reminders`);
   }
 
-  private static async checkDeliveryStarts(): Promise<void> {
+  public static async checkDeliveryStarts(): Promise<void> {
     const threshold = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes
     const deliveries = await prisma.delivery.findMany({
       where: {
@@ -463,7 +463,7 @@ export class CronService {
     }
   }
 
-  private static async checkExpiringDocuments(): Promise<void> {
+  public static async checkExpiringDocuments(): Promise<void> {
     const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const docs = await prisma.employeeDocument.findMany({
       where: {
@@ -495,7 +495,7 @@ export class CronService {
     if (docs.length > 0) logger.info(`Cron: notified ${docs.length} expiring documents`);
   }
 
-  private static async sendSatisfactionSurveys(): Promise<void> {
+  public static async sendSatisfactionSurveys(): Promise<void> {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const deliveries = await prisma.delivery.findMany({
       where: {
@@ -528,7 +528,7 @@ export class CronService {
     }
   }
 
-  private static async checkEscrowRelease(): Promise<void> {
+  public static async checkEscrowRelease(): Promise<void> {
     const threshold = new Date(Date.now() - 48 * 60 * 60 * 1000); // 48h after delivery
     const orders = await prisma.order.findMany({
       where: {
@@ -547,14 +547,14 @@ export class CronService {
     if (orders.length > 0) logger.info(`Cron: auto-released ${orders.length} escrows after delivery confirmation`);
   }
 
-  private static async checkCopilotAlerts(): Promise<void> {
+  public static async checkCopilotAlerts(): Promise<void> {
     const result = await generateAllCopilotNotifications();
     if (result.created > 0) {
       logger.info('Cron: Copilot - ' + result.created + ' notifications generated for ' + result.total + ' businesses');
     }
   }
 
-  private static async checkAutoEscrowRelease(): Promise<void> {
+  public static async checkAutoEscrowRelease(): Promise<void> {
     // Escrows sans commande/facture/devis associée (services, freelance) → auto-release après 14 jours
     const threshold = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     const escrows = await prisma.escrow.findMany({
@@ -591,7 +591,7 @@ export class CronService {
     if (expiredPayments.count > 0) logger.info('Cron: expired ' + expiredPayments.count + ' unverified payments');
   }
 
-  private static async checkInactiveAccounts(): Promise<void> {
+  public static async checkInactiveAccounts(): Promise<void> {
     try {
       const warningDays = 83;
       const deactivateDays = 90;
@@ -641,7 +641,7 @@ export class CronService {
     }
   }
 
-  private static async cleanup(): Promise<void> {
+  public static async cleanup(): Promise<void> {
     try {
       const count = await QueueService.cleanupProcessed(7);
       await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });

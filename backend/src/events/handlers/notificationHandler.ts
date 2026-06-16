@@ -8,11 +8,9 @@ export function registerNotificationHandlers(): void {
   eventBus.subscribeToAll(async (event: DomainEvent) => {
     const notification = await handleNotificationEvent(event);
     if (notification) {
-      try {
-        const io = getIO();
+      const io = getIO();
+      if (io) {
         io.to(`user:${event.userId}`).emit('notification:new', notification);
-      } catch {
-        // Socket.IO not initialized yet
       }
     }
   });

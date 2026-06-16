@@ -5,6 +5,19 @@ import { logger } from '../lib/logger';
 import { publishCommissionCharged } from '../events/publishers';
 import { calculateCommission } from './monetizationConfig';
 
+// FedaPay types
+interface FedaPayTransaction {
+  id: string;
+  status: string;
+  amount: number;
+  currency: string;
+  mode: string;
+  description?: string;
+  customer?: any;
+  url?: string;
+  created_at: string;
+}
+
 // ── Stripe ──
 export async function processStripePayment(amount: number, currency: string, paymentMethodId: string, description?: string) {
   try {
@@ -45,6 +58,79 @@ export async function processMobileMoney(provider: string, phone: string, amount
 
   logger.info(`MobileMoney: ${provider} payment initiated to ${phone} for ${amount} — awaiting provider webhook`);
   return { providerRef, status: 'PENDING', fee: Math.round(amount * 0.01), message: `Paiement ${provider} initié. Confirmez sur votre téléphone.` };
+}
+
+// ── FedaPay ──
+export async function processFedaPayPayment(params: {
+  amount: number;
+  currency?: string;
+  mode: string;
+  description?: string;
+  callbackUrl?: string;
+  customerPhone?: string;
+  customerName?: string;
+  customerEmail?: string;
+}): Promise<{ providerRef: string; status: string; fee: number; redirectUrl?: string; message?: string }> {
+  try {
+    const { FedaPay, Transaction } = await import('fedapay');
+
+    if (!config.FEDAPAY_SECRET_KEY) {
+      throw new AppError('FedaPay non configuré', 501);
+    }
+
+    FedaPay.setApiKey(config.FEDAPAY_SECRET_KEY);
+    FedaPay.setEnvironment('live');
+
+    const transaction = await Transaction.create({
+      description: params.description || 'Paiement AfriBiz',
+      amount: params.amount,
+      currency: { iso: params.currency || 'XOF' },
+      callback_url: params.callbackUrl || `${config.FRONTEND_URL}/payment/callback`,
+      mode: params.mode,
+      ...(params.customerPhone ? {
+        customer: {
+          phone: params.customerPhone,
+          name: params.customerName || 'Client AfriBiz',
+          email: params.customerEmail || undefined,
+        },
+      } : {}),
+    });
+
+    const tx = transaction as unknown as FedaPayTransaction;
+
+    logger.info(`FedaPay: Transaction ${tx.id} created with mode ${params.mode}, status: ${tx.status}`);
+
+    return {
+      providerRef: tx.id,
+      status: tx.status === 'approved' ? 'SUCCESS' : 'PENDING',
+      fee: Math.round(params.amount * 0.012), // ~1.2% FedaPay fee
+      redirectUrl: tx.url,
+      message: `Paiement FedaPay initié via ${params.mode}. ${tx.url ? 'Redirection en cours...' : 'Confirmez sur votre téléphone.'}`,
+    };
+  } catch (err: any) {
+    logger.error('FedaPay payment failed', { error: err.message });
+    if (err instanceof AppError) throw err;
+    throw new AppError(`Paiement FedaPay échoué: ${err.message}`, 400);
+  }
+}
+
+export async function verifyFedaPayPayment(transactionId: string): Promise<{ status: string; amount: number }> {
+  try {
+    const { FedaPay, Transaction } = await import('fedapay');
+    FedaPay.setApiKey(config.FEDAPAY_SECRET_KEY);
+    FedaPay.setEnvironment('live');
+
+    const transaction = await Transaction.retrieve(transactionId);
+    const tx = transaction as unknown as FedaPayTransaction;
+
+    return {
+      status: tx.status === 'approved' ? 'SUCCESS' : tx.status === 'canceled' ? 'FAILED' : 'PENDING',
+      amount: tx.amount,
+    };
+  } catch (err: any) {
+    logger.error('FedaPay verification failed', { error: err.message });
+    throw new AppError(`Vérification FedaPay échouée: ${err.message}`, 400);
+  }
 }
 
 // ── Save transaction ──

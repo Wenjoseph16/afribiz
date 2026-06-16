@@ -86,7 +86,7 @@ export class AuthService {
     // Envoyer l'email de vérification sans bloquer l'inscription en cas d'échec
     try {
       await this.sendEmailVerification(user.id, user.email, user.firstName);
-    } catch (emailError) {
+    } catch {
       logger.warn(`Failed to send verification email to ${user.email}, user was created successfully`);
       // L'utilisateur pourra renvoyer la vérification plus tard
     }

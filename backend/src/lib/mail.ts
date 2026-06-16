@@ -2,32 +2,7 @@ import nodemailer, { Transporter } from 'nodemailer';
 import { config } from '../config/env';
 import { logger } from './logger';
 
-// ============================================
-// Mail Service
-// Primary: SendGrid (via @sendgrid/mail)
-// Fallback: SMTP/Nodemailer
-// Dev: Logs only
-// ============================================
-
 let transporter: Transporter;
-let sendgridClient: any = null;
-let sendgridInitialized = false;
-
-async function getSendGridClient() {
-  if (!sendgridInitialized && config.SENDGRID_API_KEY) {
-    try {
-      const sgMail = (await import('@sendgrid/mail')).default;
-      sgMail.setApiKey(config.SENDGRID_API_KEY);
-      sendgridClient = sgMail;
-      sendgridInitialized = true;
-      logger.info('📧 SendGrid initialisé');
-    } catch (err) {
-      logger.warn(`⚠️ SendGrid non disponible: ${(err as Error).message}. Fallback SMTP.`);
-      sendgridInitialized = true; // Don't retry on every send
-    }
-  }
-  return sendgridClient;
-}
 
 const initializeMailer = () => {
   if (!config.SMTP_HOST) return;
@@ -42,43 +17,52 @@ const initializeMailer = () => {
   });
 };
 
-/**
- * Send email — tries SendGrid first, falls back to SMTP, logs in dev
- */
+async function sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
+  if (!config.RESEND_API_KEY) return false;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `${config.SMTP_FROM_NAME} <${config.SMTP_FROM}>`,
+        to: [to],
+        subject,
+        html,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      logger.warn(`Resend failed (${res.status}): ${err}`);
+      return false;
+    }
+    logger.info(`Email sent via Resend to ${to}`);
+    return true;
+  } catch (err) {
+    logger.warn(`Resend error: ${(err as Error).message}`);
+    return false;
+  }
+}
+
 export const sendEmail = async (
   to: string,
   subject: string,
   html: string
 ): Promise<void> => {
-  // Dev mode: log only
   if (config.NODE_ENV !== 'production') {
     logger.info(`[DEV EMAIL] To: ${to} | Subject: ${subject}`);
     logger.info(`[DEV EMAIL] Body preview: ${html.substring(0, 200)}...`);
     return;
   }
 
-  // Production: try SendGrid first
-  const sg = await getSendGridClient();
-  if (sg) {
-    try {
-      await sg.send({
-        to,
-        from: { email: config.SMTP_FROM, name: config.SMTP_FROM_NAME },
-        subject,
-        html,
-      });
-      logger.info(`📧 Email sent via SendGrid to ${to}`);
-      return;
-    } catch (err) {
-      logger.error(`📧 SendGrid failed for ${to}, falling back to SMTP:`, (err as Error).message);
-    }
-  }
+  if (await sendViaResend(to, subject, html)) return;
 
-  // Fallback: SMTP via Nodemailer
   try {
     if (!transporter) initializeMailer();
     if (!transporter) {
-      logger.warn(`📧 No SMTP configured, email to ${to} not sent`);
+      logger.warn(`No mail provider configured, email to ${to} not sent`);
       return;
     }
     await transporter.sendMail({
@@ -87,16 +71,12 @@ export const sendEmail = async (
       subject,
       html,
     });
-    logger.info(`📧 Email sent via SMTP to ${to}`);
+    logger.info(`Email sent via SMTP to ${to}`);
   } catch (error) {
-    logger.error(`📧 Failed to send email to ${to}:`, error);
-    // Ne pas bloquer le flux utilisateur
+    logger.error(`Failed to send email to ${to}:`, error);
   }
 };
 
-/**
- * Email templates — styled for African businesses
- */
 export const emailTemplates = {
   welcome: (name: string, verificationLink: string) => ({
     subject: 'Bienvenue sur AfriBiz - Vérifiez votre email',
@@ -120,7 +100,7 @@ export const emailTemplates = {
           <div class="container">
             <div class="card">
               <div class="header">
-                <h1>Bienvenue sur AfriBiz ! 🎉</h1>
+                <h1>Bienvenue sur AfriBiz !</h1>
               </div>
               <div class="content">
                 <p>Bonjour ${name},</p>

@@ -7,6 +7,7 @@ node_modules/
 build/
 dist/
 .next/
+backend/api/.build/
 out/
 
 # Misc
@@ -36,6 +37,7 @@ coverage/
 # Sensitive / Test data files
 *.json
 !package.json
+!package-lock.json
 !pnpm-workspace.yaml
 !tsconfig*.json
 !*.code-workspace

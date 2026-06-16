@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { useMyEmployees, useEmployeeRoles, useMyBusiness } from '@/features/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const SETTINGS_TABS = [
   { id: 'profile', label: 'Profil Business', icon: Building, desc: 'Informations publiques de votre entreprise' },

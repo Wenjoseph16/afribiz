@@ -33,6 +33,7 @@ export const config = {
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
 
   // Email Configuration
+  RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   SENDGRID_API_KEY: process.env.SENDGRID_API_KEY || '',
   SMTP_HOST: process.env.SMTP_HOST || 'smtp.mailtrap.io',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '2525', 10),
@@ -67,7 +68,11 @@ export const config = {
 
   // File Upload
   MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '5242880', 10),
-  UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',
+  UPLOAD_DIR: process.env.UPLOAD_DIR || (process.env.VERCEL ? '/tmp/uploads' : './uploads'),
+
+  // FedaPay Configuration
+  FEDAPAY_PUBLIC_KEY: process.env.FEDAPAY_PUBLIC_KEY || '',
+  FEDAPAY_SECRET_KEY: process.env.FEDAPAY_SECRET_KEY || '',
 
   // Stripe Configuration
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
@@ -77,5 +82,7 @@ export const config = {
 
   // Sentry
   SENTRY_DSN: process.env.SENTRY_DSN || '',
+  SENTRY_ORG: process.env.SENTRY_ORG || '',
+  SENTRY_PROJECT: process.env.SENTRY_PROJECT || '',
 };
 

@@ -500,7 +500,7 @@ export async function startTrial(moduleId: string, userId: string) {
           metadata: { moduleId, moduleName: module.name, businessId, isTrial: true, trialEndsAt },
         },
       });
-    } catch (e) {}
+    } catch (e) { /* empty - notification failure is non-blocking */ }
   }
 
   return {

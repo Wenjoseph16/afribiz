@@ -86,6 +86,18 @@ export default function EventDetailPage() {
   const [showPartnerForm, setShowPartnerForm] = useState(false);
   const [partnerForm, setPartnerForm] = useState<PartnerForm>({ name: '', logoUrl: '', website: '', isSponsor: false });
 
+  const participantList = Array.isArray(participants) ? participants : [];
+
+  const filteredParticipants = useMemo(() => {
+    let f = [...participantList];
+    if (searchParticipant) {
+      const q = searchParticipant.toLowerCase();
+      f = f.filter((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q) || p.phone?.includes(q));
+    }
+    if (filterStatus) f = f.filter((p: any) => p.status === filterStatus);
+    return f;
+  }, [participantList, searchParticipant, filterStatus]);
+
   if (!params?.id) return null;
 
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
@@ -141,22 +153,11 @@ export default function EventDetailPage() {
   };
 
   const ticketList = Array.isArray(tickets) ? tickets : [];
-  const participantList = Array.isArray(participants) ? participants : [];
   const scanList = Array.isArray(scans) ? scans : [];
   const promoList = Array.isArray(promos) ? promos : [];
   const galleryList = Array.isArray(gallery) ? gallery : [];
   const partnerList = Array.isArray(partners) ? partners : [];
   const stats = statsData || {};
-
-  const filteredParticipants = useMemo(() => {
-    let f = [...participantList];
-    if (searchParticipant) {
-      const q = searchParticipant.toLowerCase();
-      f = f.filter((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q) || p.phone?.includes(q));
-    }
-    if (filterStatus) f = f.filter((p: any) => p.status === filterStatus);
-    return f;
-  }, [participantList, searchParticipant, filterStatus]);
 
   const ticketsSold = stats?.totalTickets || ticketList.reduce((sum: number, t: any) => sum + (t.soldCount || 0), 0);
   const checkedIn = stats?.checkedIn || participantList.filter((p: any) => p.status === 'CHECKED_IN').length;
