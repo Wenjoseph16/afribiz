@@ -13,10 +13,56 @@ import {
   passwordNoSpecial,
 } from '../helpers';
 import { AppError } from '../../middlewares/errorHandler';
+import { hashPassword, comparePasswords, isValidPassword } from '../../lib/password';
+
+describe('Password Utilities', () => {
+  test('hashPassword: returns a hash string', async () => {
+    const hash = await hashPassword('TestPass123!');
+    expect(hash).toBeDefined();
+    expect(typeof hash).toBe('string');
+    expect(hash.length).toBeGreaterThan(20);
+  });
+
+  test('comparePasswords: matches correct password', async () => {
+    const password = 'TestPass123!';
+    const hash = await hashPassword(password);
+    const match = await comparePasswords(password, hash);
+    expect(match).toBe(true);
+  });
+
+  test('comparePasswords: rejects wrong password', async () => {
+    const hash = await hashPassword('TestPass123!');
+    const match = await comparePasswords('WrongPassword', hash);
+    expect(match).toBe(false);
+  });
+
+  test('isValidPassword: rejects weak password (< 8 chars)', () => {
+    expect(isValidPassword('Ab1!')).toBe(false);
+  });
+
+  test('isValidPassword: rejects password without uppercase', () => {
+    expect(isValidPassword('testpass123!')).toBe(false);
+  });
+
+  test('isValidPassword: accepts strong password', () => {
+    expect(isValidPassword('TestPass123!')).toBe(true);
+  });
+});
 
 describe('AuthService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset cached proxy methods to prevent cross-file mockResolvedValueOnce contamination
+    jest.spyOn(mockPrisma.user, 'findFirst').mockReset();
+    jest.spyOn(mockPrisma.user, 'create').mockReset();
+    jest.spyOn(mockPrisma.device, 'findFirst').mockReset();
+    jest.spyOn(mockPrisma.device, 'create').mockReset();
+    jest.spyOn(mockPrisma.session, 'create').mockReset();
+    jest.spyOn(mockPrisma.refreshToken, 'create').mockReset();
+    jest.spyOn(mockPrisma.emailVerification, 'create').mockReset();
+    jest.spyOn(mockPrisma.securityLog, 'create').mockReset();
+    jest.spyOn(mockPrisma.passwordReset, 'findFirst').mockReset();
+    jest.spyOn(mockPrisma.passwordReset, 'create').mockReset();
   });
 
   // ==========================================
@@ -66,6 +112,8 @@ describe('AuthService', () => {
       (mockPrisma.user.create as jest.Mock).mockResolvedValue(mockUser);
       // sendEmailVerification calls UserRepository.findById
       (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce(mockUser);
+      (mockPrisma.device.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (mockPrisma.device.create as jest.Mock).mockResolvedValue({ id: 'device-id' });
       (mockPrisma.session.create as jest.Mock).mockResolvedValue({ id: 'session-id' });
       (mockPrisma.refreshToken.create as jest.Mock).mockResolvedValue({});
       (mockPrisma.emailVerification.create as jest.Mock).mockResolvedValue({});
@@ -77,6 +125,44 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('user');
       expect(result.user.email).toBe('test@example.com');
+      expect(mockPrisma.session.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            ipAddress: '127.0.0.1',
+          }),
+        })
+      );
+    });
+
+    it('should pass ipAddress to session creation', async () => {
+      const mockUser = createMockUser();
+
+      // Replace the cached mock with a fresh one to avoid cross-test contamination
+      const freshFindFirst = jest
+        .fn()
+        .mockResolvedValueOnce(null) // 1er appel: emailExists
+        .mockResolvedValueOnce(null) // 2e appel: phoneExists
+        .mockResolvedValueOnce(mockUser); // 3e appel: findById
+      Object.assign(mockPrisma.user, { findFirst: freshFindFirst });
+
+      (mockPrisma.user.create as jest.Mock).mockResolvedValue(mockUser);
+      (mockPrisma.device.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockPrisma.device.create as jest.Mock).mockResolvedValue({ id: 'device-id' });
+      (mockPrisma.session.create as jest.Mock).mockResolvedValue({ id: 'session-id' });
+      (mockPrisma.refreshToken.create as jest.Mock).mockResolvedValue({});
+      (mockPrisma.emailVerification.create as jest.Mock).mockResolvedValue({});
+      (mockPrisma.securityLog.create as jest.Mock).mockResolvedValue({});
+
+      await AuthService.signup(validSignupPayload);
+
+      expect(mockPrisma.session.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            ipAddress: '127.0.0.1',
+            // Note: signup hardcodes userAgent: undefined, so we only check ipAddress
+          }),
+        })
+      );
     });
   });
 
@@ -140,9 +226,9 @@ describe('AuthService', () => {
         usedAt: null,
       });
 
-      await expect(
-        AuthService.resetPassword('valid-token', weakPassword)
-      ).rejects.toThrow(AppError);
+      await expect(AuthService.resetPassword('valid-token', weakPassword)).rejects.toThrow(
+        AppError
+      );
     });
   });
 });

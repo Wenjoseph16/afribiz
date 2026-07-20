@@ -7,7 +7,7 @@ import { UserRole } from '@prisma/client';
 /**
  * Creates a mock user object for testing
  */
-export const createMockUser = (overrides: Partial<any> = {}) => ({
+export const createMockUser = (overrides: Record<string, any> = {}) => ({
   id: 'test-user-id-12345',
   email: 'test@example.com',
   phone: '+22890123456',

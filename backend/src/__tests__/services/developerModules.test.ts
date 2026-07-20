@@ -1,123 +1,210 @@
 /**
- * Developer Services unit tests
+ * Developer Modules Service — unit tests for new functions
  */
 
-import { mockPrisma } from "../setup";
-import * as permissionsService from "../../services/developerPermissions";
-import * as licensesService from "../../services/developerLicenses";
-import * as apiService from "../../services/developerApi";
-import * as validationService from "../../services/developerValidation";
-import * as configService from "../../services/developerConfiguration";
-import * as activityService from "../../services/developerActivityLog";
-import { AppError } from "../../middlewares/errorHandler";
+import { mockPrisma } from '../setup';
+import * as modulesService from '../../services/developerModules';
+import { AppError } from '../../middlewares/errorHandler';
 
-jest.mock("../../repositories/developerRepository", () => ({
+jest.mock('../../repositories/developerRepository', () => ({
   DeveloperRepository: {
-    findByUserId: jest.fn().mockResolvedValue({ id: "dev-1", userId: "user-1" }),
+    findByUserId: jest.fn().mockResolvedValue({ id: 'dev-1', userId: 'user-1' }),
   },
 }));
 
-describe("Developer Services", () => {
-  beforeEach(() => { jest.clearAllMocks(); });
+jest.mock('../../services/monetizationConfig', () => ({
+  getMonetizationSettings: jest.fn().mockResolvedValue({ developerModuleCommissionRate: 0.2 }),
+}));
 
-  describe("PermissionsService", () => {
-    it("should add a permission", async () => {
-      (mockPrisma.developerModule.findFirst as jest.Mock).mockResolvedValue({
-        id: "module-1", developerId: "dev-1",
-      });
-      (mockPrisma.modulePermission.findUnique as jest.Mock).mockResolvedValue(null);
-      (mockPrisma.modulePermission.create as jest.Mock).mockResolvedValue({ id: "perm-1" });
+jest.mock('../../lib/logger', () => ({
+  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
+}));
 
-      const result = await permissionsService.addModulePermission("user-1", "module-1", {
-        resource: "PRODUCTS", accessLevel: "READ",
+describe('DeveloperModulesService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('getAvailableBalance', () => {
+    it('should calculate available balance from revenue minus payouts', async () => {
+      (mockPrisma.developerRevenue.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { netAmount: 100000 },
       });
-      expect(result).toHaveProperty("id");
+      (mockPrisma.developerPayout.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { amount: 30000 },
+      });
+
+      const result = await modulesService.getAvailableBalance('dev-1');
+      expect(result).toEqual({ available: 70000, earned: 100000, paid: 30000 });
     });
 
-    it("should reject duplicate", async () => {
-      (mockPrisma.developerModule.findFirst as jest.Mock).mockResolvedValue({
-        id: "module-1", developerId: "dev-1",
+    it('should handle zero revenue and payouts', async () => {
+      (mockPrisma.developerRevenue.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { netAmount: null },
       });
-      (mockPrisma.modulePermission.findUnique as jest.Mock).mockResolvedValue({ id: "existing" });
+      (mockPrisma.developerPayout.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { amount: null },
+      });
+
+      const result = await modulesService.getAvailableBalance('dev-1');
+      expect(result).toEqual({ available: 0, earned: 0, paid: 0 });
+    });
+  });
+
+  describe('requestPayout', () => {
+    it('should create a payout when balance is sufficient', async () => {
+      (mockPrisma.developerRevenue.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { netAmount: 100000 },
+      });
+      (mockPrisma.developerPayout.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { amount: 0 },
+      });
+      (mockPrisma.developerPayout.create as jest.Mock).mockResolvedValue({
+        id: 'payout-1',
+        amount: 50000,
+        status: 'PENDING',
+      });
+
+      const result = await modulesService.requestPayout('user-1', {
+        amount: 50000,
+        method: 'MOBILE_MONEY',
+      });
+
+      expect(result).toHaveProperty('id', 'payout-1');
+      expect(result.status).toBe('PENDING');
+    });
+
+    it('should throw when balance is insufficient', async () => {
+      (mockPrisma.developerRevenue.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { netAmount: 10000 },
+      });
+      (mockPrisma.developerPayout.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { amount: 0 },
+      });
 
       await expect(
-        permissionsService.addModulePermission("user-1", "module-1", { resource: "PRODUCTS", accessLevel: "READ" })
+        modulesService.requestPayout('user-1', { amount: 50000, method: 'BANK_TRANSFER' })
       ).rejects.toThrow(AppError);
     });
   });
 
-  describe("LicensesService", () => {
-    it("should create a license", async () => {
-      (mockPrisma.moduleLicense.findFirst as jest.Mock).mockResolvedValue(null);
-      (mockPrisma.moduleLicense.create as jest.Mock).mockResolvedValue({
-        id: "lic-1", licenseKey: "TEST-KEY", status: "PENDING",
+  describe('reinstallModule', () => {
+    it('should reinstall an uninstalled module', async () => {
+      const mockInstallation = {
+        id: 'inst-1',
+        moduleId: 'mod-1',
+        businessId: 'biz-1',
+        status: 'UNINSTALLED',
+        module: { isPublished: true },
+      };
+      (mockPrisma.developerModuleInstallation.findFirst as jest.Mock).mockResolvedValue(
+        mockInstallation
+      );
+      (mockPrisma.developerModuleVersion.findFirst as jest.Mock).mockResolvedValue({
+        id: 'ver-2',
+        version: '2.0.0',
       });
+      (mockPrisma.developerModuleInstallation.update as jest.Mock).mockResolvedValue({
+        ...mockInstallation,
+        status: 'ACTIVE',
+        currentVersionId: 'ver-2',
+      });
+      (mockPrisma.moduleConfiguration.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
 
-      const result = await licensesService.createLicense("module-1", "biz-1", { licenseType: "STANDARD" });
-      expect(result).toHaveProperty("licenseKey");
+      const result = await modulesService.reinstallModule('mod-1', 'biz-1', 'user-1');
+      expect(result.status).toBe('ACTIVE');
+      expect(mockPrisma.developerModuleInstallation.update).toHaveBeenCalled();
     });
 
-    it("should reject duplicate", async () => {
-      (mockPrisma.moduleLicense.findFirst as jest.Mock).mockResolvedValue({ id: "existing", status: "ACTIVE" });
-      await expect(
-        licensesService.createLicense("module-1", "biz-1", { licenseType: "STANDARD" })
-      ).rejects.toThrow(AppError);
+    it('should throw if no uninstalled installation exists', async () => {
+      (mockPrisma.developerModuleInstallation.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(modulesService.reinstallModule('mod-1', 'biz-1', 'user-1')).rejects.toThrow(
+        AppError
+      );
     });
   });
 
-  describe("ApiService", () => {
-    it("should create an API key", async () => {
-      (mockPrisma.developerApiKey.create as jest.Mock).mockResolvedValue({
-        id: "key-1", name: "Test", key: "key...", isActive: true,
+  describe('renewModuleSubscription', () => {
+    it('should renew an active subscription', async () => {
+      (mockPrisma as any).developerModuleSubscription.findUnique = jest.fn().mockResolvedValue({
+        id: 'sub-1',
+        status: 'ACTIVE',
+        period: 'MONTHLY',
+        autoRenew: true,
       });
-      const result = await apiService.createApiKey("user-1", { name: "Test" });
-      expect(result).toHaveProperty("key");
+      (mockPrisma as any).developerModuleSubscription.update = jest.fn().mockResolvedValue({
+        id: 'sub-1',
+        status: 'ACTIVE',
+        nextBillingAt: new Date(),
+      });
+
+      const result = await modulesService.renewModuleSubscription('sub-1');
+      expect(result).toBeDefined();
+      expect((mockPrisma as any).developerModuleSubscription.update).toHaveBeenCalled();
+    });
+
+    it('should throw if subscription not active', async () => {
+      (mockPrisma as any).developerModuleSubscription.findUnique = jest.fn().mockResolvedValue({
+        id: 'sub-1',
+        status: 'EXPIRED',
+      });
+
+      await expect(modulesService.renewModuleSubscription('sub-1')).rejects.toThrow(AppError);
     });
   });
 
-  describe("ValidationService", () => {
-    it("should submit for validation", async () => {
-      (mockPrisma.developerModule.findFirst as jest.Mock).mockResolvedValue({
-        id: "module-1", developerId: "dev-1",
+  describe('convertTrialToPaid', () => {
+    it('should convert an expired trial installation', async () => {
+      const mockInstallation = {
+        id: 'inst-1',
+        moduleId: 'mod-1',
+        businessId: 'biz-1',
+        status: 'EXPIRED',
+        module: { pricingType: 'MONTHLY', currency: 'FCFA', price: 50000 },
+      };
+      (mockPrisma.developerModuleInstallation.findUnique as jest.Mock).mockResolvedValue(
+        mockInstallation
+      );
+      (mockPrisma.developerModuleInstallation.update as jest.Mock).mockResolvedValue({
+        ...mockInstallation,
+        status: 'ACTIVE',
       });
-      (mockPrisma.developerModuleVersion.findFirst as jest.Mock).mockResolvedValue({ id: "ver-1" });
-      (mockPrisma.moduleValidation.create as jest.Mock).mockResolvedValue({
-        id: "val-1", status: "PENDING", checks: [],
-      });
-      (mockPrisma.developerModule.update as jest.Mock).mockResolvedValue({});
 
-      const result = await validationService.submitForValidation("user-1", "module-1");
-      expect(result.status).toBe("PENDING");
+      const result = await modulesService.convertTrialToPaid('inst-1', 50000);
+      expect(result.success).toBe(true);
+    });
+
+    it('should throw if installation not expired', async () => {
+      (mockPrisma.developerModuleInstallation.findUnique as jest.Mock).mockResolvedValue({
+        id: 'inst-1',
+        status: 'ACTIVE',
+      });
+
+      await expect(modulesService.convertTrialToPaid('inst-1', 50000)).rejects.toThrow(AppError);
     });
   });
 
-  describe("ConfigurationService", () => {
-    it("should save configuration", async () => {
-      (mockPrisma.moduleConfiguration.findUnique as jest.Mock).mockResolvedValue(null);
-      (mockPrisma.moduleConfiguration.create as jest.Mock).mockResolvedValue({ id: "cfg-1", settings: {} });
-
-      const result = await configService.saveModuleConfiguration("module-1", "biz-1", "inst-1", {});
-      expect(result).toHaveProperty("id");
-    });
-  });
-
-  describe("ActivityLogService", () => {
-    it("should log activity", async () => {
-      (mockPrisma.moduleActivityLog.create as jest.Mock).mockResolvedValue({
-        id: "act-1", activityType: "MODULE_INSTALLED",
+  describe('approvePayout', () => {
+    it('should approve a pending payout', async () => {
+      (mockPrisma.developerPayout.findUnique as jest.Mock).mockResolvedValue({
+        id: 'payout-1',
+        developerId: 'dev-1',
+        amount: 50000,
+        currency: 'FCFA',
+        status: 'PENDING',
+      });
+      (mockPrisma.developerProfile.findUnique as jest.Mock).mockResolvedValue({
+        id: 'dev-1',
+        userId: 'user-1',
+        companyName: 'DevCo',
       });
 
-      const result = await activityService.logActivity("user-1", "module-1", "MODULE_INSTALLED", {});
-      expect(result).toHaveProperty("id");
-    });
-
-    it("should return stats", async () => {
-      (mockPrisma.moduleActivityLog.count as jest.Mock).mockResolvedValue(10);
-      (mockPrisma.moduleActivityLog.groupBy as jest.Mock).mockResolvedValue([]);
-      (mockPrisma.moduleActivityLog.findMany as jest.Mock).mockResolvedValue([]);
-
-      const result = await activityService.getActivityStats("module-1");
-      expect(result.total).toBe(10);
+      const result = await modulesService.approvePayout('payout-1', 'admin-1');
+      expect(result.success).toBe(true);
+      expect(mockPrisma.developerPayout.findUnique).toHaveBeenCalledWith({
+        where: { id: 'payout-1' },
+      });
     });
   });
 });

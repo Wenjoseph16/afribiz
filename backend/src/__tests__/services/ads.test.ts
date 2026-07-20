@@ -2,7 +2,13 @@ import { mockPrisma } from '../setup';
 import * as adsService from '../../services/ads';
 import { AppError } from '../../middlewares/errorHandler';
 
-const mockBusiness = { id: 'biz-1', name: 'Test Business', slug: 'test-biz', logo: null, ownerId: 'user-1' };
+const mockBusiness = {
+  id: 'biz-1',
+  name: 'Test Business',
+  slug: 'test-biz',
+  logo: null,
+  ownerId: 'user-1',
+};
 
 const mockCampaign = {
   id: 'camp-1',
@@ -56,11 +62,19 @@ const mockPackage = {
 };
 
 describe('AdsService', () => {
-  beforeEach(() => { jest.clearAllMocks(); });
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   describe('getActiveAdCreatives', () => {
     it('should return shuffled active creatives filtered by page', async () => {
-      const mockCreative = { id: 'cr-1', campaignId: 'camp-1', placementPage: 'MARKETPLACE', isActive: true, campaign: { status: 'ACTIVE', business: mockBusiness } };
+      const mockCreative = {
+        id: 'cr-1',
+        campaignId: 'camp-1',
+        placementPage: 'MARKETPLACE',
+        isActive: true,
+        campaign: { status: 'ACTIVE', business: mockBusiness },
+      };
       (mockPrisma.adCreative.findMany as jest.Mock).mockResolvedValue([mockCreative]);
 
       const result = await adsService.getActiveAdCreatives('MARKETPLACE');
@@ -87,7 +101,10 @@ describe('AdsService', () => {
   describe('createAdCampaign', () => {
     it('should create a campaign with creatives for BUSINESS', async () => {
       (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue(mockBusiness);
-      (mockPrisma.adCampaign.create as jest.Mock).mockResolvedValue({ ...mockCampaign, creatives: [{}] });
+      (mockPrisma.adCampaign.create as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        creatives: [{}],
+      });
 
       const result = await adsService.createAdCampaign('user-1', {
         advertiserType: 'BUSINESS',
@@ -95,10 +112,17 @@ describe('AdsService', () => {
         name: 'New Campaign',
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 86400000).toISOString(),
-        creatives: [{
-          placementPage: 'MARKETPLACE', placementPosition: 'BANNER', format: 'BANNER_HORIZONTAL',
-          mainImage: 'img.jpg', adText: 'Test ad', destinationUrl: 'https://example.com', cta: 'Acheter',
-        }],
+        creatives: [
+          {
+            placementPage: 'MARKETPLACE',
+            placementPosition: 'BANNER',
+            format: 'BANNER_HORIZONTAL',
+            mainImage: 'img.jpg',
+            adText: 'Test ad',
+            destinationUrl: 'https://example.com',
+            cta: 'Acheter',
+          },
+        ],
       });
 
       expect(result).toHaveProperty('creatives');
@@ -134,23 +158,40 @@ describe('AdsService', () => {
 
   describe('validateAdCampaign', () => {
     it('should validate and set status to ACTIVE if startDate is past', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'PENDING', startDate: new Date(Date.now() - 1000) });
-      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'ACTIVE' });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'PENDING',
+        startDate: new Date(Date.now() - 1000),
+      });
+      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'ACTIVE',
+      });
 
       const result = await adsService.validateAdCampaign('camp-1', 'admin-1');
       expect(result.status).toBe('ACTIVE');
     });
 
     it('should validate and set status to SCHEDULED if startDate is future', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'PENDING', startDate: new Date(Date.now() + 86400000) });
-      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'SCHEDULED' });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'PENDING',
+        startDate: new Date(Date.now() + 86400000),
+      });
+      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'SCHEDULED',
+      });
 
       const result = await adsService.validateAdCampaign('camp-1', 'admin-1');
       expect(result.status).toBe('SCHEDULED');
     });
 
     it('should reject validation if not PENDING', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'ACTIVE' });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'ACTIVE',
+      });
       await expect(adsService.validateAdCampaign('camp-1', 'admin-1')).rejects.toThrow(AppError);
     });
   });
@@ -158,7 +199,10 @@ describe('AdsService', () => {
   describe('rejectAdCampaign', () => {
     it('should reject with reason', async () => {
       (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue(mockCampaign);
-      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'REJECTED' });
+      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'REJECTED',
+      });
 
       const result = await adsService.rejectAdCampaign('camp-1', 'Contenu inapproprié');
       expect(result.status).toBe('REJECTED');
@@ -172,7 +216,10 @@ describe('AdsService', () => {
   describe('suspendAdCampaign', () => {
     it('should suspend with reason', async () => {
       (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue(mockCampaign);
-      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'SUSPENDED' });
+      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'SUSPENDED',
+      });
 
       const result = await adsService.suspendAdCampaign('camp-1', 'Violation des règles');
       expect(result.status).toBe('SUSPENDED');
@@ -181,46 +228,72 @@ describe('AdsService', () => {
 
   describe('pauseAdCampaign', () => {
     it('should pause an active campaign', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'ACTIVE', business: { ownerId: 'user-1' } });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'ACTIVE',
+        business: { ownerId: 'user-1' },
+      });
       (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ ownerId: 'user-1' });
-      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'PAUSED' });
+      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'PAUSED',
+      });
 
       const result = await adsService.pauseAdCampaign('camp-1', 'user-1');
       expect(result.status).toBe('PAUSED');
     });
 
     it('should reject pause if not owner', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'ACTIVE', business: { ownerId: 'user-1' } });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'ACTIVE',
+        business: { ownerId: 'user-1' },
+      });
       (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ ownerId: 'other-user' });
 
       await expect(adsService.pauseAdCampaign('camp-1', 'user-1')).rejects.toThrow(AppError);
     });
 
     it('should reject pause if not ACTIVE', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'PENDING' });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'PENDING',
+      });
       await expect(adsService.pauseAdCampaign('camp-1', 'user-1')).rejects.toThrow(AppError);
     });
   });
 
   describe('resumeAdCampaign', () => {
     it('should resume a paused campaign', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'PAUSED' });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'PAUSED',
+      });
       (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ ownerId: 'user-1' });
-      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'ACTIVE' });
+      (mockPrisma.adCampaign.update as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'ACTIVE',
+      });
 
       const result = await adsService.resumeAdCampaign('camp-1', 'user-1');
       expect(result.status).toBe('ACTIVE');
     });
 
     it('should reject resume if not PAUSED', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'ACTIVE' });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'ACTIVE',
+      });
       await expect(adsService.resumeAdCampaign('camp-1', 'user-1')).rejects.toThrow(AppError);
     });
   });
 
   describe('deleteAdCampaign', () => {
     it('should delete a deletable campaign', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'PENDING' });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'PENDING',
+      });
       (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ ownerId: 'user-1' });
       (mockPrisma.adCampaign.delete as jest.Mock).mockResolvedValue({});
 
@@ -228,7 +301,10 @@ describe('AdsService', () => {
     });
 
     it('should reject delete for ACTIVE campaign', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, status: 'ACTIVE' });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        status: 'ACTIVE',
+      });
       await expect(adsService.deleteAdCampaign('camp-1', 'user-1')).rejects.toThrow(AppError);
     });
   });
@@ -238,11 +314,16 @@ describe('AdsService', () => {
       (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue(mockCampaign);
       (mockPrisma.adImpression.create as jest.Mock).mockResolvedValue({ id: 'imp-1' });
 
-      await adsService.trackImpression('camp-1', { creativeId: 'cr-1', page: 'marketplace', position: 'banner' });
+      await adsService.trackImpression('camp-1', {
+        creativeId: 'cr-1',
+        page: 'marketplace',
+        position: 'banner',
+      });
       expect(mockPrisma.adImpression.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            campaignId: 'camp-1', creativeId: 'cr-1',
+            campaignId: 'camp-1',
+            creativeId: 'cr-1',
           }),
         })
       );
@@ -268,9 +349,20 @@ describe('AdsService', () => {
 
   describe('generateInvoice', () => {
     it('should generate invoice from campaign budget', async () => {
-      const campaignWithBudget = { ...mockCampaign, budget: { toNumber: () => 15000 }, package: null, invoice: null };
+      const campaignWithBudget = {
+        ...mockCampaign,
+        budget: { toNumber: () => 15000 },
+        package: null,
+        invoice: null,
+      };
       (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue(campaignWithBudget);
-      (mockPrisma.adInvoice.create as jest.Mock).mockResolvedValue({ id: 'inv-1', number: 'INV-ADS-...', amount: 15000, currency: 'FCFA', status: 'PENDING' });
+      (mockPrisma.adInvoice.create as jest.Mock).mockResolvedValue({
+        id: 'inv-1',
+        number: 'INV-ADS-...',
+        amount: 15000,
+        currency: 'FCFA',
+        status: 'PENDING',
+      });
 
       const result = await adsService.generateInvoice('camp-1');
       expect(result).toHaveProperty('id');
@@ -278,7 +370,12 @@ describe('AdsService', () => {
     });
 
     it('should generate invoice from package price if no budget', async () => {
-      const campaignWithPackage = { ...mockCampaign, budget: null, package: { price: { toNumber: () => 5000 }, durationHours: 48, name: 'Standard' }, invoice: null };
+      const campaignWithPackage = {
+        ...mockCampaign,
+        budget: null,
+        package: { price: { toNumber: () => 5000 }, durationHours: 48, name: 'Standard' },
+        invoice: null,
+      };
       (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue(campaignWithPackage);
       (mockPrisma.adInvoice.create as jest.Mock).mockResolvedValue({ id: 'inv-2', amount: 5000 });
 
@@ -287,7 +384,10 @@ describe('AdsService', () => {
     });
 
     it('should throw if invoice already exists', async () => {
-      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({ ...mockCampaign, invoice: { id: 'existing' } });
+      (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
+        ...mockCampaign,
+        invoice: { id: 'existing' },
+      });
       await expect(adsService.generateInvoice('camp-1')).rejects.toThrow(AppError);
     });
 
@@ -300,11 +400,16 @@ describe('AdsService', () => {
   describe('getAdStats', () => {
     it('should return computed stats', async () => {
       (mockPrisma.adCampaign.findUnique as jest.Mock).mockResolvedValue({
-        ...mockCampaign, budget: { toNumber: () => 50000 },
+        ...mockCampaign,
+        budget: { toNumber: () => 50000 },
         _count: { impressions: 1000, clicks: 50, conversions: 5 },
       });
-      (mockPrisma.adImpression.aggregate as jest.Mock).mockResolvedValue({ _sum: { cost: { toNumber: () => 10000 } } });
-      (mockPrisma.adClick.aggregate as jest.Mock).mockResolvedValue({ _sum: { cost: { toNumber: () => 5000 } } });
+      (mockPrisma.adImpression.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { cost: { toNumber: () => 10000 } },
+      });
+      (mockPrisma.adClick.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { cost: { toNumber: () => 5000 } },
+      });
 
       const stats = await adsService.getAdStats('camp-1');
       expect(stats.impressions).toBe(1000);
@@ -316,12 +421,18 @@ describe('AdsService', () => {
 
   describe('getAdRevenue', () => {
     it('should return revenue aggregation', async () => {
-      (mockPrisma.adInvoice.aggregate as jest.Mock).mockResolvedValue({ _sum: { amount: { toNumber: () => 100000 } } });
+      (mockPrisma.adInvoice.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { amount: { toNumber: () => 100000 } },
+      });
       (mockPrisma.adInvoice.findMany as jest.Mock).mockResolvedValue([
         { amount: { toNumber: () => 50000 }, status: 'PENDING', issuedAt: new Date() },
       ]);
-      (mockPrisma.adImpression.aggregate as jest.Mock).mockResolvedValue({ _sum: { cost: { toNumber: () => 20000 } } });
-      (mockPrisma.adClick.aggregate as jest.Mock).mockResolvedValue({ _sum: { cost: { toNumber: () => 10000 } } });
+      (mockPrisma.adImpression.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { cost: { toNumber: () => 20000 } },
+      });
+      (mockPrisma.adClick.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { cost: { toNumber: () => 10000 } },
+      });
 
       const revenue = await adsService.getAdRevenue();
       expect(revenue.totalRevenue).toBe(100000);
@@ -367,13 +478,19 @@ describe('AdsService', () => {
       (mockPrisma.adPackage.findUnique as jest.Mock).mockResolvedValue(null);
       (mockPrisma.adPackage.create as jest.Mock).mockResolvedValue(mockPackage);
 
-      const result = await adsService.createAdPackage({ name: 'Standard', slug: 'standard', price: 5000 });
+      const result = await adsService.createAdPackage({
+        name: 'Standard',
+        slug: 'standard',
+        price: 5000,
+      });
       expect(result.slug).toBe('standard');
     });
 
     it('should reject duplicate slug', async () => {
       (mockPrisma.adPackage.findUnique as jest.Mock).mockResolvedValue(mockPackage);
-      await expect(adsService.createAdPackage({ name: 'Standard', slug: 'standard' })).rejects.toThrow(AppError);
+      await expect(
+        adsService.createAdPackage({ name: 'Standard', slug: 'standard' })
+      ).rejects.toThrow(AppError);
     });
   });
 
@@ -417,8 +534,19 @@ describe('AdsService', () => {
     it('should return aggregated stats for BUSINESS', async () => {
       (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue(mockBusiness);
       (mockPrisma.adCampaign.findMany as jest.Mock).mockResolvedValue([
-        { ...mockCampaign, status: 'ACTIVE', budget: { toNumber: () => 50000 }, _count: { impressions: 500, clicks: 25, conversions: 2 } },
-        { ...mockCampaign, id: 'camp-2', status: 'COMPLETED', budget: { toNumber: () => 30000 }, _count: { impressions: 300, clicks: 10, conversions: 1 } },
+        {
+          ...mockCampaign,
+          status: 'ACTIVE',
+          budget: { toNumber: () => 50000 },
+          _count: { impressions: 500, clicks: 25, conversions: 2 },
+        },
+        {
+          ...mockCampaign,
+          id: 'camp-2',
+          status: 'COMPLETED',
+          budget: { toNumber: () => 30000 },
+          _count: { impressions: 300, clicks: 10, conversions: 1 },
+        },
       ]);
 
       const stats = await adsService.getAdvertiserStats('user-1', 'BUSINESS');

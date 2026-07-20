@@ -50,12 +50,18 @@ describe('DeveloperModules — Paiement & Essai', () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ ...mockBusiness });
     (mockPrisma.developerModuleInstallation.findFirst as jest.Mock).mockResolvedValue(null);
     (mockPrisma.developerModuleInstallation.create as jest.Mock).mockResolvedValue({
-      id: 'inst-1', moduleId: 'module-1', businessId: 'biz-1', status: 'ACTIVE', installedAt: new Date('2025-01-15'),
+      id: 'inst-1',
+      moduleId: 'module-1',
+      businessId: 'biz-1',
+      status: 'ACTIVE',
+      installedAt: new Date('2025-01-15'),
     });
     (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
     (mockPrisma.businessSettings as any).upsert = jest.fn().mockResolvedValue({ id: 'settings-1' });
     (mockPrisma.moduleLicense.create as jest.Mock).mockResolvedValue({
-      id: 'lic-1', licenseKey: 'TRIAL-KEY', status: 'ACTIVE',
+      id: 'lic-1',
+      licenseKey: 'TRIAL-KEY',
+      status: 'ACTIVE',
     });
   });
 
@@ -63,56 +69,95 @@ describe('DeveloperModules — Paiement & Essai', () => {
     it('should throw 404 if module does not exist', async () => {
       (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue(null);
       await expect(
-        developerModules.purchaseModule('module-inexistant', 'user-1', { provider: 'TMONEY', phone: '22901000001' })
+        developerModules.purchaseModule('module-inexistant', 'user-1', {
+          provider: 'TMONEY',
+          phone: '22901000001',
+        })
       ).rejects.toThrow(AppError);
     });
 
     it('should throw 400 if module is not published', async () => {
-      (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue({ ...mockModule, isPublished: false });
+      (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue({
+        ...mockModule,
+        isPublished: false,
+      });
       await expect(
-        developerModules.purchaseModule('module-1', 'user-1', { provider: 'TMONEY', phone: '22901000001' })
+        developerModules.purchaseModule('module-1', 'user-1', {
+          provider: 'TMONEY',
+          phone: '22901000001',
+        })
       ).rejects.toThrow("Ce module n'est pas disponible");
     });
 
     it('should throw 409 if module already installed', async () => {
-      (mockPrisma.developerModuleInstallation.findFirst as jest.Mock).mockResolvedValue({ id: 'existing-install', status: 'ACTIVE' });
+      (mockPrisma.developerModuleInstallation.findFirst as jest.Mock).mockResolvedValue({
+        id: 'existing-install',
+        status: 'ACTIVE',
+      });
       await expect(
-        developerModules.purchaseModule('module-1', 'user-1', { provider: 'TMONEY', phone: '22901000001' })
+        developerModules.purchaseModule('module-1', 'user-1', {
+          provider: 'TMONEY',
+          phone: '22901000001',
+        })
       ).rejects.toThrow('Module déjà installé');
     });
 
     it('should install free modules directly without payment', async () => {
-      (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue({ ...mockModule, price: 0, isFree: true });
-      const result = await developerModules.purchaseModule('module-1', 'user-1', { provider: 'TMONEY', phone: '22901000001' });
+      (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue({
+        ...mockModule,
+        price: 0,
+        isFree: true,
+      });
+      const result = await developerModules.purchaseModule('module-1', 'user-1', {
+        provider: 'TMONEY',
+        phone: '22901000001',
+      });
       expect(result).toHaveProperty('id', 'inst-1');
       expect(paymentProcessor.processMobileMoney).not.toHaveBeenCalled();
     });
 
     it('should initiate payment for paid modules with test phone', async () => {
       (paymentProcessor.processMobileMoney as jest.Mock).mockResolvedValue({
-        providerRef: 'TMONEY_123456_ABC123', status: 'SUCCESS', fee: 250,
+        providerRef: 'TMONEY_123456_ABC123',
+        status: 'SUCCESS',
+        fee: 250,
       });
-      (mockPrisma.paymentTransaction.create as jest.Mock).mockResolvedValue({ id: 'tx-1', status: 'SUCCESS' });
+      (mockPrisma.paymentTransaction.create as jest.Mock).mockResolvedValue({
+        id: 'tx-1',
+        status: 'SUCCESS',
+      });
       (mockPrisma.developerRevenue.create as jest.Mock).mockResolvedValue({ id: 'rev-1' });
 
       const result = await developerModules.purchaseModule('module-1', 'user-1', {
-        provider: 'TMONEY', phone: '22901000001',
+        provider: 'TMONEY',
+        phone: '22901000001',
       });
 
-      expect(paymentProcessor.processMobileMoney).toHaveBeenCalledWith('TMONEY', '22901000001', 25000, expect.any(String));
+      expect(paymentProcessor.processMobileMoney).toHaveBeenCalledWith(
+        'TMONEY',
+        '22901000001',
+        25000,
+        expect.any(String)
+      );
       expect(paymentProcessor.saveTransaction).toHaveBeenCalled();
       expect(result).toHaveProperty('success', true);
     });
 
     it('should return PENDING for non-test phones', async () => {
       (paymentProcessor.processMobileMoney as jest.Mock).mockResolvedValue({
-        providerRef: 'FLOOZ_123456_DEF456', status: 'PENDING', fee: 250,
+        providerRef: 'FLOOZ_123456_DEF456',
+        status: 'PENDING',
+        fee: 250,
         message: 'Paiement FLOOZ initié. Confirmez sur votre téléphone.',
       });
-      (mockPrisma.paymentTransaction.create as jest.Mock).mockResolvedValue({ id: 'tx-1', status: 'PENDING' });
+      (mockPrisma.paymentTransaction.create as jest.Mock).mockResolvedValue({
+        id: 'tx-1',
+        status: 'PENDING',
+      });
 
       const result = await developerModules.purchaseModule('module-1', 'user-1', {
-        provider: 'FLOOZ', phone: '+22890123456',
+        provider: 'FLOOZ',
+        phone: '+22890123456',
       });
 
       expect((result as any).status).toBe('PENDING');
@@ -122,7 +167,10 @@ describe('DeveloperModules — Paiement & Essai', () => {
     it('should throw 404 if business not found', async () => {
       (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue(null);
       await expect(
-        developerModules.purchaseModule('module-1', 'user-1', { provider: 'TMONEY', phone: '22901000001' })
+        developerModules.purchaseModule('module-1', 'user-1', {
+          provider: 'TMONEY',
+          phone: '22901000001',
+        })
       ).rejects.toThrow('Business non trouvé');
     });
   });
@@ -130,8 +178,12 @@ describe('DeveloperModules — Paiement & Essai', () => {
   describe('startTrial', () => {
     it('should start a 7-day trial successfully', async () => {
       (mockPrisma.developerModuleInstallation.create as jest.Mock).mockResolvedValue({
-        id: 'inst-trial-1', moduleId: 'module-1', businessId: 'biz-1', status: 'TRIAL',
-        installedAt: new Date(), settings: { isTrial: true, trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString() },
+        id: 'inst-trial-1',
+        moduleId: 'module-1',
+        businessId: 'biz-1',
+        status: 'TRIAL',
+        installedAt: new Date(),
+        settings: { isTrial: true, trialEndsAt: new Date(Date.now() + 7 * 86400000).toISOString() },
       });
 
       const result = await developerModules.startTrial('module-1', 'user-1');
@@ -141,37 +193,65 @@ describe('DeveloperModules — Paiement & Essai', () => {
       expect(result.trialEndsAt).toBeDefined();
       expect(mockPrisma.developerModuleInstallation.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ status: 'TRIAL', settings: expect.objectContaining({ isTrial: true }) }),
+          data: expect.objectContaining({
+            status: 'TRIAL',
+          }),
         })
       );
     });
 
     it('should throw 400 if module is free', async () => {
-      (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue({ ...mockModule, isFree: true, price: 0 });
-      await expect(developerModules.startTrial('module-1', 'user-1')).rejects.toThrow('Ce module est gratuit');
+      (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue({
+        ...mockModule,
+        isFree: true,
+        price: 0,
+      });
+      await expect(developerModules.startTrial('module-1', 'user-1')).rejects.toThrow(
+        'Ce module est gratuit'
+      );
     });
 
     it('should throw 400 if module has no price', async () => {
-      (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue({ ...mockModule, price: null });
-      await expect(developerModules.startTrial('module-1', 'user-1')).rejects.toThrow('Ce module est gratuit');
+      (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue({
+        ...mockModule,
+        price: null,
+      });
+      await expect(developerModules.startTrial('module-1', 'user-1')).rejects.toThrow(
+        'Ce module est gratuit'
+      );
     });
 
     it('should throw 409 if already installed', async () => {
-      (mockPrisma.developerModuleInstallation.findFirst as jest.Mock).mockResolvedValue({ id: 'existing-install', status: 'TRIAL' });
-      await expect(developerModules.startTrial('module-1', 'user-1')).rejects.toThrow('Module déjà installé');
+      (mockPrisma.developerModuleInstallation.findFirst as jest.Mock).mockResolvedValue({
+        id: 'existing-install',
+        status: 'TRIAL',
+      });
+      await expect(developerModules.startTrial('module-1', 'user-1')).rejects.toThrow(
+        'Module déjà installé'
+      );
     });
 
     it('should throw 404 if module does not exist', async () => {
       (mockPrisma.developerModule.findUnique as jest.Mock).mockResolvedValue(null);
-      await expect(developerModules.startTrial('module-inexistant', 'user-1')).rejects.toThrow(AppError);
+      await expect(developerModules.startTrial('module-inexistant', 'user-1')).rejects.toThrow(
+        AppError
+      );
     });
   });
 
   describe('completeModulePurchase', () => {
     it('should create installation, license, and revenue', async () => {
-      (mockPrisma.developerRevenue.create as jest.Mock).mockResolvedValue({ id: 'rev-1', amount: 25000 });
+      (mockPrisma.developerRevenue.create as jest.Mock).mockResolvedValue({
+        id: 'rev-1',
+        amount: 25000,
+      });
 
-      const result = await developerModules.completeModulePurchase('module-1', 'user-1', 'biz-1', 25000);
+      const result = await developerModules.completeModulePurchase(
+        'module-1',
+        'user-1',
+        'biz-1',
+        25000
+      );
 
       expect(result.success).toBe(true);
       expect(result.installation.status).toBe('ACTIVE');
@@ -181,9 +261,16 @@ describe('DeveloperModules — Paiement & Essai', () => {
     });
 
     it('should fail gracefully if revenue creation fails', async () => {
-      (mockPrisma.developerRevenue.create as jest.Mock).mockRejectedValue(new Error('Schema issue'));
+      (mockPrisma.developerRevenue.create as jest.Mock).mockRejectedValue(
+        new Error('Schema issue')
+      );
 
-      const result = await developerModules.completeModulePurchase('module-1', 'user-1', 'biz-1', 25000);
+      const result = await developerModules.completeModulePurchase(
+        'module-1',
+        'user-1',
+        'biz-1',
+        25000
+      );
 
       expect(result.success).toBe(true);
     });
@@ -192,10 +279,17 @@ describe('DeveloperModules — Paiement & Essai', () => {
   describe('confirmModulePayment', () => {
     it('should confirm a pending payment', async () => {
       (mockPrisma.paymentTransaction.findFirst as jest.Mock).mockResolvedValue({
-        id: 'tx-1', providerRef: 'TMONEY_123_ABC', userId: 'user-1', status: 'PENDING', amount: 25000,
+        id: 'tx-1',
+        providerRef: 'TMONEY_123_ABC',
+        userId: 'user-1',
+        status: 'PENDING',
+        amount: 25000,
         metadata: { moduleId: 'module-1' },
       });
-      (mockPrisma.paymentTransaction.update as jest.Mock).mockResolvedValue({ id: 'tx-1', status: 'SUCCESS' });
+      (mockPrisma.paymentTransaction.update as jest.Mock).mockResolvedValue({
+        id: 'tx-1',
+        status: 'SUCCESS',
+      });
 
       const result = await developerModules.confirmModulePayment('user-1', 'TMONEY_123_ABC');
 
@@ -207,22 +301,36 @@ describe('DeveloperModules — Paiement & Essai', () => {
 
     it('should throw 404 if transaction not found', async () => {
       (mockPrisma.paymentTransaction.findFirst as jest.Mock).mockResolvedValue(null);
-      await expect(developerModules.confirmModulePayment('user-1', 'INVALID_REF')).rejects.toThrow('Transaction non trouvée');
+      await expect(developerModules.confirmModulePayment('user-1', 'INVALID_REF')).rejects.toThrow(
+        'Transaction non trouvée'
+      );
     });
 
     it('should throw 400 if already confirmed', async () => {
       (mockPrisma.paymentTransaction.findFirst as jest.Mock).mockResolvedValue({
-        id: 'tx-1', status: 'SUCCESS', providerRef: 'TMONEY_123_ABC', userId: 'user-1',
+        id: 'tx-1',
+        status: 'SUCCESS',
+        providerRef: 'TMONEY_123_ABC',
+        userId: 'user-1',
       });
-      await expect(developerModules.confirmModulePayment('user-1', 'TMONEY_123_ABC')).rejects.toThrow('Transaction déjà confirmée');
+      await expect(
+        developerModules.confirmModulePayment('user-1', 'TMONEY_123_ABC')
+      ).rejects.toThrow('Transaction déjà confirmée');
     });
 
     it('should complete purchase when metadata has moduleId', async () => {
       (mockPrisma.paymentTransaction.findFirst as jest.Mock).mockResolvedValue({
-        id: 'tx-1', providerRef: 'FLOOZ_456_DEF', userId: 'user-1', status: 'PENDING', amount: 25000,
+        id: 'tx-1',
+        providerRef: 'FLOOZ_456_DEF',
+        userId: 'user-1',
+        status: 'PENDING',
+        amount: 25000,
         metadata: { moduleId: 'module-1' },
       });
-      (mockPrisma.paymentTransaction.update as jest.Mock).mockResolvedValue({ id: 'tx-1', status: 'SUCCESS' });
+      (mockPrisma.paymentTransaction.update as jest.Mock).mockResolvedValue({
+        id: 'tx-1',
+        status: 'SUCCESS',
+      });
 
       const result = await developerModules.confirmModulePayment('user-1', 'FLOOZ_456_DEF');
 

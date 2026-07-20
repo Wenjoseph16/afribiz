@@ -1,178 +1,91 @@
-import { PrismaClient } from '@prisma/client';
+const DEFAULT_METHODS = [
+  'create',
+  'createMany',
+  'findFirst',
+  'findUnique',
+  'findMany',
+  'update',
+  'updateMany',
+  'delete',
+  'deleteMany',
+  'count',
+  'aggregate',
+  'groupBy',
+  'upsert',
+] as const;
 
+/**
+ * Proxy-based lazy mock for Prisma.
+ * Only creates jest.fn() when a model method is actually accessed.
+ * This avoids heap overflow from eagerly creating ~2000 mock functions.
+ */
 function createMockPrisma(): Record<string, any> {
-  const makeModel = (methods: string[] = ['create', 'findFirst', 'findUnique', 'findMany', 'update', 'updateMany', 'delete', 'deleteMany', 'count', 'aggregate', 'groupBy']) => {
-    const obj: Record<string, jest.Mock> = {};
-    for (const m of methods) {
-      obj[m] = jest.fn();
-    }
-    return obj;
+  const modelCache = new Map<string, Record<string, jest.Mock>>();
+  // Cache for special $ methods that need to be mockable via jest.spyOn
+  const specialMethodCache = new Map<string, jest.Mock>();
+
+  function getSpecialMethod(name: string, defaultImpl?: (...args: any[]) => any): jest.Mock {
+    if (specialMethodCache.has(name)) return specialMethodCache.get(name)!;
+    const mock = jest.fn(defaultImpl);
+    specialMethodCache.set(name, mock);
+    return mock;
+  }
+
+  const prismaHandler: ProxyHandler<Record<string, any>> = {
+    get(target, prop) {
+      // Check target first (for properties set by jest.spyOn directly)
+      if (prop in target) return Reflect.get(target, prop);
+
+      if (typeof prop === 'string' && prop.startsWith('$')) {
+        if (specialMethodCache.has(prop)) return specialMethodCache.get(prop)!;
+        if (prop === '$transaction') {
+          return getSpecialMethod('$transaction', (fn: (mock: any) => Promise<any>) => fn(mock));
+        }
+        if (
+          prop === '$connect' ||
+          prop === '$disconnect' ||
+          prop === '$queryRawUnsafe' ||
+          prop === '$queryRaw'
+        ) {
+          return getSpecialMethod(prop as string);
+        }
+        return Reflect.get(target, prop);
+      }
+      if (typeof prop === 'string' && !prop.startsWith('_')) {
+        if (!modelCache.has(prop)) {
+          const methods: Record<string, jest.Mock> = {};
+          for (const m of DEFAULT_METHODS) {
+            methods[m] = jest.fn();
+          }
+          modelCache.set(prop, methods);
+        }
+        return modelCache.get(prop);
+      }
+      return Reflect.get(target, prop);
+    },
+    set(target, prop, value) {
+      const key = String(prop);
+      // Allow jest.spyOn to override special methods and model methods
+      if (key.startsWith('$')) {
+        specialMethodCache.set(key, value);
+        return true;
+      }
+      if (modelCache.has(key)) {
+        const methods = modelCache.get(key)!;
+        // If setting a method on a model, update the cached methods
+        if (
+          typeof value === 'function' ||
+          (value && value.constructor && value.constructor.name === 'Function')
+        ) {
+          Object.assign(methods, value);
+        }
+        return true;
+      }
+      return Reflect.set(target, prop, value);
+    },
   };
 
-  const mock: Record<string, any> = {
-    user: makeModel(),
-    session: makeModel(),
-    refreshToken: makeModel(),
-    emailVerification: makeModel(['create', 'findFirst', 'update']),
-    passwordReset: makeModel(['create', 'findFirst', 'update']),
-    otpCode: makeModel(['create', 'findFirst', 'findMany', 'update', 'delete']),
-    securityLog: makeModel(['create', 'findMany']),
-    device: makeModel(),
-    notification: makeModel(),
-    notificationDelivery: makeModel(),
-    notificationPreference: makeModel(),
-    business: makeModel(),
-    businessSettings: makeModel(),
-    businessHour: makeModel(),
-    businessPaymentMethod: makeModel(),
-    service: makeModel(),
-    serviceCategory: makeModel(),
-    serviceEmployee: makeModel(),
-    menuCategory: makeModel(),
-    menuItem: makeModel(),
-    menuItemVariant: makeModel(),
-    ingredient: makeModel(),
-    restaurantTable: makeModel(),
-    menuOrder: makeModel(),
-    productCategory: makeModel(),
-    product: makeModel(),
-    productVariant: makeModel(),
-    paymentTransaction: makeModel(),
-    cart: makeModel(),
-    cartItem: makeModel(),
-    order: makeModel(),
-    orderItem: makeModel(),
-    booking: makeModel(),
-    bookingResource: makeModel(),
-    timeSlot: makeModel(),
-    bookingReminder: makeModel(),
-    expense: makeModel(),
-    room: makeModel(),
-    event: makeModel(),
-    eventTicket: makeModel(),
-    eventParticipant: makeModel(),
-    eventScan: makeModel(),
-    eventPromotion: makeModel(),
-    eventGallery: makeModel(),
-    eventPartner: makeModel(),
-    rental: makeModel(),
-    partner: makeModel(),
-    businessReview: makeModel(),
-    review: makeModel(),
-    conversation: makeModel(),
-    message: makeModel(),
-    favorite: makeModel(),
-    quote: makeModel(),
-    quoteItem: makeModel(),
-    invoice: makeModel(),
-    invoiceItem: makeModel(),
-    payment: makeModel(),
-    paymentProof: makeModel(),
-    debt: makeModel(),
-    escrow: makeModel(),
-    clientRisk: makeModel(),
-    businessClient: makeModel(),
-    businessTag: makeModel(),
-    businessClientTag: makeModel(),
-    clientNote: makeModel(),
-    clientSegment: makeModel(),
-    segmentClient: makeModel(),
-    debtReminder: makeModel(),
-    financialLog: makeModel(),
-    planningTask: makeModel(),
-    employeeSchedule: makeModel(),
-    planningLog: makeModel(),
-    employee: makeModel(),
-    employeeRole: makeModel(),
-    attendance: makeModel(),
-    employeeDocument: makeModel(),
-    employeePerformance: makeModel(),
-    employeeActivity: makeModel(),
-    promotion: makeModel(),
-    coupon: makeModel(),
-    bundle: makeModel(),
-    bundleItem: makeModel(),
-    marketingCampaign: makeModel(),
-    promotionLog: makeModel(),
-    loyaltyProgram: makeModel(),
-    loyaltyPoints: makeModel(),
-    loyaltyTransaction: makeModel(),
-    referral: makeModel(),
-    referralReward: makeModel(),
-    portfolioCategory: makeModel(),
-    portfolioItem: makeModel(),
-    portfolioMedia: makeModel(),
-    portfolioInteraction: makeModel(),
-    portfolioTestimonial: makeModel(),
-    subscriptionPlan: makeModel(),
-    subscriptionPrivilege: makeModel(),
-    businessSubscription: makeModel(),
-    subscriptionPayment: makeModel(),
-    subscriptionLog: makeModel(),
-    driver: makeModel(),
-    delivery: makeModel(),
-    deliveryTracking: makeModel(),
-    deliveryProof: makeModel(),
-    adPackage: makeModel(),
-    adCampaign: makeModel(),
-    adCreative: makeModel(),
-    adImpression: makeModel(),
-    adClick: makeModel(),
-    adConversion: makeModel(),
-    adInvoice: makeModel(),
-    businessScore: makeModel(),
-    scoreHistory: makeModel(),
-    businessBadge: makeModel(),
-    dataConsent: makeModel(),
-    dataPartner: makeModel(),
-    partnerSubscription: makeModel(),
-    dataReport: makeModel(),
-    dataAccessLog: makeModel(),
-    sectorBenchmark: makeModel(),
-    developerProfile: makeModel(),
-    developerModule: makeModel(),
-    developerModuleVersion: makeModel(),
-    developerModuleInstallation: makeModel(),
-    developerModuleReview: makeModel(),
-    developerSupportTicket: makeModel(),
-    developerSupportMessage: makeModel(),
-    developerRevenue: makeModel(),
-    developerPayout: makeModel(),
-    developerApiKey: makeModel(['create', 'findMany', 'update', 'delete']),
-    modulePermission: makeModel(),
-    moduleConfiguration: makeModel(),
-    moduleActivityLog: makeModel(['create', 'findMany', 'count', 'groupBy']),
-    moduleValidation: makeModel(['create', 'findFirst']),
-    moduleLicense: makeModel(['create', 'findFirst']),
-    training: makeModel(),
-    trainingLesson: makeModel(),
-    trainingQuiz: makeModel(),
-    quizQuestion: makeModel(),
-    userQuizAttempt: makeModel(),
-    userTraining: makeModel(),
-    taskCategory: makeModel(),
-    taskChecklist: makeModel(),
-    taskComment: makeModel(),
-    taskTimer: makeModel(),
-    taskResource: makeModel(),
-    taskValidation: makeModel(),
-    partnerContract: makeModel(),
-    partnerTransaction: makeModel(),
-    partnerAssignment: makeModel(),
-    partnerReview: makeModel(),
-    partnerDocument: makeModel(),
-    partnerPermission: makeModel(),
-    businessDocument: makeModel(),
-    documentSignature: makeModel(),
-    dispute: makeModel(),
-    queuedEvent: makeModel(),
-    moduleManifest: makeModel(),
-    developerBadge: makeModel(),
-    moduleCommission: makeModel(),
-    $connect: jest.fn(),
-    $disconnect: jest.fn(),
-  };
-  (mock as any).$transaction = jest.fn((fn: (mockPrisma: any) => Promise<any>) => fn(mock));
+  const mock = new Proxy({}, prismaHandler);
   return mock;
 }
 

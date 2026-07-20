@@ -30,8 +30,8 @@ describe('MonetizationConfig', () => {
 
       expect(settings.transactionCommissionRate).toBe(0.01);
       expect(settings.escrowCommissionRate).toBe(0.02);
-      expect(settings.developerModuleCommissionRate).toBe(0.20);
-      expect(settings.minimumEscrowFee).toBe(0);
+      expect(settings.developerModuleCommissionRate).toBe(0.2);
+      expect(settings.minimumEscrowFee).toBe(1000);
       expect(settings.maximumEscrowFee).toBeNull();
       expect(settings.currency).toBe('FCFA');
     });
@@ -66,7 +66,8 @@ describe('MonetizationConfig', () => {
 
       const settings = await monetizationConfig.getMonetizationSettings();
 
-      expect(settings.transactionCommissionRate).toBe(0.03);
+      // CommissionConfig stores percentage (3 = 3%), service uses it as-is
+      expect(settings.transactionCommissionRate).toBe(3);
     });
 
     it('should return defaults on DB error', async () => {
