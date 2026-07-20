@@ -1,0 +1,371 @@
+model Booking {
+  id                 String           @id @default(uuid())
+  bookingNumber      String           @unique
+  businessId         String?
+  business           Business?        @relation(fields: [businessId], references: [id])
+  clientId           String
+  client             User             @relation("ClientBookings", fields: [clientId], references: [id], onDelete: Cascade)
+  providerId         String?
+  provider           User?            @relation("ProviderBookings", fields: [providerId], references: [id])
+  title              String
+  description        String?
+  type               BookingType      @default(SERVICE)
+  source             BookingSource    @default(AFRIBIZ_SITE)
+  status             BookingStatus    @default(PENDING)
+  isWalkIn           Boolean          @default(false)
+  serviceId          String?
+  service            Service?         @relation(fields: [serviceId], references: [id])
+  roomId             String?
+  room               Room?            @relation(fields: [roomId], references: [id])
+  rentalId           String?
+  rental             Rental?          @relation(fields: [rentalId], references: [id])
+  resourceId         String?
+  resource           BookingResource? @relation(fields: [resourceId], references: [id])
+  startDate          DateTime
+  endDate            DateTime?
+  checkIn            DateTime?
+  checkOut           DateTime?
+  guests             Int              @default(1)
+  adults             Int              @default(1)
+  children           Int              @default(0)
+  numberOfPeople     Int?             @default(1)
+  customerName       String?
+  customerPhone      String?
+  customerEmail      String?
+  location           String?
+  specialRequests    String?
+  notes              String?
+  price              Decimal          @db.Decimal(12, 2)
+  currency           String           @default("FCFA")
+  depositAmount      Decimal?         @db.Decimal(12, 2)
+  depositPaid        Boolean          @default(false)
+  refundAmount       Decimal?         @db.Decimal(12, 2)
+  cancellationPolicy String?
+  cancellationFee    Decimal?         @db.Decimal(12, 2)
+  cancelledAt        DateTime?
+  cancelReason       String?
+  checkedInAt        DateTime?
+  checkedOutAt       DateTime?
+  noShowAt           DateTime?
+  isNoShow           Boolean          @default(false)
+  remindedAt         DateTime?
+  reminderSent       Boolean          @default(false)
+
+  reminders     BookingReminder[]
+  payments      Payment[]
+  planningTasks PlanningTask[]
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([clientId])
+  @@index([providerId])
+  @@index([serviceId])
+  @@index([roomId])
+  @@index([resourceId])
+  @@index([status])
+  @@index([type])
+  @@index([startDate])
+  @@index([createdAt])
+  @@index([businessId, startDate, status])
+  @@index([rentalId])
+  @@index([deletedAt])
+}
+
+
+model BookingResource {
+  id          String     @id @default(uuid())
+  businessId  String
+  business    Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  description String?
+  capacity    Int        @default(1)
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  bookings    Booking[]
+  timeSlots   TimeSlot[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([businessId])
+  @@index([type])
+}
+
+
+model Event {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // General info
+  title            String
+  shortDescription String?
+  description      String?
+  type             EventType         @default(OTHER)
+  locationType     EventLocationType @default(PHYSICAL)
+
+  // Media
+  coverImage String?
+  images     String[]
+  videos     String[]
+
+  // Date & Time
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  startTime String?
+  endTime   String?
+  timezone  String    @default("Africa/Abidjan")
+
+  // Location (physical)
+  address   String?
+  city      String?
+  country   String?
+  latitude  Float?
+  longitude Float?
+
+  // Location (online)
+  onlineLink String?
+
+  // Capacity
+  capacity       Int?
+  minCapacity    Int?
+  remainingSpots Int?
+
+  // Pricing
+  price    Decimal? @db.Decimal(12, 2)
+  currency String   @default("FCFA")
+
+  // Status
+  isActive    Boolean @default(true)
+  isFeatured  Boolean @default(false)
+  isPublished Boolean @default(false)
+  status      String  @default("DRAFT")
+
+  // Organizer
+  organizerName     String?
+  organizerContact  String?
+  organizerWhatsapp String?
+  organizerEmail    String?
+
+  // Conditions
+  rules            String?
+  refundPolicy     String?
+  minAge           Int?
+  accessConditions String?
+
+  // Stats (auto-calculated)
+  ticketsSold  Int     @default(0)
+  totalRevenue Decimal @default(0) @db.Decimal(12, 2)
+  viewsCount   Int     @default(0)
+
+  // Relations
+  tickets      EventTicket[]
+  participants EventParticipant[]
+  scans        EventScan[]
+  promotions   EventPromotion[]
+  gallery      EventGallery[]
+  partners     EventPartner[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([businessId])
+  @@index([startDate])
+  @@index([type])
+  @@index([status])
+}
+
+// ============================================
+// EVENT TICKET (Module 15)
+// ============================================
+
+
+model EventTicket {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  name         String
+  description  String?
+  type         TicketType         @default(STANDARD)
+  price        Decimal?           @db.Decimal(12, 2)
+  currency     String             @default("FCFA")
+  quantity     Int                @default(100)
+  remaining    Int                @default(100)
+  benefits     String[]
+  saleStartAt  DateTime?
+  saleEndAt    DateTime?
+  saleStatus   TicketSaleStatus   @default(ACTIVE)
+  isActive     Boolean            @default(true)
+  sortOrder    Int                @default(0)
+  participants EventParticipant[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([eventId])
+  @@index([type])
+}
+
+// ============================================
+// EVENT PARTICIPANT (Module 15)
+// ============================================
+
+
+model PlanningTask {
+  id         String    @id @default(uuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orderId    String?
+  order      Order?    @relation(fields: [orderId], references: [id])
+  bookingId  String?
+  booking    Booking?  @relation(fields: [bookingId], references: [id])
+  assigneeId String?
+  assignee   Employee? @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assignedTo String?
+
+  // New fields for Advanced Tasks module
+  categoryId         String?
+  category           TaskCategory? @relation(fields: [categoryId], references: [id])
+  sortOrder          Int           @default(0)
+  startDate          DateTime?
+  estimatedHours     Float?
+  deliveryId         String?
+  eventId            String?
+  rentalId           String?
+  partnerId          String?
+  partner            Partner?      @relation(fields: [partnerId], references: [id])
+  clientName         String?
+  requiresValidation Boolean       @default(false)
+  requiresPhoto      Boolean       @default(false)
+  requiresSignature  Boolean       @default(false)
+  notes              String?
+
+  title          String
+  description    String?
+  priority       TaskPriority   @default(MEDIUM)
+  status         TaskStatus     @default(TODO)
+  recurrence     TaskRecurrence @default(NONE)
+  recurrenceRule String?
+  dueDate        DateTime?
+  completedAt    DateTime?
+
+  // Relations for new sub-models
+  checklists  TaskChecklist[]
+  comments    TaskComment[]
+  timers      TaskTimer[]
+  resources   TaskResource[]
+  validations TaskValidation[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([businessId])
+  @@index([orderId])
+  @@index([bookingId])
+  @@index([assigneeId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([priority])
+  @@index([categoryId])
+  @@index([startDate])
+  @@index([partnerId])
+}
+
+
+model Training {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  category    String?
+  duration    String?
+  lessons     Int            @default(0)
+  price       Decimal?       @db.Decimal(12, 2)
+  currency    String         @default("FCFA")
+  businessId  String?
+  business    Business?      @relation(fields: [businessId], references: [id])
+  users       UserTraining[]
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+  TrainingLesson TrainingLesson[]
+
+  @@index([businessId])
+  @@index([category])
+}
+
+// ============================================
+// TRAINING LESSON & QUIZ MODELS
+// ============================================
+
+
+model TrainingLesson {
+  id           String         @id @default(uuid())
+  trainingId   String
+  training     Training       @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  content      String?
+  videoUrl     String?
+  duration     Int            @default(0)
+  sortOrder    Int            @default(0)
+  isFree       Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  TrainingQuiz TrainingQuiz[]
+
+  @@index([trainingId])
+  @@index([sortOrder])
+}
+
+
+model TaskCategory {
+  id         String         @id @default(uuid())
+  businessId String
+  business   Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  color      String         @default("#6366f1")
+  icon       String?
+  sortOrder  Int            @default(0)
+  tasks      PlanningTask[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([businessId])
+}
+
+
+model TaskComment {
+  id         String       @id @default(uuid())
+  taskId     String
+  task       PlanningTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content    String
+  attachment String?
+  createdAt  DateTime     @default(now())
+
+  @@index([taskId])
+  @@index([authorId])
+}
+
+
+model TaskTimer {
+  id         String       @id @default(uuid())
+  taskId     String
+  task       PlanningTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId     String
+  startedAt  DateTime     @default(now())
+  endedAt    DateTime?
+  durationMs Int?
+  createdAt  DateTime     @default(now())
+
+  @@index([taskId])
+  @@index([userId])
+}
+

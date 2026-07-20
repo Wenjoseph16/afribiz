@@ -1,0 +1,105 @@
+model Opportunity {
+  id          String            @id @default(uuid())
+  businessId  String
+  business    Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type        OpportunityType
+  keyword     String
+  source      String            @default("SEARCH")
+  count       Int               @default(1)
+  metadata    Json?
+  status      OpportunityStatus @default(NEW)
+  seenAt      DateTime?
+  actedAt     DateTime?
+  dismissedAt DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([businessId, status])
+  @@index([businessId, type])
+  @@index([createdAt])
+}
+
+// ============================================
+// MARKETPLACE NEEDS & IDEAS (Phase 3)
+// ============================================
+
+
+model MarketNeed {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  category    String
+  budget      Decimal? @db.Decimal(12, 2)
+  urgency     String   @default("MEDIUM")
+  status      String   @default("OPEN")
+  votes       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([category])
+  @@index([status])
+  @@index([votes])
+}
+
+
+model MarketIdea {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  category    String
+  votes       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([category])
+  @@index([votes])
+}
+
+
+model GrowthBrief {
+  id               String          @id @default(uuid())
+  businessId       String
+  business         Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type             GrowthBriefType
+  date             DateTime        @default(now())
+  metrics          Json
+  advice           Json?
+  quickActions     Json?
+  calendarInsights Json?
+  createdAt        DateTime        @default(now())
+
+  @@unique([businessId, type, date])
+  @@index([businessId])
+  @@index([businessId, type])
+  @@index([date])
+}
+
+// ============================================
+// PHASE 0.3 — DB INTEGRITY & PERFORMANCE
+// ============================================
+
+
+model CopilotOnboardingLog {
+  id           String    @id @default(uuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  day          Int
+  title        String
+  message      String
+  action       String?
+  actionLink   String?
+  scheduledFor DateTime
+  status       String    @default("PENDING")
+  sentAt       DateTime?
+  readAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+
+// Enums

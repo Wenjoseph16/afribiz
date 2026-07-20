@@ -9,13 +9,24 @@ const TEST_USER = {
 test.describe('Authentication', () => {
   test('register a new account', async ({ page }) => {
     await page.goto('/signup', { waitUntil: 'networkidle' });
-    await expect(page.locator('h1')).toContainText('Créez votre compte');
+    await expect(page.locator('h1')).toContainText('Créer un compte');
 
-    await page.getByLabel('Nom complet').fill(TEST_USER.fullName);
-    await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByRole('textbox', { name: 'Mot de passe', exact: true }).fill(TEST_USER.password);
-    await page.getByLabel('Confirmer le mot de passe').fill(TEST_USER.password);
-    await page.getByLabel(/conditions/).check();
+    await page.getByPlaceholder('Koffi Kouassi').fill(TEST_USER.fullName);
+    await page.getByPlaceholder('exemple@email.com').fill(TEST_USER.email);
+    await page.getByPlaceholder('Créez un mot de passe sécurisé').fill(TEST_USER.password);
+    await page.getByPlaceholder('Répétez le mot de passe').fill(TEST_USER.password);
+    
+    await page.getByPlaceholder('90 00 00 00').fill('90000000');
+    
+    // Location fields are handled by LocationSelect. 
+    // Since they are required by Zod (signupSchema), we must fill them.
+    // Let's target the select/input elements in LocationSelect.
+    // Assuming Togo is the default or first option.
+    await page.locator('select').first().selectOption({ label: 'Togo' }); // Country
+    await page.locator('select').nth(1).selectOption({ index: 0 }); // Region
+    await page.locator('select').nth(2).selectOption({ index: 0 }); // City
+    
+    await page.getByLabel(/conditions/i).check();
     await page.getByRole('button', { name: 'Créer mon compte' }).click();
 
     await expect(page).toHaveURL(/dashboard|\/verify-email/, { timeout: 20000 });

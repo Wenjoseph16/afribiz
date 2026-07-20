@@ -1,0 +1,16 @@
+model Leaderboard {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category   String // OVERALL, COMMERCIAL, SATISFACTION, RELIABILITY, FINANCIAL
+  rank       Int
+  score      Int
+  period     String // DAILY, WEEKLY, MONTHLY
+  snapshotAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([category, period, rank])
+  @@index([businessId])
+  @@index([snapshotAt])
+}
+

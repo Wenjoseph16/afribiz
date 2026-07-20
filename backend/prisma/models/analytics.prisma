@@ -1,0 +1,54 @@
+model ProductView {
+  id         String   @id @default(uuid())
+  businessId String
+  productId  String
+  userId     String?
+  visitorId  String?
+  ip         String?
+  userAgent  String?
+  referrer   String?
+  source     String?  @default("direct")
+  viewedAt   DateTime @default(now())
+
+  @@index([businessId, productId])
+  @@index([businessId, viewedAt])
+  @@index([productId, viewedAt])
+}
+
+
+model ProductClick {
+  id         String   @id @default(uuid())
+  businessId String
+  productId  String
+  userId     String?
+  visitorId  String?
+  source     String?  @default("marketplace")
+  clickedAt  DateTime @default(now())
+
+  @@index([businessId, productId])
+  @@index([businessId, clickedAt])
+  @@index([productId, clickedAt])
+}
+
+
+model PageView {
+  id         String    @id @default(uuid())
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  userId     String?
+  visitorId  String?
+  url        String
+  title      String?
+  referrer   String?
+  source     String?   @default("direct")
+  ip         String?
+  userAgent  String?
+  durationMs Int?
+  viewedAt   DateTime  @default(now())
+
+  @@index([businessId, viewedAt])
+  @@index([url, viewedAt])
+  @@index([viewedAt])
+  @@index([visitorId])
+}
+

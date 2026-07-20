@@ -1,0 +1,311 @@
+model PaymentTransaction {
+  id          String    @id @default(uuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId      String?
+  orderId     String?
+  amount      Float
+  currency    String    @default("FCFA")
+  provider    String // STRIPE, TMONEY, FLOOZ, WAVE, CASH, BANK
+  providerRef String? // Transaction ID from provider
+  status      String    @default("PENDING") // PENDING, SUCCESS, FAILED, REFUNDED
+  fee         Float     @default(0)
+  metadata    Json?
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([orderId])
+  @@index([provider])
+  @@index([status])
+  @@index([paidAt])
+}
+
+
+model Quote {
+  id             String      @id @default(uuid())
+  quoteNumber    String      @unique
+  businessId     String?
+  business       Business?   @relation(fields: [businessId], references: [id])
+  clientId       String?
+  client         User?       @relation("ClientQuotes", fields: [clientId], references: [id])
+  clientName     String?
+  clientPhone    String?
+  clientEmail    String?
+  title          String
+  description    String?
+  items          Json?
+  subtotal       Decimal     @db.Decimal(12, 2)
+  taxAmount      Decimal?    @db.Decimal(12, 2)
+  discountAmount Decimal?    @db.Decimal(12, 2)
+  totalAmount    Decimal     @db.Decimal(12, 2)
+  currency       String      @default("FCFA")
+  status         QuoteStatus @default(DRAFT)
+  quoteItems     QuoteItem[]
+  payments       Payment[]
+  escrows        Escrow[]
+  validUntil     DateTime?
+  notes          String?
+  terms          String?
+  debt           Debt?
+  invoice        Invoice?
+  deletedAt      DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([businessId])
+  @@index([clientId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+
+model Invoice {
+  id             String        @id @default(uuid())
+  invoiceNumber  String        @unique
+  businessId     String?
+  business       Business?     @relation(fields: [businessId], references: [id])
+  clientId       String?
+  client         User?         @relation("ClientInvoices", fields: [clientId], references: [id])
+  quoteId        String?       @unique
+  quote          Quote?        @relation(fields: [quoteId], references: [id])
+  clientName     String?
+  clientPhone    String?
+  clientEmail    String?
+  title          String
+  description    String?
+  items          Json?
+  subtotal       Decimal       @db.Decimal(12, 2)
+  taxAmount      Decimal?      @db.Decimal(12, 2)
+  discountAmount Decimal?      @db.Decimal(12, 2)
+  totalAmount    Decimal       @db.Decimal(12, 2)
+  amountPaid     Decimal?      @default(0) @db.Decimal(12, 2)
+  currency       String        @default("FCFA")
+  status         InvoiceStatus @default(DRAFT)
+  dueDate        DateTime?
+  paidAt         DateTime?
+  notes          String?
+  terms          String?
+  debt           Debt?
+  payments       Payment[]
+  escrows        Escrow[]
+  invoiceItems   InvoiceItem[]
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([businessId])
+  @@index([clientId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+
+model Payment {
+  id                String         @id @default(uuid())
+  userId            String
+  user              User           @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+  businessId        String?
+  business          Business?      @relation(fields: [businessId], references: [id])
+  escrowId          String?
+  escrow            Escrow?        @relation(fields: [escrowId], references: [id])
+  quoteId           String?
+  quote             Quote?         @relation(fields: [quoteId], references: [id])
+  invoiceId         String?
+  invoice           Invoice?       @relation(fields: [invoiceId], references: [id])
+  orderId           String?
+  order             Order?         @relation(fields: [orderId], references: [id])
+  bookingId         String?
+  booking           Booking?       @relation(fields: [bookingId], references: [id])
+  amount            Decimal        @db.Decimal(12, 2)
+  currency          String         @default("FCFA")
+  method            PaymentMethod
+  status            PaymentStatus  @default(PENDING)
+  reference         String?
+  description       String?
+  paidAt            DateTime?
+  refundedAt        DateTime?
+  isManual          Boolean        @default(false)
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  verificationNotes String?
+  proofs            PaymentProof[]
+  deletedAt         DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([escrowId])
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([businessId, status, createdAt])
+  @@index([quoteId])
+  @@index([invoiceId])
+  @@index([bookingId])
+  @@index([deletedAt])
+}
+
+
+model PaymentProof {
+  id              String    @id @default(uuid())
+  paymentId       String
+  payment         Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  imageUrl        String
+  notes           String?
+  verified        Boolean   @default(false)
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+
+  @@index([paymentId])
+}
+
+// ============================================
+// DEBT & ESCROW MODELS (Module 8)
+// ============================================
+
+
+model Escrow {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  buyerId    String?
+  buyer      User?    @relation(fields: [buyerId], references: [id])
+  orderId    String?  @unique
+  order      Order?   @relation(fields: [orderId], references: [id])
+  invoiceId  String?  @unique
+  invoice    Invoice? @relation(fields: [invoiceId], references: [id])
+  quoteId    String?  @unique
+  quote      Quote?   @relation(fields: [quoteId], references: [id])
+
+  amount           Decimal      @db.Decimal(12, 2)
+  currency         String       @default("FCFA")
+  status           EscrowStatus @default(HELD)
+  fee              Decimal      @default(0) @db.Decimal(12, 2)
+  feeRate          Float        @default(0)
+  netAmount        Decimal?     @db.Decimal(12, 2)
+  releasedToWallet Boolean      @default(false)
+  releasedAt       DateTime?
+  refundedAt       DateTime?
+  disputedAt       DateTime?
+  disputeReason    String?
+  notes            String?
+  metadata         Json?
+
+  savingsGroupId String?
+  savingsCycleId String?
+  savingsGroup   SavingsGroup? @relation(fields: [savingsGroupId], references: [id])
+  savingsCycle   SavingsCycle? @relation(fields: [savingsCycleId], references: [id])
+
+  payments         Payment[]
+  deletedAt        DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([businessId])
+  @@index([orderId])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([savingsGroupId])
+  @@index([savingsCycleId])
+}
+
+
+model Wallet {
+  id           String              @id @default(uuid())
+  businessId   String              @unique
+  business     Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  balance      Decimal             @default(0) @db.Decimal(12, 2)
+  currency     String              @default("FCFA")
+  locked       Decimal             @default(0) @db.Decimal(12, 2)
+  deletedAt    DateTime?
+  transactions WalletTransaction[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([deletedAt])
+}
+
+
+model WalletTransaction {
+  id            String   @id @default(uuid())
+  walletId      String
+  wallet        Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type          String // DEPOSIT, WITHDRAWAL, PAYMENT, REFUND, ESCROW_HOLD, ESCROW_RELEASE, COMMISSION, SUBSCRIPTION
+  amount        Decimal  @db.Decimal(12, 2)
+  balanceBefore Decimal  @db.Decimal(12, 2)
+  balanceAfter  Decimal  @db.Decimal(12, 2)
+  currency      String   @default("FCFA")
+  reference     String?
+  description   String?
+  metadata      Json?
+  status        String   @default("COMPLETED") // PENDING, COMPLETED, FAILED
+  createdAt     DateTime @default(now())
+
+  @@index([walletId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+
+model SubscriptionPlan {
+  id           String                  @id @default(uuid())
+  businessId   String
+  business     Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  type         SubscriptionPlanType    @default(STANDARD)
+  price        Decimal                 @db.Decimal(12, 2)
+  currency     String                  @default("FCFA")
+  billingCycle BillingCycle            @default(MONTHLY)
+  trialDays    Int?                    @default(0)
+  durationDays Int?
+  maxUsage     Int?
+  maxClients   Int?
+  maxBookings  Int?
+  benefits     String[]
+  privileges   SubscriptionPrivilege[]
+  isPublic     Boolean                 @default(true)
+  isActive     Boolean                 @default(true)
+  sortOrder    Int                     @default(0)
+  featured     Boolean                 @default(false)
+  badge        String?
+  subscribers  BusinessSubscription[]
+  logs         SubscriptionLog[]
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@index([businessId])
+  @@index([isActive])
+  @@index([type])
+}
+
+
+model SubscriptionPayment {
+  id             String               @id @default(uuid())
+  subscriptionId String
+  subscription   BusinessSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  businessId     String
+  business       Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  amount         Decimal              @db.Decimal(12, 2)
+  currency       String               @default("FCFA")
+  method         String
+  status         String
+  reference      String?
+  notes          String?
+  isManual       Boolean              @default(false)
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  createdAt      DateTime             @default(now())
+
+  @@index([subscriptionId])
+  @@index([businessId])
+  @@index([status])
+}
+

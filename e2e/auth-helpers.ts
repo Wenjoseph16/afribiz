@@ -106,7 +106,9 @@ export async function authenticateViaApi(
         },
         version: 0,
       }));
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Failed to set auth-storage in localStorage:', e);
+    }
   }, body.data);
 
   await apiContext.dispose();

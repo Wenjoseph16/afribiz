@@ -1,0 +1,175 @@
+model Notification {
+  id          String                 @id @default(uuid())
+  userId      String
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  description String?
+  link        String?
+  metadata    Json?
+  read        Boolean                @default(false)
+  readAt      DateTime?
+  deliveries  NotificationDelivery[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([type])
+  @@index([createdAt])
+}
+
+
+model NotificationDelivery {
+  id             String              @id @default(uuid())
+  notificationId String
+  notification   Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel        NotificationChannel
+  status         String              @default("pending")
+  sentAt         DateTime?
+  errorMessage   String?
+  createdAt      DateTime            @default(now())
+
+  @@index([notificationId])
+  @@index([channel, status])
+}
+
+
+model NotificationPreference {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  channel   NotificationChannel
+  enabled   Boolean             @default(true)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([userId, type, channel])
+  @@index([userId])
+}
+
+// ============================================
+// ALERT MODELS (User-configurable alerts)
+// ============================================
+
+
+model Alert {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            AlertType
+  referenceId     String?
+  businessId      String?
+  business        Business? @relation(fields: [businessId], references: [id])
+  label           String?
+  metadata        Json?
+  isActive        Boolean   @default(true)
+  lastTriggeredAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, type, referenceId])
+  @@index([userId])
+  @@index([type])
+  @@index([businessId])
+}
+
+
+model SavedItem {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String // OFFER_FLASH or PROMOTION
+  referenceId String
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, referenceId])
+  @@index([userId])
+  @@index([referenceId])
+}
+
+
+model Conversation {
+  id               String                    @id @default(uuid())
+  type             String                    @default("business")
+  subject          String?
+  participants     String[]
+  lastMessageAt    DateTime?
+  participantLinks ConversationParticipant[]
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  messages         Message[]
+
+  @@index([type])
+  @@index([participants])
+}
+
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  attachment     String?
+  attachmentType String?
+  read           Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  reactions MessageReaction[]
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+
+model NotificationTemplate {
+  id        String                      @id @default(uuid())
+  type      NotificationType
+  channel   NotificationTemplateChannel
+  subject   String?
+  title     String?
+  content   String
+  variables String[]                    @default([])
+  isActive  Boolean                     @default(true)
+  createdAt DateTime                    @default(now())
+  updatedAt DateTime                    @updatedAt
+
+  @@unique([type, channel])
+  @@index([type])
+  @@index([channel])
+  @@index([isActive])
+}
+
+// ============================================
+// BUSINESS COPILOT CONFIGURATION (Part 18)
+// ============================================
+
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  joinedAt       DateTime     @default(now())
+  leftAt         DateTime?
+  isActive       Boolean      @default(true)
+  lastReadAt     DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@index([isActive])
+}
+
+// ============================================
+// PHASE 0.1 — SECURITY & AUTH HARDENING
+// ============================================
+

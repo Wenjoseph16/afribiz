@@ -1,0 +1,301 @@
+model Business {
+  id                  String                     @id @default(uuid())
+  ownerId             String                     @unique
+  owner               User                       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name                String
+  slug                String                     @unique
+  type                BusinessType
+  modules             BusinessModule[]           @default([]) // @deprecated: use moduleAssignments
+  moduleAssignments   BusinessModuleAssignment[]
+  demands             ModuleDemand[]
+  description         String?
+  shortDescription    String?
+  email               String?
+  phone               String?
+  website             String?
+  logo                String?
+  coverImage          String?
+  country             String?
+  city                String?
+  region              String?
+  address             String?
+  latitude            Float?
+  longitude           Float?
+  googleMapsLink      String?
+  tagline             String?
+  seoTitle            String?
+  seoDescription      String?
+  socialLinks         Json?
+  whatsapp            String?
+  facebook            String?
+  instagram           String?
+  twitter             String?
+  linkedin            String?
+  tiktok              String?
+  youtube             String?
+  mission             String?
+  vision              String?
+  values              String?
+  foundedYear         Int?
+  employeeCount       Int?
+  rating              Float                      @default(0)
+  reviewCount         Int                        @default(0)
+  isActive            Boolean                    @default(true)
+  isVerified          Boolean                    @default(false)
+  isPremium           Boolean                    @default(false)
+  premiumSince        DateTime?
+  premiumUntil        DateTime?
+  isNew               Boolean                    @default(true)
+  isTopSeller         Boolean                    @default(false)
+  isTopProvider       Boolean                    @default(false)
+  isRecommended       Boolean                    @default(false)
+  taxId               String?
+  businessLicense     String?
+  managerName         String?
+  managerBio          String?
+  experience          Int?
+  skills              String[]
+  certifications      String[]
+  onboardingCompleted Boolean                    @default(false)
+  onboardedAt         DateTime?
+
+  verificationLevel  BusinessVerificationLevel  @default(ARGENT)
+  verificationStatus BusinessVerificationStatus @default(PENDING)
+  identityDocument   String?
+  companyDocument    String?
+  taxDocument        String?
+  responsiblePhoto   String?
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  rejectionReason    String?
+
+  settings              BusinessSettings?
+  hours                 BusinessHour[]
+  paymentMethods        BusinessPaymentMethod[]
+  deliveryZones         DeliveryZone[]
+  services              Service[]
+  serviceCategories     ServiceCategory[]
+  menuCategories        MenuCategory[]
+  menuItems             MenuItem[]
+  ingredients           Ingredient[]
+  restaurantTables      RestaurantTable[]
+  menuOrders            MenuOrder[]
+  bookings              Booking[]
+  bookingResources      BookingResource[]
+  timeSlots             TimeSlot[]
+  rooms                 Room[]
+  events                Event[]
+  rentals               Rental[]
+  portfolioItems        PortfolioItem[]
+  portfolioCategories   PortfolioCategory[]
+  portfolioMedia        PortfolioMedia[]
+  portfolioInteractions PortfolioInteraction[]
+  portfolioTestimonials PortfolioTestimonial[]
+  partners              Partner[]
+  partnerContracts      PartnerContract[]
+  partnerTransactions   PartnerTransaction[]
+  partnerAssignments    PartnerAssignment[]
+  partnerReviews        PartnerReview[]
+  partnerDocuments      PartnerDocument[]
+  documents             BusinessDocument[]
+  disputes              Dispute[]
+  partnerPermissions    PartnerPermission[]
+  reviews               BusinessReview[]
+  products              Product[]
+  productCategories     ProductCategory[]
+  moduleInstallations   DeveloperModuleInstallation[]
+  moduleLicenses        ModuleLicense[]
+  supportTickets        DeveloperSupportTicket[]
+  adCampaigns           AdCampaign[]
+  orders                Order[]
+  debts                 Debt[]
+  escrows               Escrow[]
+  clientRisks           ClientRisk[]
+  financialLogs         FinancialLog[]
+  planningTasks         PlanningTask[]
+  employees             Employee[]
+  employeeRoles         EmployeeRole[]
+  attendances           Attendance[]
+  employeeDocuments     EmployeeDocument[]
+  employeePerformances  EmployeePerformance[]
+  employeeActivities    EmployeeActivity[]
+  employeeLeaves        Leave[]
+  employeePayrolls      Payroll[]
+  drivers               Driver[]
+  deliveries            Delivery[]
+  deliveryTracking      DeliveryTracking[]
+  deliveryProofs        DeliveryProof[]
+  employeeSchedules     EmployeeSchedule[]
+  planningLogs          PlanningLog[]
+  promotions            Promotion[]
+  coupons               Coupon[]
+  bundles               Bundle[]
+  campaigns             MarketingCampaign[]
+  promotionLogs         PromotionLog[]
+  loyaltyProgram        LoyaltyProgram?
+  loyalties             LoyaltyPoints[]
+  subscriptionPlans     SubscriptionPlan[]
+  subscriptionSubs      BusinessSubscription[]
+  subscriptionPayments  SubscriptionPayment[]
+  subscriptionLogs      SubscriptionLog[]
+  invoices              Invoice[]
+  quotes                Quote[]
+  score                 BusinessScore?
+  scoreHistory          ScoreHistory[]
+  badges                BusinessBadge[]
+  consent               DataConsent?
+  accessLogs            DataAccessLog[]
+  trainings             Training[]
+  businessClients       BusinessClient[]
+  businessTags          BusinessTag[]
+  clientSegments        ClientSegment[]
+  notificationTemplates BusinessNotificationTemplate[]
+  faqs                  BusinessFaq[]
+  stories               Story[]
+  feedItems             FeedItem[]
+  lives                 Live[]
+  shorts                Short[]
+  offerFlashes          OfferFlash[]
+  followers             Follow[]
+  alerts                Alert[]
+  socialAccounts        SocialAccount[]
+  growthBriefs          GrowthBrief[]
+  searchLogs            SearchLog[]
+  opportunities         Opportunity[]
+  marketNeeds           MarketNeed[]
+  marketIdeas           MarketIdea[]
+  posts                 Post[]
+  pipelineStages        PipelineStage[]
+  deals                 Deal[]
+  automationRules       AutomationRule[]
+
+  copilotConfig       CopilotConfiguration?
+  copilotOnboardingLogs CopilotOnboardingLog[]
+  wallet              Wallet?
+  createdAt           DateTime                      @default(now())
+  updatedAt           DateTime                      @updatedAt
+  deletedAt           DateTime?
+  TaskCategory        TaskCategory[]
+  PaymentTransaction  PaymentTransaction[]
+  Expense             Expense[]
+  ModuleConfiguration ModuleConfiguration[]
+  ModuleActivityLog   ModuleActivityLog[]
+  payments            Payment[]
+  pageViews           PageView[]
+  businessDailyStats  BusinessDailyStats[]
+  productDailyStats   ProductDailyStats[]
+  clientDailyStats    ClientDailyStats[]
+  quests              Quest[]
+  streaks             Streak[]
+  leaderboards        Leaderboard[]
+  challenges          Challenge[]
+  moduleSubscriptions DeveloperModuleSubscription[]
+
+  @@index([slug])
+  @@index([ownerId])
+  @@index([type])
+  @@index([isActive])
+}
+
+// ============================================
+// SOCIAL SHARING MODELS
+// ============================================
+
+
+model BusinessHour {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  day        Int
+  open       String?
+  close      String?
+  isClosed   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([businessId, day])
+  @@index([businessId])
+}
+
+
+model BusinessReview {
+  id         String    @id @default(uuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating     Int       @default(5)
+  title      String?
+  comment    String?
+  response   String?
+  responseAt DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([rating])
+}
+
+
+model Favorite {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation("ProductFavorites", fields: [productId], references: [id])
+  type        String
+  referenceId String
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, referenceId])
+  @@index([userId])
+  @@index([referenceId])
+  @@index([productId])
+}
+
+// ============================================
+// FOLLOW MODELS
+// ============================================
+
+
+model Follow {
+  id          String            @id @default(uuid())
+  followerId  String
+  follower    User              @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  businessId  String?
+  business    Business?         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  developerId String?
+  developer   DeveloperProfile? @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime          @default(now())
+
+  @@unique([followerId, businessId])
+  @@unique([followerId, developerId])
+  @@index([businessId])
+  @@index([developerId])
+  @@index([followerId])
+  @@index([createdAt])
+}
+
+// ============================================
+// QUOTE & INVOICE MODELS
+// ============================================
+
+
+model BusinessPageView {
+  id         String   @id @default(uuid())
+  businessId String
+  userId     String?
+  visitorId  String?
+  ip         String?
+  userAgent  String?
+  referrer   String?
+  duration   Int?     @default(0)
+  viewedAt   DateTime @default(now())
+
+  @@index([businessId, viewedAt])
+  @@index([businessId, userId])
+  @@index([visitorId])
+}
+

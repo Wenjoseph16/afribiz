@@ -1,0 +1,310 @@
+model User {
+  id            String  @id @default(uuid())
+  email         String  @unique
+  phone         String? @unique
+  firstName     String
+  lastName      String
+  passwordHash  String
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
+  isActive      Boolean @default(true)
+
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+
+  avatar                      String?
+  country                     String?
+  region                      String?
+  city                        String?
+  neighborhood                String?
+  birthDate                   DateTime?
+  gender                      String?
+  businessName                String?
+  businessRegistration        String?
+  developerApiKey             String?                      @unique
+  twoFactorEnabled            Boolean                      @default(false)
+  twoFactorSecret             String?
+  twoFactorBackupCodes        String?                      @default("[]")
+  rememberMeToken             String?                      @unique
+  developerVerificationStatus DeveloperVerificationStatus?
+
+  primaryRole                  UserRole                  @default(CLIENT)
+  roles                        UserRole[]                @default([CLIENT]) // @deprecated: use userRoleAssignments
+  roleAssignments              UserRoleAssignment[]
+  conversationParticipantLinks ConversationParticipant[]
+
+  sessions                 Session[]
+  refreshTokens            RefreshToken[]
+  passwordResets           PasswordReset[]
+  emailVerifications       EmailVerification[]
+  otpCodes                 OtpCode[]
+  securityLogs             SecurityLog[]
+  devices                  Device[]
+  notifications            Notification[]
+  notificationPreferences  NotificationPreference[]
+  products                 Product[]                 @relation("SellerProducts")
+  orders                   Order[]                   @relation("BuyerOrders")
+  bookings                 Booking[]                 @relation("ClientBookings")
+  providedBookings         Booking[]                 @relation("ProviderBookings")
+  payments                 Payment[]                 @relation("UserPayments")
+  reviews                  Review[]                  @relation("UserReviews")
+  business                 Business?
+  developerProfile         DeveloperProfile?
+  businessReviews          BusinessReview[]
+  sentMessages             Message[]                 @relation("SentMessages")
+  debts                    Debt[]
+  clientRisks              ClientRisk[]
+  businessClients          BusinessClient[]
+  financialLogs            FinancialLog[]
+  planningLogs             PlanningLog[]
+  coupons                  Coupon[]
+  loyalties                LoyaltyPoints[]
+  quotes                   Quote[]                   @relation("ClientQuotes")
+  invoices                 Invoice[]                 @relation("ClientInvoices")
+  favorites                Favorite[]                @relation("UserFavorites")
+  developerModuleReviews   DeveloperModuleReview[]
+  developerSupportMessages DeveloperSupportMessage[]
+  employees                Employee[]
+  clientSubscriptions      BusinessSubscription[]    @relation("ClientSubscriptions")
+  eventParticipants        EventParticipant[]
+  eventScans               EventScan[]
+  userTrainings            UserTraining[]
+  cart                     Cart?
+  referralsMade            Referral[]                @relation("ReferralsMade")
+  referralsReceived        Referral[]                @relation("ReferralsReceived")
+  referralRewards          ReferralReward[]
+  adminRoles               AdminRoleAssignment[]
+  cmsAuthor                CmsPage[]
+  formSubmissions          FormSubmission[]
+  moderationReports        MediaModerationItem[]     @relation("ModerationReporter")
+  moderationReviews        MediaModerationItem[]     @relation("ModerationReviewer")
+  userWarnings             UserWarning[]             @relation("WarnedUser")
+  warningsIssued           UserWarning[]             @relation("WarningIssuer")
+  followers                Follow[]                  @relation("UserFollowers")
+  alerts                   Alert[]
+  savedItems               SavedItem[]
+  searchLogs               SearchLog[]
+  marketVotes              MarketVote[]
+  comments                 Comment[]
+  contentReports           ContentReport[]           @relation("ContentReporter")
+  reviewedReports          ContentReport[]           @relation("ReportReviewer")
+  webauthnCredentials      WebAuthnCredential[]
+  revokedTokens            RevokedToken[]
+  fraudEvents              FraudEvent[]
+  posts                    Post[]
+  postLikes                PostLike[]
+  adminKyc                 AdminKyc?
+  adminAuditLogs           AdminAuditLog[]
+  escrows                  Escrow[]
+  pushSubscriptions        PushSubscription[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+  TaskComment     TaskComment[]
+  UserQuizAttempt UserQuizAttempt[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([primaryRole])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  ipAddress String
+  deviceId  String?
+  device    Device?   @relation(fields: [deviceId], references: [id])
+  isActive  Boolean   @default(true)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  revokedAt DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([isActive])
+  @@index([deviceId])
+}
+
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  sessionId String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+
+model EmailVerification {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String    @unique
+  email      String
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([email])
+}
+
+
+model OtpCode {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code        String
+  type        OtpType
+  destination String
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  expiresAt   DateTime
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([code])
+  @@index([expiresAt])
+}
+
+
+model Device {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  deviceType      String
+  osType          String
+  browserName     String?
+  browserVersion  String?
+  ipAddress       String
+  userAgent       String?
+  isCurrentDevice Boolean   @default(false)
+  isTrusted       Boolean   @default(false)
+  lastVerifiedAt  DateTime?
+  trustExpiresAt  DateTime?
+  lastUsedAt      DateTime?
+  sessions        Session[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  revokedAt       DateTime?
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([isTrusted])
+}
+
+
+model SecurityLog {
+  id        String            @id @default(uuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    SecurityLogAction
+  ipAddress String?
+  userAgent String?
+  deviceId  String?
+  success   Boolean           @default(true)
+  reason    String?
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================
+// STORY & FEED MODELS (Phase 1 — Stories + Feed)
+// ============================================
+
+
+model AdminRole {
+  id          String                @id @default(uuid())
+  name        String                @unique
+  description String?
+  isSystem    Boolean               @default(false)
+  permissions AdminRolePermission[]
+  admins      AdminRoleAssignment[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+}
+
+
+model AdminPermission {
+  id          String                @id @default(uuid())
+  resource    String
+  action      AdminPermissionAction
+  description String?
+  roles       AdminRolePermission[]
+  createdAt   DateTime              @default(now())
+
+  @@unique([resource, action])
+  @@index([resource])
+}
+
+
+model AdminRoleAssignment {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      AdminRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+// ============================================
+// AUTOMATION RULES (Part 14)
+// ============================================
+
+
+model RevokedToken {
+  id        String   @id @default(uuid())
+  jti       String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason    String?
+  exp       DateTime
+  revokedAt DateTime @default(now())
+
+  @@index([jti])
+  @@index([userId])
+  @@index([exp])
+}
+

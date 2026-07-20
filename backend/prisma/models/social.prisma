@@ -1,0 +1,218 @@
+model SocialAccount {
+  id             String         @id @default(uuid())
+  businessId     String
+  business       Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  platform       SocialPlatform
+  accountName    String
+  accountId      String?
+  accessToken    String
+  tokenExpiresAt DateTime?
+  refreshToken   String?
+  avatar         String?
+  isActive       Boolean        @default(true)
+  autoShare      Boolean        @default(true)
+  autoShareTypes String[]       @default(["PRODUCT", "SERVICE", "PROMOTION", "STORY", "SHORT"])
+  lastPostedAt   DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([businessId, platform])
+  @@index([businessId])
+  @@index([platform])
+}
+
+
+model Referral {
+  id            String          @id @default(uuid())
+  referrerId    String
+  referrer      User            @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId     String?
+  referee       User?           @relation("ReferralsReceived", fields: [refereeId], references: [id], onDelete: SetNull)
+  code          String
+  status        String          @default("PENDING") // PENDING, CONVERTED, EXPIRED
+  rewardAwarded Boolean         @default(false)
+  convertedAt   DateTime?
+  reward        ReferralReward?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([referrerId])
+  @@index([code])
+  @@index([status])
+  @@index([refereeId])
+}
+
+
+model ReferralReward {
+  id         String    @id @default(uuid())
+  referralId String    @unique
+  referral   Referral  @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  type       String // POINTS, DISCOUNT, CASH, BONUS
+  amount     Decimal   @db.Decimal(12, 2)
+  currency   String    @default("FCFA")
+  points     Int?
+  status     String    @default("PENDING") // PENDING, AWARDED, EXPIRED
+  awardedAt  DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([referralId])
+}
+
+// ============================================
+// PORTFOLIO MODELS (Module 12)
+// ============================================
+
+
+model SavingsGroup {
+  id              String            @id @default(uuid())
+  businessId      String
+  name            String
+  description     String?
+  type            SavingsGroupType  @default(ROTATING)
+  currency        String            @default("FCFA")
+  contributionAmount Decimal?        @db.Decimal(12, 2)
+  frequency       String            @default("weekly")
+  maxMembers      Int               @default(10)
+  startDate       DateTime?
+  endDate         DateTime?
+  status          SavingsGroupStatus @default(ACTIVE)
+  rules           Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  members     SavingsMember[]
+  cycles      SavingsCycle[]
+  escrows     Escrow[]
+
+  @@index([businessId])
+  @@index([status])
+}
+
+
+model SavingsCycle {
+  id            String       @id @default(uuid())
+  groupId       String
+  cycleNumber   Int
+  startDate     DateTime
+  endDate       DateTime?
+  totalAmount   Decimal?     @db.Decimal(12, 2)
+  status        String       @default("ACTIVE")
+  payoutDate    DateTime?
+  completedAt   DateTime?
+  releaseAt     DateTime?
+  totalCollected Decimal?    @default(0) @db.Decimal(12, 2)
+  totalDistributed Decimal?  @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime     @default(now())
+
+  contributions SavingsContribution[]
+  escrows       Escrow[]
+
+  @@index([groupId])
+  @@index([cycleNumber])
+  group SavingsGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+
+model SavingsContribution {
+  id            String                    @id @default(uuid())
+  cycleId       String
+  memberId      String
+  amount        Decimal                   @db.Decimal(12, 2)
+  currency      String                    @default("FCFA")
+  status        SavingsContributionStatus @default(PENDING)
+  paidAt        DateTime?
+  method        String?
+  reference     String?
+  notes         String?
+  createdAt     DateTime                  @default(now())
+
+  @@index([cycleId])
+  @@index([memberId])
+  cycle SavingsCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  member SavingsMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+
+model SavingsLoan {
+  id             String             @id @default(uuid())
+  groupId        String
+  memberId       String?
+  amount         Decimal            @db.Decimal(12, 2)
+  interestRate   Decimal            @default(0) @db.Decimal(5, 2)
+  totalRepay     Decimal            @db.Decimal(12, 2)
+  durationMonths Int                @default(1)
+  purpose        String?
+  status         SavingsLoanStatus  @default(PENDING)
+  approvedAt     DateTime?
+  disbursedAt    DateTime?
+  repaidAt       DateTime?
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  repayments SavingsLoanRepayment[]
+
+  @@index([groupId])
+  @@index([memberId])
+  @@index([status])
+}
+
+
+model GroupBuy {
+  id              String        @id @default(uuid())
+  businessId      String
+  productId       String?
+  title           String
+  description     String?
+  image           String?
+  price           Decimal       @db.Decimal(12, 2)
+  groupPrice      Decimal       @db.Decimal(12, 2)
+  currency        String        @default("FCFA")
+  minParticipants Int           @default(5)
+  maxParticipants Int?
+  currentCount    Int           @default(0)
+  discountPercent Float         @default(0)
+  savings         Decimal?      @db.Decimal(12, 2)
+  startAt         DateTime?
+  endAt           DateTime?
+  status          GroupBuyStatus @default(DRAFT)
+  whatsappGroup   String?
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  participants GroupBuyParticipant[]
+
+  @@index([businessId])
+  @@index([status])
+  @@index([endAt])
+}
+
+
+model GroupBuyParticipant {
+  id          String   @id @default(uuid())
+  groupBuyId  String
+  userId      String?
+  name        String
+  phone       String?
+  email       String?
+  quantity    Int      @default(1)
+  amount      Decimal  @db.Decimal(12, 2)
+  status      String   @default("PENDING")
+  paidAt      DateTime?
+  paymentRef  String?
+  createdAt   DateTime @default(now())
+
+  @@index([groupBuyId])
+  @@index([userId])
+  groupBuy GroupBuy @relation(fields: [groupBuyId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// 4.5 — TAXES MULTI-PAYS (ZLECAF)
+// ============================================
+
