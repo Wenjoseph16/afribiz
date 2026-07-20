@@ -77,6 +77,17 @@ backend/uploads/
 # Docker compose local overrides
 docker-compose.override.yml
 
+# Tool directories
+.agents/
+.claude/
+.opencode/
+
+# Build artifacts
+*.tsbuildinfo
+
+# Windows artifacts
+nul
+
 # Test artifacts
 test-results/
 playwright-report/
