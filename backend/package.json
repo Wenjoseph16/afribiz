@@ -13,21 +13,25 @@
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "test": "jest",
+    "test:unit": "jest",
+    "test:integration": "jest --config jest.integration.config.ts",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "type-check": "tsc --noEmit",
+    "type-check": "cross-env NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:test": "tsx prisma/seedTestData.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@afribiz/shared": "*",
     "@prisma/client": "^5.4.0",
-    "@sendgrid/mail": "^8.1.6",
     "@sentry/node": "^10.57.0",
     "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -47,14 +51,16 @@
     "stripe": "^22.2.0",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
-    "typescript": "^5.2.2",
+    "tsconfig-paths": "^3.15.0",
     "uuid": "^9.0.0",
+    "web-push": "^3.6.7",
     "winston": "^3.10.0",
     "xss": "^1.0.15",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
@@ -67,15 +73,17 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^9.0.7",
+    "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.0",
     "jest": "^30.4.2",
-    "prettier": "^3.1.1",
+    "prettier": "^3.2.5",
     "prisma": "^5.7.1",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }

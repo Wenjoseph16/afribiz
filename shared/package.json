@@ -8,7 +8,11 @@
   "scripts": {
     "build": "tsc",
     "type-check": "tsc --noEmit",
-    "lint": "echo \"No linting configured for shared workspace.\""
+    "lint": "echo \"No linting configured for shared workspace.\"",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
