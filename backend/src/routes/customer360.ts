@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import {
   getCustomer360,
   trackPageView,
@@ -10,6 +10,7 @@ import {
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 // Tracking endpoints
 router.post('/track/page-view', trackPageView);

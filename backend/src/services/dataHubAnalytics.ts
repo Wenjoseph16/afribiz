@@ -1,38 +1,70 @@
 import { prisma } from '../lib/db';
+import { logger } from '../lib/logger';
 
-// LIMITATION: in-memory — perdu au redémarrage du serveur
-const searchQueries: { query: string; timestamp: Date; resultCount: number }[] = [];
-const MAX_SEARCH_LOGS = 10000;
-
-export function trackSearchQuery(query: string, resultCount: number): void {
-  searchQueries.push({ query, timestamp: new Date(), resultCount });
-  if (searchQueries.length > MAX_SEARCH_LOGS) {
-    searchQueries.splice(0, searchQueries.length - MAX_SEARCH_LOGS);
+export async function trackSearchQuery(
+  query: string,
+  resultCount: number,
+  options?: {
+    userId?: string;
+    businessId?: string;
+    source?: string;
+    filters?: Record<string, any>;
+  }
+): Promise<void> {
+  try {
+    await prisma.searchLog.create({
+      data: {
+        query,
+        resultCount,
+        userId: options?.userId,
+        businessId: options?.businessId,
+        source: options?.source || 'marketplace',
+        filters: options?.filters || undefined,
+      },
+    });
+  } catch (err) {
+    // Silently fail — search tracking is non-critical
+    logger.error('Failed to track search query:', err);
   }
 }
 
-export function getSearchTrends(days: number = 30): any {
-  const since = Date.now() - days * 24 * 60 * 60 * 1000;
-  const recent = searchQueries.filter((q) => q.timestamp.getTime() > since);
-  const queryCounts = new Map<string, { count: number; noResults: number }>();
-  for (const q of recent) {
-    const key = q.query.toLowerCase().trim();
-    if (!key) continue;
-    const entry = queryCounts.get(key) || { count: 0, noResults: 0 };
-    entry.count++;
-    if (q.resultCount === 0) entry.noResults++;
-    queryCounts.set(key, entry);
-  }
+export async function getSearchTrends(days: number = 30): Promise<any> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const [totalSearches, topQueries, queriesWithoutResults] = await Promise.all([
+    prisma.searchLog.count({ where: { createdAt: { gte: since } } }),
+    prisma.searchLog.groupBy({
+      by: ['query'],
+      where: { createdAt: { gte: since } },
+      _count: { id: true },
+      _sum: { resultCount: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 50,
+    }),
+    prisma.searchLog.groupBy({
+      by: ['query'],
+      where: { createdAt: { gte: since }, resultCount: 0 },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 20,
+    }),
+  ]);
+
+  const noResultsCounts = new Map(queriesWithoutResults.map((q) => [q.query, q._count.id]));
+
   return {
-    totalSearches: recent.length,
-    uniqueQueries: queryCounts.size,
-    topQueries: Array.from(queryCounts.entries())
-      .map(([query, stats]) => ({ query, count: stats.count, noResults: stats.noResults }))
-      .sort((a, b) => b.count - a.count).slice(0, 50),
-    queriesWithoutResults: Array.from(queryCounts.entries())
-      .filter(([, stats]) => stats.noResults > 0)
-      .map(([query, stats]) => ({ query, count: stats.count, noResults: stats.noResults }))
-      .sort((a, b) => b.count - a.count).slice(0, 20),
+    totalSearches,
+    uniqueQueries: topQueries.length,
+    topQueries: topQueries.map((q) => ({
+      query: q.query,
+      count: q._count.id,
+      noResults: noResultsCounts.get(q.query) || 0,
+    })),
+    queriesWithoutResults: queriesWithoutResults.map((q) => ({
+      query: q.query,
+      count: q._count.id,
+      noResults: q._count.id,
+    })),
     period: days + ' days',
   };
 }
@@ -41,20 +73,26 @@ export async function getConversionFunnel(businessId: string): Promise<any> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   // Récupérer les IDs des produits du business pour la query panier
-  const businessProductIds = (await prisma.product.findMany({
-    where: { businessId, deletedAt: null },
-    select: { id: true },
-  })).map((p) => p.id);
+  const businessProductIds = (
+    await prisma.product.findMany({
+      where: { businessId, deletedAt: null },
+      select: { id: true },
+    })
+  ).map((p) => p.id);
 
   const [pageViews, productViews, productClicks, cartAdds, orders, payments] = await Promise.all([
     prisma.businessPageView.count({ where: { businessId, viewedAt: { gte: thirtyDaysAgo } } }),
     prisma.productView.count({ where: { businessId, viewedAt: { gte: thirtyDaysAgo } } }),
     prisma.productClick.count({ where: { businessId, clickedAt: { gte: thirtyDaysAgo } } }),
     businessProductIds.length > 0
-      ? prisma.cartItem.count({ where: { productId: { in: businessProductIds }, createdAt: { gte: thirtyDaysAgo } } })
+      ? prisma.cartItem.count({
+          where: { productId: { in: businessProductIds }, createdAt: { gte: thirtyDaysAgo } },
+        })
       : 0,
     prisma.order.count({ where: { businessId, createdAt: { gte: thirtyDaysAgo } } }),
-    prisma.payment.count({ where: { order: { businessId }, createdAt: { gte: thirtyDaysAgo }, status: 'COMPLETED' } }),
+    prisma.payment.count({
+      where: { order: { businessId }, createdAt: { gte: thirtyDaysAgo }, status: 'COMPLETED' },
+    }),
   ]);
 
   return {
@@ -91,9 +129,27 @@ export async function getRetentionCohorts(businessId: string): Promise<any> {
     const clientIds = cohortClients.map((c) => c.clientId);
     const cs = cohortStart.getTime();
     const [w1, w4, w12] = await Promise.all([
-      prisma.order.count({ where: { businessId, buyerId: { in: clientIds }, createdAt: { gte: new Date(cs), lt: new Date(cs + 7 * 86400000) } } }),
-      prisma.order.count({ where: { businessId, buyerId: { in: clientIds }, createdAt: { gte: new Date(cs), lt: new Date(cs + 28 * 86400000) } } }),
-      prisma.order.count({ where: { businessId, buyerId: { in: clientIds }, createdAt: { gte: new Date(cs), lt: new Date(cs + 84 * 86400000) } } }),
+      prisma.order.count({
+        where: {
+          businessId,
+          buyerId: { in: clientIds },
+          createdAt: { gte: new Date(cs), lt: new Date(cs + 7 * 86400000) },
+        },
+      }),
+      prisma.order.count({
+        where: {
+          businessId,
+          buyerId: { in: clientIds },
+          createdAt: { gte: new Date(cs), lt: new Date(cs + 28 * 86400000) },
+        },
+      }),
+      prisma.order.count({
+        where: {
+          businessId,
+          buyerId: { in: clientIds },
+          createdAt: { gte: new Date(cs), lt: new Date(cs + 84 * 86400000) },
+        },
+      }),
     ]);
     cohorts.push({
       period: cohortStart.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }),
@@ -106,23 +162,63 @@ export async function getRetentionCohorts(businessId: string): Promise<any> {
   return cohorts;
 }
 
-export async function getProductRecommendations(businessId: string, limit: number = 6): Promise<any[]> {
+export async function getProductRecommendations(
+  businessId: string,
+  limit: number = 6
+): Promise<any[]> {
   const [topViewed, topClicked, topOrdered] = await Promise.all([
-    prisma.productView.groupBy({ by: ['productId'], where: { businessId }, _count: { id: true }, orderBy: { _count: { id: 'desc' } }, take: 20 }),
-    prisma.productClick.groupBy({ by: ['productId'], where: { businessId }, _count: { id: true }, orderBy: { _count: { id: 'desc' } }, take: 20 }),
-    prisma.orderItem.groupBy({ by: ['productId'], where: { order: { businessId } }, _count: { id: true }, orderBy: { _count: { id: 'desc' } }, take: 20 }),
+    prisma.productView.groupBy({
+      by: ['productId'],
+      where: { businessId },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 20,
+    }),
+    prisma.productClick.groupBy({
+      by: ['productId'],
+      where: { businessId },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 20,
+    }),
+    prisma.orderItem.groupBy({
+      by: ['productId'],
+      where: { order: { businessId } },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 20,
+    }),
   ]);
   const scores = new Map<string, number>();
-  for (const v of topViewed) scores.set(v.productId, (scores.get(v.productId) || 0) + v._count.id * 1);
-  for (const c of topClicked) scores.set(c.productId, (scores.get(c.productId) || 0) + c._count.id * 3);
-  for (const o of topOrdered) { if (o.productId) scores.set(o.productId, (scores.get(o.productId) || 0) + o._count.id * 5); }
-  const sortedIds = Array.from(scores.entries()).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([id]) => id);
+  for (const v of topViewed)
+    scores.set(v.productId, (scores.get(v.productId) || 0) + v._count.id * 1);
+  for (const c of topClicked)
+    scores.set(c.productId, (scores.get(c.productId) || 0) + c._count.id * 3);
+  for (const o of topOrdered) {
+    if (o.productId) scores.set(o.productId, (scores.get(o.productId) || 0) + o._count.id * 5);
+  }
+  const sortedIds = Array.from(scores.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id]) => id);
   if (sortedIds.length === 0) return [];
   const products = await prisma.product.findMany({
     where: { id: { in: sortedIds }, businessId, deletedAt: null, isActive: true },
-    select: { id: true, name: true, slug: true, images: true, price: true, description: true, category: true, rating: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      images: true,
+      price: true,
+      description: true,
+      category: true,
+      rating: true,
+    },
   });
-  return sortedIds.map((id) => products.find((p) => p.id === id)).filter(Boolean).slice(0, limit);
+  return sortedIds
+    .map((id) => products.find((p) => p.id === id))
+    .filter(Boolean)
+    .slice(0, limit);
 }
 
 export async function getEngagementAnalytics(businessId: string): Promise<any> {
@@ -132,7 +228,9 @@ export async function getEngagementAnalytics(businessId: string): Promise<any> {
     prisma.businessClient.count({ where: { businessId, lastVisitAt: { gte: thirtyDaysAgo } } }),
     prisma.businessPageView.count({ where: { businessId, viewedAt: { gte: thirtyDaysAgo } } }),
     prisma.businessReview.count({ where: { businessId, createdAt: { gte: thirtyDaysAgo } } }),
-    prisma.conversation.count({ where: { participants: { has: businessId }, lastMessageAt: { gte: thirtyDaysAgo } } }),
+    prisma.conversation.count({
+      where: { participants: { has: businessId }, lastMessageAt: { gte: thirtyDaysAgo } },
+    }),
   ]);
   return {
     totalClients,

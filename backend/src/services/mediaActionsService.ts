@@ -26,39 +26,86 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
     case 'PRODUCT': {
       const product = await prisma.product.findUnique({
         where: { id: linkTargetId },
-        select: { id: true, name: true, price: true, currency: true, images: true, slug: true, stock: true, businessId: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          currency: true,
+          images: true,
+          slug: true,
+          stock: true,
+          businessId: true,
+        },
       });
-      if (product) commerce = { type: 'PRODUCT', data: product, action: 'add_to_cart', label: 'Ajouter au panier' };
+      if (product)
+        commerce = {
+          type: 'PRODUCT',
+          data: product,
+          action: 'add_to_cart',
+          label: 'Ajouter au panier',
+        };
       break;
     }
     case 'SERVICE': {
       const service = await prisma.service.findUnique({
         where: { id: linkTargetId },
-        select: { id: true, name: true, price: true, currency: true, images: true, businessId: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          currency: true,
+          images: true,
+          businessId: true,
+        },
       });
-      if (service) commerce = { type: 'SERVICE', data: service, action: 'book', label: 'Réserver maintenant' };
+      if (service)
+        commerce = { type: 'SERVICE', data: service, action: 'book', label: 'Réserver maintenant' };
       break;
     }
     case 'MENU_ITEM': {
       const menuItem = await prisma.menuItem.findUnique({
         where: { id: linkTargetId },
-        select: { id: true, name: true, price: true, currency: true, images: true, businessId: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          currency: true,
+          images: true,
+          businessId: true,
+        },
       });
-      if (menuItem) commerce = { type: 'MENU_ITEM', data: menuItem, action: 'order', label: 'Commander' };
+      if (menuItem)
+        commerce = { type: 'MENU_ITEM', data: menuItem, action: 'order', label: 'Commander' };
       break;
     }
     case 'EVENT': {
       const event = await prisma.event.findUnique({
         where: { id: linkTargetId },
-        select: { id: true, title: true, price: true, currency: true, coverImage: true, startDate: true, businessId: true },
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          currency: true,
+          coverImage: true,
+          startDate: true,
+          businessId: true,
+        },
       });
-      if (event) commerce = { type: 'EVENT', data: event, action: 'purchase', label: 'Acheter un billet' };
+      if (event)
+        commerce = { type: 'EVENT', data: event, action: 'purchase', label: 'Acheter un billet' };
       break;
     }
     case 'ROOM': {
       const room = await prisma.room.findUnique({
         where: { id: linkTargetId },
-        select: { id: true, name: true, price: true, currency: true, images: true, businessId: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          currency: true,
+          images: true,
+          businessId: true,
+        },
       });
       if (room) commerce = { type: 'ROOM', data: room, action: 'book', label: 'Réserver' };
       break;
@@ -66,7 +113,14 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
     case 'RENTAL': {
       const rental = await prisma.rental.findUnique({
         where: { id: linkTargetId },
-        select: { id: true, name: true, price: true, currency: true, images: true, businessId: true },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          currency: true,
+          images: true,
+          businessId: true,
+        },
       });
       if (rental) commerce = { type: 'RENTAL', data: rental, action: 'rent', label: 'Louer' };
       break;
@@ -74,25 +128,54 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
     case 'PROMOTION': {
       const prom = await prisma.promotion.findUnique({
         where: { id: linkTargetId },
-        select: { id: true, title: true, promotionType: true, discountValue: true, businessId: true },
+        select: {
+          id: true,
+          title: true,
+          promotionType: true,
+          discountValue: true,
+          businessId: true,
+        },
       });
-      if (prom) commerce = { type: 'PROMOTION', data: prom, action: 'view', label: 'Voir l\'offre' };
+      if (prom) commerce = { type: 'PROMOTION', data: prom, action: 'view', label: "Voir l'offre" };
       break;
     }
     case 'BUSINESS_PAGE': {
-      commerce = { type: 'BUSINESS_PAGE', data: { id: business.id, name: business.name, slug: business.slug, logo: business.logo }, action: 'visit', label: 'Voir le commerce' };
+      commerce = {
+        type: 'BUSINESS_PAGE',
+        data: { id: business.id, name: business.name, slug: business.slug, logo: business.logo },
+        action: 'visit',
+        label: 'Voir le commerce',
+      };
       break;
     }
     case 'CUSTOM_LINK': {
       // Vérifier si le lien cible est un module développeur
       const moduleTarget = await prisma.developerModule.findUnique({
         where: { id: linkTargetId },
-        select: { id: true, name: true, slug: true, description: true, logo: true, price: true, developerId: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          logo: true,
+          price: true,
+          developerId: true,
+        },
       });
       if (moduleTarget) {
-        commerce = { type: 'MODULE', data: moduleTarget, action: 'install', label: 'Installer le module' };
+        commerce = {
+          type: 'MODULE',
+          data: moduleTarget,
+          action: 'install',
+          label: 'Installer le module',
+        };
       } else {
-        commerce = { type: 'CUSTOM_LINK', data: { url: media.linkUrl }, action: 'link', label: 'En savoir plus' };
+        commerce = {
+          type: 'CUSTOM_LINK',
+          data: { url: media.linkUrl },
+          action: 'link',
+          label: 'En savoir plus',
+        };
       }
       break;
     }
@@ -156,13 +239,24 @@ export async function createOrderFromMedia(userId: string, productId: string, bu
       totalAmount: product.price,
       subtotal: product.price,
       items: {
-        create: { productId, name: product.name, quantity: 1, unitPrice: product.price, total: product.price },
+        create: {
+          productId,
+          name: product.name,
+          quantity: 1,
+          unitPrice: product.price,
+          total: product.price,
+        },
       },
     },
   });
 }
 
-export async function createBookingFromMedia(userId: string, serviceId: string, businessId: string, startDate?: string) {
+export async function createBookingFromMedia(
+  userId: string,
+  serviceId: string,
+  businessId: string,
+  startDate?: string
+) {
   const service = await prisma.service.findUnique({ where: { id: serviceId } });
   const bookingCount = await prisma.booking.count();
   const bookingNumber = `BOOK-${Date.now()}-${bookingCount + 1}`;

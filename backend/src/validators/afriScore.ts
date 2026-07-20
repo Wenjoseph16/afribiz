@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
 const shareLevels = ['NONE', 'BASIC', 'STANDARD', 'FULL'] as const;
-const partnerTypes = ['BANK', 'INSURANCE', 'INVESTOR', 'GOVERNMENT', 'NGO', 'TECH', 'OTHER'] as const;
+const partnerTypes = [
+  'BANK',
+  'INSURANCE',
+  'INVESTOR',
+  'GOVERNMENT',
+  'NGO',
+  'TECH',
+  'OTHER',
+] as const;
 
 export const updateConsentSchema = z.object({
   shareLevel: z.enum(shareLevels).optional(),
@@ -28,4 +36,3 @@ export const createPartnerSchema = z.object({
 });
 
 export const updatePartnerSchema = createPartnerSchema.partial();
-

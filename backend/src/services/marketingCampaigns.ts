@@ -21,10 +21,10 @@ export async function sendBirthdayCampaigns() {
     select: { id: true, firstName: true, email: true, phone: true, birthDate: true },
   });
 
-  const birthdayUsers = users.filter(u => {
+  const birthdayUsers = users.filter((u) => {
     if (!u.birthDate) return false;
     const bd = new Date(u.birthDate);
-    return bd.getDate() === today && (bd.getMonth() + 1) === month;
+    return bd.getDate() === today && bd.getMonth() + 1 === month;
   });
 
   if (birthdayUsers.length === 0) return { sent: 0 };
@@ -113,8 +113,12 @@ export async function getMarketingStats(ownerId: string) {
 
   const [totalCampaigns, totalSent, activeCampaigns, birthdayToday] = await Promise.all([
     prisma.promotion.count({ where: { businessId: business.id } }),
-    prisma.notification.count({ where: { businessId: business.id, type: NotificationType.PROMOTION } as any }),
-    prisma.promotion.count({ where: { businessId: business.id, isActive: true, endDate: { gte: new Date() } } as any }),
+    prisma.notification.count({
+      where: { businessId: business.id, type: NotificationType.PROMOTION } as any,
+    }),
+    prisma.promotion.count({
+      where: { businessId: business.id, isActive: true, endDate: { gte: new Date() } } as any,
+    }),
     prisma.user.count({
       where: {
         isActive: true,

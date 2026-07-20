@@ -70,7 +70,11 @@ export const notificationTemplateRepository = {
     });
   },
 
-  async updateByBusinessAndType(businessId: string, type: NotificationType, params: UpdateTemplateParams) {
+  async updateByBusinessAndType(
+    businessId: string,
+    type: NotificationType,
+    params: UpdateTemplateParams
+  ) {
     return prisma.businessNotificationTemplate.update({
       where: { businessId_type: { businessId, type } },
       data: params,

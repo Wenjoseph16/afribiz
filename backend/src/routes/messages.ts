@@ -1,12 +1,24 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { getConversations, getMessages, sendMessage, sendMessageByBody, createConversation, createSupportTicket, searchRecipients } from '../controllers/messages';
+import {
+  getConversations,
+  getMessages,
+  sendMessage,
+  sendMessageByBody,
+  createConversation,
+  createSupportTicket,
+  searchRecipients,
+  getBusinessConversations,
+  getUnreadMessageCount,
+} from '../controllers/messages';
 
 const router = Router();
 
 router.use(authMiddleware);
 
 router.get('/conversations', getConversations);
+router.get('/business-conversations', getBusinessConversations);
+router.get('/unread-count', getUnreadMessageCount);
 router.get('/search-recipients', searchRecipients);
 router.post('/conversations', createConversation);
 router.get('/conversations/:conversationId', getMessages);

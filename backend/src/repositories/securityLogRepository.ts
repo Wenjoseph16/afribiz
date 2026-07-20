@@ -32,7 +32,11 @@ export class SecurityLogRepository {
   /**
    * Find logs by user ID
    */
-  static async findByUserId(userId: string, skip: number = 0, take: number = 10): Promise<SecurityLog[]> {
+  static async findByUserId(
+    userId: string,
+    skip: number = 0,
+    take: number = 10
+  ): Promise<SecurityLog[]> {
     return prisma.securityLog.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -44,7 +48,11 @@ export class SecurityLogRepository {
   /**
    * Find logs by action
    */
-  static async findByAction(action: SecurityLogAction, skip: number = 0, take: number = 10): Promise<SecurityLog[]> {
+  static async findByAction(
+    action: SecurityLogAction,
+    skip: number = 0,
+    take: number = 10
+  ): Promise<SecurityLog[]> {
     return prisma.securityLog.findMany({
       where: { action },
       orderBy: { createdAt: 'desc' },

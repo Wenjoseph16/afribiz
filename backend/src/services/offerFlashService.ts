@@ -9,7 +9,15 @@ export async function getActiveOffers(params?: {
   radiusKm?: number;
   featured?: boolean;
 }) {
-  const { page = 1, limit = 20, businessId, latitude, longitude, radiusKm, featured } = params || {};
+  const {
+    page = 1,
+    limit = 20,
+    businessId,
+    latitude,
+    longitude,
+    radiusKm,
+    featured,
+  } = params || {};
   const now = new Date();
   const where: any = {
     isActive: true,
@@ -25,7 +33,17 @@ export async function getActiveOffers(params?: {
     where,
     include: {
       business: {
-        select: { id: true, name: true, slug: true, logo: true, type: true, city: true, latitude: true, longitude: true, rating: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logo: true,
+          type: true,
+          city: true,
+          latitude: true,
+          longitude: true,
+          rating: true,
+        },
       },
     },
     orderBy: [{ isFeatured: 'desc' }, { endAt: 'asc' }],
@@ -53,7 +71,19 @@ export async function getOfferById(offerId: string) {
     where: { id: offerId },
     include: {
       business: {
-        select: { id: true, name: true, slug: true, logo: true, type: true, city: true, latitude: true, longitude: true, rating: true, phone: true, description: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logo: true,
+          type: true,
+          city: true,
+          latitude: true,
+          longitude: true,
+          rating: true,
+          phone: true,
+          description: true,
+        },
       },
     },
   });
@@ -113,7 +143,7 @@ export async function createOffer(data: {
         isActive: true,
       },
     });
-  } catch (e) {
+  } catch {
     // feed item is optional
   }
 
@@ -143,12 +173,29 @@ export async function deleteOffer(offerId: string, businessId: string) {
   return true;
 }
 
-export async function claimOffer(offerId: string) {
+export async function claimOffer(offerId: string, userId?: string) {
   const offer = await prisma.offerFlash.findFirst({
     where: { id: offerId, isActive: true, endAt: { gte: new Date() } },
   });
   if (!offer) return null;
   if (offer.soldCount >= offer.quantity) return null;
+
+  // Vérifier la limite maxPerCustomer
+  if (userId && offer.maxPerCustomer && offer.maxPerCustomer > 0) {
+    const userClaims = await prisma.claimedOffer.count({
+      where: { offerId, userId },
+    });
+    if (userClaims >= offer.maxPerCustomer) {
+      throw new Error(`Limite de ${offer.maxPerCustomer} réclamation(s) atteinte`);
+    }
+  }
+
+  // Enregistrer la réclamation
+  if (userId) {
+    await prisma.claimedOffer.create({
+      data: { offerId, userId },
+    });
+  }
 
   return prisma.offerFlash.update({
     where: { id: offerId },
@@ -172,8 +219,17 @@ export async function getNearbyBusinesses(params: {
   const allBusinesses = await prisma.business.findMany({
     where,
     select: {
-      id: true, name: true, slug: true, logo: true, type: true, city: true,
-      latitude: true, longitude: true, rating: true, reviewCount: true, shortDescription: true,
+      id: true,
+      name: true,
+      slug: true,
+      logo: true,
+      type: true,
+      city: true,
+      latitude: true,
+      longitude: true,
+      rating: true,
+      reviewCount: true,
+      shortDescription: true,
     },
   });
 
@@ -183,7 +239,7 @@ export async function getNearbyBusinesses(params: {
       ...b,
       distance: haversineDistance(latitude, longitude, b.latitude!, b.longitude!),
     }))
-    .filter(b => b.distance <= radiusKm)
+    .filter((b) => b.distance <= radiusKm)
     .sort((a: any, b: any) => a.distance - b.distance);
 
   const total = withDistance.length;
@@ -196,11 +252,12 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   const R = 6371;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function toRad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
-

@@ -1,4 +1,5 @@
 import { prisma } from '../lib/db';
+import { logger } from '../lib/logger';
 
 /**
  * Audit service for monetization settings changes.
@@ -18,9 +19,7 @@ export interface MonetizationAuditEntry {
 /**
  * Log a monetization setting change to the security log.
  */
-export async function logMonetizationChange(
-  entry: MonetizationAuditEntry
-): Promise<void> {
+export async function logMonetizationChange(entry: MonetizationAuditEntry): Promise<void> {
   try {
     await prisma.securityLog.create({
       data: {
@@ -35,12 +34,12 @@ export async function logMonetizationChange(
           newValue: entry.newValue,
           source: entry.source,
         },
-        ipAddress: '',
+        // ip address not available in this audit context
       },
     });
   } catch (err) {
     // Non-critical: silently fail audit logging so it never blocks a settings save
-    console.error('Failed to audit monetization change:', err);
+    logger.error('Failed to audit monetization change:', err);
   }
 }
 

@@ -4,6 +4,7 @@ import { notificationRepository } from '../repositories/notificationRepository';
 import { notificationPreferenceRepository } from '../repositories/notificationPreferenceRepository';
 import { notificationTemplateRepository } from '../repositories/notificationTemplateRepository';
 import { sendEmail } from '../lib/mail';
+import { processDelivery } from './NotificationChannels';
 import { logger } from '../lib/logger';
 
 const typeMapping: Record<DomainEventType, NotificationType> = {
@@ -127,6 +128,8 @@ const typeMapping: Record<DomainEventType, NotificationType> = {
 
   // New events
   SURVEY_RESPONDED: NotificationType.NEW_MESSAGE,
+  FOLLOWED: NotificationType.NEW_MESSAGE,
+  UNFOLLOWED: NotificationType.NEW_MESSAGE,
   EMPLOYEE_LATE: NotificationType.NEW_MESSAGE,
   DOCUMENT_EXPIRING: NotificationType.NEW_MESSAGE,
   ESCALATED_TICKET: NotificationType.SECURITY_ALERT,
@@ -147,6 +150,37 @@ const typeMapping: Record<DomainEventType, NotificationType> = {
   DAILY_REPORT_READY: NotificationType.NEW_MESSAGE,
   WEEKLY_DEV_REPORT: NotificationType.NEW_MESSAGE,
   SCORE_CRITICAL: NotificationType.SECURITY_ALERT,
+  SOCIAL_SHARE_REQUESTED: NotificationType.PROMOTION,
+  SOCIAL_SHARE_SUCCESS: NotificationType.PROMOTION,
+  SOCIAL_SHARE_FAILED: NotificationType.SECURITY_ALERT,
+
+  // ── Comments & Reports ──
+  COMMENT_CREATED: NotificationType.NEW_MESSAGE,
+  COMMENT_DELETED: NotificationType.NEW_MESSAGE,
+  REPORT_CREATED: NotificationType.SECURITY_ALERT,
+  REPORT_RESOLVED: NotificationType.NEW_MESSAGE,
+
+  // ── Growth Engine ──
+  MORNING_BRIEF_GENERATED: NotificationType.SYSTEM,
+  EVENING_SUMMARY_GENERATED: NotificationType.SYSTEM,
+
+  // ── Attention & Urgency ──
+  URGENCY_ALERT_GENERATED: NotificationType.SYSTEM,
+
+  // ── Opportunities ──
+  OPPORTUNITY_DETECTED: NotificationType.SYSTEM,
+
+  // ── Quotes & Invoices ──
+  QUOTE_SENT: NotificationType.PAYMENT_RECEIVED,
+  QUOTE_ACCEPTED: NotificationType.PAYMENT_RECEIVED,
+  INVOICE_SENT: NotificationType.PAYMENT_RECEIVED,
+  INVOICE_PAID: NotificationType.PAYMENT_RECEIVED,
+  INVOICE_OVERDUE: NotificationType.PAYMENT_REMINDER,
+
+  // ── Savings / Tontine ──
+  SAVINGS_CYCLE_CLOSED: NotificationType.PAYMENT_RECEIVED,
+  SAVINGS_CONTRIBUTION_RECEIVED: NotificationType.PAYMENT_RECEIVED,
+  SAVINGS_LOAN_APPROVED: NotificationType.PROMOTION,
 };
 
 const eventTitles: Record<DomainEventType, string> = {
@@ -285,10 +319,43 @@ const eventTitles: Record<DomainEventType, string> = {
   LTV_RECALCULATED: 'Valeur client mise à jour',
   WELCOME_COUPON_ISSUED: 'Bienvenue - coupon offert',
   CROSS_SELL_OPPORTUNITY: 'Produit recommandé',
-  SURVEY_RESPONDED: 'Réponse à l\'enquête',
+  SOCIAL_SHARE_REQUESTED: 'Partage social demandé',
+  SOCIAL_SHARE_SUCCESS: 'Partage social réussi',
+  SOCIAL_SHARE_FAILED: 'Échec du partage social',
+  SURVEY_RESPONDED: "Réponse à l'enquête",
+  FOLLOWED: 'Nouvel abonné',
+  UNFOLLOWED: 'Désabonnement',
   DAILY_REPORT_READY: 'Rapport quotidien',
   WEEKLY_DEV_REPORT: 'Rapport hebdomadaire développeur',
   SCORE_CRITICAL: 'Score critique',
+
+  // ── Comments & Reports ──
+  COMMENT_CREATED: 'Nouveau commentaire',
+  COMMENT_DELETED: 'Commentaire supprimé',
+  REPORT_CREATED: 'Nouveau signalement',
+  REPORT_RESOLVED: 'Signalement traité',
+
+  // ── Growth Engine ──
+  MORNING_BRIEF_GENERATED: 'Votre briefing du matin',
+  EVENING_SUMMARY_GENERATED: 'Votre résumé du soir',
+
+  // ── Attention & Urgency ──
+  URGENCY_ALERT_GENERATED: 'Alerte attention requise',
+
+  // ── Opportunities ──
+  OPPORTUNITY_DETECTED: 'Nouvelle opportunité détectée',
+
+  // ── Quotes & Invoices ──
+  QUOTE_SENT: 'Devis envoyé',
+  QUOTE_ACCEPTED: 'Devis accepté',
+  INVOICE_SENT: 'Facture envoyée',
+  INVOICE_PAID: 'Facture payée',
+  INVOICE_OVERDUE: 'Facture en retard',
+
+  // ── Savings / Tontine ──
+  SAVINGS_CYCLE_CLOSED: 'Cycle de tontine clôturé',
+  SAVINGS_CONTRIBUTION_RECEIVED: 'Cotisation reçue',
+  SAVINGS_LOAN_APPROVED: 'Prêt approuvé',
 };
 
 function buildDescription(event: DomainEvent): string {
@@ -345,6 +412,32 @@ function buildDescription(event: DomainEvent): string {
       return `Vous avez gagné ${meta.points || ''} points de parrainage !`;
     case DomainEventType.TRIAL_EXPIRING:
       return `Votre essai de ${meta.businessName || ''} expire dans ${event.payload?.daysLeft || 0} jour(s). Achetez le module pour continuer à l'utiliser.`;
+    case DomainEventType.FOLLOWED:
+      return `${event.payload?.businessName || "Quelqu'un"} a commencé à vous suivre !`;
+    case DomainEventType.UNFOLLOWED:
+      return `${event.payload?.businessName || "Quelqu'un"} ne vous suit plus.`;
+    case DomainEventType.COMMENT_CREATED:
+      return `${event.payload?.targetType || "Quelqu'un"} a commenté : ${event.payload?.content || ''}`;
+    case DomainEventType.COMMENT_DELETED:
+      return `Un commentaire a été supprimé.`;
+    case DomainEventType.REPORT_CREATED:
+      return `${event.payload?.targetType || 'Un contenu'} a été signalé pour: ${event.payload?.reason || ''}`;
+    case DomainEventType.REPORT_RESOLVED:
+      return `Le signalement a été traité (${event.payload?.status || 'résolu'}).`;
+    case DomainEventType.MORNING_BRIEF_GENERATED:
+      return `Votre briefing du matin est prêt. ${event.payload?.adviceCount || 0} conseil(s) du jour.`;
+    case DomainEventType.EVENING_SUMMARY_GENERATED:
+      return `Votre résumé de la journée est disponible. ${event.payload?.improvementsCount || 0} axe(s) d'amélioration.`;
+    case DomainEventType.URGENCY_ALERT_GENERATED:
+      return `${event.payload?.message || 'Une alerte nécessite votre attention.'}`;
+    case DomainEventType.OPPORTUNITY_DETECTED:
+      return `${event.payload?.count || ''} personne(s) ${event.payload?.count === 1 ? 'cherche' : 'cherchent'} "${event.payload?.keyword || ''}".`;
+    case DomainEventType.SAVINGS_CYCLE_CLOSED:
+      return `Cycle #${event.payload?.cycleNumber || ''} de "${event.payload?.groupName || ''}" clôturé : ${event.payload?.totalCollected || 0} FCFA mis sous séquestre.`;
+    case DomainEventType.SAVINGS_CONTRIBUTION_RECEIVED:
+      return `${event.payload?.memberName || 'Un membre'} a cotisé ${event.payload?.amount || 0} FCFA dans "${event.payload?.groupName || ''}".`;
+    case DomainEventType.SAVINGS_LOAN_APPROVED:
+      return `Prêt de ${event.payload?.amount || 0} FCFA approuvé pour ${event.payload?.memberName || 'un membre'} dans "${event.payload?.groupName || ''}".`;
     default:
       return String(event.payload?.message || '');
   }
@@ -376,7 +469,10 @@ export async function handleNotificationEvent(event: DomainEvent): Promise<{
     const businessId = event.metadata?.businessId as string | undefined;
     if (businessId) {
       try {
-        const template = await notificationTemplateRepository.findByBusinessAndType(businessId, notifType);
+        const template = await notificationTemplateRepository.findByBusinessAndType(
+          businessId,
+          notifType
+        );
         if (template?.isActive) {
           const customDesc = template.customDescription
             ? template.customDescription
@@ -407,6 +503,24 @@ export async function handleNotificationEvent(event: DomainEvent): Promise<{
         notificationId,
         channel: channel as NotificationChannel,
       });
+    }
+
+    const smsChannels = ['SMS', 'WHATSAPP'].filter((c) =>
+      channels.includes(c as NotificationChannel)
+    );
+    if (smsChannels.length > 0) {
+      const { prisma } = await import('../lib/db');
+      const user = await prisma.user.findUnique({
+        where: { id: event.userId },
+        select: { phone: true },
+      });
+      if (user?.phone) {
+        for (const ch of smsChannels) {
+          processDelivery(ch, user.phone, `${title}${description ? `: ${description}` : ''}`).catch(
+            (err) => logger.error(`[${ch}] async delivery error:`, err)
+          );
+        }
+      }
     }
 
     return {
@@ -449,14 +563,24 @@ export async function handleEmailEvent(event: DomainEvent): Promise<void> {
     await sendEmail(
       user.email,
       `${title} - AfriBiz`,
-      generateEmailHtml(user.firstName || 'Client', title, description, event.metadata?.link as string | undefined)
+      generateEmailHtml(
+        user.firstName || 'Client',
+        title,
+        description,
+        event.metadata?.link as string | undefined
+      )
     );
   } catch (error) {
     logger.error(`Failed to send email for event ${event.type}:`, error);
   }
 }
 
-function generateEmailHtml(name: string, title: string, description: string, link?: string): string {
+function generateEmailHtml(
+  name: string,
+  title: string,
+  description: string,
+  link?: string
+): string {
   return `
     <!DOCTYPE html>
     <html>

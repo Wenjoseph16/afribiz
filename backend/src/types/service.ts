@@ -64,7 +64,7 @@ export interface DebtFilter extends SearchFilter {
   riskLevel?: string;
 }
 
-export type EscrowFilter = StatusFilter
+export type EscrowFilter = StatusFilter;
 
 export interface ClientRiskFilter extends SearchFilter {
   riskLevel?: string;
@@ -107,7 +107,7 @@ export interface SubLogFilter extends PaginationFilter {
   action?: string;
 }
 
-export type PerformanceFilter = PaginationFilter
+export type PerformanceFilter = PaginationFilter;
 
 export interface ActivityFilter extends PaginationFilter, DateRangeFilter {
   action?: string;
@@ -132,7 +132,14 @@ export interface MenuItemCreateInput {
 }
 
 export interface OrderCreateInput {
-  items: Array<{ productId?: string; menuItemId?: string; name: string; quantity: number; unitPrice: number; notes?: string }>;
+  items: Array<{
+    productId?: string;
+    menuItemId?: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    notes?: string;
+  }>;
   type?: string;
   source?: string;
   deliveryAddress?: string;
@@ -193,6 +200,9 @@ export interface AdminAdQuery extends SearchFilter {
 
 export interface MarketplaceSearchParams {
   q?: string;
+  phrases?: string[];
+  excluded?: string[];
+  cursor?: string;
   type?: string;
   category?: string;
   country?: string;

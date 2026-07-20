@@ -1,22 +1,44 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import { createTaskSchema, updateTaskSchema } from '../validators/planning';
 import {
-  createChecklistItemSchema, addCommentSchema, addResourceSchema,
-  requestValidationSchema, approveValidationSchema, createTaskCategorySchema, reorderTaskSchema,
+  createChecklistItemSchema,
+  addCommentSchema,
+  addResourceSchema,
+  requestValidationSchema,
+  approveValidationSchema,
+  createTaskCategorySchema,
+  reorderTaskSchema,
 } from '../validators/advancedTasks';
 import {
-  listTasks, getTask, createTask, updateTask, deleteTask, reorderTask,
-  getKanbanBoard, listCategories, createCategory,
-  addChecklistItem, toggleChecklistItem, deleteChecklistItem,
-  addComment, deleteComment, startTimer, stopTimer,
-  addResource, deleteResource, requestValidation, approveValidation,
-  getTaskStats, listTaskHistory,
+  listTasks,
+  getTask,
+  createTask,
+  updateTask,
+  deleteTask,
+  reorderTask,
+  getKanbanBoard,
+  listCategories,
+  createCategory,
+  addChecklistItem,
+  toggleChecklistItem,
+  deleteChecklistItem,
+  addComment,
+  deleteComment,
+  startTimer,
+  stopTimer,
+  addResource,
+  deleteResource,
+  requestValidation,
+  approveValidation,
+  getTaskStats,
+  listTaskHistory,
 } from '../controllers/advancedTasks';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 router.get('/kanban', getKanbanBoard);
 router.get('/tasks', listTasks);
@@ -38,7 +60,11 @@ router.post('/tasks/:id/timer/stop', stopTimer);
 router.post('/tasks/:id/resources', validateBody(addResourceSchema), addResource);
 router.delete('/tasks/:id/resources/:resourceId', deleteResource);
 router.post('/tasks/:id/validations', validateBody(requestValidationSchema), requestValidation);
-router.patch('/tasks/:id/validations/:validationId', validateBody(approveValidationSchema), approveValidation);
+router.patch(
+  '/tasks/:id/validations/:validationId',
+  validateBody(approveValidationSchema),
+  approveValidation
+);
 router.get('/tasks/:id/history', listTaskHistory);
 
 export default router;

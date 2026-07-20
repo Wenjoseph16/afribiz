@@ -2,9 +2,27 @@ import { z } from 'zod';
 
 const employeeStatuses = ['ACTIVE', 'SUSPENDED', 'ON_LEAVE', 'INACTIVE'] as const;
 const attendanceMethods = ['MANUAL', 'QR_CODE', 'PIN', 'GPS'] as const;
-const documentTypes = ['CONTRACT', 'ID_CARD', 'CV', 'CERTIFICATE', 'LICENSE', 'PERMIT', 'OTHER'] as const;
+const documentTypes = [
+  'CONTRACT',
+  'ID_CARD',
+  'CV',
+  'CERTIFICATE',
+  'LICENSE',
+  'PERMIT',
+  'OTHER',
+] as const;
 const performanceRatings = ['EXCELLENT', 'GOOD', 'AVERAGE', 'BELOW_AVERAGE', 'POOR'] as const;
-const employeePermissions = ['VIEW_ORDERS', 'MODIFY_STOCK', 'MANAGE_BOOKINGS', 'ACCESS_FINANCES', 'MANAGE_EMPLOYEES', 'REPLY_CLIENTS', 'VIEW_SCHEDULE', 'MANAGE_TASKS', 'VIEW_STATS'] as const;
+const employeePermissions = [
+  'VIEW_ORDERS',
+  'MODIFY_STOCK',
+  'MANAGE_BOOKINGS',
+  'ACCESS_FINANCES',
+  'MANAGE_EMPLOYEES',
+  'REPLY_CLIENTS',
+  'VIEW_SCHEDULE',
+  'MANAGE_TASKS',
+  'VIEW_STATS',
+] as const;
 
 export const createEmployeeSchema = z.object({
   firstName: z.string().min(1, 'Prénom requis').max(100),
@@ -43,6 +61,7 @@ export const clockInSchema = z.object({
   method: z.enum(attendanceMethods).optional().default('MANUAL'),
   lat: z.number().optional(),
   lng: z.number().optional(),
+  qrToken: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -77,4 +96,46 @@ export const createEmployeePerformanceSchema = z.object({
   rating: z.enum(performanceRatings).optional(),
   overallScore: z.number().int().min(0).max(100).optional(),
   reviewNotes: z.string().optional(),
+});
+
+// ===================== LEAVE VALIDATORS (F3) =====================
+
+const leaveTypes = ['VACATION', 'SICK', 'PERSONAL', 'MATERNITY', 'PATERNITY', 'OTHER'] as const;
+const leaveStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
+
+export const createLeaveSchema = z.object({
+  employeeId: z.string().uuid('Employé requis'),
+  type: z.enum(leaveTypes).optional().default('VACATION'),
+  startDate: z.string().min(1, 'Date de début requise'),
+  endDate: z.string().min(1, 'Date de fin requise'),
+  reason: z.string().optional(),
+  status: z.enum(leaveStatuses).optional().default('PENDING'),
+  notes: z.string().optional(),
+});
+
+export const updateLeaveStatusSchema = z.object({
+  status: z.enum(leaveStatuses),
+  notes: z.string().optional(),
+});
+
+// ===================== PAYROLL VALIDATORS (F2) =====================
+
+const payrollStatuses = ['DRAFT', 'PAID', 'CANCELLED'] as const;
+
+export const createPayrollSchema = z.object({
+  employeeId: z.string().uuid('Employé requis'),
+  periodStart: z.string().min(1, 'Début de période requis'),
+  periodEnd: z.string().min(1, 'Fin de période requise'),
+  baseSalary: z.number().positive('Salaire requis').optional(),
+  bonuses: z.number().min(0).optional().default(0),
+  deductions: z.number().min(0).optional().default(0),
+  overtime: z.number().min(0).optional().default(0),
+  currency: z.string().optional().default('FCFA'),
+  status: z.enum(payrollStatuses).optional().default('DRAFT'),
+  notes: z.string().optional(),
+});
+
+export const updatePayrollStatusSchema = z.object({
+  status: z.enum(payrollStatuses),
+  notes: z.string().optional(),
 });

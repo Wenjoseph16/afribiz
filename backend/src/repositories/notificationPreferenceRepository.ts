@@ -1,4 +1,4 @@
-import { PrismaClient, NotificationType, NotificationChannel } from '@prisma/client';
+import { NotificationType, NotificationChannel } from '@prisma/client';
 import { prisma } from '../lib/db';
 
 interface PreferenceKey {

@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
 const quoteStatuses = ['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CONVERTED'] as const;
-const invoiceStatuses = ['DRAFT', 'SENT', 'PAID', 'PARTIALLY_PAID', 'OVERDUE', 'CANCELLED'] as const;
+const invoiceStatuses = [
+  'DRAFT',
+  'SENT',
+  'PAID',
+  'PARTIALLY_PAID',
+  'OVERDUE',
+  'CANCELLED',
+] as const;
 
 const quoteItemSchema = z.object({
   description: z.string().min(1, 'Description requise'),

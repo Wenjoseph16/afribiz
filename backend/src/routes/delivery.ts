@@ -1,23 +1,40 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
-  listDeliveryZones, createDeliveryZone, updateDeliveryZone, deleteDeliveryZone,
-  listDrivers, createDriver, updateDriver, deleteDriver,
-  listDeliveries, getDelivery, createDelivery, updateDelivery,
-  assignDriver, updateDeliveryStatus,
-  addTrackingEvent, addDeliveryProof, getDeliveryStats,
+  listDeliveryZones,
+  createDeliveryZone,
+  updateDeliveryZone,
+  deleteDeliveryZone,
+  listDrivers,
+  createDriver,
+  updateDriver,
+  deleteDriver,
+  listDeliveries,
+  getDelivery,
+  createDelivery,
+  updateDelivery,
+  assignDriver,
+  updateDeliveryStatus,
+  addTrackingEvent,
+  addDeliveryProof,
+  getDeliveryStats,
 } from '../controllers/delivery';
 import {
-  createDeliveryZoneSchema, updateDeliveryZoneSchema,
-  createDriverSchema, updateDriverSchema,
-  createDeliverySchema, updateDeliverySchema,
-  assignDriverSchema, updateDeliveryStatusSchema,
-  addTrackingEventSchema, addDeliveryProofSchema,
+  createDeliveryZoneSchema,
+  updateDeliveryZoneSchema,
+  createDriverSchema,
+  updateDriverSchema,
+  createDeliverySchema,
+  updateDeliverySchema,
+  assignDriverSchema,
+  updateDeliveryStatusSchema,
+  addTrackingEventSchema,
+  addDeliveryProofSchema,
 } from '../validators/delivery';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, requireRole(['BUSINESS', 'ADMIN']));
 
 // Stats (must be before :id routes)
 router.get('/stats', getDeliveryStats);

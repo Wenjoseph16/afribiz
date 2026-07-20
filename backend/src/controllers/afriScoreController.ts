@@ -1,12 +1,10 @@
 import { Response } from 'express';
-import { catchAsyncErrors } from '../middlewares/errorHandler';
+import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { PartnerRequest } from '../middlewares/partnerAuth';
 import * as afriScoreService from '../services/afriScoreService';
 import * as afriDataHubService from '../services/afriDataHubService';
 import { prisma } from '../lib/db';
-import { AppError } from '../middlewares/errorHandler';
-
 // ============ PUBLIC (BUSINESS) ============
 
 export const getMyScore = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
@@ -18,15 +16,17 @@ export const getMyScore = catchAsyncErrors(async (req: AuthenticatedRequest, res
   res.json({ success: true, data: score });
 });
 
-export const getMyScoreHistory = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
-  if (!business) throw new AppError('Business not found', 404);
+export const getMyScoreHistory = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user!.id;
+    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    if (!business) throw new AppError('Business not found', 404);
 
-  const period = req.query.period as string | undefined;
-  const history = await afriScoreService.getScoreHistory(business.id, period);
-  res.json({ success: true, data: history });
-});
+    const period = req.query.period as string | undefined;
+    const history = await afriScoreService.getScoreHistory(business.id, period);
+    res.json({ success: true, data: history });
+  }
+);
 
 export const getMyBadges = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
@@ -90,9 +90,18 @@ export const getPublicScore = catchAsyncErrors(async (req: AuthenticatedRequest,
     data: {
       business,
       score: score || {
-        overallScore: 0, category: 'VERY_LOW', commercialScore: 0, financialScore: 0,
-        satisfactionScore: 0, reliabilityScore: 0, profileScore: 0,
-        totalOrders: 0, totalBookings: 0, avgRating: 0, reviewCount: 0, completionPct: 0,
+        overallScore: 0,
+        category: 'VERY_LOW',
+        commercialScore: 0,
+        financialScore: 0,
+        satisfactionScore: 0,
+        reliabilityScore: 0,
+        profileScore: 0,
+        totalOrders: 0,
+        totalBookings: 0,
+        avgRating: 0,
+        reviewCount: 0,
+        completionPct: 0,
       },
       badges,
     },
@@ -101,56 +110,75 @@ export const getPublicScore = catchAsyncErrors(async (req: AuthenticatedRequest,
 
 // ============ PARTNER API ============
 
-export const partnerGetBusinessScore = catchAsyncErrors(async (req: PartnerRequest, res: Response) => {
-  const { businessId } = req.params;
-  const partnerId = req.partner!.id;
+export const partnerGetBusinessScore = catchAsyncErrors(
+  async (req: PartnerRequest, res: Response) => {
+    const { businessId } = req.params;
+    const partnerId = req.partner!.id;
 
-  const consent = await afriDataHubService.getBusinessConsentCheck(businessId);
-  if (!consent || !consent.isActive || consent.shareLevel === 'NONE') {
-    throw new AppError('Business has not consented to data sharing', 403);
+    const consent = await afriDataHubService.getBusinessConsentCheck(businessId);
+    if (!consent || !consent.isActive || consent.shareLevel === 'NONE') {
+      throw new AppError('Business has not consented to data sharing', 403);
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { id: true, name: true, type: true, country: true, city: true },
+    });
+    if (!business) throw new AppError('Business not found', 404);
+
+    const score = await prisma.businessScore.findUnique({
+      where: { businessId },
+      select: {
+        overallScore: true,
+        category: true,
+        commercialScore: true,
+        financialScore: true,
+        satisfactionScore: true,
+        reliabilityScore: true,
+        profileScore: true,
+        totalOrders: true,
+        totalBookings: true,
+        avgRating: true,
+        reviewCount: true,
+      },
+    });
+
+    await prisma.dataAccessLog.create({
+      data: {
+        partnerId,
+        action: 'VIEW_SCORE',
+        businessId,
+        details: { score: score?.overallScore },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        business: { id: business.id, name: business.name, type: business.type },
+        score: score || { overallScore: 0, category: 'VERY_LOW' },
+      },
+    });
   }
+);
 
-  const business = await prisma.business.findUnique({
-    where: { id: businessId },
-    select: { id: true, name: true, type: true, country: true, city: true },
-  });
-  if (!business) throw new AppError('Business not found', 404);
+export const partnerGenerateReport = catchAsyncErrors(
+  async (req: PartnerRequest, res: Response) => {
+    const { businessId } = req.params;
+    const partnerId = req.partner!.id;
 
-  const score = await prisma.businessScore.findUnique({
-    where: { businessId },
-    select: {
-      overallScore: true, category: true, commercialScore: true, financialScore: true,
-      satisfactionScore: true, reliabilityScore: true, profileScore: true,
-      totalOrders: true, totalBookings: true, avgRating: true, reviewCount: true,
-    },
-  });
+    const report = await afriDataHubService.generateBusinessReport(businessId, partnerId);
+    res.status(201).json({ success: true, data: report });
+  }
+);
 
-  await prisma.dataAccessLog.create({
-    data: { partnerId, action: 'VIEW_SCORE', businessId, details: { score: score?.overallScore } },
-  });
-
-  res.json({
-    success: true,
-    data: {
-      business: { id: business.id, name: business.name, type: business.type },
-      score: score || { overallScore: 0, category: 'VERY_LOW' },
-    },
-  });
-});
-
-export const partnerGenerateReport = catchAsyncErrors(async (req: PartnerRequest, res: Response) => {
-  const { businessId } = req.params;
-  const partnerId = req.partner!.id;
-
-  const report = await afriDataHubService.generateBusinessReport(businessId, partnerId);
-  res.status(201).json({ success: true, data: report });
-});
-
-export const partnerGetSectorReport = catchAsyncErrors(async (req: PartnerRequest, res: Response) => {
-  const { sector } = req.params;
-  const report = await afriDataHubService.generateSectorReport(sector);
-  res.json({ success: true, data: report });
-});
+export const partnerGetSectorReport = catchAsyncErrors(
+  async (req: PartnerRequest, res: Response) => {
+    const { sector } = req.params;
+    const report = await afriDataHubService.generateSectorReport(sector);
+    res.json({ success: true, data: report });
+  }
+);
 
 // ============ DATA HUB ============
 
@@ -164,10 +192,12 @@ export const getHubSectors = catchAsyncErrors(async (req: AuthenticatedRequest, 
   res.json({ success: true, data: stats });
 });
 
-export const getHubGeographic = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const stats = await afriDataHubService.getGeographicStats();
-  res.json({ success: true, data: stats });
-});
+export const getHubGeographic = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const stats = await afriDataHubService.getGeographicStats();
+    res.json({ success: true, data: stats });
+  }
+);
 
 export const getHubTrends = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const [growth, consumption, booking, delivery] = await Promise.all([
@@ -190,125 +220,139 @@ export const getHubPayments = catchAsyncErrors(async (req: AuthenticatedRequest,
 
 // ============ ADMIN ============
 
-export const adminListPartners = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const partners = await prisma.dataPartner.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { subscriptions: true, reports: true } } },
-  });
-  res.json({ success: true, data: partners });
-});
-
-export const adminCreatePartner = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const data = req.body;
-  const apiKey = `apk_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-
-  const partner = await prisma.dataPartner.create({
-    data: {
-      name: data.name,
-      slug: data.slug,
-      type: data.type,
-      email: data.email,
-      phone: data.phone,
-      website: data.website,
-      logo: data.logo,
-      description: data.description,
-      apiKey,
-      apiEnabled: data.apiEnabled || false,
-      apiQuota: data.apiQuota || 1000,
-      isActive: true,
-    },
-  });
-
-  res.status(201).json({ success: true, data: partner });
-});
-
-export const adminUpdatePartner = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  const data = req.body;
-
-  const partner = await prisma.dataPartner.update({
-    where: { id },
-    data: {
-      name: data.name !== undefined ? data.name : undefined,
-      slug: data.slug !== undefined ? data.slug : undefined,
-      type: data.type !== undefined ? data.type : undefined,
-      email: data.email !== undefined ? data.email : undefined,
-      phone: data.phone !== undefined ? data.phone : undefined,
-      website: data.website !== undefined ? data.website : undefined,
-      logo: data.logo !== undefined ? data.logo : undefined,
-      description: data.description !== undefined ? data.description : undefined,
-      apiEnabled: data.apiEnabled !== undefined ? data.apiEnabled : undefined,
-      apiQuota: data.apiQuota !== undefined ? data.apiQuota : undefined,
-      isActive: data.isActive !== undefined ? data.isActive : undefined,
-    },
-  });
-
-  res.json({ success: true, data: partner });
-});
-
-export const adminDeactivatePartner = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-
-  const partner = await prisma.dataPartner.update({
-    where: { id },
-    data: { isActive: false },
-  });
-
-  res.json({ success: true, data: partner });
-});
-
-export const adminListReports = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  const skip = (page - 1) * limit;
-
-  const [reports, total] = await Promise.all([
-    prisma.dataReport.findMany({
-      skip,
-      take: limit,
-      include: { partner: { select: { id: true, name: true, slug: true } } },
+export const adminListPartners = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const partners = await prisma.dataPartner.findMany({
       orderBy: { createdAt: 'desc' },
-    }),
-    prisma.dataReport.count(),
-  ]);
+      include: { _count: { select: { subscriptions: true, reports: true } } },
+    });
+    res.json({ success: true, data: partners });
+  }
+);
 
-  res.json({
-    success: true,
-    data: { data: reports, total, page, limit, totalPages: Math.ceil(total / limit) },
-  });
-});
+export const adminCreatePartner = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const data = req.body;
+    const apiKey = `apk_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
 
-export const adminAccessLogs = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  const skip = (page - 1) * limit;
-
-  const [logs, total] = await Promise.all([
-    prisma.dataAccessLog.findMany({
-      skip,
-      take: limit,
-      include: {
-        partner: { select: { id: true, name: true, slug: true } },
-        business: { select: { id: true, name: true } },
+    const partner = await prisma.dataPartner.create({
+      data: {
+        name: data.name,
+        slug: data.slug,
+        type: data.type,
+        email: data.email,
+        phone: data.phone,
+        website: data.website,
+        logo: data.logo,
+        description: data.description,
+        apiKey,
+        apiEnabled: data.apiEnabled || false,
+        apiQuota: data.apiQuota || 1000,
+        isActive: true,
       },
+    });
+
+    res.status(201).json({ success: true, data: partner });
+  }
+);
+
+export const adminUpdatePartner = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const data = req.body;
+
+    const partner = await prisma.dataPartner.update({
+      where: { id },
+      data: {
+        name: data.name !== undefined ? data.name : undefined,
+        slug: data.slug !== undefined ? data.slug : undefined,
+        type: data.type !== undefined ? data.type : undefined,
+        email: data.email !== undefined ? data.email : undefined,
+        phone: data.phone !== undefined ? data.phone : undefined,
+        website: data.website !== undefined ? data.website : undefined,
+        logo: data.logo !== undefined ? data.logo : undefined,
+        description: data.description !== undefined ? data.description : undefined,
+        apiEnabled: data.apiEnabled !== undefined ? data.apiEnabled : undefined,
+        apiQuota: data.apiQuota !== undefined ? data.apiQuota : undefined,
+        isActive: data.isActive !== undefined ? data.isActive : undefined,
+      },
+    });
+
+    res.json({ success: true, data: partner });
+  }
+);
+
+export const adminDeactivatePartner = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+
+    const partner = await prisma.dataPartner.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    res.json({ success: true, data: partner });
+  }
+);
+
+export const adminListReports = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const [reports, total] = await Promise.all([
+      prisma.dataReport.findMany({
+        skip,
+        take: limit,
+        include: { partner: { select: { id: true, name: true, slug: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.dataReport.count(),
+    ]);
+
+    res.json({
+      success: true,
+      data: { data: reports, total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
+  }
+);
+
+export const adminAccessLogs = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      prisma.dataAccessLog.findMany({
+        skip,
+        take: limit,
+        include: {
+          partner: { select: { id: true, name: true, slug: true } },
+          business: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.dataAccessLog.count(),
+    ]);
+
+    res.json({
+      success: true,
+      data: { data: logs, total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
+  }
+);
+
+export const adminSubscriptions = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const subscriptions = await prisma.partnerSubscription.findMany({
+      include: { partner: { select: { id: true, name: true, slug: true, type: true } } },
       orderBy: { createdAt: 'desc' },
-    }),
-    prisma.dataAccessLog.count(),
-  ]);
-
-  res.json({
-    success: true,
-    data: { data: logs, total, page, limit, totalPages: Math.ceil(total / limit) },
-  });
-});
-
-export const adminSubscriptions = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const subscriptions = await prisma.partnerSubscription.findMany({
-    include: { partner: { select: { id: true, name: true, slug: true, type: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json({ success: true, data: subscriptions });
-});
+    });
+    res.json({ success: true, data: subscriptions });
+  }
+);
 
 export const adminRecompute = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const count = await afriScoreService.recomputeAllScores();
@@ -344,14 +388,16 @@ export const adminRevenue = catchAsyncErrors(async (req: AuthenticatedRequest, r
   });
 });
 
-export const recomputeMyScore = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
-  if (!business) throw new AppError('Business not found', 404);
+export const recomputeMyScore = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user!.id;
+    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    if (!business) throw new AppError('Business not found', 404);
 
-  const score = await afriScoreService.computeBusinessScore(business.id);
-  res.json({ success: true, data: score, message: 'Score recalculé avec succès' });
-});
+    const score = await afriScoreService.computeBusinessScore(business.id);
+    res.json({ success: true, data: score, message: 'Score recalculé avec succès' });
+  }
+);
 
 export const deleteConsent = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
@@ -384,7 +430,15 @@ export const updateConsent = catchAsyncErrors(async (req: AuthenticatedRequest, 
   const business = await prisma.business.findUnique({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
 
-  const { shareLevel, allowsBanks, allowsInsurance, allowsInvestors, allowsPublic, allowsAll, isActive } = req.body;
+  const {
+    shareLevel,
+    allowsBanks,
+    allowsInsurance,
+    allowsInvestors,
+    allowsPublic,
+    allowsAll,
+    isActive,
+  } = req.body;
 
   const consent = await prisma.dataConsent.upsert({
     where: { businessId: business.id },

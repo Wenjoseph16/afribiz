@@ -1,24 +1,16 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../lib/db';
 import { successResponse } from '../utils/response';
 import { catchAsyncErrors } from '../middlewares/errorHandler';
+import * as businessService from '../services/business';
 
 const router = Router();
 
-router.get('/public/business/:slug', catchAsyncErrors(async (req: Request, res: Response) => {
-  const { slug } = req.params;
-  const business = await prisma.business.findUnique({
-    where: { slug, isActive: true, deletedAt: null },
-    include: {
-      owner: {
-        select: { id: true, firstName: true, lastName: true, avatar: true },
-      },
-    },
-  });
-  if (!business) {
-    return res.status(404).json({ success: false, error: 'Business non trouvé' });
-  }
-  res.json(successResponse(business));
-}));
+router.get(
+  '/business/:slug/public',
+  catchAsyncErrors(async (req: Request, res: Response) => {
+    const business = await businessService.getPublicBusiness(req.params.slug);
+    res.json(successResponse(business));
+  })
+);
 
 export default router;

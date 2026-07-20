@@ -1,5 +1,7 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
+import { publishUpcomingEvent } from '../events/publishers';
+import { toDataURL } from 'qrcode';
 
 // ===== Helper =====
 async function getBusiness(userId: string) {
@@ -29,7 +31,17 @@ export async function listEvents(userId: string, filters: any = {}) {
       where,
       include: {
         _count: { select: { tickets: true, participants: true } },
-        tickets: { where: { isActive: true }, select: { id: true, name: true, type: true, price: true, remaining: true, quantity: true } },
+        tickets: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            price: true,
+            remaining: true,
+            quantity: true,
+          },
+        },
       },
       orderBy: { startDate: 'desc' },
       skip,
@@ -59,7 +71,7 @@ export async function getEvent(userId: string, eventId: string) {
 
 export async function createEvent(userId: string, data: any) {
   const business = await getBusiness(userId);
-  return prisma.event.create({
+  const event = await prisma.event.create({
     data: {
       businessId: business.id,
       title: data.title,
@@ -71,11 +83,21 @@ export async function createEvent(userId: string, data: any) {
       _count: { select: { tickets: true, participants: true } },
     },
   });
+  publishUpcomingEvent({
+    userId,
+    eventId: event.id,
+    businessId: business.id,
+    eventName: event.title,
+    daysUntil: 0,
+  });
+  return event;
 }
 
 export async function updateEvent(userId: string, eventId: string, data: any) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   return prisma.event.update({
     where: { id: eventId },
@@ -89,16 +111,23 @@ export async function updateEvent(userId: string, eventId: string, data: any) {
 
 export async function deleteEvent(userId: string, eventId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
-  await prisma.event.update({ where: { id: eventId }, data: { deletedAt: new Date(), isActive: false } });
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { deletedAt: new Date(), isActive: false },
+  });
   return { message: 'Event deleted' };
 }
 
 // ===== TICKETS =====
 export async function listTickets(userId: string, eventId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   return prisma.eventTicket.findMany({
     where: { eventId, isActive: true },
@@ -108,20 +137,30 @@ export async function listTickets(userId: string, eventId: string) {
 
 export async function createTicket(userId: string, eventId: string, data: any) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   const ticket = await prisma.eventTicket.create({
     data: { eventId, ...data },
   });
   // Update event remainingSpots
-  const totalRemaining = await prisma.eventTicket.aggregate({ where: { eventId }, _sum: { remaining: true } });
-  await prisma.event.update({ where: { id: eventId }, data: { remainingSpots: totalRemaining._sum.remaining || 0 } });
+  const totalRemaining = await prisma.eventTicket.aggregate({
+    where: { eventId },
+    _sum: { remaining: true },
+  });
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { remainingSpots: totalRemaining._sum.remaining || 0 },
+  });
   return ticket;
 }
 
 export async function updateTicket(userId: string, eventId: string, ticketId: string, data: any) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   const ticket = await prisma.eventTicket.findFirst({ where: { id: ticketId, eventId } });
   if (!ticket) throw new AppError('Ticket not found', 404);
@@ -130,7 +169,9 @@ export async function updateTicket(userId: string, eventId: string, ticketId: st
 
 export async function deleteTicket(userId: string, eventId: string, ticketId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   await prisma.eventTicket.update({ where: { id: ticketId }, data: { isActive: false } });
   return { message: 'Ticket deactivated' };
@@ -139,7 +180,9 @@ export async function deleteTicket(userId: string, eventId: string, ticketId: st
 // ===== PARTICIPANTS =====
 export async function listParticipants(userId: string, eventId: string, filters: any = {}) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   const where: any = { eventId };
   if (filters.status) where.status = filters.status;
@@ -169,12 +212,16 @@ export async function listParticipants(userId: string, eventId: string, filters:
 
 export async function registerParticipant(userId: string, eventId: string, data: any) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
 
   // Check capacity
   if (event.capacity && event.capacity > 0) {
-    const count = await prisma.eventParticipant.count({ where: { eventId, status: { notIn: ['CANCELLED', 'REFUNDED'] } } });
+    const count = await prisma.eventParticipant.count({
+      where: { eventId, status: { notIn: ['CANCELLED', 'REFUNDED'] } },
+    });
     if (count >= event.capacity) throw new AppError('Event is full', 409);
   }
 
@@ -182,20 +229,32 @@ export async function registerParticipant(userId: string, eventId: string, data:
   const count = await prisma.eventParticipant.count();
   const ticketRef = `TKT-${String(count + 1).padStart(8, '0')}`;
   const qrData = `EVENT:${eventId}:TKT:${ticketRef}`;
+  const qrCode = await toDataURL(qrData, {
+    width: 300,
+    margin: 2,
+    color: { dark: '#000', light: '#FFF' },
+  });
 
   return prisma.eventParticipant.create({
     data: {
       eventId,
       ticketRef,
       qrData,
+      qrCode,
       ...data,
     },
     include: { ticket: { select: { name: true, type: true } } },
   });
 }
 
-export async function clientRegisterForEvent(userId: string, eventId: string, data?: { firstName?: string; lastName?: string; email?: string; phone?: string }) {
-  const event = await prisma.event.findFirst({ where: { id: eventId, isPublished: true, deletedAt: null } });
+export async function clientRegisterForEvent(
+  userId: string,
+  eventId: string,
+  data?: { firstName?: string; lastName?: string; email?: string; phone?: string }
+) {
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, isPublished: true, deletedAt: null },
+  });
   if (!event) throw new AppError('Événement non trouvé', 404);
 
   const existing = await prisma.eventParticipant.findFirst({
@@ -204,13 +263,20 @@ export async function clientRegisterForEvent(userId: string, eventId: string, da
   if (existing) throw new AppError('Vous êtes déjà inscrit à cet événement', 409);
 
   if (event.capacity && event.capacity > 0) {
-    const count = await prisma.eventParticipant.count({ where: { eventId, status: { notIn: ['CANCELLED', 'REFUNDED'] } } });
+    const count = await prisma.eventParticipant.count({
+      where: { eventId, status: { notIn: ['CANCELLED', 'REFUNDED'] } },
+    });
     if (count >= event.capacity) throw new AppError('Événement complet', 409);
   }
 
   const count = await prisma.eventParticipant.count();
   const ticketRef = `TKT-${String(count + 1).padStart(8, '0')}`;
   const qrData = `EVENT:${eventId}:TKT:${ticketRef}`;
+  const qrCode = await toDataURL(qrData, {
+    width: 300,
+    margin: 2,
+    color: { dark: '#000', light: '#FFF' },
+  });
 
   return prisma.eventParticipant.create({
     data: {
@@ -218,6 +284,7 @@ export async function clientRegisterForEvent(userId: string, eventId: string, da
       clientId: userId,
       ticketRef,
       qrData,
+      qrCode,
       firstName: data?.firstName || '',
       lastName: data?.lastName || '',
       email: data?.email || '',
@@ -226,9 +293,16 @@ export async function clientRegisterForEvent(userId: string, eventId: string, da
   });
 }
 
-export async function updateParticipantStatus(userId: string, eventId: string, participantId: string, status: string) {
+export async function updateParticipantStatus(
+  userId: string,
+  eventId: string,
+  participantId: string,
+  status: string
+) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   const updateData: any = { status };
   if (status === 'CHECKED_IN') updateData.checkedInAt = new Date();
@@ -236,9 +310,16 @@ export async function updateParticipantStatus(userId: string, eventId: string, p
 }
 
 // ===== SCANS =====
-export async function scanTicket(userId: string, eventId: string, ticketRef: string, scannerId: string) {
+export async function scanTicket(
+  userId: string,
+  eventId: string,
+  ticketRef: string,
+  scannerId: string
+) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
 
   const participant = await prisma.eventParticipant.findUnique({ where: { ticketRef } });
@@ -275,7 +356,9 @@ export async function scanTicket(userId: string, eventId: string, ticketRef: str
 
 export async function listScans(userId: string, eventId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   return prisma.eventScan.findMany({
     where: { eventId },
@@ -288,21 +371,27 @@ export async function listScans(userId: string, eventId: string) {
 // ===== PROMOTIONS =====
 export async function listPromotions(userId: string, eventId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   return prisma.eventPromotion.findMany({ where: { eventId }, orderBy: { createdAt: 'desc' } });
 }
 
 export async function createPromotion(userId: string, eventId: string, data: any) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   return prisma.eventPromotion.create({ data: { eventId, ...data } });
 }
 
 export async function deletePromotion(userId: string, eventId: string, promoId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   await prisma.eventPromotion.delete({ where: { id: promoId } });
   return { message: 'Promotion deleted' };
@@ -311,21 +400,30 @@ export async function deletePromotion(userId: string, eventId: string, promoId: 
 // ===== GALLERY =====
 export async function listGallery(userId: string, eventId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
-  return prisma.eventGallery.findMany({ where: { eventId, isActive: true }, orderBy: { sortOrder: 'asc' } });
+  return prisma.eventGallery.findMany({
+    where: { eventId, isActive: true },
+    orderBy: { sortOrder: 'asc' },
+  });
 }
 
 export async function addGalleryItem(userId: string, eventId: string, data: any) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   return prisma.eventGallery.create({ data: { eventId, ...data } });
 }
 
 export async function deleteGalleryItem(userId: string, eventId: string, itemId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   await prisma.eventGallery.update({ where: { id: itemId }, data: { isActive: false } });
   return { message: 'Gallery item deleted' };
@@ -334,21 +432,27 @@ export async function deleteGalleryItem(userId: string, eventId: string, itemId:
 // ===== PARTNERS =====
 export async function listPartners(userId: string, eventId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   return prisma.eventPartner.findMany({ where: { eventId }, orderBy: { sortOrder: 'asc' } });
 }
 
 export async function addPartner(userId: string, eventId: string, data: any) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   return prisma.eventPartner.create({ data: { eventId, ...data } });
 }
 
 export async function removePartner(userId: string, eventId: string, partnerId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
   await prisma.eventPartner.delete({ where: { id: partnerId } });
   return { message: 'Partner removed' };
@@ -357,18 +461,26 @@ export async function removePartner(userId: string, eventId: string, partnerId: 
 // ===== STATS =====
 export async function getEventStats(userId: string, eventId: string) {
   const business = await getBusiness(userId);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, businessId: business.id, deletedAt: null },
+  });
   if (!event) throw new AppError('Event not found', 404);
 
-  const [totalParticipants, checkedIn, noShow, cancelled, waitlist, scans, ticketSales] = await Promise.all([
-    prisma.eventParticipant.count({ where: { eventId, status: { notIn: ['CANCELLED', 'REFUNDED'] } } }),
-    prisma.eventParticipant.count({ where: { eventId, status: 'CHECKED_IN' } }),
-    prisma.eventParticipant.count({ where: { eventId, status: 'NO_SHOW' } }),
-    prisma.eventParticipant.count({ where: { eventId, status: 'CANCELLED' } }),
-    prisma.eventParticipant.count({ where: { eventId, isOnWaitlist: true } }),
-    prisma.eventScan.count({ where: { eventId } }),
-    prisma.eventParticipant.aggregate({ where: { eventId, isPaid: true }, _sum: { price: true } }),
-  ]);
+  const [totalParticipants, checkedIn, noShow, cancelled, waitlist, scans, ticketSales] =
+    await Promise.all([
+      prisma.eventParticipant.count({
+        where: { eventId, status: { notIn: ['CANCELLED', 'REFUNDED'] } },
+      }),
+      prisma.eventParticipant.count({ where: { eventId, status: 'CHECKED_IN' } }),
+      prisma.eventParticipant.count({ where: { eventId, status: 'NO_SHOW' } }),
+      prisma.eventParticipant.count({ where: { eventId, status: 'CANCELLED' } }),
+      prisma.eventParticipant.count({ where: { eventId, isOnWaitlist: true } }),
+      prisma.eventScan.count({ where: { eventId } }),
+      prisma.eventParticipant.aggregate({
+        where: { eventId, isPaid: true },
+        _sum: { price: true },
+      }),
+    ]);
 
   return {
     totalParticipants,
@@ -380,7 +492,10 @@ export async function getEventStats(userId: string, eventId: string) {
     noShowRate: totalParticipants > 0 ? Math.round((noShow / totalParticipants) * 100) : 0,
     checkInRate: totalParticipants > 0 ? Math.round((checkedIn / totalParticipants) * 100) : 0,
     totalRevenue: ticketSales._sum?.price || 0,
-    fillRate: event.capacity && event.capacity > 0 ? Math.round((totalParticipants / event.capacity) * 100) : 0,
+    fillRate:
+      event.capacity && event.capacity > 0
+        ? Math.round((totalParticipants / event.capacity) * 100)
+        : 0,
   };
 }
 
@@ -389,9 +504,24 @@ export async function getDashboardStats(userId: string) {
   const now = new Date();
 
   const [active, upcoming, completed, ticketSales, totalParticipants] = await Promise.all([
-    prisma.event.count({ where: { businessId: business.id, deletedAt: null, status: { notIn: ['CANCELLED', 'COMPLETED'] } } }),
-    prisma.event.count({ where: { businessId: business.id, deletedAt: null, startDate: { gt: now }, status: { not: 'CANCELLED' } } }),
-    prisma.event.count({ where: { businessId: business.id, deletedAt: null, status: 'COMPLETED' } }),
+    prisma.event.count({
+      where: {
+        businessId: business.id,
+        deletedAt: null,
+        status: { notIn: ['CANCELLED', 'COMPLETED'] },
+      },
+    }),
+    prisma.event.count({
+      where: {
+        businessId: business.id,
+        deletedAt: null,
+        startDate: { gt: now },
+        status: { not: 'CANCELLED' },
+      },
+    }),
+    prisma.event.count({
+      where: { businessId: business.id, deletedAt: null, status: 'COMPLETED' },
+    }),
     prisma.eventParticipant.aggregate({
       where: { event: { businessId: business.id } },
       _sum: { price: true },
@@ -421,9 +551,18 @@ export async function getPublicEvents(slug: string) {
   }
   const now = new Date();
   const events = await prisma.event.findMany({
-    where: { businessId: business.id, isPublished: true, isActive: true, deletedAt: null, startDate: { gte: now } },
+    where: {
+      businessId: business.id,
+      isPublished: true,
+      isActive: true,
+      deletedAt: null,
+      startDate: { gte: now },
+    },
     include: {
-      tickets: { where: { isActive: true, saleStatus: 'ACTIVE' }, select: { id: true, name: true, type: true, price: true, currency: true, remaining: true } },
+      tickets: {
+        where: { isActive: true, saleStatus: 'ACTIVE' },
+        select: { id: true, name: true, type: true, price: true, currency: true, remaining: true },
+      },
       partners: { where: { isSponsor: true }, select: { name: true, logo: true } },
     },
     orderBy: { startDate: 'asc' },
@@ -439,7 +578,13 @@ export async function getPublicEvent(slug: string, eventId: string) {
   });
   if (!business) throw new AppError('Business not found', 404);
   const event = await prisma.event.findFirst({
-    where: { id: eventId, businessId: business.id, isPublished: true, isActive: true, deletedAt: null },
+    where: {
+      id: eventId,
+      businessId: business.id,
+      isPublished: true,
+      isActive: true,
+      deletedAt: null,
+    },
     include: {
       tickets: { where: { isActive: true, saleStatus: 'ACTIVE' }, orderBy: { sortOrder: 'asc' } },
       gallery: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
@@ -456,12 +601,22 @@ export async function registerPublicParticipant(slug: string, eventId: string, d
     select: { id: true, modules: true },
   });
   if (!business) throw new AppError('Business not found', 404);
-  const event = await prisma.event.findFirst({ where: { id: eventId, businessId: business.id, isPublished: true, isActive: true, deletedAt: null } });
+  const event = await prisma.event.findFirst({
+    where: {
+      id: eventId,
+      businessId: business.id,
+      isPublished: true,
+      isActive: true,
+      deletedAt: null,
+    },
+  });
   if (!event) throw new AppError('Event not found', 404);
 
   // Check capacity
   if (event.capacity && event.capacity > 0) {
-    const count = await prisma.eventParticipant.count({ where: { eventId, status: { notIn: ['CANCELLED', 'REFUNDED'] } } });
+    const count = await prisma.eventParticipant.count({
+      where: { eventId, status: { notIn: ['CANCELLED', 'REFUNDED'] } },
+    });
     if (count >= event.capacity) {
       // Auto-add to waitlist
       const count2 = await prisma.eventParticipant.count();
@@ -475,8 +630,42 @@ export async function registerPublicParticipant(slug: string, eventId: string, d
   const count = await prisma.eventParticipant.count();
   const ticketRef = `TKT-${String(count + 1).padStart(8, '0')}`;
   const qrData = `EVENT:${eventId}:TKT:${ticketRef}`;
+  const qrCode = await toDataURL(qrData, {
+    width: 300,
+    margin: 2,
+    color: { dark: '#000', light: '#FFF' },
+  });
 
   return prisma.eventParticipant.create({
-    data: { eventId, ticketRef, qrData, ...data },
+    data: { eventId, ticketRef, qrData, qrCode, ...data },
   });
+}
+
+export async function getMyTicket(userId: string, eventId: string) {
+  const participant = await prisma.eventParticipant.findFirst({
+    where: { eventId, clientId: userId },
+    select: {
+      id: true,
+      ticketRef: true,
+      qrCode: true,
+      qrData: true,
+      status: true,
+      firstName: true,
+      lastName: true,
+      checkedInAt: true,
+      event: {
+        select: {
+          id: true,
+          title: true,
+          startDate: true,
+          endDate: true,
+          address: true,
+          city: true,
+          coverImage: true,
+        },
+      },
+    },
+  });
+  if (!participant) throw new AppError('Ticket non trouvé', 404);
+  return participant;
 }

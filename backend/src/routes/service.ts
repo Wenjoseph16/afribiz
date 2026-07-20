@@ -1,7 +1,29 @@
 import { Router } from 'express';
-import { listServices, getService, createService, updateService, deleteService, toggleServiceActive, getServiceStats, duplicateService, exportServices, importServices, bulkDeleteServices, bulkToggleServices, listCategories, createCategory, updateCategory, deleteCategory } from '../controllers/service';
+import {
+  listServices,
+  getService,
+  createService,
+  updateService,
+  deleteService,
+  toggleServiceActive,
+  getServiceStats,
+  duplicateService,
+  exportServices,
+  importServices,
+  bulkDeleteServices,
+  bulkToggleServices,
+  listCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from '../controllers/service';
 import { validateBody } from '../middlewares/validators';
-import { createServiceSchema, updateServiceSchema, createCategorySchema, updateCategorySchema } from '../validators/service';
+import {
+  createServiceSchema,
+  updateServiceSchema,
+  createCategorySchema,
+  updateCategorySchema,
+} from '../validators/service';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 
 const router = Router();

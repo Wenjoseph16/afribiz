@@ -3,7 +3,10 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 
 async function ensureBusinessClient(businessId: string, clientId: string) {
-  const userExists = await prisma.user.findUnique({ where: { id: clientId }, select: { id: true } });
+  const userExists = await prisma.user.findUnique({
+    where: { id: clientId },
+    select: { id: true },
+  });
   if (!userExists) throw new AppError('Client non trouvé', 404);
   return prisma.businessClient.upsert({
     where: { businessId_clientId: { businessId, clientId } },
@@ -25,7 +28,16 @@ export async function getBusinessClients(
     offset?: number;
   }
 ) {
-  const { search, tagId, segmentId, isActive, sortBy = 'lastOrderAt', sortOrder = 'desc', limit = 50, offset = 0 } = params;
+  const {
+    search,
+    tagId,
+    segmentId,
+    isActive,
+    sortBy = 'lastOrderAt',
+    sortOrder = 'desc',
+    limit = 50,
+    offset = 0,
+  } = params;
 
   const where: Prisma.BusinessClientWhereInput = { businessId };
 
@@ -54,7 +66,15 @@ export async function getBusinessClients(
       take: limit,
       include: {
         client: {
-          select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, city: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatar: true,
+            city: true,
+          },
         },
         tags: { include: { tag: true } },
         segments: { include: { segment: { select: { id: true, name: true, color: true } } } },
@@ -79,7 +99,11 @@ export async function getBusinessClients(
       lastVisitAt: c.lastVisitAt,
       isActive: c.isActive,
       tags: c.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color })),
-      segments: c.segments.map((s) => ({ id: s.segment.id, name: s.segment.name, color: s.segment.color })),
+      segments: c.segments.map((s) => ({
+        id: s.segment.id,
+        name: s.segment.name,
+        color: s.segment.color,
+      })),
       createdAt: c.createdAt,
     })),
     total,
@@ -91,43 +115,79 @@ export async function getBusinessClients(
 export async function getClientDetail(businessId: string, clientId: string) {
   const bc = await ensureBusinessClient(businessId, clientId);
 
-  const [businessClient, orders, bookings, debts, loyalty, clientRisk, allBusinessTags] = await Promise.all([
-    prisma.businessClient.findUnique({
-      where: { id: bc.id },
-      include: {
-        client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, birthDate: true, city: true, neighborhood: true, country: true, createdAt: true } },
-        tags: { include: { tag: true } },
-        segments: { include: { segment: { select: { id: true, name: true, color: true } } } },
-        notes: { orderBy: { createdAt: 'desc' }, take: 20 },
-      },
-    }),
-    prisma.order.findMany({
-      where: { businessId, buyerId: clientId },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-      select: { id: true, orderNumber: true, status: true, totalAmount: true, createdAt: true, updatedAt: true },
-    }),
-    prisma.booking.findMany({
-      where: { businessId, clientId },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-      select: { id: true, status: true, startDate: true, endDate: true, price: true, createdAt: true, type: true },
-    }),
-    prisma.debt.findMany({
-      where: { businessId, buyerId: clientId, status: { not: 'SETTLED' } },
-      orderBy: { createdAt: 'desc' },
-      select: { id: true, totalAmount: true, remainingAmount: true, status: true, createdAt: true },
-    }),
-    prisma.loyaltyPoints.findUnique({
-      where: { businessId_clientId: { businessId, clientId } },
-    }),
-    prisma.clientRisk.findUnique({
-      where: { businessId_clientId: { businessId, clientId } },
-    }),
-    prisma.businessTag.findMany({
-      where: { businessId },
-    }),
-  ]);
+  const [businessClient, orders, bookings, debts, loyalty, clientRisk, allBusinessTags] =
+    await Promise.all([
+      prisma.businessClient.findUnique({
+        where: { id: bc.id },
+        include: {
+          client: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              avatar: true,
+              birthDate: true,
+              city: true,
+              neighborhood: true,
+              country: true,
+              createdAt: true,
+            },
+          },
+          tags: { include: { tag: true } },
+          segments: { include: { segment: { select: { id: true, name: true, color: true } } } },
+          notes: { orderBy: { createdAt: 'desc' }, take: 20 },
+        },
+      }),
+      prisma.order.findMany({
+        where: { businessId, buyerId: clientId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          totalAmount: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.booking.findMany({
+        where: { businessId, clientId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+          price: true,
+          createdAt: true,
+          type: true,
+        },
+      }),
+      prisma.debt.findMany({
+        where: { businessId, buyerId: clientId, status: { not: 'SETTLED' } },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          totalAmount: true,
+          remainingAmount: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
+      prisma.loyaltyPoints.findUnique({
+        where: { businessId_clientId: { businessId, clientId } },
+      }),
+      prisma.clientRisk.findUnique({
+        where: { businessId_clientId: { businessId, clientId } },
+      }),
+      prisma.businessTag.findMany({
+        where: { businessId },
+      }),
+    ]);
 
   if (!businessClient) throw new AppError('Client non trouvé', 404);
 
@@ -139,20 +199,44 @@ export async function getClientDetail(businessId: string, clientId: string) {
       fullName: `${businessClient.client.firstName} ${businessClient.client.lastName}`.trim(),
     },
     tags: businessClient.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color })),
-    segments: businessClient.segments.map((s) => ({ id: s.segment.id, name: s.segment.name, color: s.segment.color })),
-    notes: businessClient.notes.map((n) => ({ id: n.id, content: n.content, createdBy: n.createdBy, createdAt: n.createdAt })),
+    segments: businessClient.segments.map((s) => ({
+      id: s.segment.id,
+      name: s.segment.name,
+      color: s.segment.color,
+    })),
+    notes: businessClient.notes.map((n) => ({
+      id: n.id,
+      content: n.content,
+      createdBy: n.createdBy,
+      createdAt: n.createdAt,
+    })),
     orders: orders.map((o) => ({ ...o, totalAmount: Number(o.totalAmount) })),
     bookings: bookings.map((b) => ({ ...b, price: Number(b.price) })),
-    debts: debts.map((d) => ({ ...d, totalAmount: Number(d.totalAmount), remainingAmount: Number(d.remainingAmount) })),
-    loyalty: loyalty ? { ...loyalty, totalPoints: loyalty.totalPoints, lifetimePoints: loyalty.lifetimePoints } : null,
+    debts: debts.map((d) => ({
+      ...d,
+      totalAmount: Number(d.totalAmount),
+      remainingAmount: Number(d.remainingAmount),
+    })),
+    loyalty: loyalty
+      ? { ...loyalty, totalPoints: loyalty.totalPoints, lifetimePoints: loyalty.lifetimePoints }
+      : null,
     clientRisk: clientRisk
-      ? { ...clientRisk, totalDebtAmount: clientRisk.totalDebtAmount ? Number(clientRisk.totalDebtAmount) : 0, maxCreditAmount: clientRisk.maxCreditAmount ? Number(clientRisk.maxCreditAmount) : null }
+      ? {
+          ...clientRisk,
+          totalDebtAmount: clientRisk.totalDebtAmount ? Number(clientRisk.totalDebtAmount) : 0,
+          maxCreditAmount: clientRisk.maxCreditAmount ? Number(clientRisk.maxCreditAmount) : null,
+        }
       : null,
     allTags: allBusinessTags.map((t) => ({ id: t.id, name: t.name, color: t.color })),
   };
 }
 
-export async function addClientNote(businessId: string, clientId: string, content: string, createdBy?: string) {
+export async function addClientNote(
+  businessId: string,
+  clientId: string,
+  content: string,
+  createdBy?: string
+) {
   const bc = await ensureBusinessClient(businessId, clientId);
   return prisma.clientNote.create({
     data: { businessClientId: bc.id, content, createdBy },
@@ -274,7 +358,11 @@ export async function deleteSegment(businessId: string, segmentId: string) {
   await prisma.clientSegment.delete({ where: { id: segmentId } });
 }
 
-export async function assignClientToSegment(businessId: string, clientId: string, segmentId: string) {
+export async function assignClientToSegment(
+  businessId: string,
+  clientId: string,
+  segmentId: string
+) {
   const bc = await ensureBusinessClient(businessId, clientId);
   const segment = await prisma.clientSegment.findFirst({ where: { id: segmentId, businessId } });
   if (!segment) throw new AppError('Segment non trouvé', 404);
@@ -286,7 +374,11 @@ export async function assignClientToSegment(businessId: string, clientId: string
   });
 }
 
-export async function removeClientFromSegment(businessId: string, clientId: string, segmentId: string) {
+export async function removeClientFromSegment(
+  businessId: string,
+  clientId: string,
+  segmentId: string
+) {
   const bc = await ensureBusinessClient(businessId, clientId);
   const segment = await prisma.clientSegment.findFirst({ where: { id: segmentId, businessId } });
   if (!segment) throw new AppError('Segment non trouvé', 404);
@@ -314,7 +406,7 @@ export async function recalculateSegment(businessId: string, segmentId: string) 
     where.totalSpent = { gte: conditions.minSpent };
   }
   if (conditions.maxSpent) {
-    where.totalSpent = { ...(where.totalSpent as any || {}), lte: conditions.maxSpent };
+    where.totalSpent = { ...((where.totalSpent as any) || {}), lte: conditions.maxSpent };
   }
   if (conditions.lastOrderDays) {
     const since = new Date();
@@ -447,10 +539,22 @@ export async function getCrmDashboardStats(businessId: string) {
   };
 }
 
-export async function syncClientFromOrder(businessId: string, clientId: string, orderTotal: number) {
+export async function syncClientFromOrder(
+  businessId: string,
+  clientId: string,
+  orderTotal: number
+) {
   const bc = await prisma.businessClient.upsert({
     where: { businessId_clientId: { businessId, clientId } },
-    create: { businessId, clientId, totalOrders: 1, totalSpent: orderTotal, lastOrderAt: new Date(), lastVisitAt: new Date(), visitCount: 1 },
+    create: {
+      businessId,
+      clientId,
+      totalOrders: 1,
+      totalSpent: orderTotal,
+      lastOrderAt: new Date(),
+      lastVisitAt: new Date(),
+      visitCount: 1,
+    },
     update: {
       totalOrders: { increment: 1 },
       totalSpent: { increment: orderTotal },
@@ -486,5 +590,182 @@ export async function updateClientNote(businessId: string, noteId: string, conte
   return prisma.clientNote.update({
     where: { id: noteId },
     data: { content },
+  });
+}
+
+// ===== PIPELINE STAGES =====
+export async function listStages(businessId: string) {
+  return prisma.pipelineStage.findMany({
+    where: { businessId, isActive: true },
+    orderBy: { order: 'asc' },
+    include: { _count: { select: { deals: { where: { deletedAt: null } } } } },
+  });
+}
+
+export async function createStage(
+  businessId: string,
+  data: { name: string; color?: string; order?: number }
+) {
+  const maxOrder = await prisma.pipelineStage.aggregate({
+    where: { businessId },
+    _max: { order: true },
+  });
+  return prisma.pipelineStage.create({
+    data: {
+      businessId,
+      name: data.name,
+      color: data.color,
+      order: data.order ?? (maxOrder._max.order ?? -1) + 1,
+    },
+  });
+}
+
+export async function updateStage(businessId: string, stageId: string, data: any) {
+  const stage = await prisma.pipelineStage.findFirst({ where: { id: stageId, businessId } });
+  if (!stage) throw new AppError('Étape non trouvée', 404);
+  return prisma.pipelineStage.update({ where: { id: stageId }, data });
+}
+
+export async function deleteStage(businessId: string, stageId: string) {
+  const stage = await prisma.pipelineStage.findFirst({ where: { id: stageId, businessId } });
+  if (!stage) throw new AppError('Étape non trouvée', 404);
+  const dealCount = await prisma.deal.count({ where: { stageId, deletedAt: null } });
+  if (dealCount > 0) throw new AppError("Supprimez d'abord les deals de cette étape", 400);
+  return prisma.pipelineStage.delete({ where: { id: stageId } });
+}
+
+// ===== DEALS =====
+export async function listDeals(
+  businessId: string,
+  filters?: { stageId?: string; search?: string }
+) {
+  const where: any = { businessId, deletedAt: null };
+  if (filters?.stageId) where.stageId = filters.stageId;
+  if (filters?.search) {
+    where.OR = [
+      { title: { contains: filters.search, mode: 'insensitive' } },
+      { clientName: { contains: filters.search, mode: 'insensitive' } },
+      { clientEmail: { contains: filters.search, mode: 'insensitive' } },
+    ];
+  }
+  return prisma.deal.findMany({
+    where,
+    include: { stage: { select: { id: true, name: true, color: true } } },
+    orderBy: [{ probability: 'desc' }, { createdAt: 'desc' }],
+  });
+}
+
+export async function getDeal(businessId: string, dealId: string) {
+  const deal = await prisma.deal.findFirst({
+    where: { id: dealId, businessId, deletedAt: null },
+    include: { stage: { select: { id: true, name: true, color: true } } },
+  });
+  if (!deal) throw new AppError('Deal non trouvé', 404);
+  return deal;
+}
+
+export async function createDeal(businessId: string, data: any) {
+  return prisma.deal.create({
+    data: {
+      businessId,
+      stageId: data.stageId,
+      clientName: data.clientName,
+      clientEmail: data.clientEmail,
+      clientPhone: data.clientPhone,
+      title: data.title,
+      description: data.description,
+      value: data.value ?? 0,
+      source: data.source,
+      probability: data.probability ?? 50,
+      expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : null,
+      notes: data.notes,
+    },
+    include: { stage: { select: { id: true, name: true, color: true } } },
+  });
+}
+
+export async function updateDeal(businessId: string, dealId: string, data: any) {
+  const deal = await prisma.deal.findFirst({ where: { id: dealId, businessId, deletedAt: null } });
+  if (!deal) throw new AppError('Deal non trouvé', 404);
+  const updateData: any = {};
+  if (data.stageId !== undefined) updateData.stageId = data.stageId;
+  if (data.clientName !== undefined) updateData.clientName = data.clientName;
+  if (data.clientEmail !== undefined) updateData.clientEmail = data.clientEmail;
+  if (data.clientPhone !== undefined) updateData.clientPhone = data.clientPhone;
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.value !== undefined) updateData.value = data.value;
+  if (data.source !== undefined) updateData.source = data.source;
+  if (data.probability !== undefined) updateData.probability = data.probability;
+  if (data.expectedCloseDate !== undefined)
+    updateData.expectedCloseDate = data.expectedCloseDate ? new Date(data.expectedCloseDate) : null;
+  if (data.notes !== undefined) updateData.notes = data.notes;
+  updateData.updatedAt = new Date();
+
+  // Handle WON/LOST status
+  if (data.stageId) {
+    const stage = await prisma.pipelineStage.findFirst({ where: { id: data.stageId, businessId } });
+    if (stage && stage.name.toLowerCase() === 'won') updateData.wonAt = new Date();
+    if (stage && stage.name.toLowerCase() === 'lost') {
+      updateData.lostAt = new Date();
+      updateData.lostReason = data.lostReason || null;
+    }
+  }
+
+  return prisma.deal.update({
+    where: { id: dealId },
+    data: updateData,
+    include: { stage: { select: { id: true, name: true, color: true } } },
+  });
+}
+
+export async function moveDeal(businessId: string, dealId: string, data: { stageId: string }) {
+  const deal = await prisma.deal.findFirst({ where: { id: dealId, businessId, deletedAt: null } });
+  if (!deal) throw new AppError('Deal non trouvé', 404);
+  return updateDeal(businessId, dealId, { stageId: data.stageId });
+}
+
+export async function deleteDeal(businessId: string, dealId: string) {
+  const deal = await prisma.deal.findFirst({ where: { id: dealId, businessId, deletedAt: null } });
+  if (!deal) throw new AppError('Deal non trouvé', 404);
+  return prisma.deal.update({ where: { id: dealId }, data: { deletedAt: new Date() } });
+}
+
+export async function getPipelineStats(businessId: string) {
+  const stages = await prisma.pipelineStage.findMany({
+    where: { businessId, isActive: true },
+    orderBy: { order: 'asc' },
+    include: { deals: { where: { deletedAt: null }, select: { value: true } } },
+  });
+  const totalDeals = stages.reduce((s, st) => s + st.deals.length, 0);
+  const totalValue = stages.reduce(
+    (s, st) => s + Number(st.deals.reduce((a, d) => a + Number(d.value), 0)),
+    0
+  );
+  const wonStage = stages.find((s) => s.name.toLowerCase() === 'won');
+  const wonValue = wonStage ? Number(wonStage.deals.reduce((a, d) => a + Number(d.value), 0)) : 0;
+  const stageSummary = stages.map((s) => ({
+    id: s.id,
+    name: s.name,
+    color: s.color,
+    count: s.deals.length,
+    value: Number(s.deals.reduce((a, d) => a + Number(d.value), 0)),
+  }));
+  return { totalDeals, totalValue, wonValue, stageSummary };
+}
+
+export async function seedDefaultStages(businessId: string) {
+  const existing = await prisma.pipelineStage.count({ where: { businessId } });
+  if (existing > 0) return;
+  const defaults = [
+    { name: 'Nouveau', order: 0, color: '#6366f1' },
+    { name: 'Qualifié', order: 1, color: '#8b5cf6' },
+    { name: 'Proposition', order: 2, color: '#ec4899' },
+    { name: 'Négociation', order: 3, color: '#f59e0b' },
+    { name: 'Gagné', order: 4, color: '#10b981' },
+    { name: 'Perdu', order: 5, color: '#ef4444' },
+  ];
+  return prisma.pipelineStage.createMany({
+    data: defaults.map((d) => ({ ...d, businessId })),
   });
 }

@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 const promoTypes = ['PERCENTAGE', 'FIXED', 'FREE_SHIPPING', 'BUY_X_GET_Y', 'LOYALTY'] as const;
-const promoStatuses = ['ACTIVE', 'INACTIVE', 'EXPIRED', 'SCHEDULED'] as const;
 const targetTypes = ['ALL', 'PRODUCTS', 'MENU_ITEMS', 'CATEGORIES', 'SERVICES'] as const;
 const discountTypes = ['PERCENTAGE', 'FIXED'] as const;
 const campaignChannels = ['WHATSAPP', 'SMS', 'EMAIL', 'PUSH', 'SOCIAL'] as const;
@@ -49,11 +48,15 @@ export const createBundleSchema = z.object({
   description: z.string().optional(),
   bundlePrice: z.number().positive('Prix du pack requis'),
   image: z.string().optional(),
-  items: z.array(z.object({
-    itemType: z.string().optional().default('PRODUCT'),
-    itemId: z.string().min(1, 'ID article requis'),
-    quantity: z.number().int().positive().optional().default(1),
-  })).min(1, 'Au moins un article requis'),
+  items: z
+    .array(
+      z.object({
+        itemType: z.string().optional().default('PRODUCT'),
+        itemId: z.string().min(1, 'ID article requis'),
+        quantity: z.number().int().positive().optional().default(1),
+      })
+    )
+    .min(1, 'Au moins un article requis'),
 });
 
 export const createCampaignSchema = z.object({
@@ -82,4 +85,3 @@ export const updateLoyaltySchema = z.object({
   birthdayBonus: z.number().int().min(0).optional(),
   birthdayPromoId: z.string().optional(),
 });
-

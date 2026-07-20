@@ -1,7 +1,27 @@
 import { Router } from 'express';
-import { listRooms, getRoom, createRoom, updateRoom, deleteRoom, toggleRoomActive, updateRoomStatus, blockRoomDates, getRoomStats, duplicateRoom, exportRooms, importRooms, bulkDeleteRooms, bulkToggleRooms } from '../controllers/room';
+import {
+  listRooms,
+  getRoom,
+  createRoom,
+  updateRoom,
+  deleteRoom,
+  toggleRoomActive,
+  updateRoomStatus,
+  blockRoomDates,
+  getRoomStats,
+  duplicateRoom,
+  exportRooms,
+  importRooms,
+  bulkDeleteRooms,
+  bulkToggleRooms,
+} from '../controllers/room';
 import { validateBody } from '../middlewares/validators';
-import { createRoomSchema, updateRoomSchema, updateRoomStatusSchema, blockRoomDatesSchema } from '../validators/room';
+import {
+  createRoomSchema,
+  updateRoomSchema,
+  updateRoomStatusSchema,
+  blockRoomDatesSchema,
+} from '../validators/room';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 
 const router = Router();

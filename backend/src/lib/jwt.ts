@@ -27,10 +27,14 @@ export const createAccessToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): str
     roles: payload.roles,
   };
 
-  return jwt.sign(signPayload, config.JWT_SECRET as jwt.Secret, {
-    expiresIn: config.JWT_EXPIRES_IN,
-    algorithm: 'HS256',
-  } as SignOptions);
+  return jwt.sign(
+    signPayload,
+    config.JWT_SECRET as jwt.Secret,
+    {
+      expiresIn: config.JWT_EXPIRES_IN,
+      algorithm: 'HS256',
+    } as SignOptions
+  );
 };
 
 /**
@@ -42,10 +46,14 @@ export const createRefreshToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): st
     email: payload.email,
   };
 
-  return jwt.sign(signPayload, config.JWT_REFRESH_SECRET as jwt.Secret, {
-    expiresIn: config.JWT_REFRESH_EXPIRES_IN,
-    algorithm: 'HS256',
-  } as SignOptions);
+  return jwt.sign(
+    signPayload,
+    config.JWT_REFRESH_SECRET as jwt.Secret,
+    {
+      expiresIn: config.JWT_REFRESH_EXPIRES_IN,
+      algorithm: 'HS256',
+    } as SignOptions
+  );
 };
 
 /**

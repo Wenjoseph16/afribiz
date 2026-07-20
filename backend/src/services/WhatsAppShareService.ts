@@ -33,54 +33,88 @@ export function buildOrderMessage(
 
   switch (type) {
     case 'ORDER_CONFIRMED':
-      return '✅ *Commande confirmée - ' + businessName + '*\n\n'
-        + (orderNumber ? 'N° ' + orderNumber + '\n' : '')
-        + (customerName ? 'Client: ' + customerName + '\n' : '')
-        + (totalAmount ? 'Montant: ' + totalAmount + '\n' : '')
-        + (items && items.length > 0
-          ? '\n_Articles:_\n' + items.slice(0, 5).map(i => '• ' + i.quantity + '× ' + i.name).join('\n') + (items.length > 5 ? '\n… et ' + (items.length - 5) + ' autres' : '') + '\n'
-          : '')
-        + '\nMerci pour votre commande 🙏'
-        + (publicUrl ? '\n' + publicUrl : '');
+      return (
+        '✅ *Commande confirmée - ' +
+        businessName +
+        '*\n\n' +
+        (orderNumber ? 'N° ' + orderNumber + '\n' : '') +
+        (customerName ? 'Client: ' + customerName + '\n' : '') +
+        (totalAmount ? 'Montant: ' + totalAmount + '\n' : '') +
+        (items && items.length > 0
+          ? '\n_Articles:_\n' +
+            items
+              .slice(0, 5)
+              .map((i) => '• ' + i.quantity + '× ' + i.name)
+              .join('\n') +
+            (items.length > 5 ? '\n… et ' + (items.length - 5) + ' autres' : '') +
+            '\n'
+          : '') +
+        '\nMerci pour votre commande 🙏' +
+        (publicUrl ? '\n' + publicUrl : '')
+      );
 
     case 'ORDER_REFUSED':
-      return '❌ *Commande refusée - ' + businessName + '*\n\n'
-        + (orderNumber ? 'N° ' + orderNumber + '\n' : '')
-        + (reason ? 'Motif: ' + reason + '\n\n' : '\n')
-        + 'Veuillez nous contacter pour plus d\'informations.'
-        + (publicUrl ? '\n' + publicUrl : '');
+      return (
+        '❌ *Commande refusée - ' +
+        businessName +
+        '*\n\n' +
+        (orderNumber ? 'N° ' + orderNumber + '\n' : '') +
+        (reason ? 'Motif: ' + reason + '\n\n' : '\n') +
+        "Veuillez nous contacter pour plus d'informations." +
+        (publicUrl ? '\n' + publicUrl : '')
+      );
 
     case 'ORDER_READY':
-      return '📦 *Commande prête - ' + businessName + '*\n\n'
-        + (orderNumber ? 'N° ' + orderNumber + '\n' : '')
-        + (customerName ? 'Client: ' + customerName + '\n' : '')
-        + '\nVotre commande est prête à être retirée ou livrée ! 🎉'
-        + (publicUrl ? '\n' + publicUrl : '');
+      return (
+        '📦 *Commande prête - ' +
+        businessName +
+        '*\n\n' +
+        (orderNumber ? 'N° ' + orderNumber + '\n' : '') +
+        (customerName ? 'Client: ' + customerName + '\n' : '') +
+        '\nVotre commande est prête à être retirée ou livrée ! 🎉' +
+        (publicUrl ? '\n' + publicUrl : '')
+      );
 
     case 'ORDER_SHIPPED':
-      return '🚚 *Commande expédiée - ' + businessName + '*\n\n'
-        + (orderNumber ? 'N° ' + orderNumber + '\n' : '')
-        + (customerName ? 'Client: ' + customerName + '\n' : '')
-        + '\nVotre commande est en route ! Suivez-la en temps réel.'
-        + (publicUrl ? '\n' + publicUrl : '');
+      return (
+        '🚚 *Commande expédiée - ' +
+        businessName +
+        '*\n\n' +
+        (orderNumber ? 'N° ' + orderNumber + '\n' : '') +
+        (customerName ? 'Client: ' + customerName + '\n' : '') +
+        '\nVotre commande est en route ! Suivez-la en temps réel.' +
+        (publicUrl ? '\n' + publicUrl : '')
+      );
 
     case 'PROMOTION':
-      return '🔥 *Promotion spéciale - ' + businessName + '* 🔥\n\n'
-        + (totalAmount ? '💰 ' + totalAmount + '\n\n' : '')
-        + 'Ne manquez pas cette offre exceptionnelle !\n'
-        + 'Commandez dès maintenant 🛍️'
-        + (publicUrl ? '\n' + publicUrl : '');
+      return (
+        '🔥 *Promotion spéciale - ' +
+        businessName +
+        '* 🔥\n\n' +
+        (totalAmount ? '💰 ' + totalAmount + '\n\n' : '') +
+        'Ne manquez pas cette offre exceptionnelle !\n' +
+        'Commandez dès maintenant 🛍️' +
+        (publicUrl ? '\n' + publicUrl : '')
+      );
 
     case 'PRODUCT_SHARE':
-      return '🛒 *' + businessName + '*\n\n'
-        + (totalAmount ? 'Prix: ' + totalAmount + '\n\n' : '')
-        + 'Découvrez ce produit sur AfriBiz !'
-        + (publicUrl ? '\n' + publicUrl : '');
+      return (
+        '🛒 *' +
+        businessName +
+        '*\n\n' +
+        (totalAmount ? 'Prix: ' + totalAmount + '\n\n' : '') +
+        'Découvrez ce produit sur AfriBiz !' +
+        (publicUrl ? '\n' + publicUrl : '')
+      );
 
     case 'BUSINESS_SHARE':
-      return '🏪 *' + businessName + '*\n\n'
-        + 'Découvrez mon business sur AfriBiz ! Commandez en ligne, réservez des services et plus encore 🚀'
-        + (publicUrl ? '\n' + publicUrl : '');
+      return (
+        '🏪 *' +
+        businessName +
+        '*\n\n' +
+        'Découvrez mon business sur AfriBiz ! Commandez en ligne, réservez des services et plus encore 🚀' +
+        (publicUrl ? '\n' + publicUrl : '')
+      );
 
     default:
       return 'Découvrez ' + businessName + ' sur AfriBiz !' + (publicUrl ? '\n' + publicUrl : '');
@@ -104,10 +138,17 @@ export function generateOrderWhatsAppLink(
   return generateWhatsAppLink(phone, message);
 }
 
-export function generateBusinessShareLink(phone: string, businessName: string, publicUrl: string): string {
+export function generateBusinessShareLink(
+  phone: string,
+  businessName: string,
+  publicUrl: string
+): string {
   return generateWhatsAppLink(
     phone,
-    '🏪 *' + businessName + '*\n\nDécouvrez mon business sur AfriBiz ! Commandez en ligne, réservez des services et plus encore 🚀\n' + publicUrl
+    '🏪 *' +
+      businessName +
+      '*\n\nDécouvrez mon business sur AfriBiz ! Commandez en ligne, réservez des services et plus encore 🚀\n' +
+      publicUrl
   );
 }
 

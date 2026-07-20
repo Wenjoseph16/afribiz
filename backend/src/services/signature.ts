@@ -3,7 +3,12 @@ import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 
 // ── Generate Signature Token ──
-export async function createSignatureRequest(documentId: string, signerId: string, signerEmail: string, signerName: string) {
+export async function createSignatureRequest(
+  documentId: string,
+  signerId: string,
+  signerEmail: string,
+  signerName: string
+) {
   const token = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}_${signerId.slice(0, 8)}`;
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
@@ -64,7 +69,7 @@ export async function verifySignature(documentId: string) {
 
   return {
     isSigned: signatures.length > 0,
-    signatures: signatures.map(s => ({
+    signatures: signatures.map((s) => ({
       signerName: s.signerName,
       signerEmail: s.signerEmail,
       signedAt: s.signedAt,

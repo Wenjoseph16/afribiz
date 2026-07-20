@@ -31,7 +31,9 @@ function weightedScore(scores: number[], weights: number[]): number {
   return weightSum > 0 ? Math.round(total / weightSum) : 0;
 }
 
-export async function computeCommercialActivity(businessId: string): Promise<{ score: number; meta: any }> {
+export async function computeCommercialActivity(
+  businessId: string
+): Promise<{ score: number; meta: any }> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
     include: {
@@ -64,7 +66,16 @@ export async function computeCommercialActivity(businessId: string): Promise<{ s
 
   return {
     score,
-    meta: { totalOrders, totalBookings, orderGrowth, revenueStability, orderScore, bookingScore, growthScore, stabilityScore },
+    meta: {
+      totalOrders,
+      totalBookings,
+      orderGrowth,
+      revenueStability,
+      orderScore,
+      bookingScore,
+      growthScore,
+      stabilityScore,
+    },
   };
 }
 
@@ -114,14 +125,17 @@ async function computeRevenueStability(businessId: string): Promise<number> {
   const mean = revenues.reduce((a: number, b: number) => a + b, 0) / revenues.length;
   if (mean === 0) return 0;
 
-  const variance = revenues.reduce((acc: number, r: number) => acc + Math.pow(r - mean, 2), 0) / revenues.length;
+  const variance =
+    revenues.reduce((acc: number, r: number) => acc + Math.pow(r - mean, 2), 0) / revenues.length;
   const stdDev = Math.sqrt(variance);
   const cv = stdDev / mean;
 
   return clamp(Math.round((1 - cv) * 100), 0, 100);
 }
 
-export async function computeFinancialBehavior(businessId: string): Promise<{ score: number; meta: any }> {
+export async function computeFinancialBehavior(
+  businessId: string
+): Promise<{ score: number; meta: any }> {
   const business = await prisma.business.findUnique({ where: { id: businessId } });
   if (!business) throw new AppError('Business not found', 404);
 
@@ -180,11 +194,21 @@ export async function computeFinancialBehavior(businessId: string): Promise<{ sc
 
   return {
     score,
-    meta: { paymentRatio, lateRatio, disputeRatio, escrowRate, completedPayments, latePayments, disputedOrders },
+    meta: {
+      paymentRatio,
+      lateRatio,
+      disputeRatio,
+      escrowRate,
+      completedPayments,
+      latePayments,
+      disputedOrders,
+    },
   };
 }
 
-export async function computeSatisfaction(businessId: string): Promise<{ score: number; meta: any }> {
+export async function computeSatisfaction(
+  businessId: string
+): Promise<{ score: number; meta: any }> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
     select: { id: true, ownerId: true, rating: true, reviewCount: true },
@@ -220,9 +244,14 @@ export async function computeSatisfaction(businessId: string): Promise<{ score: 
     if (messageDetails.length > 0) {
       const responseTimes: number[] = [];
       for (let i = 1; i < messageDetails.length; i++) {
-        responseTimes.push(messageDetails[i].createdAt.getTime() - messageDetails[i - 1].createdAt.getTime());
+        responseTimes.push(
+          messageDetails[i].createdAt.getTime() - messageDetails[i - 1].createdAt.getTime()
+        );
       }
-      const avgResponse = responseTimes.length > 0 ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 0;
+      const avgResponse =
+        responseTimes.length > 0
+          ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+          : 0;
       const avgHours = avgResponse / (1000 * 60 * 60);
       responseTimeScore = clamp(Math.round(Math.max(0, 200 - avgHours * 5)), 0, 200);
     }
@@ -234,11 +263,21 @@ export async function computeSatisfaction(businessId: string): Promise<{ score: 
 
   return {
     score,
-    meta: { avgRating, reviewCount, satisfactionRate, responseTimeScore, ratingScore, reviewCountScore, satisfactionScore },
+    meta: {
+      avgRating,
+      reviewCount,
+      satisfactionRate,
+      responseTimeScore,
+      ratingScore,
+      reviewCountScore,
+      satisfactionScore,
+    },
   };
 }
 
-export async function computeOperationalReliability(businessId: string): Promise<{ score: number; meta: any }> {
+export async function computeOperationalReliability(
+  businessId: string
+): Promise<{ score: number; meta: any }> {
   const business = await prisma.business.findUnique({ where: { id: businessId } });
   if (!business) throw new AppError('Business not found', 404);
 
@@ -285,16 +324,29 @@ export async function computeOperationalReliability(businessId: string): Promise
 
   return {
     score,
-    meta: { fulfillmentRate, cancellationRate, bookingHonourRate, monthsActive, fulfillmentScore, bookingScore, cancelScore, consistencyScore },
+    meta: {
+      fulfillmentRate,
+      cancellationRate,
+      bookingHonourRate,
+      monthsActive,
+      fulfillmentScore,
+      bookingScore,
+      cancelScore,
+      consistencyScore,
+    },
   };
 }
 
 async function computeMonthsActive(createdAt: Date): Promise<number> {
   const now = new Date();
-  return (now.getFullYear() - createdAt.getFullYear()) * 12 + (now.getMonth() - createdAt.getMonth());
+  return (
+    (now.getFullYear() - createdAt.getFullYear()) * 12 + (now.getMonth() - createdAt.getMonth())
+  );
 }
 
-export async function computeProfileCompleteness(businessId: string): Promise<{ score: number; meta: any }> {
+export async function computeProfileCompleteness(
+  businessId: string
+): Promise<{ score: number; meta: any }> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
     include: {
@@ -342,7 +394,8 @@ export async function computeBusinessScore(businessId: string): Promise<any> {
     computeProfileCompleteness(businessId),
   ]);
 
-  const overallScore = commercial.score + financial.score + satisfaction.score + reliability.score + profile.score;
+  const overallScore =
+    commercial.score + financial.score + satisfaction.score + reliability.score + profile.score;
   const category = getScoreCategory(overallScore);
 
   const score = await prisma.businessScore.upsert({
@@ -451,52 +504,177 @@ async function recomputeBadges(businessId: string): Promise<void> {
   const badges: { badge: string; label: string; description: string; icon?: string }[] = [];
 
   if (business.isVerified) {
-    badges.push({ badge: 'BUSINESS_VERIFIED', label: 'Vérifié', description: 'Compte vérifié par AfriBiz', icon: 'verified' });
+    badges.push({
+      badge: 'BUSINESS_VERIFIED',
+      label: 'Vérifié',
+      description: 'Compte vérifié par AfriBiz',
+      icon: 'verified',
+    });
   }
 
   if (score.overallScore >= 800 && score.commercialScore >= 160) {
-    badges.push({ badge: 'TOP_SELLER', label: 'Top Vendeur', description: 'Parmi les meilleurs vendeurs', icon: 'top_seller' });
+    badges.push({
+      badge: 'TOP_SELLER',
+      label: 'Top Vendeur',
+      description: 'Parmi les meilleurs vendeurs',
+      icon: 'top_seller',
+    });
   }
 
   if (score.overallScore >= 800 && score.reliabilityScore >= 160) {
-    badges.push({ badge: 'TOP_PROVIDER', label: 'Top Prestataire', description: 'Prestataire fiable et performant', icon: 'top_provider' });
+    badges.push({
+      badge: 'TOP_PROVIDER',
+      label: 'Top Prestataire',
+      description: 'Prestataire fiable et performant',
+      icon: 'top_provider',
+    });
   }
 
   if (business.type === 'RESTAURANT' && score.overallScore >= 700) {
-    badges.push({ badge: 'TOP_RESTAURANT', label: 'Top Restaurant', description: 'Restaurant recommandé', icon: 'top_restaurant' });
+    badges.push({
+      badge: 'TOP_RESTAURANT',
+      label: 'Top Restaurant',
+      description: 'Restaurant recommandé',
+      icon: 'top_restaurant',
+    });
   }
 
   if (business.type === 'HOTEL' && score.overallScore >= 700) {
-    badges.push({ badge: 'TOP_HOTEL', label: 'Top Hôtel', description: 'Hôtel recommandé', icon: 'top_hotel' });
+    badges.push({
+      badge: 'TOP_HOTEL',
+      label: 'Top Hôtel',
+      description: 'Hôtel recommandé',
+      icon: 'top_hotel',
+    });
   }
 
   if (business.isPremium) {
-    badges.push({ badge: 'BUSINESS_PREMIUM', label: 'Premium', description: 'Business Premium AfriBiz', icon: 'premium' });
+    badges.push({
+      badge: 'BUSINESS_PREMIUM',
+      label: 'Premium',
+      description: 'Business Premium AfriBiz',
+      icon: 'premium',
+    });
   }
 
   if (business.isRecommended) {
-    badges.push({ badge: 'BUSINESS_RECOMMENDED', label: 'Recommandé', description: 'Business recommandé par AfriBiz', icon: 'recommended' });
+    badges.push({
+      badge: 'BUSINESS_RECOMMENDED',
+      label: 'Recommandé',
+      description: 'Business recommandé par AfriBiz',
+      icon: 'recommended',
+    });
   }
 
   if (score.overallScore >= 600 && score.reliabilityScore >= 150) {
-    badges.push({ badge: 'BUSINESS_RELIABLE', label: 'Fiable', description: 'Business fiable et digne de confiance', icon: 'reliable' });
+    badges.push({
+      badge: 'BUSINESS_RELIABLE',
+      label: 'Fiable',
+      description: 'Business fiable et digne de confiance',
+      icon: 'reliable',
+    });
   }
 
   if (score.overallScore >= 900) {
-    badges.push({ badge: 'BUSINESS_ELITE', label: 'Elite', description: 'Business d\'élite', icon: 'elite' });
+    badges.push({
+      badge: 'BUSINESS_ELITE',
+      label: 'Elite',
+      description: "Business d'élite",
+      icon: 'elite',
+    });
+  }
+
+  // --- NOUVEAUX BADGES PHASE 7 ---
+
+  // PAYMENT_VERIFIED: > 50 paiements réussis, 0 litige 90j
+  const recentPayments = await prisma.payment.count({
+    where: { businessId, status: 'COMPLETED' },
+  });
+  const recentDisputes = await prisma.dispute.count({
+    where: { businessId, createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } },
+  });
+  if (recentPayments >= 50 && recentDisputes === 0) {
+    badges.push({
+      badge: 'PAYMENT_VERIFIED',
+      label: 'Paiement Sécurisé',
+      description: 'Plus de 50 paiements réussis sans litige',
+      icon: 'payment_verified',
+    });
+  }
+
+  // RESPONSE_TIME: temps médian réponse < 30min (30 derniers jours uniquement)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const recentMessages = await prisma.message.findMany({
+    where: {
+      conversation: { participants: { has: business.ownerId } },
+      createdAt: { gte: thirtyDaysAgo },
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 50,
+  });
+  if (recentMessages.length >= 4) {
+    const responseTimes: number[] = [];
+    for (let i = 1; i < recentMessages.length; i++) {
+      const diff =
+        recentMessages[i].createdAt.getTime() - recentMessages[i - 1].createdAt.getTime();
+      if (diff > 0 && diff < 24 * 60 * 60 * 1000) responseTimes.push(diff);
+    }
+    if (responseTimes.length >= 2) {
+      responseTimes.sort((a, b) => a - b);
+      const median = responseTimes[Math.floor(responseTimes.length / 2)];
+      const medianMinutes = median / (1000 * 60);
+      if (medianMinutes < 30) {
+        badges.push({
+          badge: 'RESPONSE_TIME',
+          label: 'Réponse Rapide',
+          description: 'Temps de réponse médian < 30 min',
+          icon: 'response_time',
+        });
+      }
+    }
+  }
+
+  // ESCROW_ACTIVE: utilise escrow pour > 80% transactions > 50k
+  const largeTransactions = await prisma.payment.count({
+    where: { businessId, amount: { gte: 50000 } },
+  });
+  const escrowTransactions = await prisma.payment.count({
+    where: { businessId, amount: { gte: 50000 }, method: 'ESCROW' },
+  });
+  if (largeTransactions > 0 && escrowTransactions / largeTransactions >= 0.8) {
+    badges.push({
+      badge: 'ESCROW_ACTIVE',
+      label: 'Transactions Sécurisées',
+      description: 'Utilise le paiement sécurisé Escrow',
+      icon: 'escrow_active',
+    });
   }
 
   for (const badge of badges) {
     await prisma.businessBadge.upsert({
       where: { businessId_badge: { businessId, badge: badge.badge as any } },
-      update: { isActive: true, label: badge.label, description: badge.description, icon: badge.icon },
-      create: { businessId, badge: badge.badge as any, label: badge.label, description: badge.description, icon: badge.icon },
+      update: {
+        isActive: true,
+        label: badge.label,
+        description: badge.description,
+        icon: badge.icon,
+      },
+      create: {
+        businessId,
+        badge: badge.badge as any,
+        label: badge.label,
+        description: badge.description,
+        icon: badge.icon,
+      },
     });
   }
 }
 
 export async function recomputeAllScores(): Promise<number> {
-  const businesses = await prisma.business.findMany({ where: { isActive: true }, select: { id: true } });
+  const businesses = await prisma.business.findMany({
+    where: { isActive: true },
+    select: { id: true },
+  });
   for (const b of businesses) {
     try {
       await computeBusinessScore(b.id);
@@ -529,7 +707,13 @@ export async function getSectorBenchmark(sector: string): Promise<any> {
     if (scores.length === 0) {
       return {
         sector,
-        avgScore: 0, avgCommercial: 0, avgFinancial: 0, avgSatisfaction: 0, avgReliability: 0, avgProfile: 0, businessCount: 0,
+        avgScore: 0,
+        avgCommercial: 0,
+        avgFinancial: 0,
+        avgSatisfaction: 0,
+        avgReliability: 0,
+        avgProfile: 0,
+        businessCount: 0,
       };
     }
 
@@ -545,7 +729,14 @@ export async function getSectorBenchmark(sector: string): Promise<any> {
           avgProfile: acc.avgProfile + b.score.profileScore,
         };
       },
-      { avgScore: 0, avgCommercial: 0, avgFinancial: 0, avgSatisfaction: 0, avgReliability: 0, avgProfile: 0 }
+      {
+        avgScore: 0,
+        avgCommercial: 0,
+        avgFinancial: 0,
+        avgSatisfaction: 0,
+        avgReliability: 0,
+        avgProfile: 0,
+      }
     );
 
     const count = scores.length;

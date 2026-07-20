@@ -1,2 +1,2 @@
-import app from './.build/server';
+import app from '../dist/server';
 export default app;

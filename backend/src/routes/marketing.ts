@@ -1,9 +1,13 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
-import { getMarketingStats, triggerBirthdayCampaign, triggerInactiveCheck } from '../controllers/marketing';
+import { authMiddleware, requireRole } from '../middlewares/auth';
+import {
+  getMarketingStats,
+  triggerBirthdayCampaign,
+  triggerInactiveCheck,
+} from '../controllers/marketing';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, requireRole(['BUSINESS', 'ADMIN']));
 
 router.get('/stats', getMarketingStats);
 router.post('/birthday', triggerBirthdayCampaign);

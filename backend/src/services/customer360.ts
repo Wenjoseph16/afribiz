@@ -18,7 +18,12 @@ export async function trackPageView(data: {
   if (data.userId) {
     await prisma.businessClient.upsert({
       where: { businessId_clientId: { businessId: data.businessId, clientId: data.userId } },
-      create: { businessId: data.businessId, clientId: data.userId, visitCount: 1, lastVisitAt: new Date() },
+      create: {
+        businessId: data.businessId,
+        clientId: data.userId,
+        visitCount: 1,
+        lastVisitAt: new Date(),
+      },
       update: { visitCount: { increment: 1 }, lastVisitAt: new Date() },
     });
 
@@ -44,7 +49,7 @@ export async function trackProductView(data: {
 
   if (data.userId) {
     await logActivity(data.businessId, data.userId, 'PRODUCT_VIEW', {
-      description: 'Consultation d\'un produit',
+      description: "Consultation d'un produit",
       link: `/products/${data.productId}`,
       metadata: { productId: data.productId, source: data.source },
     });
@@ -134,12 +139,13 @@ export async function getCustomer360(businessId: string, clientId: string) {
     ...rawProductViews.map((v) => v.productId),
     ...rawProductClicks.map((c) => c.productId),
   ]);
-  const products = productIds.size > 0
-    ? await prisma.product.findMany({
-        where: { id: { in: Array.from(productIds) } },
-        select: { id: true, name: true, images: true, price: true },
-      })
-    : [];
+  const products =
+    productIds.size > 0
+      ? await prisma.product.findMany({
+          where: { id: { in: Array.from(productIds) } },
+          select: { id: true, name: true, images: true, price: true },
+        })
+      : [];
   const productMap = new Map(products.map((p) => [p.id, p]));
 
   return {
@@ -162,7 +168,9 @@ export async function getCustomer360(businessId: string, clientId: string) {
       const p = productMap.get(v.productId);
       return {
         id: v.id,
-        product: p ? { id: p.id, name: p.name, image: p.images?.[0] || null, price: Number(p.price) } : null,
+        product: p
+          ? { id: p.id, name: p.name, image: p.images?.[0] || null, price: Number(p.price) }
+          : null,
         source: v.source,
         viewedAt: v.viewedAt,
       };
@@ -171,7 +179,9 @@ export async function getCustomer360(businessId: string, clientId: string) {
       const p = productMap.get(c.productId);
       return {
         id: c.id,
-        product: p ? { id: p.id, name: p.name, image: p.images?.[0] || null, price: Number(p.price) } : null,
+        product: p
+          ? { id: p.id, name: p.name, image: p.images?.[0] || null, price: Number(p.price) }
+          : null,
         source: c.source,
         clickedAt: c.clickedAt,
       };

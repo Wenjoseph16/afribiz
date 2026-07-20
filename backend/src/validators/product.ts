@@ -29,13 +29,17 @@ export const createProductSchema = z.object({
   isVisibleOnMarketplace: z.boolean().default(true),
   seoTitle: z.string().max(200).optional(),
   seoDescription: z.string().max(300).optional(),
-  variants: z.array(z.object({
-    name: z.string().min(1, 'Le nom de la variante est requis'),
-    sku: z.string().optional(),
-    price: z.number().positive().optional(),
-    stock: z.number().int().min(0).default(0),
-    image: z.string().optional(),
-  })).optional(),
+  variants: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Le nom de la variante est requis'),
+        sku: z.string().optional(),
+        price: z.number().positive().optional(),
+        stock: z.number().int().min(0).default(0),
+        image: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial();

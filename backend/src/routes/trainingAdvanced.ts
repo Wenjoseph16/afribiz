@@ -1,12 +1,20 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import {
-  listLessons, getLesson, createLesson, updateLesson, deleteLesson,
-  createQuiz, submitQuizAttempt, getQuizAttempts, getTrainingProgress,
+  listLessons,
+  getLesson,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+  createQuiz,
+  submitQuizAttempt,
+  getQuizAttempts,
+  getTrainingProgress,
 } from '../controllers/trainingAdvanced';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 // Lessons
 router.get('/:trainingId/lessons', listLessons);

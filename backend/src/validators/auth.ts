@@ -6,7 +6,10 @@ const passwordSchema = z
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/[0-9]/, 'Password must contain at least one number')
-  .regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/, 'Password must contain at least one special character');
+  .regex(
+    /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
+    'Password must contain at least one special character'
+  );
 
 const emailSchema = z.string().email('Invalid email address').toLowerCase();
 
@@ -18,7 +21,9 @@ const phoneSchema = z
   .string()
   .min(4, 'Enter a valid phone number with country code')
   .max(18, 'Phone number too long')
-  .regex(/^\+[1-9]\d{6,16}$/, 'Enter a valid international phone number (e.g., +22890123456)');
+  .regex(/^\+[1-9]\d{6,16}$/, 'Enter a valid international phone number (e.g., +22890123456)')
+  .optional()
+  .or(z.literal(''));
 
 export const signupSchema = z
   .object({
@@ -31,8 +36,9 @@ export const signupSchema = z
     region: z.string().min(2, 'Region is required'),
     city: z.string().min(2, 'City is required'),
     neighborhood: z.string().min(2, 'Neighborhood is required'),
-    birthDate: z.string().optional().refine((date) => !date || !Number.isNaN(Date.parse(date)), { message: 'Enter a valid date of birth' }),
-    gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
+    birthDate: z.string().refine((date) => !Number.isNaN(Date.parse(date)), {
+      message: 'Enter a valid date of birth',
+    }),
     password: passwordSchema,
     confirmPassword: z.string(),
     termsAccepted: z.boolean().refine((val) => val === true, {
@@ -91,25 +97,35 @@ export const resendEmailVerificationSchema = z.object({
 /**
  * Send OTP validation - supports email OR phone
  */
-export const sendOtpSchema = z.object({
-  email: emailSchema.optional(),
-  phone: z.string().regex(/^\+[1-9]\d{6,16}$/, 'Invalid phone number').optional(),
-  type: z.enum(['EMAIL_VERIFICATION', 'PASSWORD_RESET', 'LOGIN']),
-}).refine((data) => data.email || data.phone, {
-  message: 'Either email or phone is required',
-});
+export const sendOtpSchema = z
+  .object({
+    email: emailSchema.optional(),
+    phone: z
+      .string()
+      .regex(/^\+[1-9]\d{6,16}$/, 'Invalid phone number')
+      .optional(),
+    type: z.enum(['EMAIL_VERIFICATION', 'PASSWORD_RESET', 'LOGIN']),
+  })
+  .refine((data) => data.email || data.phone, {
+    message: 'Either email or phone is required',
+  });
 
 /**
  * Verify OTP validation - supports email OR phone
  */
-export const verifyOtpSchema = z.object({
-  email: emailSchema.optional(),
-  phone: z.string().regex(/^\+[1-9]\d{6,16}$/, 'Invalid phone number').optional(),
-  code: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
-  type: z.enum(['EMAIL_VERIFICATION', 'PASSWORD_RESET', 'LOGIN']),
-}).refine((data) => data.email || data.phone, {
-  message: 'Either email or phone is required',
-});
+export const verifyOtpSchema = z
+  .object({
+    email: emailSchema.optional(),
+    phone: z
+      .string()
+      .regex(/^\+[1-9]\d{6,16}$/, 'Invalid phone number')
+      .optional(),
+    code: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
+    type: z.enum(['EMAIL_VERIFICATION', 'PASSWORD_RESET', 'LOGIN']),
+  })
+  .refine((data) => data.email || data.phone, {
+    message: 'Either email or phone is required',
+  });
 
 /**
  * Refresh token validation

@@ -1,8 +1,15 @@
 import { z } from 'zod';
 
-const debtStatuses = ['ACTIVE', 'PARTIALLY_PAID', 'OVERDUE', 'CRITICAL', 'DISPUTED', 'SETTLED', 'CANCELLED'] as const;
+const debtStatuses = [
+  'ACTIVE',
+  'PARTIALLY_PAID',
+  'OVERDUE',
+  'CRITICAL',
+  'DISPUTED',
+  'SETTLED',
+  'CANCELLED',
+] as const;
 const debtPriorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
-const escrowStatuses = ['HELD', 'RELEASED', 'REFUNDED', 'DISPUTED'] as const;
 const riskLevels = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 const reminderChannels = ['WHATSAPP', 'SMS', 'PUSH', 'EMAIL'] as const;
 

@@ -29,26 +29,19 @@ export function clearCachePattern(pattern: string): void {
 export async function getPlatformStats(): Promise<any> {
   const cached = getCached<any>('platform:stats');
   if (cached) return cached;
-  const [
-    totalBusinesses,
-    totalOrders,
-    totalBookings,
-    totalPayments,
-    events,
-    rentals,
-    revenue,
-  ] = await Promise.all([
-    prisma.business.count({ where: { isActive: true } }),
-    prisma.order.count(),
-    prisma.booking.count(),
-    prisma.payment.aggregate({ _count: true, _sum: { amount: true } }),
-    prisma.event.count({ where: { isActive: true } }),
-    prisma.rental.count({ where: { isActive: true } }),
-    prisma.payment.aggregate({
-      where: { status: 'COMPLETED' },
-      _sum: { amount: true },
-    }),
-  ]);
+  const [totalBusinesses, totalOrders, totalBookings, totalPayments, events, rentals, revenue] =
+    await Promise.all([
+      prisma.business.count({ where: { isActive: true } }),
+      prisma.order.count(),
+      prisma.booking.count(),
+      prisma.payment.aggregate({ _count: true, _sum: { amount: true } }),
+      prisma.event.count({ where: { isActive: true } }),
+      prisma.rental.count({ where: { isActive: true } }),
+      prisma.payment.aggregate({
+        where: { status: 'COMPLETED' },
+        _sum: { amount: true },
+      }),
+    ]);
 
   const result = {
     totalBusinesses,
@@ -169,13 +162,25 @@ export async function getGrowthStats(): Promise<any> {
     prisma.business.count({ where: { createdAt: { gte: lastMonth, lt: thisMonth } } }),
   ]);
 
-  const monthOverMonth = lastMonthOrders > 0 ? ((thisMonthOrders - lastMonthOrders) / lastMonthOrders) * 100 : 0;
-  const yearOverYear = lastYearOrders > 0 ? ((thisMonthOrders - (lastYearOrders / 12)) / (lastYearOrders / 12)) * 100 : 0;
-  const bookingMoM = lastMonthBookings > 0 ? ((thisMonthBookings - lastMonthBookings) / lastMonthBookings) * 100 : 0;
-  const revenueMoM = (lastMonthRevenue._sum.amount?.toNumber() || 0) > 0
-    ? (((thisMonthRevenue._sum.amount?.toNumber() || 0) - (lastMonthRevenue._sum.amount?.toNumber() || 0)) / (lastMonthRevenue._sum.amount?.toNumber() || 0)) * 100
-    : 0;
-  const businessMoM = lastMonthBusinesses > 0 ? ((thisMonthBusinesses - lastMonthBusinesses) / lastMonthBusinesses) * 100 : 0;
+  const monthOverMonth =
+    lastMonthOrders > 0 ? ((thisMonthOrders - lastMonthOrders) / lastMonthOrders) * 100 : 0;
+  const yearOverYear =
+    lastYearOrders > 0
+      ? ((thisMonthOrders - lastYearOrders / 12) / (lastYearOrders / 12)) * 100
+      : 0;
+  const bookingMoM =
+    lastMonthBookings > 0 ? ((thisMonthBookings - lastMonthBookings) / lastMonthBookings) * 100 : 0;
+  const revenueMoM =
+    (lastMonthRevenue._sum.amount?.toNumber() || 0) > 0
+      ? (((thisMonthRevenue._sum.amount?.toNumber() || 0) -
+          (lastMonthRevenue._sum.amount?.toNumber() || 0)) /
+          (lastMonthRevenue._sum.amount?.toNumber() || 0)) *
+        100
+      : 0;
+  const businessMoM =
+    lastMonthBusinesses > 0
+      ? ((thisMonthBusinesses - lastMonthBusinesses) / lastMonthBusinesses) * 100
+      : 0;
 
   const result = {
     orders: {
@@ -323,7 +328,14 @@ export async function computeSectorBenchmarks(): Promise<void> {
         avgReliability: acc.avgReliability + s.reliabilityScore,
         avgProfile: acc.avgProfile + s.profileScore,
       }),
-      { avgScore: 0, avgCommercial: 0, avgFinancial: 0, avgSatisfaction: 0, avgReliability: 0, avgProfile: 0 }
+      {
+        avgScore: 0,
+        avgCommercial: 0,
+        avgFinancial: 0,
+        avgSatisfaction: 0,
+        avgReliability: 0,
+        avgProfile: 0,
+      }
     );
 
     await prisma.sectorBenchmark.upsert({
@@ -536,7 +548,14 @@ async function getSectorBenchmarkForReport(sector: string): Promise<any> {
         avgProfile: acc.avgProfile + b.score.profileScore,
       };
     },
-    { avgScore: 0, avgCommercial: 0, avgFinancial: 0, avgSatisfaction: 0, avgReliability: 0, avgProfile: 0 }
+    {
+      avgScore: 0,
+      avgCommercial: 0,
+      avgFinancial: 0,
+      avgSatisfaction: 0,
+      avgReliability: 0,
+      avgProfile: 0,
+    }
   );
 
   const count = scores.length;

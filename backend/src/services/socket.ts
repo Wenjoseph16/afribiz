@@ -89,12 +89,21 @@ export function initSocket(httpServer: HttpServer): Server | null {
     });
 
     socket.on('live:chat', (data: { liveId: string; message: string; userName: string }) => {
-      const chat = { userId, userName: data.userName, message: data.message, createdAt: new Date().toISOString() };
+      const chat = {
+        userId,
+        userName: data.userName,
+        message: data.message,
+        createdAt: new Date().toISOString(),
+      };
       io?.to(`live:${data.liveId}`).emit('live:chat-message', chat);
     });
 
     socket.on('live:reaction', (data: { liveId: string; emoji: string }) => {
-      io?.to(`live:${data.liveId}`).emit('live:reaction', { userId, emoji: data.emoji, createdAt: new Date().toISOString() });
+      io?.to(`live:${data.liveId}`).emit('live:reaction', {
+        userId,
+        emoji: data.emoji,
+        createdAt: new Date().toISOString(),
+      });
     });
 
     socket.on('live:viewer-count', (liveId: string) => {
@@ -102,6 +111,12 @@ export function initSocket(httpServer: HttpServer): Server | null {
       const count = room ? room.size : 0;
       io?.to(`live:${liveId}`).emit('live:viewer-count-update', { liveId, count });
     });
+
+    // Admin rejoint la room d'alertes système
+    if (user.roles?.includes('ADMIN')) {
+      socket.join('admin:alerts');
+      logger.debug(`Admin socket joined admin:alerts room: ${user.email}`);
+    }
 
     socket.on('disconnect', (reason) => {
       logger.debug(`Socket disconnected: ${user.email} (${reason})`);

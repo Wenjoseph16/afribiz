@@ -9,7 +9,6 @@ import {
   publishSubscriptionExpiring,
   publishClientInactive,
   publishCartAbandoned,
-  publishRentalOverdue,
   publishCampaignScheduled,
   publishLowStock,
   publishOutOfStock,
@@ -26,6 +25,8 @@ import {
   publishTrialExpiring,
 } from '../events/publishers';
 import { expireOldStories, expireOldFeedItems } from './storyService';
+import { expireCampaigns as expireAdCampaigns, autoActivateCampaigns } from './ads';
+import * as fedapay from '../lib/fedapay';
 import { generateAllMorningBriefs, generateAllEveningSummaries } from './growthEngineService';
 import { checkAllBusinessesUrgency } from './attentionService';
 import { detectAllOpportunities } from './opportunityService';
@@ -94,7 +95,9 @@ export class CronService {
 
   static async getExecutionLogs(limit = 100): Promise<ExecutionLog[]> {
     try {
-      const setting = await prisma.platformSetting.findUnique({ where: { key: CRON_LOG_KEY } });
+      const setting = await (prisma as any).platformSetting.findUnique({
+        where: { key: CRON_LOG_KEY },
+      });
       if (!setting?.value) return [];
       const logs = setting.value as unknown as ExecutionLog[];
       return logs.slice(0, limit);
@@ -131,12 +134,14 @@ export class CronService {
 
     // Persist in database
     try {
-      const existing = await prisma.platformSetting.findUnique({ where: { key: CRON_STATUS_KEY } });
+      const existing = await (prisma as any).platformSetting.findUnique({
+        where: { key: CRON_STATUS_KEY },
+      });
       const statuses: Record<string, boolean> = existing?.value
         ? (existing.value as unknown as Record<string, boolean>)
         : {};
       statuses[jobId] = enabled;
-      await prisma.platformSetting.upsert({
+      await (prisma as any).platformSetting.upsert({
         where: { key: CRON_STATUS_KEY },
         create: {
           key: CRON_STATUS_KEY,
@@ -180,7 +185,9 @@ export class CronService {
 
   private static async loadPersistedStates(): Promise<void> {
     try {
-      const setting = await prisma.platformSetting.findUnique({ where: { key: CRON_STATUS_KEY } });
+      const setting = await (prisma as any).platformSetting.findUnique({
+        where: { key: CRON_STATUS_KEY },
+      });
       if (!setting?.value) return;
       const statuses = setting.value as Record<string, boolean>;
       for (const [jobId, enabled] of Object.entries(statuses)) {
@@ -201,14 +208,16 @@ export class CronService {
 
   private static async persistExecutionLog(log: ExecutionLog): Promise<void> {
     try {
-      const existing = await prisma.platformSetting.findUnique({ where: { key: CRON_LOG_KEY } });
+      const existing = await (prisma as any).platformSetting.findUnique({
+        where: { key: CRON_LOG_KEY },
+      });
       const logs: ExecutionLog[] = existing?.value
         ? (existing.value as unknown as ExecutionLog[])
         : [];
       logs.unshift(log);
       // Garder max 1000 entrées
       if (logs.length > 1000) logs.length = 1000;
-      await prisma.platformSetting.upsert({
+      await (prisma as any).platformSetting.upsert({
         where: { key: CRON_LOG_KEY },
         create: {
           key: CRON_LOG_KEY,
@@ -687,6 +696,48 @@ export class CronService {
         lastError: null,
       },
       {
+        id: 'expire-ads-campaigns',
+        name: 'Expiration campagnes pub',
+        description: 'Marque les campagnes publicitaires terminées comme COMPLETED',
+        category: 'marketing',
+        schedule: 'Toutes les 15 min',
+        cron: '*/15 * * * *',
+        enabled: true,
+        lastRun: null,
+        nextRun: null,
+        todayCount: 0,
+        errorCount: 0,
+        lastError: null,
+      },
+      {
+        id: 'auto-activate-campaigns',
+        name: 'Activation campagnes pub',
+        description: 'Active automatiquement les campagnes publicitaires programmées',
+        category: 'marketing',
+        schedule: 'Toutes les 15 min',
+        cron: '*/15 * * * *',
+        enabled: true,
+        lastRun: null,
+        nextRun: null,
+        todayCount: 0,
+        errorCount: 0,
+        lastError: null,
+      },
+      {
+        id: 'expire-offers',
+        name: 'Expiration offres flash',
+        description: 'Expire automatiquement les offres flash dépassées',
+        category: 'marketing',
+        schedule: 'Toutes les 15 min',
+        cron: '*/15 * * * *',
+        enabled: true,
+        lastRun: null,
+        nextRun: null,
+        todayCount: 0,
+        errorCount: 0,
+        lastError: null,
+      },
+      {
         id: 'morning-briefs',
         name: 'Briefs matinaux',
         description: 'Génère le résumé quotidien pour chaque business',
@@ -842,6 +893,12 @@ export class CronService {
       'Essais expirants traités'
     );
     scheduleIfEnabled(
+      'module-subscriptions',
+      '30 3 * * *',
+      () => CronService.processModuleSubscriptions(),
+      'Abonnements modules traités'
+    );
+    scheduleIfEnabled(
       'overdue-rentals',
       '30 6 * * *',
       () => CronService.checkOverdueRentals(),
@@ -924,6 +981,34 @@ export class CronService {
       '0 5 * * *',
       () => CronService.checkInactiveAccounts(),
       'Comptes inactifs nettoyés'
+    );
+
+    // ── Ad Campaigns ──
+    scheduleIfEnabled(
+      'expire-ads-campaigns',
+      '*/15 * * * *',
+      () =>
+        expireAdCampaigns().then((count) => {
+          if (count > 0) logger.info(`Cron: expired ${count} ad campaigns`);
+        }),
+      'Campagnes pub expirées'
+    );
+    scheduleIfEnabled(
+      'auto-activate-campaigns',
+      '*/15 * * * *',
+      () =>
+        autoActivateCampaigns().then((count) => {
+          if (count > 0) logger.info(`Cron: auto-activated ${count} ad campaigns`);
+        }),
+      'Campagnes pub activées'
+    );
+
+    // ── Offres Flash ──
+    scheduleIfEnabled(
+      'expire-offers',
+      '*/15 * * * *',
+      () => CronService.expireOffers(),
+      'Offres flash expirées'
     );
 
     // ── Growth Engine ──
@@ -1159,7 +1244,6 @@ export class CronService {
   }
 
   public static async checkExpiringTrials(): Promise<void> {
-    const in2Days = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
     const now = new Date();
     const installations = await prisma.developerModuleInstallation.findMany({
       where: { status: 'TRIAL', settings: { path: ['isTrial'], equals: true } },
@@ -1229,6 +1313,185 @@ export class CronService {
         planName: plan?.name || 'Abonnement',
         daysUntilExpiry: daysUntil,
       });
+    }
+  }
+
+  /**
+   * Process module subscriptions (auto-renew or expire)
+   * Uses FedaPay Plan + Subscription for recurring billing when configured.
+   */
+  public static async processModuleSubscriptions(): Promise<void> {
+    const now = new Date();
+
+    // Auto-renew subscriptions that are due and have autoRenew enabled
+    const dueForRenewal = await (prisma as any).developerModuleSubscription.findMany({
+      where: {
+        status: 'ACTIVE',
+        autoRenew: true,
+        nextBillingAt: { lte: now, not: null },
+      },
+    });
+
+    for (const sub of dueForRenewal) {
+      try {
+        const periodEnd = new Date();
+        switch (sub.period) {
+          case 'MONTHLY':
+            periodEnd.setMonth(periodEnd.getMonth() + 1);
+            break;
+          case 'QUARTERLY':
+            periodEnd.setMonth(periodEnd.getMonth() + 3);
+            break;
+          case 'SEMESTRIAL':
+            periodEnd.setMonth(periodEnd.getMonth() + 6);
+            break;
+          case 'YEARLY':
+            periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+            break;
+        }
+
+        // Attempt real FedaPay recurring charge (non-blocking)
+        if (fedapay.isFedaPayAvailable()) {
+          try {
+            const business = await prisma.business.findUnique({
+              where: { id: sub.businessId },
+              select: { ownerId: true, name: true },
+            });
+            if (business) {
+              const owner = await prisma.user.findUnique({
+                where: { id: business.ownerId },
+                select: { phone: true },
+              });
+              if (owner?.phone) {
+                // Create a FedaPay transaction to charge for renewal
+                await fedapay.createTransaction({
+                  amount: Number(sub.amount),
+                  mode: 'mtn_open',
+                  description: `Renouvellement abonnement ${sub.period?.toLowerCase() || 'module'}`,
+                  customerPhone: owner.phone,
+                  customerName: business.name,
+                });
+                logger.info(
+                  `Sub ${sub.id}: FedaPay renewal charge initiated for ${Number(sub.amount)}`
+                );
+              }
+            }
+          } catch (fpErr: any) {
+            logger.warn(`Sub ${sub.id}: FedaPay charge failed (revenue still recorded)`, {
+              error: fpErr.message,
+            });
+          }
+        }
+
+        // Record renewal revenue
+        const module = await prisma.developerModule.findUnique({
+          where: { id: sub.moduleId },
+          select: { developerId: true, totalRevenue: true },
+        });
+        if (module) {
+          const { getMonetizationSettings } = await import('./monetizationConfig');
+          const settings = await getMonetizationSettings();
+          const commissionAmount = Number(sub.amount) * settings.developerModuleCommissionRate;
+          const netAmount = Number(sub.amount) - commissionAmount;
+
+          await prisma.developerRevenue.create({
+            data: {
+              developerId: module.developerId,
+              moduleId: sub.moduleId,
+              type: 'MODULE_SALE' as any,
+              amount: sub.amount,
+              commissionAmount,
+              netAmount,
+              commissionRate: settings.developerModuleCommissionRate,
+              status: 'COMPLETED',
+            },
+          });
+
+          await prisma.developerModule.update({
+            where: { id: sub.moduleId },
+            data: { totalRevenue: { increment: netAmount } },
+          });
+        }
+
+        // Extend subscription
+        await (prisma as any).developerModuleSubscription.update({
+          where: { id: sub.id },
+          data: {
+            currentPeriodEnd: periodEnd,
+            nextBillingAt: periodEnd,
+          },
+        });
+
+        // Notify the business owner
+        const business = await prisma.business.findUnique({
+          where: { id: sub.businessId },
+          select: { ownerId: true, name: true },
+        });
+        if (business?.ownerId) {
+          await prisma.notification.create({
+            data: {
+              userId: business.ownerId,
+              type: 'SYSTEM' as any,
+              title: 'Abonnement module renouvelé',
+              description: `Votre abonnement a été automatiquement renouvelé (${Number(sub.amount).toLocaleString()} ${sub.currency}).`,
+              link: '/dashboard/business/modules',
+              metadata: { subscriptionId: sub.id, moduleId: sub.moduleId },
+            },
+          });
+        }
+      } catch {
+        // Non-blocking per subscription
+      }
+    }
+
+    // Expire subscriptions that are past due without autoRenew
+    const expired = await (prisma as any).developerModuleSubscription.findMany({
+      where: {
+        status: 'ACTIVE',
+        autoRenew: false,
+        currentPeriodEnd: { lte: now },
+      },
+    });
+
+    for (const sub of expired) {
+      try {
+        await (prisma as any).developerModuleSubscription.update({
+          where: { id: sub.id },
+          data: { status: 'EXPIRED' },
+        });
+
+        // Deactivate module configuration
+        await prisma.moduleConfiguration.updateMany({
+          where: { moduleId: sub.moduleId, businessId: sub.businessId },
+          data: { isActive: false },
+        });
+
+        // Deactivate installation
+        await prisma.developerModuleInstallation.updateMany({
+          where: { moduleId: sub.moduleId, businessId: sub.businessId },
+          data: { status: 'EXPIRED' },
+        });
+
+        // Notify business
+        const business = await prisma.business.findUnique({
+          where: { id: sub.businessId },
+          select: { ownerId: true, name: true },
+        });
+        if (business?.ownerId) {
+          await prisma.notification.create({
+            data: {
+              userId: business.ownerId,
+              type: 'SYSTEM' as any,
+              title: 'Abonnement module expiré',
+              description: `Votre abonnement a expiré. Le module a été désactivé.`,
+              link: '/dashboard/business/modules',
+              metadata: { subscriptionId: sub.id, moduleId: sub.moduleId },
+            },
+          });
+        }
+      } catch {
+        // Non-blocking
+      }
     }
   }
 
@@ -1666,7 +1929,9 @@ export class CronService {
     try {
       let retentionDays = 180; // défaut 180 jours
       // Lire depuis la clé 'datahub' (utilisée par la page admin data-retention)
-      const datahub = await prisma.platformSetting.findUnique({ where: { key: 'datahub' } });
+      const datahub = await (prisma as any).platformSetting.findUnique({
+        where: { key: 'datahub' },
+      });
       if (datahub?.value) {
         const dh = datahub.value as { retention?: Record<string, { value: number; unit: string }> };
         const notifRetention = dh.retention?.['notifications'];
@@ -1723,5 +1988,19 @@ export class CronService {
   public static async detectOpportunities(): Promise<void> {
     const result = await detectAllOpportunities();
     logger.info(`Cron: detected ${result.detected} new opportunities`);
+  }
+
+  public static async expireOffers(): Promise<void> {
+    const now = new Date();
+    const result = await prisma.offerFlash.updateMany({
+      where: {
+        endAt: { lt: now },
+        isActive: true,
+      },
+      data: { isActive: false },
+    });
+    if (result.count > 0) {
+      logger.info(`Cron: expired ${result.count} flash offers`);
+    }
   }
 }

@@ -21,7 +21,7 @@ export async function submitForValidation(userId: string, moduleId: string) {
   });
 
   // Create validation record
-  const validation = await (prisma as any).moduleValidation.create({
+  const validation = await prisma.moduleValidation.create({
     data: {
       moduleId,
       versionId: latestVersion?.id,
@@ -53,7 +53,7 @@ export async function submitForValidation(userId: string, moduleId: string) {
  * Approve validation check (admin)
  */
 export async function approveValidationCheck(checkId: string, score: number, details?: string) {
-  return (prisma as any).validationCheck.update({
+  return prisma.validationCheck.update({
     where: { id: checkId },
     data: {
       status: 'COMPLETED',
@@ -69,7 +69,7 @@ export async function approveValidationCheck(checkId: string, score: number, det
  * Reject validation check (admin)
  */
 export async function rejectValidationCheck(checkId: string, details: string) {
-  return (prisma as any).validationCheck.update({
+  return prisma.validationCheck.update({
     where: { id: checkId },
     data: {
       status: 'COMPLETED',
@@ -90,7 +90,7 @@ export async function completeValidation(
   status: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED',
   notes?: string
 ) {
-  const validation = await (prisma as any).moduleValidation.findUnique({
+  const validation = await prisma.moduleValidation.findUnique({
     where: { id: validationId },
     include: { checks: true },
   });
@@ -101,11 +101,15 @@ export async function completeValidation(
     throw new AppError('Tous les checks doivent être complétés', 400);
   }
 
-  const avgScore = validation.checks.length > 0
-    ? Math.round(validation.checks.reduce((s: number, c: any) => s + (c.score || 0), 0) / validation.checks.length)
-    : 0;
+  const avgScore =
+    validation.checks.length > 0
+      ? Math.round(
+          validation.checks.reduce((s: number, c: any) => s + (c.score || 0), 0) /
+            validation.checks.length
+        )
+      : 0;
 
-  const updated = await (prisma as any).moduleValidation.update({
+  const updated = await prisma.moduleValidation.update({
     where: { id: validationId },
     data: {
       status,
@@ -146,7 +150,7 @@ export async function completeValidation(
  * Get validation status for a module
  */
 export async function getModuleValidation(moduleId: string) {
-  return (prisma as any).moduleValidation.findFirst({
+  return prisma.moduleValidation.findFirst({
     where: { moduleId },
     include: {
       checks: true,
@@ -160,15 +164,19 @@ export async function getModuleValidation(moduleId: string) {
  * Get all validations for review (admin)
  */
 export async function getPendingValidations() {
-  return (prisma as any).moduleValidation.findMany({
+  return prisma.moduleValidation.findMany({
     where: { status: { in: ['PENDING', 'IN_REVIEW'] } },
     include: {
       module: {
         select: {
-          id: true, name: true, slug: true, version: true,
+          id: true,
+          name: true,
+          slug: true,
+          version: true,
           developer: {
             select: {
-              id: true, companyName: true,
+              id: true,
+              companyName: true,
               user: { select: { firstName: true, lastName: true } },
             },
           },
@@ -184,7 +192,7 @@ export async function getPendingValidations() {
  * Get validation history for a module
  */
 export async function getValidationHistory(moduleId: string) {
-  return (prisma as any).moduleValidation.findMany({
+  return prisma.moduleValidation.findMany({
     where: { moduleId },
     include: { checks: true },
     orderBy: { createdAt: 'desc' },

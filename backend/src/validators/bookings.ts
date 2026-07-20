@@ -1,14 +1,21 @@
 import { z } from 'zod';
 
-const bookingTypes = ['SERVICE','ROOM','EVENT','RESOURCE','TABLE'] as const;
-const bookingSources = ['AFRIBIZ_SITE','MARKETPLACE','WHATSAPP','PHONE','WALK_IN'] as const;
-const bookingStatuses = ['PENDING','CONFIRMED','IN_PROGRESS','COMPLETED','CANCELLED','RESCHEDULED','ARRIVED','NO_SHOW'] as const;
-const cancelPolicies = ['FLEXIBLE','MODERATE','STRICT','NON_REFUNDABLE'] as const;
-const reminderTypes = ['CONFIRMATION','REMINDER','FOLLOWUP','CANCELLATION'] as const;
-const reminderChannels = ['WHATSAPP','SMS','PUSH','EMAIL'] as const;
-const resourceTypes = ['ROOM','EMPLOYEE','EQUIPMENT','VEHICLE','SPACE','TABLE'] as const;
-const weekDays = [0,1,2,3,4,5,6] as const;
-
+const bookingTypes = ['SERVICE', 'ROOM', 'EVENT', 'RESOURCE', 'TABLE'] as const;
+const bookingSources = ['AFRIBIZ_SITE', 'MARKETPLACE', 'WHATSAPP', 'PHONE', 'WALK_IN'] as const;
+const bookingStatuses = [
+  'PENDING',
+  'CONFIRMED',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED',
+  'RESCHEDULED',
+  'ARRIVED',
+  'NO_SHOW',
+] as const;
+const cancelPolicies = ['FLEXIBLE', 'MODERATE', 'STRICT', 'NON_REFUNDABLE'] as const;
+const reminderTypes = ['CONFIRMATION', 'REMINDER', 'FOLLOWUP', 'CANCELLATION'] as const;
+const reminderChannels = ['WHATSAPP', 'SMS', 'PUSH', 'EMAIL'] as const;
+const resourceTypes = ['ROOM', 'EMPLOYEE', 'EQUIPMENT', 'VEHICLE', 'SPACE', 'TABLE'] as const;
 export const createBookingSchema = z.object({
   clientId: z.string().uuid().optional(),
   title: z.string().min(2).max(200),

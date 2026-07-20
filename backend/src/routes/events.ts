@@ -1,19 +1,36 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import {
-  listEvents, getEvent, createEvent, updateEvent, deleteEvent,
-  createTicket, updateTicket, deleteTicket,
-  listParticipants, registerParticipant, updateParticipantStatus,
-  scanTicket, listScans,
+  listEvents,
+  getEvent,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  createTicket,
+  updateTicket,
+  deleteTicket,
+  listParticipants,
+  registerParticipant,
+  updateParticipantStatus,
+  scanTicket,
+  listScans,
   listTickets,
-  listPromotions, createPromotion, deletePromotion,
-  listGallery, addGalleryItem, deleteGalleryItem,
-  listPartners, addPartner, removePartner,
-  getEventStats, getDashboardStats,
+  listPromotions,
+  createPromotion,
+  deletePromotion,
+  listGallery,
+  addGalleryItem,
+  deleteGalleryItem,
+  listPartners,
+  addPartner,
+  removePartner,
+  getEventStats,
+  getDashboardStats,
 } from '../controllers/events';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 // Dashboard stats
 router.get('/dashboard/stats', getDashboardStats);

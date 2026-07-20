@@ -1,13 +1,22 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import {
-  listExpenses, getExpense, createExpense, updateExpense, deleteExpense,
-  getAccountingStats, getMonthlyReportCtrl,
+  listExpenses,
+  getExpense,
+  createExpense,
+  updateExpense,
+  deleteExpense,
+  getAccountingStats,
+  getMonthlyReportCtrl,
+  getAccountingSummaryCtrl,
+  getRecentTransactionsCtrl,
 } from '../controllers/accounting';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, requireRole(['BUSINESS', 'ADMIN']));
 
+router.get('/summary', getAccountingSummaryCtrl);
+router.get('/transactions', getRecentTransactionsCtrl);
 router.get('/stats', getAccountingStats);
 router.get('/report', getMonthlyReportCtrl);
 router.get('/', listExpenses);

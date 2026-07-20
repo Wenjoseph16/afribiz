@@ -1,5 +1,16 @@
 import { prisma } from '../lib/db';
 import { logger } from '../lib/logger';
+import { AppError } from '../middlewares/errorHandler';
+
+export interface StorySticker {
+  id: string;
+  type: 'PRODUCT' | 'PROMO' | 'LINK' | 'POLL' | 'QUESTION' | 'LOCATION' | 'HASHTAG';
+  label: string;
+  value: string;
+  positionX: number;
+  positionY: number;
+  style?: Record<string, string>;
+}
 
 export interface CreateStoryInput {
   businessId: string;
@@ -9,7 +20,19 @@ export interface CreateStoryInput {
   linkTargetType?: string;
   linkTargetId?: string;
   linkUrl?: string;
+  stickers?: StorySticker[];
+  isHighlight?: boolean;
   expiresInHours?: number;
+}
+
+export interface UpdateStoryInput {
+  caption?: string;
+  linkTargetType?: string;
+  linkTargetId?: string;
+  linkUrl?: string;
+  stickers?: StorySticker[];
+  isActive?: boolean;
+  isHighlight?: boolean;
 }
 
 export interface CreateFeedItemInput {
@@ -45,7 +68,11 @@ export async function getActiveStories(userId?: string, limit = 50) {
   for (const story of stories) {
     const bizId = story.businessId;
     if (!grouped.has(bizId)) {
-      grouped.set(bizId, { business: story.business, stories: [], allViewed: userId ? true : false });
+      grouped.set(bizId, {
+        business: story.business,
+        stories: [],
+        allViewed: userId ? true : false,
+      });
     }
     const group = grouped.get(bizId)!;
     group.stories.push(story);
@@ -81,6 +108,8 @@ export async function createStory(data: CreateStoryInput) {
       linkTargetType: (data.linkTargetType || null) as any,
       linkTargetId: data.linkTargetId || null,
       linkUrl: data.linkUrl || null,
+      stickers: (data.stickers || []) as any,
+      isHighlight: data.isHighlight || false,
       expiresAt,
     },
     include: { business: { select: { id: true, name: true, slug: true, logo: true } } },
@@ -103,6 +132,59 @@ export async function createStory(data: CreateStoryInput) {
   return story;
 }
 
+export async function updateStory(storyId: string, businessId: string, data: UpdateStoryInput) {
+  const existing = await prisma.story.findFirst({ where: { id: storyId, businessId } });
+  if (!existing) throw new AppError('Story non trouvée', 404);
+
+  return prisma.story.update({
+    where: { id: storyId },
+    data: {
+      ...(data.caption !== undefined && { caption: data.caption }),
+      ...(data.linkTargetType !== undefined && { linkTargetType: data.linkTargetType as any }),
+      ...(data.linkTargetId !== undefined && { linkTargetId: data.linkTargetId }),
+      ...(data.linkUrl !== undefined && { linkUrl: data.linkUrl }),
+      ...(data.stickers !== undefined && { stickers: data.stickers as any }),
+      ...(data.isActive !== undefined && { isActive: data.isActive }),
+      ...(data.isHighlight !== undefined && { isHighlight: data.isHighlight }),
+    },
+    include: { business: { select: { id: true, name: true, slug: true, logo: true } } },
+  });
+}
+
+export async function addStorySticker(storyId: string, businessId: string, sticker: StorySticker) {
+  const existing = await prisma.story.findFirst({ where: { id: storyId, businessId } });
+  if (!existing) throw new AppError('Story non trouvée', 404);
+
+  const currentStickers = (existing.stickers as unknown as StorySticker[]) || [];
+  currentStickers.push(sticker);
+
+  return prisma.story.update({
+    where: { id: storyId },
+    data: { stickers: currentStickers as any },
+  });
+}
+
+export async function removeStorySticker(storyId: string, businessId: string, stickerId: string) {
+  const existing = await prisma.story.findFirst({ where: { id: storyId, businessId } });
+  if (!existing) throw new AppError('Story non trouvée', 404);
+
+  const currentStickers = (existing.stickers as unknown as StorySticker[]) || [];
+  const filtered = currentStickers.filter((s) => s.id !== stickerId);
+
+  return prisma.story.update({
+    where: { id: storyId },
+    data: { stickers: filtered as any },
+  });
+}
+
+export async function getBusinessHighlights(businessId: string) {
+  return prisma.story.findMany({
+    where: { businessId, isHighlight: true, isActive: true },
+    include: { business: { select: { id: true, name: true, slug: true, logo: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 export async function viewStory(storyId: string, userId?: string, visitorId?: string) {
   if (!userId && !visitorId) return;
   const where: any = { storyId };
@@ -122,7 +204,7 @@ export async function recordStoryClick(storyId: string) {
 
 export async function deleteStory(storyId: string, businessId: string) {
   const story = await prisma.story.findFirst({ where: { id: storyId, businessId } });
-  if (!story) throw new Error('Story non trouvée');
+  if (!story) throw new AppError('Story non trouvée', 404);
   await prisma.story.delete({ where: { id: storyId } });
 }
 
@@ -147,7 +229,9 @@ export async function getFeedItems(params: {
     prisma.feedItem.findMany({
       where,
       include: {
-        business: { select: { id: true, name: true, slug: true, logo: true, type: true, city: true } },
+        business: {
+          select: { id: true, name: true, slug: true, logo: true, type: true, city: true },
+        },
       },
       orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
       skip,
@@ -180,7 +264,7 @@ export async function createFeedItem(data: CreateFeedItemInput) {
 
 export async function deleteFeedItem(feedItemId: string, businessId: string) {
   const item = await prisma.feedItem.findFirst({ where: { id: feedItemId, businessId } });
-  if (!item) throw new Error('Feed item non trouvé');
+  if (!item) throw new AppError('Feed item non trouvé', 404);
   await prisma.feedItem.delete({ where: { id: feedItemId } });
 }
 

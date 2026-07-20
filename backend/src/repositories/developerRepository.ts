@@ -1,4 +1,4 @@
-import { DeveloperProfile, DeveloperVerificationStatus } from '@prisma/client';
+import { DeveloperProfile, DeveloperVerificationStatus, Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 
 export class DeveloperRepository {
@@ -91,7 +91,7 @@ export class DeveloperRepository {
     status: DeveloperVerificationStatus,
     reason?: string
   ): Promise<DeveloperProfile> {
-    const data: any = { verificationStatus: status };
+    const data: Prisma.DeveloperProfileUpdateInput = { verificationStatus: status };
     if (status === 'VERIFIED') {
       data.verifiedAt = new Date();
       data.rejectedAt = null;
@@ -146,7 +146,7 @@ export class DeveloperRepository {
    * Find developers by rating
    */
   static async findByRating(minRating?: number) {
-    const where: any = {};
+    const where: Prisma.DeveloperProfileWhereInput = {};
     if (minRating) where.rating = { gte: minRating };
     return prisma.developerProfile.findMany({
       where,
@@ -172,7 +172,7 @@ export class DeveloperRepository {
     filters: { tier?: string; specialties?: string[]; technologies?: string[]; country?: string },
     pagination: { skip: number; take: number }
   ) {
-    const where: any = {};
+    const where: Prisma.DeveloperProfileWhereInput = {};
 
     if (query) {
       where.OR = [

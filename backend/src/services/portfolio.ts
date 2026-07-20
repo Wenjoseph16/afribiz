@@ -29,7 +29,9 @@ export async function listPortfolioItems(ownerId: string, filters: any) {
 
   const [items, total] = await Promise.all([
     prisma.portfolioItem.findMany({
-      where, skip, take,
+      where,
+      skip,
+      take,
       orderBy: [{ featured: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
         category: { select: { id: true, name: true, slug: true } },
@@ -122,10 +124,31 @@ export async function updatePortfolioItem(ownerId: string, itemId: string, data:
   if (!existing) throw new AppError('Élément portfolio introuvable', 404);
 
   const updateData: any = {};
-  const fields = ['title', 'description', 'content', 'coverImage', 'images', 'video',
-    'beforeImage', 'afterImage', 'clientName', 'location', 'budget', 'currency',
-    'duration', 'resultsText', 'tags', 'categoryId', 'sortOrder', 'featured', 'isActive', 'legacyCategory'];
-  fields.forEach(f => { if (data[f] !== undefined) updateData[f] = data[f]; });
+  const fields = [
+    'title',
+    'description',
+    'content',
+    'coverImage',
+    'images',
+    'video',
+    'beforeImage',
+    'afterImage',
+    'clientName',
+    'location',
+    'budget',
+    'currency',
+    'duration',
+    'resultsText',
+    'tags',
+    'categoryId',
+    'sortOrder',
+    'featured',
+    'isActive',
+    'legacyCategory',
+  ];
+  fields.forEach((f) => {
+    if (data[f] !== undefined) updateData[f] = data[f];
+  });
   if (data.projectDate !== undefined) updateData.projectDate = new Date(data.projectDate);
 
   return prisma.portfolioItem.update({
@@ -182,7 +205,12 @@ export async function createPortfolioCategory(ownerId: string, data: any) {
   });
   if (!business) throw new AppError('Business not found', 404);
 
-  const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug =
+    data.slug ||
+    data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
 
   return prisma.portfolioCategory.create({
     data: {
@@ -212,8 +240,19 @@ export async function updatePortfolioCategory(ownerId: string, categoryId: strin
   if (!existing) throw new AppError('Catégorie introuvable', 404);
 
   const updateData: any = {};
-  const fields = ['name', 'slug', 'description', 'icon', 'image', 'parentId', 'sortOrder', 'isActive'];
-  fields.forEach(f => { if (data[f] !== undefined) updateData[f] = data[f]; });
+  const fields = [
+    'name',
+    'slug',
+    'description',
+    'icon',
+    'image',
+    'parentId',
+    'sortOrder',
+    'isActive',
+  ];
+  fields.forEach((f) => {
+    if (data[f] !== undefined) updateData[f] = data[f];
+  });
 
   return prisma.portfolioCategory.update({
     where: { id: categoryId },
@@ -342,7 +381,11 @@ export async function createPortfolioTestimonial(ownerId: string, data: any) {
   });
 }
 
-export async function updatePortfolioTestimonial(ownerId: string, testimonialId: string, data: any) {
+export async function updatePortfolioTestimonial(
+  ownerId: string,
+  testimonialId: string,
+  data: any
+) {
   const business = await prisma.business.findFirst({
     where: { ownerId, isActive: true },
     select: { id: true },
@@ -355,9 +398,20 @@ export async function updatePortfolioTestimonial(ownerId: string, testimonialId:
   if (!existing) throw new AppError('Témoignage introuvable', 404);
 
   const updateData: any = {};
-  const fields = ['clientName', 'clientPhoto', 'clientCompany', 'text', 'rating',
-    'portfolioItemId', 'isPinned', 'sortOrder', 'isActive'];
-  fields.forEach(f => { if (data[f] !== undefined) updateData[f] = data[f]; });
+  const fields = [
+    'clientName',
+    'clientPhoto',
+    'clientCompany',
+    'text',
+    'rating',
+    'portfolioItemId',
+    'isPinned',
+    'sortOrder',
+    'isActive',
+  ];
+  fields.forEach((f) => {
+    if (data[f] !== undefined) updateData[f] = data[f];
+  });
   if (data.projectDate !== undefined) updateData.projectDate = new Date(data.projectDate);
 
   return prisma.portfolioTestimonial.update({
@@ -473,8 +527,17 @@ export async function getPortfolioStats(ownerId: string) {
 
   const bizId = business.id;
 
-  const [totalItems, activeItems, featuredItems, totalCategories, totalTestimonials,
-    totalViews, totalLikes, totalShares, totalInteractions] = await Promise.all([
+  const [
+    totalItems,
+    activeItems,
+    featuredItems,
+    totalCategories,
+    totalTestimonials,
+    totalViews,
+    totalLikes,
+    totalShares,
+    totalInteractions,
+  ] = await Promise.all([
     prisma.portfolioItem.count({ where: { businessId: bizId } }),
     prisma.portfolioItem.count({ where: { businessId: bizId, isActive: true } }),
     prisma.portfolioItem.count({ where: { businessId: bizId, featured: true, isActive: true } }),
@@ -487,7 +550,11 @@ export async function getPortfolioStats(ownerId: string) {
   ]);
 
   return {
-    totalItems, activeItems, featuredItems, totalCategories, totalTestimonials,
+    totalItems,
+    activeItems,
+    featuredItems,
+    totalCategories,
+    totalTestimonials,
     totalViews: totalViews._sum.viewsCount || 0,
     totalLikes: totalLikes._sum.likesCount || 0,
     totalShares: totalShares._sum.sharesCount || 0,

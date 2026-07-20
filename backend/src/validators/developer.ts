@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
-const pricingTypeEnum = z.enum(['FREE', 'ONE_TIME', 'MONTHLY', 'QUARTERLY', 'SEMESTRIAL', 'YEARLY', 'CUSTOM']);
-const moduleStatusEnum = z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'REJECTED', 'ARCHIVED']);
+const pricingTypeEnum = z.enum([
+  'FREE',
+  'ONE_TIME',
+  'MONTHLY',
+  'QUARTERLY',
+  'SEMESTRIAL',
+  'YEARLY',
+  'CUSTOM',
+]);
 const ticketPriorityEnum = z.enum(['LOW', 'NORMAL', 'HIGH', 'CRITICAL']);
 const ticketCategoryEnum = z.enum(['BUG', 'FEATURE', 'QUESTION', 'OTHER']);
 const ticketStatusEnum = z.enum(['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED']);
@@ -41,7 +48,10 @@ export const submitVerificationSchema = z.object({
 export const createModuleSchema = z.object({
   name: z.string().min(2, 'Le nom du module est requis').max(100),
   category: z.string().min(2, 'La catégorie est requise'),
-  shortDescription: z.string().min(10, 'Description trop courte').max(300, 'Maximum 300 caractères'),
+  shortDescription: z
+    .string()
+    .min(10, 'Description trop courte')
+    .max(300, 'Maximum 300 caractères'),
   pricingType: pricingTypeEnum,
   price: z.number().positive().optional(),
   currency: z.string().default('FCFA'),
@@ -87,7 +97,10 @@ export const updateModuleSchema = z.object({
 });
 
 export const createVersionSchema = z.object({
-  version: z.string().min(1, 'Le numéro de version est requis').regex(/^\d+\.\d+\.\d+$/, 'Format SemVer requis (x.y.z)'),
+  version: z
+    .string()
+    .min(1, 'Le numéro de version est requis')
+    .regex(/^\d+\.\d+\.\d+$/, 'Format SemVer requis (x.y.z)'),
   releaseNotes: z.string().optional(),
   changelog: z.string().optional(),
   documentationUrl: z.string().url().optional().or(z.literal('')),

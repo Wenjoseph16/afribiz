@@ -10,7 +10,7 @@ class EventBus extends EventEmitter {
 
   private constructor() {
     super();
-    this.setMaxListeners(50);
+    this.setMaxListeners(500);
   }
 
   static getInstance(): EventBus {

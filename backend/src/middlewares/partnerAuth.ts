@@ -17,7 +17,7 @@ export const partnerAuthMiddleware = catchAsyncErrors(
     const apiKey = req.headers['x-api-key'] as string;
 
     if (!apiKey) {
-      throw new AppError('API key requise. Utilisez l\'en-tête X-API-Key.', 401);
+      throw new AppError("API key requise. Utilisez l'en-tête X-API-Key.", 401);
     }
 
     const partner = await prisma.dataPartner.findUnique({

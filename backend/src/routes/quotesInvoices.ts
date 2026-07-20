@@ -1,9 +1,32 @@
 import { Router } from 'express';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
-import { listQuotes, getQuote, createQuote, updateQuote, updateQuoteStatus, convertQuoteToInvoice, deleteQuote,
-  listInvoices, getInvoice, createInvoice, updateInvoiceStatus, updateInvoicePayment, deleteInvoice, getFinStats, downloadInvoicePdf, downloadQuotePdf } from '../controllers/quotesInvoices';
-import { createQuoteSchema, updateQuoteSchema, updateQuoteStatusSchema, createInvoiceSchema, updateInvoiceStatusSchema, updateInvoicePaymentSchema } from '../validators/quotesInvoices';
+import {
+  listQuotes,
+  getQuote,
+  createQuote,
+  updateQuote,
+  updateQuoteStatus,
+  convertQuoteToInvoice,
+  deleteQuote,
+  listInvoices,
+  getInvoice,
+  createInvoice,
+  updateInvoiceStatus,
+  updateInvoicePayment,
+  deleteInvoice,
+  getFinStats,
+  downloadInvoicePdf,
+  downloadQuotePdf,
+} from '../controllers/quotesInvoices';
+import {
+  createQuoteSchema,
+  updateQuoteSchema,
+  updateQuoteStatusSchema,
+  createInvoiceSchema,
+  updateInvoiceStatusSchema,
+  updateInvoicePaymentSchema,
+} from '../validators/quotesInvoices';
 
 const router = Router();
 router.use(authMiddleware);

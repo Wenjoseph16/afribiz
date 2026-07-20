@@ -115,4 +115,13 @@ export {
   publishSurveyResponded,
   publishDailyReportReady,
   publishWeeklyDevReport,
+  publishMorningBriefGenerated,
+  publishEveningSummaryGenerated,
+  publishUrgencyAlert,
+  publishOpportunityDetected,
+
+  // ── Savings / Tontine ──
+  publishSavingsCycleClosed,
+  publishSavingsContributionReceived,
+  publishSavingsLoanApproved,
 } from './publishers';

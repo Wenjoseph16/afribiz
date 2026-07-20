@@ -207,26 +207,35 @@ export const getNotificationAnalytics = catchAsyncErrors(
     const trend =
       previousCount > 0 ? Math.round(((recentCount - previousCount) / previousCount) * 100) : 0;
 
-    // Failure rate by day (for chart)
+    // Failure rate by day (for chart) — 1 requête au lieu de 30
+    const thirtyDaysAgoFull = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const allDeliveries = await prisma.notificationDelivery.findMany({
+      where: { createdAt: { gte: thirtyDaysAgoFull } },
+      select: { status: true, createdAt: true },
+    });
     const failureRateByDay: { date: string; rate: number; total: number; failed: number }[] = [];
+    // Grouper par jour en mémoire
+    const dayGroups = new Map<string, { total: number; failed: number }>();
     for (let i = 0; i < 30; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      const dayEnd = new Date(dayStart);
-      dayEnd.setDate(dayEnd.getDate() + 1);
-      const dayDeliveries = await prisma.notificationDelivery.findMany({
-        where: { createdAt: { gte: dayStart, lt: dayEnd } },
-        select: { status: true },
-      });
-      const dayTotal = dayDeliveries.length;
-      const dayFailed = dayDeliveries.filter((d) => d.status === 'failed').length;
       const key = d.toISOString().split('T')[0];
-      failureRateByDay.unshift({
-        date: key,
-        rate: dayTotal > 0 ? Math.round((dayFailed / dayTotal) * 100) : 0,
-        total: dayTotal,
-        failed: dayFailed,
+      dayGroups.set(key, { total: 0, failed: 0 });
+    }
+    for (const dlv of allDeliveries) {
+      const key = dlv.createdAt.toISOString().split('T')[0];
+      const group = dayGroups.get(key);
+      if (group) {
+        group.total++;
+        if (dlv.status === 'failed') group.failed++;
+      }
+    }
+    for (const [date, group] of dayGroups) {
+      failureRateByDay.push({
+        date,
+        rate: group.total > 0 ? Math.round((group.failed / group.total) * 100) : 0,
+        total: group.total,
+        failed: group.failed,
       });
     }
 
@@ -289,6 +298,68 @@ export const exportNotificationsCSV = catchAsyncErrors(
   }
 );
 
+// ============== PUSH SUBSCRIPTION ==============
+
+export const savePushSubscription = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { subscription } = req.body;
+    if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+      throw new AppError('Subscription invalide (endpoint + keys requis)', 400);
+    }
+    const userId = req.user!.id;
+    await prisma.pushSubscription.upsert({
+      where: { userId_endpoint: { userId, endpoint: subscription.endpoint } },
+      create: {
+        userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        userAgent: req.headers['user-agent'] || null,
+      },
+      update: {
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        userAgent: req.headers['user-agent'] || null,
+      },
+    });
+    const count = await prisma.pushSubscription.count({ where: { userId } });
+    res.json(successResponse({ count }, 'Abonnement push enregistré'));
+  }
+);
+
+export const getPushSubscriptions = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: { userId: req.user!.id },
+      select: {
+        id: true,
+        endpoint: true,
+        p256dh: true,
+        auth: true,
+        userAgent: true,
+        createdAt: true,
+      },
+    });
+    res.json(successResponse({ subscriptions }));
+  }
+);
+
+export const deletePushSubscription = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { endpoint } = req.body;
+    if (!endpoint) throw new AppError('endpoint requis', 400);
+    const result = await prisma.pushSubscription.deleteMany({
+      where: { userId: req.user!.id, endpoint },
+    });
+    res.json(
+      successResponse(
+        { deleted: result.count > 0 },
+        result.count > 0 ? 'Abonnement push supprimé' : 'Aucun abonnement trouvé'
+      )
+    );
+  }
+);
+
 export const checkNotificationFailureRate = catchAsyncErrors(
   async (_req: AuthenticatedRequest, res: Response) => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -310,32 +381,40 @@ export const checkNotificationFailureRate = catchAsyncErrors(
       });
       const adminIds = [...new Set(admins.map((a) => a.userId))];
 
-      for (const userId of adminIds) {
-        const existing = await prisma.notification.findFirst({
-          where: {
+      // 1 requête au lieu de N — trouver toutes les notifications existantes en une fois
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const existingNotifications =
+        adminIds.length > 0
+          ? await prisma.notification.findMany({
+              where: {
+                userId: { in: adminIds },
+                type: NotificationType.SYSTEM,
+                title: { contains: "Taux d'échec notifications" },
+                createdAt: { gte: yesterday },
+              },
+              select: { userId: true },
+            })
+          : [];
+      const existingUserIds = new Set(existingNotifications.map((n) => n.userId));
+
+      // Créer uniquement pour ceux qui n'ont pas encore reçu l'alerte
+      const newAlertIds = adminIds.filter((id) => !existingUserIds.has(id));
+      if (newAlertIds.length > 0) {
+        await prisma.notification.createMany({
+          data: newAlertIds.map((userId) => ({
             userId,
             type: NotificationType.SYSTEM,
-            title: { contains: "Taux d'échec notifications" },
-            createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-          },
-        });
-        if (!existing) {
-          await prisma.notification.create({
-            data: {
-              userId,
-              type: NotificationType.SYSTEM,
-              title: `⚠️ Taux d'échec notifications: ${rate}%`,
-              description: `Le taux d'échec de livraison des notifications a atteint ${rate}% (${failed}/${total}), dépassant le seuil de ${threshold}%.`,
-              metadata: {
-                failureRate: rate,
-                failed,
-                total,
-                threshold,
-                source: 'NotificationAnalytics',
-              },
+            title: `⚠️ Taux d'échec notifications: ${rate}%`,
+            description: `Le taux d'échec de livraison des notifications a atteint ${rate}% (${failed}/${total}), dépassant le seuil de ${threshold}%.`,
+            metadata: {
+              failureRate: rate,
+              failed,
+              total,
+              threshold,
+              source: 'NotificationAnalytics',
             },
-          });
-        }
+          })),
+        });
       }
     }
 

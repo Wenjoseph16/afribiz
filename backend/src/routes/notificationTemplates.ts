@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import {
   getTemplates,
   upsertTemplate,
@@ -10,7 +10,7 @@ import {
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(authMiddleware, requireRole(['BUSINESS', 'ADMIN']));
 
 router.get('/', getTemplates);
 router.get('/available-types', getAvailableTypes);

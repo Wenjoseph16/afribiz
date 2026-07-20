@@ -1,6 +1,14 @@
 import { z } from 'zod';
 
-const deliveryStatuses = ['PREPARING', 'ASSIGNED', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'FAILED', 'CANCELLED'] as const;
+const deliveryStatuses = [
+  'PREPARING',
+  'ASSIGNED',
+  'IN_TRANSIT',
+  'ARRIVED',
+  'DELIVERED',
+  'FAILED',
+  'CANCELLED',
+] as const;
 const driverStatuses = ['AVAILABLE', 'BUSY', 'OFFLINE', 'ON_BREAK'] as const;
 const deliveryTypes = ['STANDARD', 'EXPRESS', 'SCHEDULED', 'PICKUP', 'GROUPED'] as const;
 const proofTypes = ['SIGNATURE', 'PHOTO', 'PIN', 'MANUAL'] as const;

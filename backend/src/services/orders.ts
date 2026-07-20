@@ -1,7 +1,13 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
-import { publishOrderPlaced, publishOrderStatusChanged, publishNewClient, publishPaymentReceived, publishPaymentFailed } from '../events/publishers';
+import {
+  publishOrderPlaced,
+  publishOrderStatusChanged,
+  publishNewClient,
+  publishPaymentReceived,
+  publishPaymentFailed,
+} from '../events/publishers';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
@@ -9,13 +15,21 @@ async function getBusinessByOwner(ownerId: string) {
     select: { id: true, name: true, modules: true, settings: true },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('ORDERS')) throw new AppError('Module Commandes non activ\u00e9', 403);
+  if (!business.modules.includes('ORDERS'))
+    throw new AppError('Module Commandes non activ\u00e9', 403);
   return business;
 }
 
 function generateOrderNumber(): string {
   const d = new Date();
-  return 'CMD-' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '-' + String(Math.floor(Math.random()*99999)).padStart(5,'0');
+  return (
+    'CMD-' +
+    d.getFullYear() +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0') +
+    '-' +
+    String(Math.floor(Math.random() * 99999)).padStart(5, '0')
+  );
 }
 
 const orderInclude = {
@@ -42,14 +56,21 @@ export async function listBusinessOrders(ownerId: string, filters: any) {
     if (dateFrom) where.createdAt.gte = new Date(dateFrom);
     if (dateTo) where.createdAt.lte = new Date(dateTo + 'T23:59:59Z');
   }
-  if (search) where.OR = [
-    { orderNumber: { contains: search, mode: 'insensitive' } },
-    { contactName: { contains: search, mode: 'insensitive' } },
-    { contactPhone: { contains: search, mode: 'insensitive' } },
-  ];
+  if (search)
+    where.OR = [
+      { orderNumber: { contains: search, mode: 'insensitive' } },
+      { contactName: { contains: search, mode: 'insensitive' } },
+      { contactPhone: { contains: search, mode: 'insensitive' } },
+    ];
   const skip = (page - 1) * limit;
   const [orders, total] = await Promise.all([
-    prisma.order.findMany({ where, include: orderInclude, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+    prisma.order.findMany({
+      where,
+      include: orderInclude,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
     prisma.order.count({ where }),
   ]);
   return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -69,14 +90,18 @@ export async function createOrder(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
   const orderNumber = generateOrderNumber();
 
-  const subtotal = data.items?.reduce((sum: number, item: any) => sum + (Number(item.unitPrice) * item.quantity), 0) || 0;
+  const subtotal =
+    data.items?.reduce(
+      (sum: number, item: any) => sum + Number(item.unitPrice) * item.quantity,
+      0
+    ) || 0;
   const tax = data.tax || 0;
   const deliveryFee = data.deliveryFee || 0;
   const discount = data.discount || 0;
   const total = subtotal + Number(tax) + Number(deliveryFee) - Number(discount);
 
   // Validate stock for products (outside transaction, read-only check)
-  for (const item of (data.items || [])) {
+  for (const item of data.items || []) {
     if (item.productId) {
       const product = await prisma.product.findUnique({ where: { id: item.productId } });
       if (product && product.stock < item.quantity) {
@@ -88,7 +113,7 @@ export async function createOrder(ownerId: string, data: any) {
   // Execute stock decrement + order creation + debt creation atomically
   const order = await prisma.$transaction(async (tx) => {
     // Decrement product stock
-    for (const item of (data.items || [])) {
+    for (const item of data.items || []) {
       if (item.productId) {
         await tx.product.update({
           where: { id: item.productId },
@@ -148,7 +173,9 @@ export async function createOrder(ownerId: string, data: any) {
           buyerId: data.buyerId,
           totalAmount: remaining,
           remainingAmount: remaining,
-          dueDate: data.debtDueDate ? new Date(data.debtDueDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          dueDate: data.debtDueDate
+            ? new Date(data.debtDueDate)
+            : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           status: 'ACTIVE',
           notes: data.debtNotes,
         },
@@ -177,7 +204,12 @@ export async function createOrder(ownerId: string, data: any) {
   return order;
 }
 
-export async function updateOrderStatus(ownerId: string, orderId: string, status: string, reason?: string) {
+export async function updateOrderStatus(
+  ownerId: string,
+  orderId: string,
+  status: string,
+  reason?: string
+) {
   const business = await getBusinessByOwner(ownerId);
   const order = await prisma.order.findFirst({ where: { id: orderId, businessId: business.id } });
   if (!order) throw new AppError('Commande non trouv\u00e9e', 404);
@@ -185,16 +217,39 @@ export async function updateOrderStatus(ownerId: string, orderId: string, status
   const now = new Date();
   const upd: any = { status: status as any };
   switch (status) {
-    case 'ACCEPTED': upd.acceptedAt = now; break;
-    case 'PREPARING': upd.preparingAt = now; break;
-    case 'READY': upd.readyAt = now; break;
-    case 'DELIVERED': upd.deliveredAt = now; upd.deliveryStatus = 'DELIVERED'; upd.paymentStatus = 'PAID'; upd.paidAt = now; break;
-    case 'COMPLETED': upd.completedAt = now; break;
-    case 'REFUSED': upd.refusedAt = now; upd.refuseReason = reason || 'Refus\u00e9e'; break;
-    case 'CANCELLED': upd.cancelledAt = now; upd.cancelReason = reason || 'Annul\u00e9e'; break;
+    case 'ACCEPTED':
+      upd.acceptedAt = now;
+      break;
+    case 'PREPARING':
+      upd.preparingAt = now;
+      break;
+    case 'READY':
+      upd.readyAt = now;
+      break;
+    case 'DELIVERED':
+      upd.deliveredAt = now;
+      upd.deliveryStatus = 'DELIVERED';
+      upd.paymentStatus = 'PAID';
+      upd.paidAt = now;
+      break;
+    case 'COMPLETED':
+      upd.completedAt = now;
+      break;
+    case 'REFUSED':
+      upd.refusedAt = now;
+      upd.refuseReason = reason || 'Refus\u00e9e';
+      break;
+    case 'CANCELLED':
+      upd.cancelledAt = now;
+      upd.cancelReason = reason || 'Annul\u00e9e';
+      break;
   }
 
-  const updated = await prisma.order.update({ where: { id: orderId }, data: upd, include: orderInclude });
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: upd,
+    include: orderInclude,
+  });
 
   publishOrderStatusChanged({
     userId: order.buyerId || '',
@@ -207,7 +262,12 @@ export async function updateOrderStatus(ownerId: string, orderId: string, status
   return updated;
 }
 
-export async function updateDeliveryStatus(ownerId: string, orderId: string, deliveryStatus: string, notes?: string) {
+export async function updateDeliveryStatus(
+  ownerId: string,
+  orderId: string,
+  deliveryStatus: string,
+  notes?: string
+) {
   const business = await getBusinessByOwner(ownerId);
   const order = await prisma.order.findFirst({ where: { id: orderId, businessId: business.id } });
   if (!order) throw new AppError('Commande non trouv\u00e9e', 404);
@@ -231,30 +291,54 @@ export async function updateOrderPayment(ownerId: string, orderId: string, data:
 export async function deleteOrder(ownerId: string, orderId: string) {
   const business = await getBusinessByOwner(ownerId);
   // mark as cancelled instead of deleting
-  await prisma.order.update({ where: { id: orderId, businessId: business.id }, data: { status: 'CANCELLED', cancelledAt: new Date() } });
+  await prisma.order.update({
+    where: { id: orderId, businessId: business.id },
+    data: { status: 'CANCELLED', cancelledAt: new Date() },
+  });
 }
 
 export async function getOrderStats(ownerId: string) {
   const business = await getBusinessByOwner(ownerId);
   const where = { businessId: business.id } as any;
 
-  const statuses = ['PENDING','CONFIRMED','PREPARING','SHIPPED','DELIVERED','CANCELLED','REFUNDED'];
+  const statuses = [
+    'PENDING',
+    'CONFIRMED',
+    'PREPARING',
+    'SHIPPED',
+    'DELIVERED',
+    'CANCELLED',
+    'REFUNDED',
+  ];
   const statusCounts = await Promise.all(
-    statuses.map(s => prisma.order.count({ where: { ...where, status: s as any } }))
+    statuses.map((s) => prisma.order.count({ where: { ...where, status: s as any } }))
   );
 
   const [totalRevenue, todayRevenue, popularType] = await Promise.all([
-    prisma.order.aggregate({ where: { ...where, status: { in: ['DELIVERED'] as any } }, _sum: { totalAmount: true } }),
     prisma.order.aggregate({
-      where: { ...where, status: { in: ['DELIVERED'] as any }, createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) } },
+      where: { ...where, status: { in: ['DELIVERED'] as any } },
       _sum: { totalAmount: true },
     }),
-    prisma.order.groupBy({ by: ['type'], where, _count: true, orderBy: { _count: { type: 'desc' } }, take: 1 }),
+    prisma.order.aggregate({
+      where: {
+        ...where,
+        status: { in: ['DELIVERED'] as any },
+        createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      },
+      _sum: { totalAmount: true },
+    }),
+    prisma.order.groupBy({
+      by: ['type'],
+      where,
+      _count: true,
+      orderBy: { _count: { type: 'desc' } },
+      take: 1,
+    }),
   ]);
 
   const r: any = {};
-  statuses.forEach((s, i) => r[s.toLowerCase()] = statusCounts[i]);
-  r.total = statusCounts.reduce((a,b) => a+b, 0);
+  statuses.forEach((s, i) => (r[s.toLowerCase()] = statusCounts[i]));
+  r.total = statusCounts.reduce((a, b) => a + b, 0);
   r.totalRevenue = totalRevenue._sum.totalAmount || 0;
   r.todayRevenue = todayRevenue._sum.totalAmount || 0;
   r.mostPopularType = popularType[0]?.type || null;
@@ -265,19 +349,22 @@ export async function getOrderStats(ownerId: string) {
 
 export async function listDebts(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page=1, limit=20, status, search } = filters;
+  const { page = 1, limit = 20, status, search } = filters;
   const where: Prisma.DebtWhereInput = { businessId: business.id };
   if (status) where.status = status as any;
-  if (search) where.OR = [
-    { order: { contactName: { contains: search, mode: 'insensitive' } } },
-    { order: { contactPhone: { contains: search, mode: 'insensitive' } } },
-  ];
+  if (search)
+    where.OR = [
+      { order: { contactName: { contains: search, mode: 'insensitive' } } },
+      { order: { contactPhone: { contains: search, mode: 'insensitive' } } },
+    ];
   const skip = (page - 1) * limit;
   const [debts, total] = await Promise.all([
     prisma.debt.findMany({
       where,
       include: { order: { include: { items: true } } },
-      skip, take: limit, orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
     }),
     prisma.debt.count({ where }),
   ]);
@@ -296,7 +383,8 @@ export async function payDebt(ownerId: string, debtId: string, amount: number) {
     const newPaid = Number(current.amountPaid) + Number(amount);
     const remaining = Number(current.totalAmount) - newPaid;
     const upd: any = { amountPaid: newPaid, remainingAmount: Math.max(0, remaining) };
-    if (remaining <= 0) upd.status = 'SETTLED'; else upd.status = 'PARTIALLY_PAID';
+    if (remaining <= 0) upd.status = 'SETTLED';
+    else upd.status = 'PARTIALLY_PAID';
 
     return tx.debt.update({ where: { id: debtId }, data: upd });
   });

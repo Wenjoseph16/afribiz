@@ -2,10 +2,14 @@ import { z } from 'zod';
 
 const planTypes = ['STANDARD', 'PREMIUM', 'VIP', 'CUSTOM'] as const;
 const billingCycles = ['MONTHLY', 'QUARTERLY', 'SEMESTRIAL', 'YEARLY', 'WEEKLY', 'DAILY'] as const;
-const subscriptionStatuses = ['ACTIVE', 'EXPIRED', 'CANCELLED', 'SUSPENDED', 'TRIAL'] as const;
-const paymentMethods = ['MANUAL', 'CASH', 'MOBILE_MONEY', 'BANK_TRANSFER', 'CARD', 'OTHER'] as const;
-const paymentStatuses = ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED'] as const;
-
+const paymentMethods = [
+  'MANUAL',
+  'CASH',
+  'MOBILE_MONEY',
+  'BANK_TRANSFER',
+  'CARD',
+  'OTHER',
+] as const;
 export const createPlanSchema = z.object({
   name: z.string().min(2, 'Nom requis').max(200),
   description: z.string().optional(),
@@ -23,13 +27,17 @@ export const createPlanSchema = z.object({
   sortOrder: z.number().int().min(0).optional().default(0),
   featured: z.boolean().optional().default(false),
   badge: z.string().optional(),
-  privileges: z.array(z.object({
-    code: z.string().min(1),
-    label: z.string().min(1),
-    description: z.string().optional(),
-    value: z.any().optional(),
-    valueType: z.string().optional(),
-  })).optional(),
+  privileges: z
+    .array(
+      z.object({
+        code: z.string().min(1),
+        label: z.string().min(1),
+        description: z.string().optional(),
+        value: z.any().optional(),
+        valueType: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const updatePlanSchema = createPlanSchema.partial();
@@ -56,4 +64,3 @@ export const recordPaymentSchema = z.object({
   periodStart: z.string().optional(),
   periodEnd: z.string().optional(),
 });
-

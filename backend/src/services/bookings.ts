@@ -9,24 +9,36 @@ async function getBusinessByOwner(ownerId: string) {
     select: { id: true, name: true, modules: true, settings: true },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('BOOKINGS')) throw new AppError('Module R\u00e9servations non activ\u00e9', 403);
+  if (!business.modules.includes('BOOKINGS'))
+    throw new AppError('Module R\u00e9servations non activ\u00e9', 403);
   return business;
 }
 
 function generateBookingNumber(): string {
   const d = new Date();
-  return `RES-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(Math.floor(Math.random()*99999)).padStart(5,'0')}`;
+  return `RES-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${String(Math.floor(Math.random() * 99999)).padStart(5, '0')}`;
 }
 
 const bookingInclude = {
-  client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true } },
+  client: {
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true },
+  },
   service: { select: { id: true, name: true, price: true, currency: true, duration: true } },
-  room: { select: { id: true, name: true, price: true, capacity: true, beds: true, currency: true } },
+  room: {
+    select: { id: true, name: true, price: true, capacity: true, beds: true, currency: true },
+  },
   resource: { select: { id: true, name: true, type: true } },
   reminders: { orderBy: { createdAt: 'desc' as const } },
 } satisfies Prisma.BookingInclude;
 
-async function checkConflict(bookingId: string | undefined, resourceId: string | undefined, roomId: string | undefined, startDate: string, endDate: string | undefined, businessId: string) {
+async function checkConflict(
+  bookingId: string | undefined,
+  resourceId: string | undefined,
+  roomId: string | undefined,
+  startDate: string,
+  endDate: string | undefined,
+  businessId: string
+) {
   await checkConflictTx(prisma, bookingId, resourceId, roomId, startDate, endDate, businessId);
 }
 
@@ -37,7 +49,7 @@ async function checkConflictTx(
   roomId: string | undefined,
   startDate: string,
   endDate: string | undefined,
-  businessId: string,
+  businessId: string
 ) {
   const end = endDate || startDate;
   const where: Prisma.BookingWhereInput = {
@@ -58,23 +70,45 @@ async function checkConflictTx(
 
 export async function listBusinessBookings(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page=1, limit=20, status, type, source, search, dateFrom, dateTo, resourceId, serviceId } = filters;
+  const {
+    page = 1,
+    limit = 20,
+    status,
+    type,
+    source,
+    search,
+    dateFrom,
+    dateTo,
+    resourceId,
+    serviceId,
+  } = filters;
   const where: Prisma.BookingWhereInput = { businessId: business.id };
   if (status) where.status = status as any;
   if (type) where.type = type as any;
   if (source) where.source = source as any;
   if (resourceId) where.resourceId = resourceId;
   if (serviceId) where.serviceId = serviceId;
-  if (dateFrom || dateTo) { where.startDate = {}; if (dateFrom) where.startDate.gte = new Date(dateFrom); if (dateTo) where.startDate.lte = new Date(dateTo + 'T23:59:59Z'); }
-  if (search) where.OR = [
-    { bookingNumber: { contains: search, mode: 'insensitive' } },
-    { customerName: { contains: search, mode: 'insensitive' } },
-    { customerPhone: { contains: search, mode: 'insensitive' } },
-    { title: { contains: search, mode: 'insensitive' } },
-  ];
+  if (dateFrom || dateTo) {
+    where.startDate = {};
+    if (dateFrom) where.startDate.gte = new Date(dateFrom);
+    if (dateTo) where.startDate.lte = new Date(dateTo + 'T23:59:59Z');
+  }
+  if (search)
+    where.OR = [
+      { bookingNumber: { contains: search, mode: 'insensitive' } },
+      { customerName: { contains: search, mode: 'insensitive' } },
+      { customerPhone: { contains: search, mode: 'insensitive' } },
+      { title: { contains: search, mode: 'insensitive' } },
+    ];
   const skip = (page - 1) * limit;
   const [bookings, total] = await Promise.all([
-    prisma.booking.findMany({ where, include: bookingInclude, skip, take: limit, orderBy: { startDate: 'desc' } }),
+    prisma.booking.findMany({
+      where,
+      include: bookingInclude,
+      skip,
+      take: limit,
+      orderBy: { startDate: 'desc' },
+    }),
     prisma.booking.count({ where }),
   ]);
   return { bookings, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -96,7 +130,15 @@ export async function createBooking(ownerId: string, data: any) {
 
   const booking = await prisma.$transaction(async (tx) => {
     // Check conflicts on resource and room (inside transaction for consistency)
-    await checkConflictTx(tx, undefined, data.resourceId, data.roomId, data.startDate, data.endDate, business.id);
+    await checkConflictTx(
+      tx,
+      undefined,
+      data.resourceId,
+      data.roomId,
+      data.startDate,
+      data.endDate,
+      business.id
+    );
 
     const createData: any = {
       bookingNumber,
@@ -148,14 +190,26 @@ export async function createBooking(ownerId: string, data: any) {
 
 export async function updateBooking(ownerId: string, bookingId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.booking.findFirst({ where: { id: bookingId, businessId: business.id } });
+  const existing = await prisma.booking.findFirst({
+    where: { id: bookingId, businessId: business.id },
+  });
   if (!existing) throw new AppError('R\u00e9servation non trouv\u00e9e', 404);
 
   const upd: any = {};
   if (data.title !== undefined) upd.title = data.title;
   if (data.description !== undefined) upd.description = data.description;
   if (data.type !== undefined) upd.type = data.type;
-  if (data.startDate !== undefined) { upd.startDate = new Date(data.startDate); await checkConflict(bookingId, data.resourceId || existing.resourceId, data.roomId || existing.roomId, data.startDate, data.endDate || existing.endDate?.toISOString(), business.id); }
+  if (data.startDate !== undefined) {
+    upd.startDate = new Date(data.startDate);
+    await checkConflict(
+      bookingId,
+      data.resourceId || existing.resourceId,
+      data.roomId || existing.roomId,
+      data.startDate,
+      data.endDate || existing.endDate?.toISOString(),
+      business.id
+    );
+  }
   if (data.endDate !== undefined) upd.endDate = data.endDate ? new Date(data.endDate) : null;
   if (data.guests !== undefined) upd.guests = data.guests;
   if (data.adults !== undefined) upd.adults = data.adults;
@@ -176,9 +230,16 @@ export async function updateBooking(ownerId: string, bookingId: string, data: an
   return prisma.booking.update({ where: { id: bookingId }, data: upd, include: bookingInclude });
 }
 
-export async function updateBookingStatus(ownerId: string, bookingId: string, status: string, reason?: string) {
+export async function updateBookingStatus(
+  ownerId: string,
+  bookingId: string,
+  status: string,
+  reason?: string
+) {
   const business = await getBusinessByOwner(ownerId);
-  const booking = await prisma.booking.findFirst({ where: { id: bookingId, businessId: business.id } });
+  const booking = await prisma.booking.findFirst({
+    where: { id: bookingId, businessId: business.id },
+  });
   if (!booking) throw new AppError('R\u00e9servation non trouv\u00e9e', 404);
 
   const now = new Date();
@@ -219,7 +280,11 @@ export async function updateBookingStatus(ownerId: string, bookingId: string, st
       upd.status = status as any;
   }
 
-  const updated = await prisma.booking.update({ where: { id: bookingId }, data: upd, include: bookingInclude });
+  const updated = await prisma.booking.update({
+    where: { id: bookingId },
+    data: upd,
+    include: bookingInclude,
+  });
 
   publishBookingStatusChanged({
     userId: ownerId,
@@ -240,15 +305,43 @@ export async function deleteBooking(ownerId: string, bookingId: string) {
 export async function getBookingStats(ownerId: string) {
   const business = await getBusinessByOwner(ownerId);
   const where = { businessId: business.id };
-  const statuses = ['PENDING','CONFIRMED','IN_PROGRESS','COMPLETED','CANCELLED','RESCHEDULED','ARRIVED','NO_SHOW'] as const;
-  const counts = await Promise.all(statuses.map(s => prisma.booking.count({ where: { ...where, status: s as any } })));
+  const statuses = [
+    'PENDING',
+    'CONFIRMED',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'CANCELLED',
+    'RESCHEDULED',
+    'ARRIVED',
+    'NO_SHOW',
+  ] as const;
+  const counts = await Promise.all(
+    statuses.map((s) => prisma.booking.count({ where: { ...where, status: s as any } }))
+  );
   const [totalRevenue, todayRevenue, popularType] = await Promise.all([
-    prisma.booking.aggregate({ where: { ...where, status: { in: ['COMPLETED','IN_PROGRESS'] as any } }, _sum: { price: true } }),
-    prisma.booking.aggregate({ where: { ...where, status: { in: ['COMPLETED','IN_PROGRESS'] as any }, createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) } }, _sum: { price: true } }),
-    prisma.booking.groupBy({ by: ['type'], where, _count: true, orderBy: { _count: { type: 'desc' } }, take: 1 }),
+    prisma.booking.aggregate({
+      where: { ...where, status: { in: ['COMPLETED', 'IN_PROGRESS'] as any } },
+      _sum: { price: true },
+    }),
+    prisma.booking.aggregate({
+      where: {
+        ...where,
+        status: { in: ['COMPLETED', 'IN_PROGRESS'] as any },
+        createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      },
+      _sum: { price: true },
+    }),
+    prisma.booking.groupBy({
+      by: ['type'],
+      where,
+      _count: true,
+      orderBy: { _count: { type: 'desc' } },
+      take: 1,
+    }),
   ]);
-  const r: any = {}; statuses.forEach((s, i) => r[s.toLowerCase()] = counts[i]);
-  r.total = counts.reduce((a,b) => a+b, 0);
+  const r: any = {};
+  statuses.forEach((s, i) => (r[s.toLowerCase()] = counts[i]));
+  r.total = counts.reduce((a, b) => a + b, 0);
   r.totalRevenue = totalRevenue._sum.price || 0;
   r.todayRevenue = todayRevenue._sum.price || 0;
   r.mostPopularType = popularType[0]?.type || null;
@@ -303,7 +396,10 @@ export async function createResource(ownerId: string, data: any) {
 
 export async function updateResource(ownerId: string, resourceId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  return prisma.bookingResource.update({ where: { id: resourceId, businessId: business.id }, data });
+  return prisma.bookingResource.update({
+    where: { id: resourceId, businessId: business.id },
+    data,
+  });
 }
 
 export async function deleteResource(ownerId: string, resourceId: string) {
@@ -345,9 +441,16 @@ export async function getCalendarBookings(ownerId: string, dateFrom: string, dat
 
 // ===================== REMINDERS =====================
 
-export async function sendReminder(ownerId: string, bookingId: string, type: string, channel: string) {
+export async function sendReminder(
+  ownerId: string,
+  bookingId: string,
+  type: string,
+  channel: string
+) {
   const business = await getBusinessByOwner(ownerId);
-  const booking = await prisma.booking.findFirst({ where: { id: bookingId, businessId: business.id } });
+  const booking = await prisma.booking.findFirst({
+    where: { id: bookingId, businessId: business.id },
+  });
   if (!booking) throw new AppError('R\u00e9servation non trouv\u00e9e', 404);
 
   const reminder = await prisma.bookingReminder.create({
@@ -360,7 +463,10 @@ export async function sendReminder(ownerId: string, bookingId: string, type: str
   });
 
   if (!booking.reminderSent) {
-    await prisma.booking.update({ where: { id: bookingId }, data: { remindedAt: new Date(), reminderSent: true } });
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { remindedAt: new Date(), reminderSent: true },
+    });
   }
 
   return prisma.bookingReminder.findUnique({ where: { id: reminder.id } });

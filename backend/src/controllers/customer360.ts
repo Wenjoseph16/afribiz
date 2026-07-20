@@ -6,7 +6,10 @@ import * as customer360Service from '../services/customer360';
 
 async function getBusinessId(req: AuthenticatedRequest) {
   if (!req.user) throw new AppError('Non authentifié', 401);
-  const business = await prisma.business.findUnique({ where: { ownerId: req.user.id }, select: { id: true } });
+  const business = await prisma.business.findUnique({
+    where: { ownerId: req.user.id },
+    select: { id: true },
+  });
   if (!business) throw new AppError('Business non trouvé', 404);
   return business.id;
 }
@@ -24,18 +27,35 @@ export const trackPageView = catchAsyncErrors(async (req: AuthenticatedRequest, 
   res.status(201).json({ success: true, data: null });
 });
 
-export const trackProductView = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const businessId = await getBusinessId(req);
-  const { productId, userId, visitorId, referrer, source } = req.body;
-  if (!productId) throw new AppError('productId requis', 400);
-  await customer360Service.trackProductView({ businessId, productId, userId, visitorId, referrer, source });
-  res.status(201).json({ success: true, data: null });
-});
+export const trackProductView = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const businessId = await getBusinessId(req);
+    const { productId, userId, visitorId, referrer, source } = req.body;
+    if (!productId) throw new AppError('productId requis', 400);
+    await customer360Service.trackProductView({
+      businessId,
+      productId,
+      userId,
+      visitorId,
+      referrer,
+      source,
+    });
+    res.status(201).json({ success: true, data: null });
+  }
+);
 
-export const trackProductClick = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const businessId = await getBusinessId(req);
-  const { productId, userId, visitorId, source } = req.body;
-  if (!productId) throw new AppError('productId requis', 400);
-  await customer360Service.trackProductClick({ businessId, productId, userId, visitorId, source });
-  res.status(201).json({ success: true, data: null });
-});
+export const trackProductClick = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const businessId = await getBusinessId(req);
+    const { productId, userId, visitorId, source } = req.body;
+    if (!productId) throw new AppError('productId requis', 400);
+    await customer360Service.trackProductClick({
+      businessId,
+      productId,
+      userId,
+      visitorId,
+      source,
+    });
+    res.status(201).json({ success: true, data: null });
+  }
+);

@@ -1,17 +1,25 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
   getCalendarFeed,
-  listTasks, getTask, createTask, updateTask, deleteTask,
-  listSchedules, upsertSchedule, deleteSchedule,
-  listPlanningLogs, getPlanningStats,
+  listTasks,
+  getTask,
+  createTask,
+  updateTask,
+  deleteTask,
+  listSchedules,
+  upsertSchedule,
+  deleteSchedule,
+  listPlanningLogs,
+  getPlanningStats,
 } from '../controllers/planning';
 import { createTaskSchema, updateTaskSchema, upsertScheduleSchema } from '../validators/planning';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 // Calendar feed (aggregated view)
 router.get('/calendar', getCalendarFeed);

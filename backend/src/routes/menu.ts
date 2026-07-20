@@ -1,20 +1,50 @@
 import { Router } from 'express';
 import {
-  listMenuItems, getMenuItem, createMenuItem, updateMenuItem, deleteMenuItem,
-  toggleMenuItemActive, updateMenuItemStatus, getMenuItemStats,
-  listCategories, createCategory, updateCategory, deleteCategory,
-  listOrders, getOrder, createOrder, updateOrderStatus, getOrderStats,
-  listTables, createTable, updateTable, deleteTable, updateTableStatus,
-  listIngredients, createIngredient, updateIngredient, deleteIngredient, adjustStock, getIngredientStats,
+  listMenuItems,
+  getMenuItem,
+  createMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
+  toggleMenuItemActive,
+  updateMenuItemStatus,
+  getMenuItemStats,
+  listCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  listOrders,
+  getOrder,
+  createOrder,
+  updateOrderStatus,
+  getOrderStats,
+  listTables,
+  createTable,
+  updateTable,
+  deleteTable,
+  updateTableStatus,
+  listIngredients,
+  createIngredient,
+  updateIngredient,
+  deleteIngredient,
+  adjustStock,
+  getIngredientStats,
   getQrMenuInfo,
 } from '../controllers/menu';
 import { validateBody } from '../middlewares/validators';
 import {
-  createMenuItemSchema, updateMenuItemSchema, updateMenuItemStatusSchema,
-  createCategorySchema, updateCategorySchema,
-  createOrderSchema, updateOrderStatusSchema,
-  createTableSchema, updateTableSchema, updateTableStatusSchema,
-  createIngredientSchema, updateIngredientSchema, adjustStockSchema,
+  createMenuItemSchema,
+  updateMenuItemSchema,
+  updateMenuItemStatusSchema,
+  createCategorySchema,
+  updateCategorySchema,
+  createOrderSchema,
+  updateOrderStatusSchema,
+  createTableSchema,
+  updateTableSchema,
+  updateTableStatusSchema,
+  createIngredientSchema,
+  updateIngredientSchema,
+  adjustStockSchema,
 } from '../validators/menu';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 
@@ -23,6 +53,7 @@ router.use(authMiddleware);
 router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 // Menu Items
+router.get('/', listMenuItems);
 router.get('/stats', getMenuItemStats);
 router.get('/items', listMenuItems);
 router.post('/items', validateBody(createMenuItemSchema), createMenuItem);

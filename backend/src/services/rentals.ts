@@ -12,9 +12,6 @@ async function getBusinessByOwner(ownerId: string) {
   return business;
 }
 
-const rentalInclude = {
-} satisfies Prisma.RentalInclude;
-
 export async function listRentals(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
   const { page = 1, limit = 20, search, isActive } = filters;
@@ -75,7 +72,10 @@ export async function updateRental(ownerId: string, rentalId: string, data: any)
   if (data.deposit !== undefined) upd.deposit = data.deposit;
   if (data.priceUnit !== undefined) upd.priceUnit = data.priceUnit;
   if (data.currency !== undefined) upd.currency = data.currency;
-  if (data.quantity !== undefined) { upd.quantity = data.quantity; upd.availableQty = data.quantity; }
+  if (data.quantity !== undefined) {
+    upd.quantity = data.quantity;
+    upd.availableQty = data.quantity;
+  }
   if (data.sortOrder !== undefined) upd.sortOrder = data.sortOrder;
   const rental = await prisma.rental.update({ where: { id: rentalId }, data: upd });
   return rental;
@@ -104,11 +104,18 @@ export async function toggleRentalActive(ownerId: string, rentalId: string) {
   return rental;
 }
 
-export async function createRentalBooking(userId: string, data: { rentalId: string; startDate: string; endDate: string; notes?: string }) {
-  const rental = await prisma.rental.findUnique({ where: { id: data.rentalId, isActive: true, deletedAt: null } });
+export async function createRentalBooking(
+  userId: string,
+  data: { rentalId: string; startDate: string; endDate: string; notes?: string }
+) {
+  const rental = await prisma.rental.findUnique({
+    where: { id: data.rentalId, isActive: true, deletedAt: null },
+  });
   if (!rental) throw new AppError('Location non trouvée', 404);
 
-  const days = Math.ceil((new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24));
+  const days = Math.ceil(
+    (new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24)
+  );
   if (days <= 0) throw new AppError('La date de fin doit être après la date de début', 400);
 
   const totalPrice = Number(rental.price) * days;
@@ -136,20 +143,31 @@ export async function createRentalBooking(userId: string, data: { rentalId: stri
   return booking;
 }
 
-export async function prolongRentalBooking(userId: string, bookingId: string, data: { newEndDate: string; additionalNotes?: string }) {
+export async function prolongRentalBooking(
+  userId: string,
+  bookingId: string,
+  data: { newEndDate: string; additionalNotes?: string }
+) {
   const booking = await prisma.booking.findFirst({
     where: { id: bookingId, clientId: userId, rentalId: { not: null } },
     include: { rental: true },
   });
   if (!booking) throw new AppError('Réservation non trouvée', 404);
-  if (booking.status !== 'PENDING' && booking.status !== 'CONFIRMED' && booking.status !== 'IN_PROGRESS') {
+  if (
+    booking.status !== 'PENDING' &&
+    booking.status !== 'CONFIRMED' &&
+    booking.status !== 'IN_PROGRESS'
+  ) {
     throw new AppError('Impossible de prolonger cette réservation', 400);
   }
 
   const newEnd = new Date(data.newEndDate);
-  if (newEnd <= booking.endDate!) throw new AppError('La nouvelle date doit être après la date actuelle', 400);
+  if (newEnd <= booking.endDate!)
+    throw new AppError('La nouvelle date doit être après la date actuelle', 400);
 
-  const additionalDays = Math.ceil((newEnd.getTime() - booking.endDate!.getTime()) / (1000 * 60 * 60 * 24));
+  const additionalDays = Math.ceil(
+    (newEnd.getTime() - booking.endDate!.getTime()) / (1000 * 60 * 60 * 24)
+  );
   const additionalPrice = booking.rental ? Number(booking.rental.price) * additionalDays : 0;
 
   const updated = await prisma.booking.update({

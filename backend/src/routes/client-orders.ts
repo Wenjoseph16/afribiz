@@ -2,7 +2,13 @@ import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import { updateMyOrderSchema } from '../validators/client';
-import { getMyOrders, getMyOrder, updateMyOrder, cancelMyOrder, getMyOrderTimeline } from '../controllers/orders';
+import {
+  getMyOrders,
+  getMyOrder,
+  updateMyOrder,
+  cancelMyOrder,
+  getMyOrderTimeline,
+} from '../controllers/orders';
 
 const router = Router();
 router.use(authMiddleware);

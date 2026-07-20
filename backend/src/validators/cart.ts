@@ -28,5 +28,7 @@ export const checkoutSchema = z.object({
   contactPhone: z.string().optional(),
   contactName: z.string().optional(),
   notes: z.string().optional(),
-  paymentMethod: z.enum(['MOBILE_MONEY', 'BANK_TRANSFER', 'CREDIT_CARD', 'ESCROW', 'CASH']).default('MOBILE_MONEY'),
+  paymentMethod: z
+    .enum(['MOBILE_MONEY', 'BANK_TRANSFER', 'CREDIT_CARD', 'ESCROW', 'CASH'])
+    .default('MOBILE_MONEY'),
 });

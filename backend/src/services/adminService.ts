@@ -1,7 +1,7 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { searchIdsByText } from '../lib/fulltext';
-import { publishPaymentReceived, publishPaymentFailed, publishRefundProcessed, publishEscrowReleased, publishEscrowRefunded } from '../events/publishers';
+import { publishPaymentReceived, publishRefundProcessed } from '../events/publishers';
 
 export const getDashboardStats = async () => {
   const now = new Date();
@@ -84,9 +84,24 @@ export const getDashboardStats = async () => {
     prisma.user.count({ where: { createdAt: { gte: lastYearStart, lt: yearStart } } }),
   ]);
 
-  const growthDaily = usersYesterday > 0 ? ((usersToday - usersYesterday) / usersYesterday) * 100 : usersToday > 0 ? 100 : 0;
-  const growthMonthly = usersLastMonth > 0 ? ((usersThisMonth - usersLastMonth) / usersLastMonth) * 100 : usersThisMonth > 0 ? 100 : 0;
-  const growthAnnual = usersLastYear > 0 ? ((usersThisYear - usersLastYear) / usersLastYear) * 100 : usersThisYear > 0 ? 100 : 0;
+  const growthDaily =
+    usersYesterday > 0
+      ? ((usersToday - usersYesterday) / usersYesterday) * 100
+      : usersToday > 0
+        ? 100
+        : 0;
+  const growthMonthly =
+    usersLastMonth > 0
+      ? ((usersThisMonth - usersLastMonth) / usersLastMonth) * 100
+      : usersThisMonth > 0
+        ? 100
+        : 0;
+  const growthAnnual =
+    usersLastYear > 0
+      ? ((usersThisYear - usersLastYear) / usersLastYear) * 100
+      : usersThisYear > 0
+        ? 100
+        : 0;
 
   return {
     totalUsers,
@@ -124,14 +139,23 @@ export const getDashboardStats = async () => {
   };
 };
 
-export const getUsers = async (query: { search?: string; role?: string; status?: string; page?: number; limit?: number }) => {
+export const getUsers = async (query: {
+  search?: string;
+  role?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
   if (query.search) {
     const ftsIds = await searchIdsByText('User', ['firstName', 'lastName', 'email'], query.search);
-    const phoneMatch = await prisma.user.findMany({ where: { phone: { contains: query.search } }, select: { id: true } });
-    const allIds = [...ftsIds, ...phoneMatch.map(u => u.id)];
+    const phoneMatch = await prisma.user.findMany({
+      where: { phone: { contains: query.search } },
+      select: { id: true },
+    });
+    const allIds = [...ftsIds, ...phoneMatch.map((u) => u.id)];
     where.id = allIds.length > 0 ? { in: allIds } : { in: [] };
   }
   if (query.role) where.primaryRole = query.role;
@@ -145,9 +169,20 @@ export const getUsers = async (query: { search?: string; role?: string; status?:
     take: limit,
     orderBy: { createdAt: 'desc' },
     select: {
-      id: true, email: true, firstName: true, lastName: true, phone: true,
-      emailVerified: true, phoneVerified: true, isActive: true, primaryRole: true,
-      roles: true, avatar: true, lastLoginAt: true, createdAt: true, updatedAt: true,
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      emailVerified: true,
+      phoneVerified: true,
+      isActive: true,
+      primaryRole: true,
+      roles: true,
+      avatar: true,
+      lastLoginAt: true,
+      createdAt: true,
+      updatedAt: true,
       _count: { select: { sessions: true, notifications: true, securityLogs: true } },
     },
   });
@@ -163,16 +198,30 @@ export const getUserById = async (id: string) => {
       devices: true,
       business: true,
       developerProfile: true,
-      _count: { select: { notifications: true, orders: true, bookings: true, payments: true, reviews: true } },
+      _count: {
+        select: {
+          notifications: true,
+          orders: true,
+          bookings: true,
+          payments: true,
+          reviews: true,
+        },
+      },
     },
   });
   if (!user) throw new AppError('Utilisateur introuvable', 404);
   return user;
 };
 
-export const updateUserStatus = async (id: string, action: 'suspend' | 'activate' | 'block' | 'delete') => {
+export const updateUserStatus = async (
+  id: string,
+  action: 'suspend' | 'activate' | 'block' | 'delete'
+) => {
   if (action === 'delete') {
-    throw new AppError('La suppression d\'utilisateur est interdite pour des raisons de protection des données', 400);
+    throw new AppError(
+      "La suppression d'utilisateur est interdite pour des raisons de protection des données",
+      400
+    );
   }
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new AppError('Utilisateur introuvable', 404);
@@ -199,7 +248,11 @@ export const getUserActivity = async (id: string) => {
 
   const [sessions, securityLogs, loginHistory] = await Promise.all([
     prisma.session.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 20 }),
-    prisma.securityLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 20 }),
+    prisma.securityLog.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    }),
     prisma.securityLog.findMany({
       where: { userId: id, action: { in: ['LOGIN', 'FAILED_LOGIN'] } },
       orderBy: { createdAt: 'desc' },
@@ -209,14 +262,23 @@ export const getUserActivity = async (id: string) => {
   return { sessions, securityLogs, loginHistory };
 };
 
-export const getBusinesses = async (query: { search?: string; status?: string; verified?: string; page?: number; limit?: number }) => {
+export const getBusinesses = async (query: {
+  search?: string;
+  status?: string;
+  verified?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
   if (query.search) {
     const ftsIds = await searchIdsByText('Business', ['name', 'email', 'slug'], query.search);
-    const phoneMatch = await prisma.business.findMany({ where: { phone: { contains: query.search } }, select: { id: true } });
-    const allIds = [...ftsIds, ...phoneMatch.map(b => b.id)];
+    const phoneMatch = await prisma.business.findMany({
+      where: { phone: { contains: query.search } },
+      select: { id: true },
+    });
+    const allIds = [...ftsIds, ...phoneMatch.map((b) => b.id)];
     where.id = allIds.length > 0 ? { in: allIds } : { in: [] };
   }
   if (query.status === 'active') where.isActive = true;
@@ -233,7 +295,17 @@ export const getBusinesses = async (query: { search?: string; status?: string; v
     include: {
       owner: { select: { id: true, email: true, firstName: true, lastName: true } },
       score: true,
-      _count: { select: { products: true, services: true, menuItems: true, rooms: true, events: true, rentals: true, reviews: true } },
+      _count: {
+        select: {
+          products: true,
+          services: true,
+          menuItems: true,
+          rooms: true,
+          events: true,
+          rentals: true,
+          reviews: true,
+        },
+      },
     },
   });
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -243,7 +315,16 @@ export const getBusinessById = async (id: string) => {
   const business = await prisma.business.findUnique({
     where: { id },
     include: {
-      owner: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, avatar: true } },
+      owner: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          avatar: true,
+        },
+      },
       settings: true,
       hours: true,
       paymentMethods: true,
@@ -257,21 +338,41 @@ export const getBusinessById = async (id: string) => {
       portfolioItems: { where: { deletedAt: null }, take: 20 },
       promotions: { take: 20 },
       partners: { take: 20 },
-      reviews: { include: { user: { select: { id: true, firstName: true, lastName: true, avatar: true } } }, orderBy: { createdAt: 'desc' }, take: 10 },
+      reviews: {
+        include: { user: { select: { id: true, firstName: true, lastName: true, avatar: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      },
       score: true,
       scoreHistory: { orderBy: { snapshotDate: 'desc' }, take: 10 },
       badges: { where: { isActive: true } },
       adCampaigns: { take: 10 },
       supportTickets: { take: 10 },
-      _count: { select: { products: true, services: true, menuItems: true, rooms: true, events: true, rentals: true, reviews: true, promotions: true, partners: true, portfolioItems: true } },
+      _count: {
+        select: {
+          products: true,
+          services: true,
+          menuItems: true,
+          rooms: true,
+          events: true,
+          rentals: true,
+          reviews: true,
+          promotions: true,
+          partners: true,
+          portfolioItems: true,
+        },
+      },
     },
   });
   if (!business) throw new AppError('Commerce introuvable', 404);
   return business;
 };
 
-export const updateBusinessStatus = async (id: string, action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete') => {
-  if (action === 'delete') throw new AppError('La suppression d\'un commerce est interdite', 400);
+export const updateBusinessStatus = async (
+  id: string,
+  action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete'
+) => {
+  if (action === 'delete') throw new AppError("La suppression d'un commerce est interdite", 400);
   const business = await prisma.business.findUnique({ where: { id } });
   if (!business) throw new AppError('Commerce introuvable', 404);
 
@@ -281,7 +382,12 @@ export const updateBusinessStatus = async (id: string, action: 'validate' | 'ver
       data = { isActive: true };
       break;
     case 'verify':
-      data = { isVerified: true, isActive: true, verificationStatus: 'VERIFIED', verifiedAt: new Date() };
+      data = {
+        isVerified: true,
+        isActive: true,
+        verificationStatus: 'VERIFIED',
+        verifiedAt: new Date(),
+      };
       break;
     case 'suspend':
       data = { isActive: false };
@@ -294,14 +400,23 @@ export const updateBusinessStatus = async (id: string, action: 'validate' | 'ver
   return updated;
 };
 
-export const updateBusinessVerification = async (id: string, action: 'verify' | 'reject', rejectionReason?: string) => {
+export const updateBusinessVerification = async (
+  id: string,
+  action: 'verify' | 'reject',
+  rejectionReason?: string
+) => {
   const business = await prisma.business.findUnique({ where: { id } });
   if (!business) throw new AppError('Commerce introuvable', 404);
 
   if (action === 'verify') {
     const updated = await prisma.business.update({
       where: { id },
-      data: { verificationStatus: 'VERIFIED', isVerified: true, verifiedAt: new Date(), rejectionReason: null },
+      data: {
+        verificationStatus: 'VERIFIED',
+        isVerified: true,
+        verifiedAt: new Date(),
+        rejectionReason: null,
+      },
     });
     return updated;
   }
@@ -314,15 +429,33 @@ export const updateBusinessVerification = async (id: string, action: 'verify' | 
   return updated;
 };
 
-export const getDevelopers = async (query: { search?: string; status?: string; verified?: string; page?: number; limit?: number }) => {
+export const getDevelopers = async (query: {
+  search?: string;
+  status?: string;
+  verified?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
   if (query.search) {
-    const ftsIds = await searchIdsByText('DeveloperProfile', ['companyName', 'email'], query.search);
-    const phoneMatch = await prisma.developerProfile.findMany({ where: { phone: { contains: query.search } }, select: { id: true } });
-    const skillsMatch = await prisma.developerProfile.findMany({ where: { skills: { has: query.search } }, select: { id: true } });
-    const allIds = [...new Set([...ftsIds, ...phoneMatch.map(d => d.id), ...skillsMatch.map(d => d.id)])];
+    const ftsIds = await searchIdsByText(
+      'DeveloperProfile',
+      ['companyName', 'email'],
+      query.search
+    );
+    const phoneMatch = await prisma.developerProfile.findMany({
+      where: { phone: { contains: query.search } },
+      select: { id: true },
+    });
+    const skillsMatch = await prisma.developerProfile.findMany({
+      where: { skills: { has: query.search } },
+      select: { id: true },
+    });
+    const allIds = [
+      ...new Set([...ftsIds, ...phoneMatch.map((d) => d.id), ...skillsMatch.map((d) => d.id)]),
+    ];
     where.id = allIds.length > 0 ? { in: allIds } : { in: [] };
   }
   if (query.status === 'verified') where.verificationStatus = 'VERIFIED';
@@ -338,7 +471,15 @@ export const getDevelopers = async (query: { search?: string; status?: string; v
     orderBy: { createdAt: 'desc' },
     include: {
       user: { select: { id: true, email: true, firstName: true, lastName: true, isActive: true } },
-      _count: { select: { modules: true, revenues: true, payouts: true, supportTickets: true, developerModuleReviews: true } },
+      _count: {
+        select: {
+          modules: true,
+          revenues: true,
+          payouts: true,
+          supportTickets: true,
+          developerModuleReviews: true,
+        },
+      },
     },
   });
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -348,20 +489,41 @@ export const getDeveloperById = async (id: string) => {
   const developer = await prisma.developerProfile.findUnique({
     where: { id },
     include: {
-      user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, avatar: true, isActive: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          avatar: true,
+          isActive: true,
+        },
+      },
       modules: { orderBy: { createdAt: 'desc' } },
       revenues: { orderBy: { createdAt: 'desc' }, take: 20 },
       payouts: { orderBy: { createdAt: 'desc' }, take: 20 },
-      supportTickets: { include: { module: { select: { id: true, name: true } }, messages: true }, orderBy: { createdAt: 'desc' }, take: 10 },
-      developerModuleReviews: { include: { user: { select: { id: true, firstName: true, lastName: true, avatar: true } } }, orderBy: { createdAt: 'desc' }, take: 10 },
+      supportTickets: {
+        include: { module: { select: { id: true, name: true } }, messages: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      },
+      developerModuleReviews: {
+        include: { user: { select: { id: true, firstName: true, lastName: true, avatar: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      },
     },
   });
   if (!developer) throw new AppError('Développeur introuvable', 404);
   return developer;
 };
 
-export const updateDeveloperStatus = async (id: string, action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete') => {
-  if (action === 'delete') throw new AppError('La suppression d\'un développeur est interdite', 400);
+export const updateDeveloperStatus = async (
+  id: string,
+  action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete'
+) => {
+  if (action === 'delete') throw new AppError("La suppression d'un développeur est interdite", 400);
   const developer = await prisma.developerProfile.findUnique({ where: { id } });
   if (!developer) throw new AppError('Développeur introuvable', 404);
 
@@ -384,12 +546,21 @@ export const updateDeveloperStatus = async (id: string, action: 'validate' | 've
   return updated;
 };
 
-export const getModules = async (query: { search?: string; status?: string; page?: number; limit?: number }) => {
+export const getModules = async (query: {
+  search?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
   if (query.search) {
-    const ids = await searchIdsByText('DeveloperModule', ['name', 'description', 'category'], query.search);
+    const ids = await searchIdsByText(
+      'DeveloperModule',
+      ['name', 'description', 'category'],
+      query.search
+    );
     where.id = ids.length > 0 ? { in: ids } : { in: [] };
   }
   if (query.status) where.status = query.status;
@@ -402,14 +573,19 @@ export const getModules = async (query: { search?: string; status?: string; page
     orderBy: { createdAt: 'desc' },
     include: {
       developer: { select: { id: true, companyName: true } },
-      _count: { select: { versions: true, installations: true, reviews: true, supportTickets: true } },
+      _count: {
+        select: { versions: true, installations: true, reviews: true, supportTickets: true },
+      },
     },
   });
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 };
 
-export const updateModuleStatus = async (id: string, action: 'validate' | 'reject' | 'publish' | 'archive' | 'delete') => {
-  if (action === 'delete') throw new AppError('La suppression d\'un module est interdite', 400);
+export const updateModuleStatus = async (
+  id: string,
+  action: 'validate' | 'reject' | 'publish' | 'archive' | 'delete'
+) => {
+  if (action === 'delete') throw new AppError("La suppression d'un module est interdite", 400);
   const mod = await prisma.developerModule.findUnique({ where: { id } });
   if (!mod) throw new AppError('Module introuvable', 404);
 
@@ -419,7 +595,7 @@ export const updateModuleStatus = async (id: string, action: 'validate' | 'rejec
       data = { status: 'PENDING_REVIEW' };
       break;
     case 'reject':
-      data = { status: 'REJECTED', rejectionReason: 'Module rejeté par l\'administrateur' };
+      data = { status: 'REJECTED', rejectionReason: "Module rejeté par l'administrateur" };
       break;
     case 'publish':
       data = { status: 'PUBLISHED', publishedAt: new Date() };
@@ -432,7 +608,12 @@ export const updateModuleStatus = async (id: string, action: 'validate' | 'rejec
   return updated;
 };
 
-export const getPayments = async (query: { status?: string; type?: string; page?: number; limit?: number }) => {
+export const getPayments = async (query: {
+  status?: string;
+  type?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
@@ -457,7 +638,11 @@ export const getEscrows = async (query: { status?: string; page?: number; limit?
   return getPayments({ ...query, type: 'escrow' });
 };
 
-export const getSubscriptions = async (query: { status?: string; page?: number; limit?: number }) => {
+export const getSubscriptions = async (query: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
@@ -476,7 +661,12 @@ export const getSubscriptions = async (query: { status?: string; page?: number; 
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 };
 
-export const getSupportTickets = async (query: { status?: string; priority?: string; page?: number; limit?: number }) => {
+export const getSupportTickets = async (query: {
+  status?: string;
+  priority?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
@@ -499,7 +689,12 @@ export const getSupportTickets = async (query: { status?: string; priority?: str
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 };
 
-export const getDisputes = async (query: { status?: string; type?: string; page?: number; limit?: number }) => {
+export const getDisputes = async (query: {
+  status?: string;
+  type?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
@@ -508,7 +703,10 @@ export const getDisputes = async (query: { status?: string; type?: string; page?
   }
   // Dans le schéma actuel, les litiges sont tracés via les escrows et les debts
   // On retourne des données structurées même si le modèle Dispute n'existe pas
-  const total = await prisma.escrow.count({ where: query.status ? { status: query.status as any } : undefined }) || 0;
+  const total =
+    (await prisma.escrow.count({
+      where: query.status ? { status: query.status as any } : undefined,
+    })) || 0;
   const disputedEscrows = await prisma.escrow.findMany({
     where: { status: 'DISPUTED' },
     skip: (page - 1) * limit,
@@ -529,7 +727,13 @@ export const getDisputes = async (query: { status?: string; type?: string; page?
     createdAt: e.createdAt,
   }));
 
-  return { items: disputes, total: disputes.length, page, limit, totalPages: Math.ceil(total / limit) };
+  return {
+    items: disputes,
+    total: disputes.length,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 export const getDisputesStats = async () => {
@@ -567,7 +771,11 @@ export const updateDisputeStatus = async (id: string, action: 'decide' | 'close'
 // ESCROW ADMIN
 // ============================================
 
-export const getAdminEscrows = async (query: { status?: string; page?: number; limit?: number }) => {
+export const getAdminEscrows = async (query: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
@@ -592,7 +800,16 @@ export const getAdminEscrows = async (query: { status?: string; page?: number; l
       amount: Number(e.amount),
       seller: { name: e.business?.name || 'Vendeur' },
       buyer: { name: 'Acheteur' },
-      status: e.status === 'HELD' ? 'ACTIVE' : e.status === 'RELEASED' ? 'COMPLETED' : e.status === 'REFUNDED' ? 'REFUNDED' : e.status === 'DISPUTED' ? 'DISPUTED' : e.status,
+      status:
+        e.status === 'HELD'
+          ? 'ACTIVE'
+          : e.status === 'RELEASED'
+            ? 'COMPLETED'
+            : e.status === 'REFUNDED'
+              ? 'REFUNDED'
+              : e.status === 'DISPUTED'
+                ? 'DISPUTED'
+                : e.status,
     })),
     total,
     page,
@@ -622,7 +839,8 @@ export const getAdminEscrowStats = async () => {
 export const releaseAdminEscrow = async (id: string) => {
   const escrow = await prisma.escrow.findUnique({ where: { id } });
   if (!escrow) throw new AppError('Escrow introuvable', 404);
-  if (escrow.status !== 'HELD' && escrow.status !== 'DISPUTED') throw new AppError('Cet escrow ne peut pas être libéré', 400);
+  if (escrow.status !== 'HELD' && escrow.status !== 'DISPUTED')
+    throw new AppError('Cet escrow ne peut pas être libéré', 400);
 
   return prisma.escrow.update({
     where: { id },
@@ -633,7 +851,8 @@ export const releaseAdminEscrow = async (id: string) => {
 export const refundAdminEscrow = async (id: string) => {
   const escrow = await prisma.escrow.findUnique({ where: { id } });
   if (!escrow) throw new AppError('Escrow introuvable', 404);
-  if (escrow.status !== 'HELD' && escrow.status !== 'DISPUTED') throw new AppError('Cet escrow ne peut pas être remboursé', 400);
+  if (escrow.status !== 'HELD' && escrow.status !== 'DISPUTED')
+    throw new AppError('Cet escrow ne peut pas être remboursé', 400);
 
   return prisma.escrow.update({
     where: { id },
@@ -644,11 +863,13 @@ export const refundAdminEscrow = async (id: string) => {
 export const arbitrateAdminEscrow = async (id: string, decision: 'release' | 'refund') => {
   const escrow = await prisma.escrow.findUnique({ where: { id } });
   if (!escrow) throw new AppError('Escrow introuvable', 404);
-  if (escrow.status !== 'DISPUTED') throw new AppError('Seul un escrow litigieux peut être arbitré', 400);
+  if (escrow.status !== 'DISPUTED')
+    throw new AppError('Seul un escrow litigieux peut être arbitré', 400);
 
-  const data = decision === 'release'
-    ? { status: 'RELEASED' as const, releasedAt: new Date() }
-    : { status: 'REFUNDED' as const, refundedAt: new Date() };
+  const data =
+    decision === 'release'
+      ? { status: 'RELEASED' as const, releasedAt: new Date() }
+      : { status: 'REFUNDED' as const, refundedAt: new Date() };
 
   return prisma.escrow.update({ where: { id }, data });
 };
@@ -792,8 +1013,13 @@ export const getAdminSecurityAdmins = async (query: { page?: number; limit?: num
     take: limit,
     orderBy: { createdAt: 'desc' },
     select: {
-      id: true, email: true, firstName: true, lastName: true,
-      lastLoginAt: true, isActive: true, createdAt: true,
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      lastLoginAt: true,
+      isActive: true,
+      createdAt: true,
       roles: true,
     },
   });
@@ -874,7 +1100,10 @@ export const getAdminSecurityAttempts = async (query: { page?: number; limit?: n
   });
 
   // Regrouper par IP
-  const grouped = new Map<string, { id: string; email: string; ip: string; count: number; date: Date }>();
+  const grouped = new Map<
+    string,
+    { id: string; email: string; ip: string; count: number; date: Date }
+  >();
   for (const log of items) {
     const ip = log.ipAddress || 'unknown';
     if (!grouped.has(ip)) {
@@ -911,7 +1140,13 @@ export const getAdminSecurityBlacklist = async (query: { page?: number; limit?: 
     skip: (page - 1) * limit,
     take: limit,
     orderBy: { updatedAt: 'desc' },
-    select: { id: true, email: true, failedLoginAttempts: true, lockedUntil: true, updatedAt: true },
+    select: {
+      id: true,
+      email: true,
+      failedLoginAttempts: true,
+      lockedUntil: true,
+      updatedAt: true,
+    },
   });
 
   return {
@@ -986,7 +1221,10 @@ export const getAdminSecurityJournal = async (query: { page?: number; limit?: nu
 // MARKETPLACE ADMIN
 // ============================================
 
-export const getAdminMarketplaceItems = async (type: string, query: { page?: number; limit?: number }) => {
+export const getAdminMarketplaceItems = async (
+  type: string,
+  query: { page?: number; limit?: number }
+) => {
   const page = query.page || 1;
   const limit = query.limit || 20;
 
@@ -997,8 +1235,15 @@ export const getAdminMarketplaceItems = async (type: string, query: { page?: num
       take: limit,
       orderBy: { rating: 'desc' },
       select: {
-        id: true, name: true, type: true, email: true, country: true,
-        rating: true, isVerified: true, isPremium: true, isTopSeller: true,
+        id: true,
+        name: true,
+        type: true,
+        email: true,
+        country: true,
+        rating: true,
+        isVerified: true,
+        isPremium: true,
+        isTopSeller: true,
         createdAt: true,
         _count: { select: { products: true, services: true } },
       },
@@ -1006,12 +1251,18 @@ export const getAdminMarketplaceItems = async (type: string, query: { page?: num
     const total = await prisma.business.count({ where: { isActive: true } });
     return {
       items: businesses.map((b) => ({
-        id: b.id, name: b.name, type: b.type, email: b.email,
-        country: b.country, status: 'ACTIVE',
+        id: b.id,
+        name: b.name,
+        type: b.type,
+        email: b.email,
+        country: b.country,
+        status: 'ACTIVE',
         featured: b.isPremium || b.isTopSeller,
         business: { name: b.name },
       })),
-      total, page, limit,
+      total,
+      page,
+      limit,
       totalPages: Math.ceil(total / limit),
     };
   }
@@ -1028,11 +1279,16 @@ export const getAdminMarketplaceItems = async (type: string, query: { page?: num
     const total = await prisma.developerModule.count();
     return {
       items: items.map((m) => ({
-        id: m.id, name: m.name, status: m.status, price: Number(m.price),
+        id: m.id,
+        name: m.name,
+        status: m.status,
+        price: Number(m.price),
         featured: false,
         developer: { name: m.developer?.companyName },
       })),
-      total, page, limit,
+      total,
+      page,
+      limit,
       totalPages: Math.ceil(total / limit),
     };
   }
@@ -1041,7 +1297,11 @@ export const getAdminMarketplaceItems = async (type: string, query: { page?: num
   return { items: [], total: 0, page, limit, totalPages: 0 };
 };
 
-export const updateAdminMarketplaceItem = async (type: string, id: string, action: 'feature' | 'unfeature') => {
+export const updateAdminMarketplaceItem = async (
+  type: string,
+  id: string,
+  action: 'feature' | 'unfeature'
+) => {
   if (type === 'featured' || type === 'businesses') {
     await prisma.business.update({
       where: { id },
@@ -1058,7 +1318,12 @@ export const updateAdminMarketplaceItem = async (type: string, id: string, actio
 // ADS ADMIN
 // ============================================
 
-export const getAdminAdCampaigns = async (query: { status?: string; search?: string; page?: number; limit?: number }) => {
+export const getAdminAdCampaigns = async (query: {
+  status?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
@@ -1134,7 +1399,11 @@ export const rejectAdminAdCampaign = async (id: string, reason?: string) => {
 export const suspendAdminAdCampaign = async (id: string, reason?: string) => {
   return prisma.adCampaign.update({
     where: { id },
-    data: { status: 'SUSPENDED', suspendReason: reason || 'Campagne suspendue', suspendedAt: new Date() },
+    data: {
+      status: 'SUSPENDED',
+      suspendReason: reason || 'Campagne suspendue',
+      suspendedAt: new Date(),
+    },
   });
 };
 
@@ -1164,11 +1433,36 @@ export const getAdminAfriScoreStats = async () => {
 export const getAdminAfriScoreRules = async () => {
   return {
     rules: [
-      { key: 'commercialActivity', label: 'Activité commerciale', weight: 200, description: 'Basé sur le nombre de transactions' },
-      { key: 'financialBehavior', label: 'Comportement financier', weight: 200, description: 'Basé sur la régularité des paiements' },
-      { key: 'satisfaction', label: 'Satisfaction client', weight: 200, description: 'Basé sur les notes et avis clients' },
-      { key: 'operationalReliability', label: 'Fiabilité opérationnelle', weight: 200, description: 'Basé sur le taux de complétion des services' },
-      { key: 'profileCompleteness', label: 'Complétude du profil', weight: 200, description: 'Basé sur les informations du profil business' },
+      {
+        key: 'commercialActivity',
+        label: 'Activité commerciale',
+        weight: 200,
+        description: 'Basé sur le nombre de transactions',
+      },
+      {
+        key: 'financialBehavior',
+        label: 'Comportement financier',
+        weight: 200,
+        description: 'Basé sur la régularité des paiements',
+      },
+      {
+        key: 'satisfaction',
+        label: 'Satisfaction client',
+        weight: 200,
+        description: 'Basé sur les notes et avis clients',
+      },
+      {
+        key: 'operationalReliability',
+        label: 'Fiabilité opérationnelle',
+        weight: 200,
+        description: 'Basé sur le taux de complétion des services',
+      },
+      {
+        key: 'profileCompleteness',
+        label: 'Complétude du profil',
+        weight: 200,
+        description: 'Basé sur les informations du profil business',
+      },
     ],
   };
 };
@@ -1225,7 +1519,7 @@ export const getAdminAfriScoreHistory = async (query: { page?: number; limit?: n
   });
 
   // Batch-fetch all previous scores in ONE query instead of N
-  const businessIds = [...new Set(items.map(h => h.businessId))];
+  const businessIds = [...new Set(items.map((h) => h.businessId))];
   const allScores = await prisma.scoreHistory.findMany({
     where: { businessId: { in: businessIds } },
     orderBy: { snapshotDate: 'asc' },
@@ -1248,14 +1542,14 @@ export const getAdminAfriScoreHistory = async (query: { page?: number; limit?: n
   for (const h of items) {
     const businessScores = scoresByBusiness.get(h.businessId);
     if (businessScores && businessScores.length > 1) {
-      const currentIdx = businessScores.findIndex(s => s.id === h.id);
+      const currentIdx = businessScores.findIndex((s) => s.id === h.id);
       if (currentIdx > 0) {
         previousScoreMap.set(h.id, businessScores[currentIdx - 1].overallScore);
       }
     }
   }
 
-  const history = items.map(h => {
+  const history = items.map((h) => {
     const previousScore = previousScoreMap.get(h.id) ?? h.overallScore;
     return {
       id: h.id,
@@ -1340,7 +1634,8 @@ export const suspendAdminPartner = async (id: string) => {
 
 export const revokeAdminPartner = async (id: string) => {
   await prisma.dataPartner.update({
-    where: { id },      data: { isActive: false, apiEnabled: false },
+    where: { id },
+    data: { isActive: false, apiEnabled: false },
   });
   return { message: 'Accès révoqué' };
 };
@@ -1379,7 +1674,14 @@ export const getAdminDataAccessLogs = async (query: { page?: number; limit?: num
 };
 
 export const getAdminPlatformAnalytics = async () => {
-  const [totalBusinesses, totalPartners, totalReports, totalAccessLogs, activeConsents, avgScoreAgg] = await Promise.all([
+  const [
+    totalBusinesses,
+    totalPartners,
+    totalReports,
+    totalAccessLogs,
+    activeConsents,
+    avgScoreAgg,
+  ] = await Promise.all([
     prisma.business.count({ where: { isActive: true } }),
     prisma.dataPartner.count({ where: { isActive: true } }),
     prisma.dataReport.count(),
@@ -1398,7 +1700,12 @@ export const getAdminPlatformAnalytics = async () => {
   };
 };
 
-export const getDataReports = async (query: { type?: string; status?: string; page?: number; limit?: number }) => {
+export const getDataReports = async (query: {
+  type?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
@@ -1437,7 +1744,12 @@ export const getNotifications = async (query: { type?: string; page?: number; li
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 };
 
-export const getSecurityLogs = async (query: { action?: string; userId?: string; page?: number; limit?: number }) => {
+export const getSecurityLogs = async (query: {
+  action?: string;
+  userId?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {};
@@ -1457,7 +1769,12 @@ export const getSecurityLogs = async (query: { action?: string; userId?: string;
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 };
 
-export const getSystemLogs = async (query: { module?: string; action?: string; page?: number; limit?: number }) => {
+export const getSystemLogs = async (query: {
+  module?: string;
+  action?: string;
+  page?: number;
+  limit?: number;
+}) => {
   return getSecurityLogs({ ...query, userId: undefined });
 };
 
@@ -1471,7 +1788,11 @@ export const getBackups = async () => {
 };
 
 export const createBackup = async (action: 'manual' | 'auto') => {
-  return { success: true, message: `Sauvegarde ${action} créée avec succès`, date: new Date().toISOString() };
+  return {
+    success: true,
+    message: `Sauvegarde ${action} créée avec succès`,
+    date: new Date().toISOString(),
+  };
 };
 
 export const restoreBackup = async (_id: string) => {
@@ -1490,14 +1811,26 @@ export const getApiKeys = async (query: { page?: number; limit?: number }) => {
     take: limit,
     orderBy: { createdAt: 'desc' },
     select: {
-      id: true, name: true, type: true, email: true, apiKey: true, apiEnabled: true,
-      apiQuota: true, apiUsed: true, isActive: true, createdAt: true,
+      id: true,
+      name: true,
+      type: true,
+      email: true,
+      apiKey: true,
+      apiEnabled: true,
+      apiQuota: true,
+      apiUsed: true,
+      isActive: true,
+      createdAt: true,
     },
   });
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 };
 
-export const getFraudReports = async (_query: { status?: string; page?: number; limit?: number }) => {
+export const getFraudReports = async (_query: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   return { items: [], total: 0, page: _query.page || 1, limit: _query.limit || 10, totalPages: 0 };
 };
 
@@ -1506,8 +1839,8 @@ export const getPlatformSettings = async () => {
     platformName: 'AfriBiz',
     supportEmail: 'support@afribiz.net',
     supportPhone: '+228 90 00 00 00',
-    commissionRate: 0.10,
-    developerCommissionRate: 0.30,
+    commissionRate: 0.1,
+    developerCommissionRate: 0.3,
     currency: 'FCFA',
     language: 'fr',
     timezone: 'Africa/Lome',
@@ -1527,7 +1860,12 @@ export const updatePlatformSettings = async (data: any) => {
   return { success: true, message: 'Paramètres mis à jour', data };
 };
 
-export const getAdminAuditLog = async (query: { adminId?: string; action?: string; page?: number; limit?: number }) => {
+export const getAdminAuditLog = async (query: {
+  adminId?: string;
+  action?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const where: any = {

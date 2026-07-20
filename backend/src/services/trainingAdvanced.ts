@@ -1,6 +1,5 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
-import { publishTrainingPurchased } from '../events/publishers';
 
 // ── Lessons ──
 export async function listLessons(ownerId: string, trainingId: string) {
@@ -51,7 +50,8 @@ export async function updateLesson(ownerId: string, lessonId: string, data: any)
     where: { id: lessonId },
     include: { training: { select: { business: { select: { ownerId: true } } } } },
   });
-  if (!lesson || (lesson.training as any).business.ownerId !== ownerId) throw new AppError('Leçon non trouvée', 404);
+  if (!lesson || (lesson.training as any).business.ownerId !== ownerId)
+    throw new AppError('Leçon non trouvée', 404);
   const upd: any = {};
   if (data.title !== undefined) upd.title = data.title;
   if (data.description !== undefined) upd.description = data.description;
@@ -68,7 +68,8 @@ export async function deleteLesson(ownerId: string, lessonId: string) {
     where: { id: lessonId },
     include: { training: { select: { business: { select: { ownerId: true } } } } },
   });
-  if (!lesson || (lesson.training as any).business.ownerId !== ownerId) throw new AppError('Leçon non trouvée', 404);
+  if (!lesson || (lesson.training as any).business.ownerId !== ownerId)
+    throw new AppError('Leçon non trouvée', 404);
   await prisma.trainingLesson.delete({ where: { id: lessonId } });
 }
 
@@ -78,7 +79,8 @@ export async function createQuiz(ownerId: string, data: any) {
     where: { id: data.lessonId },
     include: { training: { select: { business: { select: { ownerId: true } } } } },
   });
-  if (!lesson || (lesson.training as any).business.ownerId !== ownerId) throw new AppError('Leçon non trouvée', 404);
+  if (!lesson || (lesson.training as any).business.ownerId !== ownerId)
+    throw new AppError('Leçon non trouvée', 404);
   return prisma.trainingQuiz.create({
     data: {
       lessonId: data.lessonId,
@@ -87,15 +89,17 @@ export async function createQuiz(ownerId: string, data: any) {
       passingScore: data.passingScore || 70,
       maxAttempts: data.maxAttempts || 3,
       timeLimit: data.timeLimit || null,
-      questions: data.questions ? {
-        create: data.questions.map((q: any, i: number) => ({
-          question: q.question,
-          options: q.options,
-          correctIndex: q.correctIndex,
-          explanation: q.explanation || null,
-          sortOrder: i,
-        })),
-      } : undefined,
+      questions: data.questions
+        ? {
+            create: data.questions.map((q: any, i: number) => ({
+              question: q.question,
+              options: q.options,
+              correctIndex: q.correctIndex,
+              explanation: q.explanation || null,
+              sortOrder: i,
+            })),
+          }
+        : undefined,
     } as any,
     include: { questions: { orderBy: { sortOrder: 'asc' } } } as any,
   });
@@ -118,7 +122,7 @@ export async function submitQuizAttempt(userId: string, quizId: string, answers:
     isCorrect: answers[i] === q.correctIndex,
   }));
 
-  score = gradedAnswers.filter(a => a.isCorrect).length;
+  score = gradedAnswers.filter((a) => a.isCorrect).length;
   const percentage = Math.round((score / totalQuestions) * 100);
   const passed = percentage >= quiz.passingScore;
 
@@ -165,7 +169,10 @@ export async function updateTrainingProgress(userId: string, trainingId: string)
   const progress = totalLessons > 0 ? Math.round((completedQuizzes / totalLessons) * 100) : 0;
   return prisma.userTraining.update({
     where: { userId_trainingId: { userId, trainingId } },
-    data: { progress, status: progress >= 100 ? 'COMPLETED' : progress > 0 ? 'IN_PROGRESS' : 'NOT_STARTED' },
+    data: {
+      progress,
+      status: progress >= 100 ? 'COMPLETED' : progress > 0 ? 'IN_PROGRESS' : 'NOT_STARTED',
+    },
   });
 }
 
@@ -193,5 +200,10 @@ export async function getUserTrainingProgress(userId: string, trainingId: string
   const userTraining = await prisma.userTraining.findUnique({
     where: { userId_trainingId: { userId, trainingId } },
   });
-  return { training, attempts, progress: userTraining?.progress || 0, status: userTraining?.status || 'NOT_STARTED' };
+  return {
+    training,
+    attempts,
+    progress: userTraining?.progress || 0,
+    status: userTraining?.status || 'NOT_STARTED',
+  };
 }

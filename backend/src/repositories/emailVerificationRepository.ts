@@ -17,11 +17,11 @@ export class EmailVerificationRepository {
   }
 
   /**
-   * Find by token (only unverified, non-expired)
+   * Find by token
    */
   static async findByToken(token: string): Promise<EmailVerification | null> {
-    return prisma.emailVerification.findFirst({
-      where: { token, verifiedAt: null, expiresAt: { gt: new Date() } },
+    return prisma.emailVerification.findUnique({
+      where: { token },
       include: { user: true },
     });
   }

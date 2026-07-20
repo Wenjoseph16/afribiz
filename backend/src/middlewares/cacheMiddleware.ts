@@ -48,11 +48,18 @@ export function cacheResponse(options: CacheMiddlewareOptions) {
       // Cache miss or error — proceed normally
     }
 
-    // Override res.json to cache the response
+    // Override res.json to cache the response (only 2xx responses)
     const originalJson = res.json.bind(res);
-    res.json = function (body: any): Response {
-      // Cache the response asynchronously (don't await — non-blocking)
-      cache.set(cacheKey, body, ttl).catch(() => {});
+    const originalStatus = res.status.bind(res);
+    let statusCode = 200;
+    res.status = function (code: number): Response {
+      statusCode = code;
+      return originalStatus(code);
+    };
+    res.json = function (body: unknown): Response {
+      if (statusCode >= 200 && statusCode < 300) {
+        cache.set(cacheKey, body, ttl).catch(() => {});
+      }
       return originalJson(body);
     };
 

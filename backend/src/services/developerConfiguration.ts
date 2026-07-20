@@ -45,11 +45,7 @@ export async function getModuleConfiguration(moduleId: string, businessId: strin
 /**
  * Toggle module active state for a business
  */
-export async function toggleModuleActive(
-  moduleId: string,
-  businessId: string,
-  isActive: boolean
-) {
+export async function toggleModuleActive(moduleId: string, businessId: string, isActive: boolean) {
   const config = await prisma.moduleConfiguration.findUnique({
     where: { moduleId_businessId: { moduleId, businessId } },
   });
@@ -85,11 +81,17 @@ export async function getBusinessModules(businessId: string) {
     include: {
       module: {
         select: {
-          id: true, name: true, slug: true, logo: true,
-          description: true, version: true, category: true,
+          id: true,
+          name: true,
+          slug: true,
+          logo: true,
+          description: true,
+          version: true,
+          category: true,
           developer: {
             select: {
-              id: true, companyName: true,
+              id: true,
+              companyName: true,
               user: { select: { firstName: true, lastName: true } },
             },
           },

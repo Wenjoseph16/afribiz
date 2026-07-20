@@ -1,42 +1,25 @@
 import { z } from 'zod';
+import {
+  businessTypeEnum as sharedBusinessTypeEnum,
+  businessModuleEnum as sharedBusinessModuleEnum,
+} from '@afribiz/shared';
 
-const businessTypeEnum = z.enum([
-  'RESTAURANT', 'FAST_FOOD', 'PATISSERIE', 'BOULANGERIE',
-  'CAFE', 'BAR', 'HOTEL', 'AUBERGE', 'MAISON_D_HOTES',
-  'LOCATION_SAISONNIERE', 'BOUTIQUE_VETEMENTS', 'BOUTIQUE_CHAUSSURES',
-  'BOUTIQUE_COSMETIQUES', 'BOUTIQUE_INFORMATIQUE', 'BOUTIQUE_TELEPHONIQUE',
-  'BOUTIQUE_ELECTRONIQUE', 'SUPERMARCHE', 'EPICERIE', 'PHARMACIE',
-  'LIBRAIRIE', 'PAPETERIE', 'SALON_COIFFURE', 'SALON_BEAUTE',
-  'SPA', 'INSTITUT_ESTHETIQUE', 'PHOTOGRAPHE', 'VIDEOASTE',
-  'AGENCE_MARKETING', 'AGENCE_COMMUNICATION', 'AGENCE_DIGITALE',
-  'AGENCE_IMMOBILIERE', 'CABINET_JURIDIQUE', 'CABINET_COMPTABLE',
-  'CABINET_CONSEIL', 'CABINET_MEDICAL', 'CLINIQUE',
-  'CENTRE_FORMATION', 'ECOLE_PRIVEE', 'FREELANCE', 'DEVELOPPEUR',
-  'DESIGNER_GRAPHIQUE', 'CONSULTANT', 'COACH_PROFESSIONNEL',
-  'ARTISAN', 'MENUISIER', 'MACON', 'PLOMBIER', 'ELECTRICIEN',
-  'SOUDEUR', 'MECANICIEN', 'ENTREPRISE_AGRICOLE', 'ELEVAGE',
-  'TRANSPORT', 'LIVRAISON', 'ORGANISATION_EVENEMENTS',
-  'LOCATION_VEHICULES', 'LOCATION_EQUIPEMENTS', 'LOCATION_ENGINS',
-  'IMPORT_EXPORT', 'ASSOCIATION', 'ONG', 'ENTREPRISE_PRIVEE', 'AUTRE',
-]);
-
-const businessModuleEnum = z.enum([
-  'PRODUCTS', 'SERVICES', 'MENU', 'ROOMS', 'BOOKINGS', 'ORDERS',
-  'QUOTES_INVOICES', 'DEBTS_PAYMENTS', 'PROMOTIONS', 'PLANNING',
-  'EMPLOYEES', 'PORTFOLIO', 'SUBSCRIPTIONS', 'DELIVERIES', 'EVENTS',
-  'RENTALS', 'DOCUMENTS', 'PARTNERS', 'DISPUTES', 'MODULE_MARKETPLACE',
-  'ADVANCED_TASKS',
-]);
+const businessTypeEnum = sharedBusinessTypeEnum;
+const businessModuleEnum = sharedBusinessModuleEnum;
 
 export const onboardingSchema = z.object({
   name: z.string().min(2, 'Le nom du business est requis').max(100),
   type: businessTypeEnum,
-  shortDescription: z.string().min(10, 'Description trop courte').max(150, 'Maximum 150 caractères'),
+  shortDescription: z
+    .string()
+    .min(10, 'Description trop courte')
+    .max(150, 'Maximum 150 caractères'),
   phone: z.string().min(4, 'Numéro de téléphone requis'),
   whatsapp: z.string().optional(),
-  address: z.string().min(5, 'L\'adresse est requise'),
+  address: z.string().min(5, "L'adresse est requise"),
+  region: z.string().optional(),
   city: z.string().min(2, 'La ville est requise'),
-  country: z.string().default('Togo'),
+  country: z.string().min(2, 'Le pays est requis'),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   logo: z.string().optional(),
@@ -50,13 +33,20 @@ export const onboardingSchema = z.object({
   facebook: z.string().optional(),
   instagram: z.string().optional(),
   tiktok: z.string().optional(),
+  youtube: z.string().optional(),
   linkedin: z.string().optional(),
+  language: z.string().optional(),
   modules: z.array(businessModuleEnum).min(1, 'Sélectionnez au moins un module'),
 });
 
 export const publicPageSchema = z.object({
   name: z.string().min(2).max(100).optional(),
-  slug: z.string().min(2).max(100).regex(/^[a-z0-9-]+$/, 'Slug invalide').optional(),
+  slug: z
+    .string()
+    .min(2)
+    .max(100)
+    .regex(/^[a-z0-9-]+$/, 'Slug invalide')
+    .optional(),
   shortDescription: z.string().max(150).optional(),
   description: z.string().optional(),
   tagline: z.string().max(200).optional(),
@@ -70,17 +60,21 @@ export const publicPageSchema = z.object({
   logo: z.string().optional(),
   coverImage: z.string().optional(),
   socialLinks: z.record(z.string()).optional(),
-  hours: z.array(z.object({
-    day: z.string(),
-    open: z.string().optional(),
-    close: z.string().optional(),
-    isClosed: z.boolean().optional(),
-  })).optional(),
+  hours: z
+    .array(
+      z.object({
+        day: z.string(),
+        open: z.string().optional(),
+        close: z.string().optional(),
+        isClosed: z.boolean().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const businessVerificationSchema = z.object({
   identityDocument: z.string().min(1, "La pièce d'identité est requise"),
-  companyDocument: z.string().min(1, 'Le document d\'entreprise est requis'),
+  companyDocument: z.string().min(1, "Le document d'entreprise est requis"),
   taxDocument: z.string().optional(),
   responsiblePhoto: z.string().min(1, 'La photo du responsable est requise'),
 });

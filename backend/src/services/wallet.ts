@@ -14,10 +14,18 @@ export async function getOrCreateWallet(businessId: string) {
 
 export async function getBalance(businessId: string) {
   const wallet = await getOrCreateWallet(businessId);
-  return { balance: Number(wallet.balance), locked: Number(wallet.locked), available: Number(wallet.balance) - Number(wallet.locked), currency: wallet.currency };
+  return {
+    balance: Number(wallet.balance),
+    locked: Number(wallet.locked),
+    available: Number(wallet.balance) - Number(wallet.locked),
+    currency: wallet.currency,
+  };
 }
 
-export async function deposit(businessId: string, data: { amount: number; reference?: string; description?: string }) {
+export async function deposit(
+  businessId: string,
+  data: { amount: number; reference?: string; description?: string }
+) {
   return prisma.$transaction(async (tx) => {
     const wallet = await tx.wallet.findUnique({ where: { businessId } });
     if (!wallet) throw new AppError('Wallet non trouvé', 404);
@@ -37,7 +45,10 @@ export async function deposit(businessId: string, data: { amount: number; refere
   });
 }
 
-export async function withdraw(businessId: string, data: { amount: number; reference?: string; description?: string }) {
+export async function withdraw(
+  businessId: string,
+  data: { amount: number; reference?: string; description?: string }
+) {
   return prisma.$transaction(async (tx) => {
     const wallet = await tx.wallet.findUnique({ where: { businessId } });
     if (!wallet) throw new AppError('Wallet non trouvé', 404);
@@ -59,14 +70,22 @@ export async function withdraw(businessId: string, data: { amount: number; refer
   });
 }
 
-export async function listTransactions(businessId: string, filters: { page?: number; limit?: number; type?: string }) {
+export async function listTransactions(
+  businessId: string,
+  filters: { page?: number; limit?: number; type?: string }
+) {
   const wallet = await getOrCreateWallet(businessId);
   const page = Number(filters.page) || 1;
   const limit = Number(filters.limit) || 20;
   const where: Prisma.WalletTransactionWhereInput = { walletId: wallet.id };
   if (filters.type) where.type = filters.type;
   const [transactions, total] = await Promise.all([
-    prisma.walletTransaction.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' } }),
+    prisma.walletTransaction.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
     prisma.walletTransaction.count({ where }),
   ]);
   return { transactions, total, page, limit, totalPages: Math.ceil(total / limit) };

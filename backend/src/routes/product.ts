@@ -1,22 +1,35 @@
-import { Router } from 'express';
+import { createRouter } from '../middlewares/createRouter';
 import {
-  listProducts, getProduct, createProduct, updateProduct, deleteProduct,
-  duplicateProduct, toggleProductActive, updateStock,
-  listCategories, createCategory, updateCategory, deleteCategory,
-  getStockAlerts, getProductStats,
-  exportProducts, importProducts, bulkDeleteProducts, bulkToggleActive, bulkUpdateStock,
+  listProducts,
+  getProduct,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  duplicateProduct,
+  toggleProductActive,
+  updateStock,
+  listCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getStockAlerts,
+  getProductStats,
+  exportProducts,
+  importProducts,
+  bulkDeleteProducts,
+  bulkToggleActive,
+  bulkUpdateStock,
 } from '../controllers/product';
 import { validateBody } from '../middlewares/validators';
 import {
-  createProductSchema, updateProductSchema,
-  createCategorySchema, updateCategorySchema, updateStockSchema,
+  createProductSchema,
+  updateProductSchema,
+  createCategorySchema,
+  updateCategorySchema,
+  updateStockSchema,
 } from '../validators/product';
-import { authMiddleware, requireRole } from '../middlewares/auth';
 
-const router = Router();
-
-router.use(authMiddleware);
-router.use(requireRole(['BUSINESS', 'ADMIN']));
+const router = createRouter({ requireAuth: true, roles: ['BUSINESS', 'ADMIN'] });
 
 router.get('/', listProducts);
 router.get('/stats', getProductStats);

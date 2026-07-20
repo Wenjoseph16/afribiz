@@ -18,7 +18,12 @@ export function registerLoyaltyAutomation(): void {
       const amount = parseFloat(event.metadata?.amount || '0');
       if (!businessId || amount <= 0) return;
 
-      await creditPoints(businessId, clientId, amount, `Commande #${event.metadata?.orderId?.substring(0, 8)}`);
+      await creditPoints(
+        businessId,
+        clientId,
+        amount,
+        `Commande #${event.metadata?.orderId?.substring(0, 8)}`
+      );
     } catch (err) {
       logger.error('Loyalty: failed to credit order points', { error: err });
     }
@@ -31,7 +36,12 @@ export function registerLoyaltyAutomation(): void {
       const amount = parseFloat(event.metadata?.amount || '0');
       if (!businessId || amount <= 0) return;
 
-      await creditPoints(businessId, clientId, amount, `Paiement #${event.metadata?.paymentId?.substring(0, 8)}`);
+      await creditPoints(
+        businessId,
+        clientId,
+        amount,
+        `Paiement #${event.metadata?.paymentId?.substring(0, 8)}`
+      );
     } catch (err) {
       logger.error('Loyalty: failed to credit payment points', { error: err });
     }
@@ -40,7 +50,12 @@ export function registerLoyaltyAutomation(): void {
   logger.info('LoyaltyAutomation: handlers registered');
 }
 
-async function creditPoints(businessId: string, clientId: string, amount: number, reason: string): Promise<void> {
+async function creditPoints(
+  businessId: string,
+  clientId: string,
+  amount: number,
+  reason: string
+): Promise<void> {
   const program = await prisma.loyaltyProgram.findUnique({ where: { businessId } });
   if (!program || !program.isActive) return;
 
@@ -63,7 +78,10 @@ async function creditPoints(businessId: string, clientId: string, amount: number
     },
   });
 
-  const business = await prisma.business.findUnique({ where: { id: businessId }, select: { ownerId: true, name: true } });
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { ownerId: true, name: true },
+  });
   if (!business) return;
 
   publishLoyaltyPointsEarned({

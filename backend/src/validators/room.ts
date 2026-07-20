@@ -1,7 +1,28 @@
 import { z } from 'zod';
 
-const roomTypes = ['STANDARD', 'VIP', 'SUITE', 'STUDIO', 'APARTMENT', 'VILLA', 'DORMITORY', 'FAMILY', 'DOUBLE', 'SINGLE', 'DELUXE', 'BUNGALOW'] as const;
-const roomStatuses = ['AVAILABLE', 'RESERVED', 'OCCUPIED', 'CLEANING', 'MAINTENANCE', 'CLOSED', 'BLOCKED'] as const;
+const roomTypes = [
+  'STANDARD',
+  'VIP',
+  'SUITE',
+  'STUDIO',
+  'APARTMENT',
+  'VILLA',
+  'DORMITORY',
+  'FAMILY',
+  'DOUBLE',
+  'SINGLE',
+  'DELUXE',
+  'BUNGALOW',
+] as const;
+const roomStatuses = [
+  'AVAILABLE',
+  'RESERVED',
+  'OCCUPIED',
+  'CLEANING',
+  'MAINTENANCE',
+  'CLOSED',
+  'BLOCKED',
+] as const;
 const bathroomTypes = ['PRIVATE', 'SHARED', 'COMMUNAL'] as const;
 
 export const createRoomSchema = z.object({

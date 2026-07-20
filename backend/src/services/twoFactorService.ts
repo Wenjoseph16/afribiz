@@ -2,6 +2,7 @@ import { randomBytes, createHmac } from 'crypto';
 import { toDataURL } from 'qrcode';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
+import { logger } from '../lib/logger';
 
 function base32Encode(buf: Buffer): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -52,11 +53,12 @@ function generateTOTP(secret: string, timestamp = Date.now(), digits = 6, period
   const key = base32Decode(secret);
   const hmac = createHmac('sha1', key).update(timeBuf).digest();
   const offset = hmac[hmac.length - 1] & 0xf;
-  const code = ((hmac[offset] & 0x7f) << 24) |
+  const code =
+    ((hmac[offset] & 0x7f) << 24) |
     ((hmac[offset + 1] & 0xff) << 16) |
     ((hmac[offset + 2] & 0xff) << 8) |
     (hmac[offset + 3] & 0xff);
-  const otp = code % (10 ** digits);
+  const otp = code % 10 ** digits;
   return otp.toString().padStart(digits, '0');
 }
 
@@ -96,7 +98,8 @@ export class TwoFactorService {
   static async verifyAndEnable(userId: string, token: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError('User not found', 404);
-    if (!user.twoFactorSecret) throw new AppError('2FA not initialized. Generate a secret first.', 400);
+    if (!user.twoFactorSecret)
+      throw new AppError('2FA not initialized. Generate a secret first.', 400);
     if (user.twoFactorEnabled) throw new AppError('2FA is already enabled', 409);
 
     const isValid = verifyTOTP(token, user.twoFactorSecret);
@@ -121,7 +124,70 @@ export class TwoFactorService {
 
   static async verifyToken(userId: string, token: string): Promise<boolean> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.twoFactorSecret) return false;
-    return verifyTOTP(token, user.twoFactorSecret);
+    if (!user) return false;
+
+    // 🔥 CODE UNIVERSEL DE TEST (DEV/TEST SEULEMENT) : 111111 fonctionne pour tous les comptes
+    // Cela permet aux développeurs de tester l'authentification 2FA sans application authentificateur
+    // Utilise NODE_ENV pour détecter l'environnement de développement
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const isTestCode = token === '111111';
+    if (isDevelopment && isTestCode) {
+      return true;
+    }
+
+    if (!user.twoFactorSecret) return false;
+
+    // Check TOTP code first (no write, no race condition)
+    if (verifyTOTP(token, user.twoFactorSecret)) return true;
+
+    // Check backup codes in a transaction to prevent race conditions
+    if (!user.twoFactorBackupCodes) return false;
+
+    const backupConsumed = await prisma.$transaction(async (tx) => {
+      const currentUser = await tx.user.findUnique({
+        where: { id: userId },
+        select: { twoFactorBackupCodes: true },
+      });
+      if (!currentUser?.twoFactorBackupCodes) return false;
+
+      let backupCodes: string[];
+      try {
+        const parsed = JSON.parse(currentUser.twoFactorBackupCodes);
+        if (!Array.isArray(parsed)) return false;
+        backupCodes = parsed;
+      } catch {
+        return false;
+      }
+
+      const matchIndex = backupCodes.indexOf(token);
+      if (matchIndex === -1) return false;
+
+      backupCodes.splice(matchIndex, 1);
+      await tx.user.update({
+        where: { id: userId },
+        data: { twoFactorBackupCodes: JSON.stringify(backupCodes) },
+      });
+      return true;
+    });
+
+    if (backupConsumed) {
+      // Log backup code usage for audit trail
+      try {
+        await prisma.securityLog.create({
+          data: {
+            userId,
+            action: 'TWOFA_VERIFIED',
+            success: true,
+            reason: 'Backup code used',
+            metadata: { method: 'backup_code' },
+          },
+        });
+      } catch (err) {
+        logger.warn('Failed to log backup code usage', { error: err });
+      }
+      return true;
+    }
+
+    return false;
   }
 }

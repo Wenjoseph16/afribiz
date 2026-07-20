@@ -8,9 +8,32 @@ export class DeviceRepository {
     userAgent?: string;
   }): Promise<Device> {
     const ua = data.userAgent || '';
-    const osType = ua.includes('Windows') ? 'Windows' : ua.includes('Mac') ? 'macOS' : ua.includes('Linux') ? 'Linux' : ua.includes('Android') ? 'Android' : ua.includes('iOS') ? 'iOS' : 'Unknown';
-    const browserName = ua.includes('Chrome') ? 'Chrome' : ua.includes('Firefox') ? 'Firefox' : ua.includes('Safari') ? 'Safari' : ua.includes('Edge') ? 'Edge' : 'Unknown';
-    const deviceType = ua.includes('Mobile') || ua.includes('Android') ? 'MOBILE' : ua.includes('Tablet') ? 'TABLET' : 'DESKTOP';
+    const osType = ua.includes('Windows')
+      ? 'Windows'
+      : ua.includes('Mac')
+        ? 'macOS'
+        : ua.includes('Linux')
+          ? 'Linux'
+          : ua.includes('Android')
+            ? 'Android'
+            : ua.includes('iOS')
+              ? 'iOS'
+              : 'Unknown';
+    const browserName = ua.includes('Chrome')
+      ? 'Chrome'
+      : ua.includes('Firefox')
+        ? 'Firefox'
+        : ua.includes('Safari')
+          ? 'Safari'
+          : ua.includes('Edge')
+            ? 'Edge'
+            : 'Unknown';
+    const deviceType =
+      ua.includes('Mobile') || ua.includes('Android')
+        ? 'MOBILE'
+        : ua.includes('Tablet')
+          ? 'TABLET'
+          : 'DESKTOP';
     const name = `${osType} - ${browserName}`;
 
     const existing = await prisma.device.findFirst({

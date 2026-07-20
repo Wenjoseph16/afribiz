@@ -25,6 +25,15 @@ export function setCsrfCookie(res: Response): void {
 }
 
 export function csrfProtection(req: Request, res: Response, next: NextFunction): void {
+  // Skip CSRF in development
+  if (config.NODE_ENV === 'development') {
+    if (!req.cookies[CSRF_COOKIE]) {
+      setCsrfCookie(res);
+    }
+    next();
+    return;
+  }
+
   if (SAFE_METHODS.includes(req.method)) {
     if (!req.cookies[CSRF_COOKIE]) {
       setCsrfCookie(res);

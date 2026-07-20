@@ -11,14 +11,24 @@ const router = Router();
 router.get('/businesses/:slug/booking-info', async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    const business = await prisma.business.findFirst({
+    const business = (await prisma.business.findFirst({
       where: { slug, deletedAt: null, isActive: true },
       select: {
-        id: true, name: true, slug: true, description: true, logo: true, coverImage: true,
-        phone: true, email: true, address: true, city: true, country: true,
-        settings: true, modules: true,
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        logo: true,
+        coverImage: true,
+        phone: true,
+        email: true,
+        address: true,
+        city: true,
+        country: true,
+        settings: true,
+        modules: true,
       },
-    }) as any;
+    })) as any;
     if (!business) {
       return res.status(404).json({ success: false, error: 'Business non trouvé' });
     }
@@ -26,12 +36,27 @@ router.get('/businesses/:slug/booking-info', async (req: Request, res: Response)
     const [services, rooms, resources, slots] = await Promise.all([
       prisma.service.findMany({
         where: { businessId: business.id, isActive: true, deletedAt: null },
-        select: { id: true, name: true, description: true, price: true, duration: true, currency: true, category: true },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          duration: true,
+          currency: true,
+          category: true,
+        },
         orderBy: { sortOrder: 'asc' },
       }),
       prisma.room.findMany({
         where: { businessId: business.id, isActive: true, deletedAt: null },
-        select: { id: true, name: true, description: true, price: true, capacity: true, images: true },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          capacity: true,
+          images: true,
+        },
       }),
       prisma.bookingResource.findMany({
         where: { businessId: business.id, isActive: true },
@@ -54,13 +79,24 @@ router.get('/businesses/:slug/booking-info', async (req: Request, res: Response)
       success: true,
       data: {
         business: {
-          id: business.id, name: business.name, slug: business.slug, description: business.description,
-          logo: business.logo, coverImage: business.coverImage, phone: business.phone, email: business.email,
-          address: business.address, city: business.city, country: business.country,
+          id: business.id,
+          name: business.name,
+          slug: business.slug,
+          description: business.description,
+          logo: business.logo,
+          coverImage: business.coverImage,
+          phone: business.phone,
+          email: business.email,
+          address: business.address,
+          city: business.city,
+          country: business.country,
           currency,
         },
         bookingsEnabled,
-        services, rooms, resources, slots,
+        services,
+        rooms,
+        resources,
+        slots,
       },
     });
   } catch (error) {
@@ -75,17 +111,33 @@ router.get('/businesses/:slug/booking-info', async (req: Request, res: Response)
  */
 router.post('/bookings', async (req: Request, res: Response) => {
   try {
-    const { businessSlug, title, type, serviceId, roomId, resourceId, startDate, endDate,
-      guests, customerName, customerPhone, customerEmail, notes, specialRequests, price, currency } = req.body;
+    const {
+      businessSlug,
+      title,
+      type,
+      serviceId,
+      roomId,
+      resourceId,
+      startDate,
+      endDate,
+      guests,
+      customerName,
+      customerPhone,
+      customerEmail,
+      notes,
+      specialRequests,
+      price,
+      currency,
+    } = req.body;
 
     if (!businessSlug || !startDate || !customerName || !customerPhone) {
       return res.status(400).json({ success: false, error: 'Champs obligatoires manquants' });
     }
 
-    const business = await prisma.business.findFirst({
+    const business = (await prisma.business.findFirst({
       where: { slug: businessSlug, deletedAt: null, isActive: true },
       select: { id: true, name: true, settings: true },
-    }) as any;
+    })) as any;
     if (!business) {
       return res.status(404).json({ success: false, error: 'Business non trouvé' });
     }
@@ -99,12 +151,17 @@ router.post('/bookings', async (req: Request, res: Response) => {
       ? await prisma.user.findUnique({ where: { email: customerEmail }, select: { id: true } })
       : null;
     if (!existingUser && customerPhone) {
-      existingUser = await prisma.user.findUnique({ where: { phone: customerPhone }, select: { id: true } });
+      existingUser = await prisma.user.findUnique({
+        where: { phone: customerPhone },
+        select: { id: true },
+      });
     }
     if (existingUser) {
       clientId = existingUser.id;
     } else {
-      const guestEmail = customerEmail || `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@afribiz.com`;
+      const guestEmail =
+        customerEmail ||
+        `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@afribiz.com`;
       const guest = await prisma.user.create({
         data: {
           firstName: customerName || 'Client',
@@ -158,7 +215,9 @@ router.post('/bookings', async (req: Request, res: Response) => {
 
     res.status(201).json({
       success: true,
-      data: { booking: { id: booking.id, bookingNumber: booking.bookingNumber, status: booking.status } },
+      data: {
+        booking: { id: booking.id, bookingNumber: booking.bookingNumber, status: booking.status },
+      },
       message: 'Réservation envoyée avec succès',
     });
   } catch (error) {

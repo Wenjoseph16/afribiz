@@ -46,15 +46,15 @@ router.get('/run', async (req: Request, res: Response) => {
     const taskMap: Record<string, () => Promise<void>> = {
       'booking-reminders': CronService.checkBookingReminders,
       'overdue-debts': CronService.checkOverdueDebts,
-      'campaigns': CronService.dispatchCampaigns,
+      campaigns: CronService.dispatchCampaigns,
       'pending-orders': CronService.checkPendingOrders,
       'abandoned-carts': CronService.checkAbandonedCarts,
       'inactive-clients': CronService.checkInactiveClients,
-      'subscriptions': CronService.checkExpiringSubscriptions,
-      'trials': CronService.checkExpiringTrials,
-      'rentals': CronService.checkOverdueRentals,
+      subscriptions: CronService.checkExpiringSubscriptions,
+      trials: CronService.checkExpiringTrials,
+      rentals: CronService.checkOverdueRentals,
       'low-stock': CronService.checkLowStock,
-      'cleanup': CronService.cleanup,
+      cleanup: CronService.cleanup,
     };
 
     const fn = taskMap[task];

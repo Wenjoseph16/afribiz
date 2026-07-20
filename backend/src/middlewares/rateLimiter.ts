@@ -6,12 +6,13 @@ import rateLimit from 'express-rate-limit';
 // ============================================
 
 /**
- * Authentification — 5 req / 15 min (par défaut)
+ * Authentification — 20 req / 15 min (par défaut)
  * Endpoints: signup, login, forgot-password, reset-password, OTP
+ * Augmenté de 5 à 20 pour éviter les blocages intempestifs
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '100', 10),
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS || '20', 10),
   message: { success: false, error: 'Trop de tentatives. Réessayez plus tard.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -89,3 +90,80 @@ export const strictLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// ============================================
+// Adaptive rate limiting by user role
+// ============================================
+
+interface RoleRateLimitConfig {
+  [role: string]: {
+    windowMs: number;
+    max: number;
+  };
+}
+
+const ROLE_LIMITS: RoleRateLimitConfig = {
+  ADMIN: { windowMs: 15 * 60 * 1000, max: 500 },
+  BUSINESS: { windowMs: 15 * 60 * 1000, max: 300 },
+  DEVELOPER: { windowMs: 15 * 60 * 1000, max: 200 },
+  CLIENT: { windowMs: 15 * 60 * 1000, max: 100 },
+};
+
+/**
+ * Adaptive rate limiter — adjusts limits based on user role
+ * Admin > Business > Developer > Client
+ */
+export const roleBasedLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: (req) => {
+    const user = (req as any).user;
+    if (!user) return 100; // default for unauthenticated
+    const role = user.primaryRole || 'CLIENT';
+    return ROLE_LIMITS[role]?.max || 100;
+  },
+  keyGenerator: (req) => {
+    const userId = (req as any).user?.id;
+    if (userId) return `user:${userId}`;
+    return req.ip || 'unknown';
+  },
+  message: { success: false, error: 'Trop de requêtes. Réessayez plus tard.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Webhook — 30 req / 1 min
+ * Endpoints: FedaPay webhook, Stripe webhook
+ * Les webhooks peuvent envoyer plusieurs événements en rafale, mais pas plus de 30/min
+ */
+export const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { success: false, error: 'Trop de requêtes webhook. Réessayez plus tard.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Apply role-adaptive rate limiting to a route
+ * Usage: app.use('/api/sensitive', roleAdaptiveLimiter('ADMIN', 'BUSINESS'))
+ */
+export function roleAdaptiveLimiter(...allowedRoles: string[]) {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: (req) => {
+      const user = (req as any).user;
+      if (!user) return 20; // unauthenticated strict
+      const role = user.primaryRole;
+      if (allowedRoles.length > 0 && !allowedRoles.includes(role)) return 20;
+      return ROLE_LIMITS[role]?.max || 100;
+    },
+    keyGenerator: (req) => {
+      const userId = (req as any).user?.id;
+      return userId ? `user:${userId}` : req.ip || 'unknown';
+    },
+    message: { success: false, error: 'Trop de requêtes. Réessayez plus tard.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+}

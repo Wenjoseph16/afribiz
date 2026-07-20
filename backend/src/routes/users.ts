@@ -1,16 +1,24 @@
 import { Router } from 'express';
 import multer from 'multer';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { authMiddleware } from '../middlewares/auth';
-import { getProfile, updateProfile, updatePassword, toggle2FA, uploadAvatar } from '../controllers/users';
+import {
+  getMyProfile,
+  updateMyProfile,
+  updateMyPassword,
+  toggleMy2FA,
+  uploadMyAvatar,
+} from '../controllers/users';
 
 const router = Router();
 
 router.use(authMiddleware);
 
 // Avatar upload
-const avatarsDir = process.env.VERCEL ? '/tmp/uploads/avatars' : path.join(__dirname, '../../uploads/avatars');
+const avatarsDir = process.env.VERCEL
+  ? '/tmp/uploads/avatars'
+  : path.join(process.cwd(), 'uploads/avatars');
 if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -25,10 +33,11 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
 
-router.get('/profile', getProfile);
-router.put('/profile', updateProfile);
-router.put('/password', updatePassword);
-router.post('/2fa', toggle2FA);
-router.post('/avatar', upload.single('avatar'), uploadAvatar);
+router.get('/profile', getMyProfile);
+router.get('/me', getMyProfile);
+router.put('/profile', updateMyProfile);
+router.put('/password', updateMyPassword);
+router.post('/2fa', toggleMy2FA);
+router.post('/avatar', upload.single('avatar'), uploadMyAvatar);
 
 export default router;

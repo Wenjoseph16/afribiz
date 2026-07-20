@@ -25,7 +25,9 @@ export async function listSubscriptionPlans(ownerId: string, filters: any) {
 
   const [plans, total] = await Promise.all([
     prisma.subscriptionPlan.findMany({
-      where, skip, take,
+      where,
+      skip,
+      take,
       orderBy: [{ featured: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
         privileges: { orderBy: { sortOrder: 'asc' } },
@@ -51,7 +53,11 @@ export async function getSubscriptionPlan(ownerId: string, planId: string) {
       privileges: { orderBy: { sortOrder: 'asc' } },
       subscribers: {
         where: { status: 'ACTIVE' },
-        include: { client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+        include: {
+          client: {
+            select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+          },
+        },
       },
     },
   });
@@ -123,12 +129,29 @@ export async function updateSubscriptionPlan(ownerId: string, planId: string, da
   if (!existing) throw new AppError('Plan introuvable', 404);
 
   const updateData: any = {};
-  ['name', 'description', 'type', 'price', 'currency', 'billingCycle',
-    'trialDays', 'durationDays', 'maxUsage', 'maxClients', 'maxBookings',
-    'benefits', 'isPublic', 'isActive', 'sortOrder', 'featured', 'badge'
-  ].forEach(f => { if (data[f] !== undefined) updateData[f] = data[f]; });
+  [
+    'name',
+    'description',
+    'type',
+    'price',
+    'currency',
+    'billingCycle',
+    'trialDays',
+    'durationDays',
+    'maxUsage',
+    'maxClients',
+    'maxBookings',
+    'benefits',
+    'isPublic',
+    'isActive',
+    'sortOrder',
+    'featured',
+    'badge',
+  ].forEach((f) => {
+    if (data[f] !== undefined) updateData[f] = data[f];
+  });
 
-  const plan = await prisma.subscriptionPlan.update({
+  await prisma.subscriptionPlan.update({
     where: { id: planId },
     data: updateData,
     include: { privileges: { orderBy: { sortOrder: 'asc' } } },
@@ -204,11 +227,31 @@ export async function listSubscribers(ownerId: string, filters: any) {
 
   const [subscribers, total] = await Promise.all([
     prisma.businessSubscription.findMany({
-      where, skip, take,
+      where,
+      skip,
+      take,
       orderBy: { createdAt: 'desc' },
       include: {
-        plan: { select: { id: true, name: true, type: true, price: true, currency: true, billingCycle: true } },
-        client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true } },
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            price: true,
+            currency: true,
+            billingCycle: true,
+          },
+        },
+        client: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatar: true,
+          },
+        },
         _count: { select: { payments: true, logs: true } },
       },
     }),
@@ -229,7 +272,17 @@ export async function getSubscriber(ownerId: string, subscriptionId: string) {
     where: { id: subscriptionId, businessId: business.id },
     include: {
       plan: { include: { privileges: true } },
-      client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true, city: true } },
+      client: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          avatar: true,
+          city: true,
+        },
+      },
       payments: { orderBy: { createdAt: 'desc' } },
       logs: { orderBy: { createdAt: 'desc' }, take: 20 },
     },
@@ -245,14 +298,16 @@ export async function createSubscription(ownerId: string, data: any) {
   });
   if (!business) throw new AppError('Business not found', 404);
 
-  const plan = await prisma.subscriptionPlan.findFirst({
-    where: { id: data.planId, businessId: business.id, isActive: true },
-  });
+  // Charger les dépendances (plan + existing) en parallèle — 2 requêtes au lieu de 2 séquentielles
+  const [plan, existing] = await Promise.all([
+    prisma.subscriptionPlan.findFirst({
+      where: { id: data.planId, businessId: business.id, isActive: true },
+    }),
+    prisma.businessSubscription.findFirst({
+      where: { businessId: business.id, clientId: data.clientId, status: 'ACTIVE' },
+    }),
+  ]);
   if (!plan) throw new AppError('Plan introuvable ou inactif', 404);
-
-  const existing = await prisma.businessSubscription.findFirst({
-    where: { businessId: business.id, clientId: data.clientId, status: 'ACTIVE' },
-  });
   if (existing) throw new AppError('Ce client a deja un abonnement actif', 409);
 
   const now = new Date();
@@ -271,12 +326,28 @@ export async function createSubscription(ownerId: string, data: any) {
       nextBillingDate: endDate,
     },
     include: {
-      plan: { select: { id: true, name: true, type: true, price: true, currency: true, billingCycle: true } },
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          price: true,
+          currency: true,
+          billingCycle: true,
+        },
+      },
       client: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
     },
   });
 
-  await logSubscriptionAction(business.id, data.planId, subscription.id, 'ACTIVATED', 'Nouvel abonnement cree', ownerId);
+  await logSubscriptionAction(
+    business.id,
+    data.planId,
+    subscription.id,
+    'ACTIVATED',
+    'Nouvel abonnement cree',
+    ownerId
+  );
 
   return subscription;
 }
@@ -307,7 +378,14 @@ export async function cancelSubscription(ownerId: string, subscriptionId: string
     },
   });
 
-  await logSubscriptionAction(business.id, subscription.planId, subscriptionId, 'CANCELLED', data.reason || 'Annulation', ownerId);
+  await logSubscriptionAction(
+    business.id,
+    subscription.planId,
+    subscriptionId,
+    'CANCELLED',
+    data.reason || 'Annulation',
+    ownerId
+  );
 
   return updated;
 }
@@ -324,7 +402,8 @@ export async function renewSubscription(ownerId: string, subscriptionId: string)
     include: { plan: true },
   });
   if (!subscription) throw new AppError('Abonnement introuvable', 404);
-  if (subscription.status === 'CANCELLED') throw new AppError('Abonnement annule, impossible de renouveler', 400);
+  if (subscription.status === 'CANCELLED')
+    throw new AppError('Abonnement annule, impossible de renouveler', 400);
 
   const durationDays = subscription.plan.durationDays || 30;
   const now = new Date();
@@ -347,7 +426,14 @@ export async function renewSubscription(ownerId: string, subscriptionId: string)
   });
 
   const count = (subscription.renewalCount || 0) + 1;
-  await logSubscriptionAction(business.id, subscription.planId, subscriptionId, 'RENEWED', 'Renouvellement #' + count, ownerId);
+  await logSubscriptionAction(
+    business.id,
+    subscription.planId,
+    subscriptionId,
+    'RENEWED',
+    'Renouvellement #' + count,
+    ownerId
+  );
 
   return updated;
 }
@@ -372,7 +458,9 @@ export async function listSubscriptionPayments(ownerId: string, filters: any) {
 
   const [payments, total] = await Promise.all([
     prisma.subscriptionPayment.findMany({
-      where, skip, take,
+      where,
+      skip,
+      take,
       orderBy: { createdAt: 'desc' },
       include: {
         subscription: { select: { id: true } },
@@ -415,7 +503,14 @@ export async function recordSubscriptionPayment(ownerId: string, data: any) {
     },
   });
 
-  await logSubscriptionAction(business.id, subscription.planId, data.subscriptionId, 'PAYMENT_RECEIVED', 'Paiement de ' + data.amount + ' ' + (data.currency || 'FCFA') + ' recu', ownerId);
+  await logSubscriptionAction(
+    business.id,
+    subscription.planId,
+    data.subscriptionId,
+    'PAYMENT_RECEIVED',
+    'Paiement de ' + data.amount + ' ' + (data.currency || 'FCFA') + ' recu',
+    ownerId
+  );
 
   return payment;
 }
@@ -440,7 +535,9 @@ export async function listSubscriptionLogs(ownerId: string, filters: any) {
 
   const [logs, total] = await Promise.all([
     prisma.subscriptionLog.findMany({
-      where, skip, take,
+      where,
+      skip,
+      take,
       orderBy: { createdAt: 'desc' },
       include: {
         plan: { select: { id: true, name: true } },
@@ -484,7 +581,16 @@ export async function getSubscriptionStats(ownerId: string) {
 
   const bizId = business.id;
 
-  const [totalPlans, activePlans, totalSubscribers, activeSubs, expiredSubs, cancelledSubs, totalPayments, totalRevenue] = await Promise.all([
+  const [
+    totalPlans,
+    activePlans,
+    totalSubscribers,
+    activeSubs,
+    expiredSubs,
+    cancelledSubs,
+    totalPayments,
+    totalRevenue,
+  ] = await Promise.all([
     prisma.subscriptionPlan.count({ where: { businessId: bizId } }),
     prisma.subscriptionPlan.count({ where: { businessId: bizId, isActive: true } }),
     prisma.businessSubscription.count({ where: { businessId: bizId } }),
@@ -492,11 +598,19 @@ export async function getSubscriptionStats(ownerId: string) {
     prisma.businessSubscription.count({ where: { businessId: bizId, status: 'EXPIRED' } }),
     prisma.businessSubscription.count({ where: { businessId: bizId, status: 'CANCELLED' } }),
     prisma.subscriptionPayment.count({ where: { businessId: bizId, status: 'COMPLETED' } }),
-    prisma.subscriptionPayment.aggregate({ where: { businessId: bizId, status: 'COMPLETED' }, _sum: { amount: true } }),
+    prisma.subscriptionPayment.aggregate({
+      where: { businessId: bizId, status: 'COMPLETED' },
+      _sum: { amount: true },
+    }),
   ]);
 
   return {
-    totalPlans, activePlans, totalSubscribers, activeSubs, expiredSubs, cancelledSubs,
+    totalPlans,
+    activePlans,
+    totalSubscribers,
+    activeSubs,
+    expiredSubs,
+    cancelledSubs,
     totalPayments,
     totalRevenue: totalRevenue._sum.amount || 0,
     churnRate: totalSubscribers > 0 ? Math.round((cancelledSubs / totalSubscribers) * 100) : 0,
@@ -513,9 +627,16 @@ export async function getMyCurrentSubscription(userId: string) {
     include: {
       plan: {
         select: {
-          id: true, name: true, description: true, type: true,
-          price: true, currency: true, billingCycle: true,
-          benefits: true, badge: true, featured: true,
+          id: true,
+          name: true,
+          description: true,
+          type: true,
+          price: true,
+          currency: true,
+          billingCycle: true,
+          benefits: true,
+          badge: true,
+          featured: true,
         },
       },
       business: { select: { id: true, name: true, slug: true } },
@@ -525,18 +646,22 @@ export async function getMyCurrentSubscription(userId: string) {
   return subscription;
 }
 
-export async function subscribeToPlan(userId: string, data: { planId: string; businessId?: string }) {
-  const plan = await prisma.subscriptionPlan.findUnique({
-    where: { id: data.planId },
-    include: { business: { select: { id: true, ownerId: true } } },
-  });
+export async function subscribeToPlan(
+  userId: string,
+  data: { planId: string; businessId?: string }
+) {
+  // Charger plan + existing subscription en parallèle (indépendants)
+  const [plan, existing] = await Promise.all([
+    prisma.subscriptionPlan.findUnique({
+      where: { id: data.planId },
+      include: { business: { select: { id: true, ownerId: true } } },
+    }),
+    prisma.businessSubscription.findFirst({
+      where: { clientId: userId, status: 'ACTIVE' },
+    }),
+  ]);
   if (!plan) throw new AppError('Plan introuvable', 404);
-  if (!plan.isActive) throw new AppError('Ce plan n\'est plus actif', 400);
-
-  // Check no active subscription already
-  const existing = await prisma.businessSubscription.findFirst({
-    where: { clientId: userId, status: 'ACTIVE' },
-  });
+  if (!plan.isActive) throw new AppError("Ce plan n'est plus actif", 400);
   if (existing) throw new AppError('Vous avez deja un abonnement actif', 409);
 
   const now = new Date();
@@ -555,13 +680,28 @@ export async function subscribeToPlan(userId: string, data: { planId: string; bu
       nextBillingDate: endDate,
     },
     include: {
-      plan: { select: { id: true, name: true, price: true, currency: true, billingCycle: true, benefits: true } },
+      plan: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          currency: true,
+          billingCycle: true,
+          benefits: true,
+        },
+      },
       business: { select: { id: true, name: true } },
     },
   });
 
-  await logSubscriptionAction(plan.businessId, plan.id, subscription.id, 'ACTIVATED',
-    `Abonnement souscrit par l'utilisateur ${userId}`, userId);
+  await logSubscriptionAction(
+    plan.businessId,
+    plan.id,
+    subscription.id,
+    'ACTIVATED',
+    `Abonnement souscrit par l'utilisateur ${userId}`,
+    userId
+  );
 
   return subscription;
 }
@@ -584,15 +724,28 @@ export async function cancelMySubscription(userId: string) {
     },
   });
 
-  await logSubscriptionAction(subscription.businessId, subscription.planId, subscription.id,
-    'CANCELLED', 'Annule par l\'utilisateur', userId);
+  await logSubscriptionAction(
+    subscription.businessId,
+    subscription.planId,
+    subscription.id,
+    'CANCELLED',
+    "Annule par l'utilisateur",
+    userId
+  );
 
   return updated;
 }
 
 // ===================== INTERNAL HELPER =====================
 
-async function logSubscriptionAction(businessId: string, planId: string | null | undefined, subscriptionId: string | null | undefined, action: string, description: string, performedBy?: string) {
+async function logSubscriptionAction(
+  businessId: string,
+  planId: string | null | undefined,
+  subscriptionId: string | null | undefined,
+  action: string,
+  description: string,
+  performedBy?: string
+) {
   try {
     await prisma.subscriptionLog.create({
       data: {

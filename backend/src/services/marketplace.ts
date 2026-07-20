@@ -3,7 +3,7 @@ import { searchIdsByText } from '../lib/fulltext';
 import type { MarketplaceSearchParams, MarketplaceResult } from '../types/service';
 
 // ============================================
-// HAVERSINE DISTANCE (km)
+// HELPERS
 // ============================================
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -25,6 +25,66 @@ function formatDistance(km: number): string {
   return `${Math.round(km)} km`;
 }
 
+type WhereClause = Record<string, unknown>;
+
+interface TextSearchConfig {
+  model:
+    | 'Business'
+    | 'DeveloperModule'
+    | 'DeveloperProfile'
+    | 'Service'
+    | 'MenuItem'
+    | 'Event'
+    | 'Rental'
+    | 'Product';
+  fields: string[];
+  baseFilter: string;
+}
+
+async function applyTextSearch(
+  where: WhereClause,
+  q: string | undefined,
+  phrases: string[],
+  excluded: string[],
+  config: TextSearchConfig
+): Promise<WhereClause> {
+  if (q) {
+    const ids = await searchIdsByText(config.model, config.fields, q, config.baseFilter);
+    where.id = ids.length > 0 ? { in: ids } : { in: [] };
+  }
+
+  if (phrases.length > 0) {
+    const phraseWheres: WhereClause[] = [];
+    for (const phrase of phrases) {
+      const ids = await searchIdsByText(config.model, config.fields, phrase, config.baseFilter);
+      if (ids.length > 0) phraseWheres.push({ id: { in: ids } });
+    }
+    if (phraseWheres.length > 0) where.AND = phraseWheres;
+  }
+
+  if (excluded.length > 0) {
+    const excludeWheres: WhereClause[] = [];
+    for (const term of excluded) {
+      const ids = await searchIdsByText(config.model, config.fields, term, config.baseFilter);
+      if (ids.length > 0) excludeWheres.push({ id: { in: ids } });
+    }
+    if (excludeWheres.length > 0) where.NOT = { OR: excludeWheres };
+  }
+
+  return where;
+}
+
+function buildPriceFilter(
+  priceMin: number | undefined,
+  priceMax: number | undefined
+): Record<string, number> | undefined {
+  if (priceMin === undefined && priceMax === undefined) return undefined;
+  const pf: Record<string, number> = {};
+  if (priceMin !== undefined) pf.gte = priceMin;
+  if (priceMax !== undefined) pf.lte = priceMax;
+  return pf;
+}
+
 // ============================================
 // MAIN SEARCH
 // ============================================
@@ -34,71 +94,97 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
   const skip = (page - 1) * limit;
   const perTypeLimit = Math.max(limit, limit * 3);
   const q = params.q?.trim();
+  const phrases = params.phrases || [];
+  const excluded = params.excluded || [];
   const activeTypes = params.type
     ? params.type.split(',')
     : ['business', 'product', 'service', 'menu', 'event', 'rental', 'developer', 'module'];
 
+  const typeKeyMap: Record<string, string> = {
+    business: 'b',
+    product: 'p',
+    service: 's',
+    menu: 'm',
+    event: 'e',
+    rental: 'r',
+    developer: 'd',
+    module: 'o',
+  };
+  const typeKeyReverse: Record<string, string> = {};
+  for (const [k, v] of Object.entries(typeKeyMap)) typeKeyReverse[v] = k;
+
+  const typeOffsets: Record<string, number> = {};
+  if (params.cursor) {
+    params.cursor.split(',').forEach((pair) => {
+      const [key, val] = pair.split(':');
+      const t = typeKeyReverse[key];
+      if (t && activeTypes.includes(t)) typeOffsets[t] = parseInt(val) || 0;
+    });
+  }
+
   const results: MarketplaceResult[] = [];
   let total = 0;
+  const currentFetched: Record<string, number> = {};
 
-  // Parse geo params
   const userLat = params.lat ? parseFloat(params.lat as string) : undefined;
   const userLng = params.lng ? parseFloat(params.lng as string) : undefined;
   const proximityKm = params.proximity ? parseInt(params.proximity as string) : undefined;
 
-  interface WhereClause {
-    isActive?: boolean;
-    deletedAt?: null;
-    id?: { in: string[] };
-    [key: string]: unknown;
-  }
-
   // ---- BUSINESSES ----
   if (activeTypes.includes('business')) {
-    const where: WhereClause = { isActive: true, deletedAt: null };
-    if (q) {
-      const ids = await searchIdsByText('Business', ['name', 'description', 'city'], q, '"isActive" = true AND "deletedAt" IS NULL');
-      where.id = ids.length > 0 ? { in: ids } : { in: [] };
-    }
+    const where = await applyTextSearch({ isActive: true, deletedAt: null }, q, phrases, excluded, {
+      model: 'Business',
+      fields: ['name', 'description', 'city'],
+      baseFilter: '"isActive" = true AND "deletedAt" IS NULL',
+    });
     if (params.category) where.type = params.category;
     if (params.country) where.country = params.country;
     if (params.city) where.city = { contains: params.city, mode: 'insensitive' };
     if (params.verified) where.isVerified = true;
     if (params.premium) where.isPremium = true;
     if (params.minRating) where.rating = { gte: params.minRating };
-    // Availability: delivery
-    if (params.availability && params.availability.includes('delivery')) {
-      where.modules = { has: 'DELIVERIES' };
-    }
-    if (params.availability && params.availability.includes('booking')) {
-      where.modules = { has: 'BOOKINGS' };
-    }
+    if (params.availability?.includes('delivery')) where.modules = { has: 'DELIVERIES' };
+    if (params.availability?.includes('booking')) where.modules = { has: 'BOOKINGS' };
 
-    const defaultOrderBy = { rating: 'desc' as const };
     const orderBy =
       params.sort === 'newest'
         ? { createdAt: 'desc' as const }
         : params.sort === 'popular'
           ? { reviewCount: 'desc' as const }
-          : defaultOrderBy;
+          : { rating: 'desc' as const };
 
     const [data, count] = await Promise.all([
       prisma.business.findMany({
         where,
         orderBy,
+        skip: typeOffsets.business || 0,
         take: perTypeLimit,
         select: {
-          id: true, name: true, slug: true, type: true, description: true,
-          shortDescription: true, logo: true, coverImage: true, city: true,
-          country: true, rating: true, reviewCount: true, isVerified: true,
-          isPremium: true, isNew: true, isTopSeller: true, isRecommended: true,
-          modules: true, latitude: true, longitude: true,
+          id: true,
+          name: true,
+          slug: true,
+          type: true,
+          description: true,
+          shortDescription: true,
+          logo: true,
+          coverImage: true,
+          city: true,
+          country: true,
+          rating: true,
+          reviewCount: true,
+          isVerified: true,
+          isPremium: true,
+          isNew: true,
+          isTopSeller: true,
+          isRecommended: true,
+          modules: true,
+          latitude: true,
+          longitude: true,
         },
       }),
       prisma.business.count({ where }),
     ]);
 
-    // Calculate distances if user location provided
     let processedData = data.map((b) => {
       const item: any = { ...b, _type: 'business' as const };
       if (userLat && userLng && b.latitude && b.longitude) {
@@ -109,53 +195,63 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
       return item;
     });
 
-    // Filter by proximity
     if (proximityKm && userLat && userLng) {
-      processedData = processedData.filter((b) => b.distance !== undefined && b.distance <= proximityKm);
+      processedData = processedData.filter(
+        (b) => b.distance !== undefined && b.distance <= proximityKm
+      );
     }
-
-    // Sort by distance if user location provided
     if (userLat && userLng) {
       processedData.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
     }
-
     processedData.forEach((b) => results.push(b));
-    total += proximityKm && userLat ? processedData.length : count;
+    currentFetched.business = (currentFetched.business || 0) + processedData.length;
+    total += count;
   }
 
   // ---- MODULES ----
   if (activeTypes.includes('module')) {
-    const where: WhereClause = { status: 'PUBLISHED' };
-    if (q) {
-      const ids = await searchIdsByText('DeveloperModule', ['name', 'description', 'fullDescription'], q, "\"status\" = 'PUBLISHED'");
-      where.id = ids.length > 0 ? { in: ids } : { in: [] };
-    }
+    const where = await applyTextSearch({ status: 'PUBLISHED' }, q, phrases, excluded, {
+      model: 'DeveloperModule',
+      fields: ['name', 'description', 'fullDescription'],
+      baseFilter: '"status" = \'PUBLISHED\'',
+    });
     if (params.category) where.category = params.category;
     if (params.minRating) where.rating = { gte: params.minRating };
 
-    const defaultOrderBy = { rating: 'desc' as const };
     const orderBy =
       params.sort === 'newest'
         ? { createdAt: 'desc' as const }
         : params.sort === 'popular'
           ? { totalInstalls: 'desc' as const }
-          : defaultOrderBy;
+          : { rating: 'desc' as const };
 
     const [data, count] = await Promise.all([
       prisma.developerModule.findMany({
         where,
         orderBy,
+        skip: typeOffsets.module || 0,
         take: perTypeLimit,
         select: {
-          id: true, name: true, slug: true, category: true, description: true,
-          logo: true, pricingType: true, price: true, currency: true,
-          rating: true, reviewCount: true, totalInstalls: true, version: true,
+          id: true,
+          name: true,
+          slug: true,
+          category: true,
+          description: true,
+          logo: true,
+          pricingType: true,
+          price: true,
+          currency: true,
+          rating: true,
+          reviewCount: true,
+          totalInstalls: true,
+          version: true,
           developer: { select: { id: true } },
         },
       }),
       prisma.developerModule.count({ where }),
     ]);
     data.forEach((m) => results.push({ ...m, _type: 'module' as const }));
+    currentFetched.module = (currentFetched.module || 0) + data.length;
     total += count;
   }
 
@@ -163,26 +259,65 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
   if (activeTypes.includes('developer')) {
     const where: WhereClause = { isActive: true };
     if (q) {
-      const textIds = await searchIdsByText('DeveloperProfile', ['companyName', 'description', 'city', 'country'], q, '"isActive" = true');
+      const textIds = await searchIdsByText(
+        'DeveloperProfile',
+        ['companyName', 'description', 'city', 'country'],
+        q,
+        '"isActive" = true'
+      );
       where.OR = [
         { id: textIds.length > 0 ? { in: textIds } : { in: [] } },
         { skills: { has: q } },
       ];
     }
+    if (phrases.length > 0) {
+      const phraseWheres: WhereClause[] = [];
+      for (const phrase of phrases) {
+        const ids = await searchIdsByText(
+          'DeveloperProfile',
+          ['companyName', 'description', 'city', 'country'],
+          phrase,
+          '"isActive" = true'
+        );
+        if (ids.length > 0) phraseWheres.push({ id: { in: ids } });
+      }
+      if (phraseWheres.length > 0)
+        where.AND = where.AND ? [...(where.AND as WhereClause[]), ...phraseWheres] : phraseWheres;
+    }
+    if (excluded.length > 0) {
+      const excludeWheres: WhereClause[] = [];
+      for (const term of excluded) {
+        const ids = await searchIdsByText(
+          'DeveloperProfile',
+          ['companyName', 'description', 'city', 'country'],
+          term,
+          '"isActive" = true'
+        );
+        if (ids.length > 0) excludeWheres.push({ id: { in: ids } });
+      }
+      if (excludeWheres.length > 0) where.NOT = { OR: excludeWheres };
+    }
     if (params.country) where.country = params.country;
     if (params.city) where.city = { contains: params.city, mode: 'insensitive' };
     if (params.minRating) where.rating = { gte: params.minRating };
 
-    const orderBy = params.sort === 'popular' ? { reviewCount: 'desc' as const } : { rating: 'desc' as const };
-
+    const orderBy =
+      params.sort === 'popular' ? { reviewCount: 'desc' as const } : { rating: 'desc' as const };
     const [data, count] = await Promise.all([
       prisma.developerProfile.findMany({
         where,
         orderBy,
+        skip: typeOffsets.developer || 0,
         take: perTypeLimit,
         select: {
-          id: true, companyName: true, logo: true,
-          skills: true, rating: true, reviewCount: true, city: true, country: true,
+          id: true,
+          companyName: true,
+          logo: true,
+          skills: true,
+          rating: true,
+          reviewCount: true,
+          city: true,
+          country: true,
           verificationStatus: true,
           user: { select: { id: true, firstName: true, lastName: true, avatar: true } },
         },
@@ -190,148 +325,262 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
       prisma.developerProfile.count({ where }),
     ]);
     data.forEach((d) => results.push({ ...d, _type: 'developer' as const }));
+    currentFetched.developer = (currentFetched.developer || 0) + data.length;
     total += count;
   }
 
   // ---- SERVICES ----
   if (activeTypes.includes('service')) {
-    const where: WhereClause = { isActive: true };
-    if (q) {
-      const ids = await searchIdsByText('Service', ['name', 'description'], q, '"isActive" = true');
-      where.id = ids.length > 0 ? { in: ids } : { in: [] };
-    }
-    if (params.availability && params.availability.includes('booking')) {
-      where.bookingRequired = true;
-    }
-    if (params.priceMin !== undefined || params.priceMax !== undefined) {
-      where.price = {};
-      if (params.priceMin !== undefined) (where.price as Record<string, number>).gte = params.priceMin;
-      if (params.priceMax !== undefined) (where.price as Record<string, number>).lte = params.priceMax;
-    }
+    const where = await applyTextSearch({ isActive: true }, q, phrases, excluded, {
+      model: 'Service',
+      fields: ['name', 'description'],
+      baseFilter: '"isActive" = true',
+    });
+    if (params.availability?.includes('booking')) where.bookingRequired = true;
+    const priceFilter = buildPriceFilter(params.priceMin, params.priceMax);
+    if (priceFilter) where.price = priceFilter;
 
     const [data, count] = await Promise.all([
       prisma.service.findMany({
         where,
+        skip: typeOffsets.service || 0,
         take: perTypeLimit,
         orderBy: { createdAt: 'desc' },
         select: {
-          id: true, name: true, description: true, price: true, currency: true,
-          duration: true, images: true, bookingRequired: true,
-          business: { select: { id: true, name: true, slug: true, logo: true, rating: true, city: true, country: true } },
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          currency: true,
+          duration: true,
+          images: true,
+          bookingRequired: true,
+          business: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              rating: true,
+              city: true,
+              country: true,
+            },
+          },
+          reviews: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              rating: true,
+              comment: true,
+              createdAt: true,
+              user: { select: { firstName: true, lastName: true } },
+            },
+          },
         },
       }),
       prisma.service.count({ where }),
     ]);
     data.forEach((s) => results.push({ ...s, _type: 'service' as const }));
+    currentFetched.service = (currentFetched.service || 0) + data.length;
     total += count;
   }
 
   // ---- MENU ITEMS ----
   if (activeTypes.includes('menu')) {
-    const where: WhereClause = { isActive: true, isAvailable: true };
-    if (q) {
-      const ids = await searchIdsByText('MenuItem', ['name', 'description'], q, '"isActive" = true AND "isAvailable" = true');
-      where.id = ids.length > 0 ? { in: ids } : { in: [] };
-    }
+    const where = await applyTextSearch(
+      { isActive: true, isAvailable: true },
+      q,
+      phrases,
+      excluded,
+      {
+        model: 'MenuItem',
+        fields: ['name', 'description'],
+        baseFilter: '"isActive" = true AND "isAvailable" = true',
+      }
+    );
 
     const [data, count] = await Promise.all([
       prisma.menuItem.findMany({
         where,
+        skip: typeOffsets.menu || 0,
         take: perTypeLimit,
         orderBy: { createdAt: 'desc' },
         select: {
-          id: true, name: true, description: true, price: true, currency: true,
-          images: true, isAvailable: true,
-          business: { select: { id: true, name: true, slug: true, logo: true, rating: true, city: true, country: true } },
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          currency: true,
+          images: true,
+          isAvailable: true,
+          business: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              rating: true,
+              city: true,
+              country: true,
+            },
+          },
         },
       }),
       prisma.menuItem.count({ where }),
     ]);
     data.forEach((m) => results.push({ ...m, _type: 'menu' as const }));
+    currentFetched.menu = (currentFetched.menu || 0) + data.length;
     total += count;
   }
 
   // ---- EVENTS ----
   if (activeTypes.includes('event')) {
-    const where: WhereClause = { isActive: true };
-    if (q) {
-      const ids = await searchIdsByText('Event', ['title', 'description'], q, '"isActive" = true');
-      where.id = ids.length > 0 ? { in: ids } : { in: [] };
-    }
+    const where = await applyTextSearch({ isActive: true }, q, phrases, excluded, {
+      model: 'Event',
+      fields: ['title', 'description'],
+      baseFilter: '"isActive" = true',
+    });
 
     const [data, count] = await Promise.all([
       prisma.event.findMany({
         where,
+        skip: typeOffsets.event || 0,
         take: perTypeLimit,
         orderBy: { startDate: 'asc' },
         select: {
-          id: true, title: true, description: true, startDate: true, endDate: true,
-          address: true, price: true, currency: true, images: true, capacity: true,
-          business: { select: { id: true, name: true, slug: true, logo: true, rating: true, city: true, country: true } },
+          id: true,
+          title: true,
+          description: true,
+          startDate: true,
+          endDate: true,
+          address: true,
+          price: true,
+          currency: true,
+          images: true,
+          capacity: true,
+          business: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              rating: true,
+              city: true,
+              country: true,
+            },
+          },
         },
       }),
       prisma.event.count({ where }),
     ]);
     data.forEach((e) => results.push({ ...e, _type: 'event' as const }));
+    currentFetched.event = (currentFetched.event || 0) + data.length;
     total += count;
   }
 
   // ---- RENTALS ----
   if (activeTypes.includes('rental')) {
-    const where: WhereClause = { isActive: true };
-    if (q) {
-      const ids = await searchIdsByText('Rental', ['name', 'description'], q, '"isActive" = true');
-      where.id = ids.length > 0 ? { in: ids } : { in: [] };
-    }
+    const where = await applyTextSearch({ isActive: true }, q, phrases, excluded, {
+      model: 'Rental',
+      fields: ['name', 'description'],
+      baseFilter: '"isActive" = true',
+    });
 
     const [data, count] = await Promise.all([
       prisma.rental.findMany({
         where,
+        skip: typeOffsets.rental || 0,
         take: perTypeLimit,
         orderBy: { createdAt: 'desc' },
         select: {
-          id: true, name: true, description: true, price: true, currency: true,
-          unit: true, images: true, deposit: true, quantity: true,
-          business: { select: { id: true, name: true, slug: true, logo: true, rating: true, city: true, country: true } },
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          currency: true,
+          unit: true,
+          images: true,
+          deposit: true,
+          quantity: true,
+          business: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              rating: true,
+              city: true,
+              country: true,
+            },
+          },
         },
       }),
       prisma.rental.count({ where }),
     ]);
     data.forEach((r) => results.push({ ...r, _type: 'rental' as const }));
+    currentFetched.rental = (currentFetched.rental || 0) + data.length;
     total += count;
   }
 
   // ---- PRODUCTS ----
   if (activeTypes.includes('product')) {
-    const where: WhereClause = { isActive: true };
-    if (q) {
-      const ids = await searchIdsByText('Product', ['name', 'description'], q, '"isActive" = true');
-      where.id = ids.length > 0 ? { in: ids } : { in: [] };
-    }
-    if (params.availability && params.availability.includes('delivery')) {
-      where.deliveryFee = { not: null };
-    }
-    if (params.priceMin !== undefined || params.priceMax !== undefined) {
-      where.price = {};
-      if (params.priceMin !== undefined) (where.price as Record<string, number>).gte = params.priceMin;
-      if (params.priceMax !== undefined) (where.price as Record<string, number>).lte = params.priceMax;
-    }
+    const where = await applyTextSearch({ isActive: true }, q, phrases, excluded, {
+      model: 'Product',
+      fields: ['name', 'description'],
+      baseFilter: '"isActive" = true',
+    });
+
+    if (params.availability?.includes('delivery')) where.deliveryFee = { not: null };
+    const priceFilter = buildPriceFilter(params.priceMin, params.priceMax);
+    if (priceFilter) where.price = priceFilter;
 
     const [data, count] = await Promise.all([
       prisma.product.findMany({
         where,
+        skip: typeOffsets.product || 0,
         take: perTypeLimit,
         orderBy: { createdAt: 'desc' },
         select: {
-          id: true, name: true, description: true, price: true, currency: true,
-          images: true, stock: true, rating: true, reviewCount: true, tags: true,
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          currency: true,
+          images: true,
+          stock: true,
+          rating: true,
+          reviewCount: true,
+          tags: true,
           deliveryFee: true,
-          business: { select: { id: true, name: true, slug: true, logo: true, rating: true, city: true, country: true } },
+          business: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              rating: true,
+              city: true,
+              country: true,
+            },
+          },
+          reviews: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              rating: true,
+              comment: true,
+              createdAt: true,
+              user: { select: { firstName: true, lastName: true } },
+            },
+          },
         },
       }),
       prisma.product.count({ where }),
     ]);
     data.forEach((p) => results.push({ ...p, _type: 'product' as const }));
+    currentFetched.product = (currentFetched.product || 0) + data.length;
     total += count;
   }
 
@@ -340,6 +589,7 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
     total,
     page,
     totalPages: Math.ceil(total / limit),
+    nextCursor: activeTypes.map((t) => `${typeKeyMap[t]}:${currentFetched[t] || 0}`).join(','),
   };
 }
 
@@ -353,10 +603,22 @@ export async function getTrending() {
       orderBy: { rating: 'desc' },
       take: 6,
       select: {
-        id: true, name: true, slug: true, type: true, logo: true,
-        city: true, country: true, rating: true, reviewCount: true,
-        isVerified: true, isPremium: true, isTopSeller: true, isRecommended: true,
-        modules: true, latitude: true, longitude: true,
+        id: true,
+        name: true,
+        slug: true,
+        type: true,
+        logo: true,
+        city: true,
+        country: true,
+        rating: true,
+        reviewCount: true,
+        isVerified: true,
+        isPremium: true,
+        isTopSeller: true,
+        isRecommended: true,
+        modules: true,
+        latitude: true,
+        longitude: true,
       },
     }),
     prisma.product.findMany({
@@ -364,8 +626,13 @@ export async function getTrending() {
       orderBy: { rating: 'desc' },
       take: 6,
       select: {
-        id: true, name: true, slug: true, price: true, currency: true,
-        images: true, rating: true,
+        id: true,
+        name: true,
+        slug: true,
+        price: true,
+        currency: true,
+        images: true,
+        rating: true,
         business: { select: { id: true, name: true, slug: true, logo: true } },
       },
     }),
@@ -374,7 +641,11 @@ export async function getTrending() {
       orderBy: { createdAt: 'desc' },
       take: 6,
       select: {
-        id: true, name: true, price: true, currency: true, duration: true,
+        id: true,
+        name: true,
+        price: true,
+        currency: true,
+        duration: true,
         business: { select: { id: true, name: true, slug: true, logo: true, rating: true } },
       },
     }),
@@ -383,9 +654,16 @@ export async function getTrending() {
       orderBy: { startDate: 'asc' },
       take: 6,
       select: {
-        id: true, title: true, startDate: true, address: true, price: true,
-        images: true, capacity: true,
-        business: { select: { id: true, name: true, slug: true, logo: true, city: true, country: true } },
+        id: true,
+        title: true,
+        startDate: true,
+        address: true,
+        price: true,
+        images: true,
+        capacity: true,
+        business: {
+          select: { id: true, name: true, slug: true, logo: true, city: true, country: true },
+        },
       },
     }),
     prisma.developerModule.findMany({
@@ -393,8 +671,14 @@ export async function getTrending() {
       orderBy: { totalInstalls: 'desc' },
       take: 6,
       select: {
-        id: true, name: true, slug: true, logo: true, pricingType: true,
-        price: true, rating: true, totalInstalls: true,
+        id: true,
+        name: true,
+        slug: true,
+        logo: true,
+        pricingType: true,
+        price: true,
+        rating: true,
+        totalInstalls: true,
         developer: { select: { id: true, companyName: true } },
       },
     }),
@@ -440,18 +724,26 @@ export async function getSimilarBusinesses(businessId: string, limit: number = 6
       isActive: true,
       deletedAt: null,
       id: { not: businessId },
-      OR: [
-        { type: business.type },
-        { city: business.city },
-      ],
+      OR: [{ type: business.type }, { city: business.city }],
     },
     orderBy: { rating: 'desc' },
     take: limit,
     select: {
-      id: true, name: true, slug: true, type: true, logo: true,
-      city: true, country: true, rating: true, reviewCount: true,
-      isVerified: true, isPremium: true, isTopSeller: true, isRecommended: true,
-      shortDescription: true, modules: true,
+      id: true,
+      name: true,
+      slug: true,
+      type: true,
+      logo: true,
+      city: true,
+      country: true,
+      rating: true,
+      reviewCount: true,
+      isVerified: true,
+      isPremium: true,
+      isTopSeller: true,
+      isRecommended: true,
+      shortDescription: true,
+      modules: true,
     },
   });
 
@@ -475,7 +767,10 @@ export async function getActiveMarketplaceAds(page?: string, position?: string, 
     include: {
       campaign: {
         select: {
-          id: true, name: true, objective: true, description: true,
+          id: true,
+          name: true,
+          objective: true,
+          description: true,
           business: { select: { id: true, name: true, slug: true, logo: true } },
         },
       },
@@ -491,4 +786,92 @@ export async function getActiveMarketplaceAds(page?: string, position?: string, 
   }
 
   return ads;
+}
+
+// ============================================
+// PRICE DISTRIBUTION (for histogram)
+// ============================================
+export async function getPriceDistribution(type?: string, category?: string) {
+  const buckets = [
+    { label: '0 - 1k', min: 0, max: 1000 },
+    { label: '1k - 5k', min: 1000, max: 5000 },
+    { label: '5k - 10k', min: 5000, max: 10000 },
+    { label: '10k - 25k', min: 10000, max: 25000 },
+    { label: '25k - 50k', min: 25000, max: 50000 },
+    { label: '50k+', min: 50000, max: Number.MAX_SAFE_INTEGER },
+  ];
+
+  const baseWhere: any = { isActive: true };
+  if (category) baseWhere.category = { name: { contains: category, mode: 'insensitive' } };
+
+  const countForBucket = async (b: (typeof buckets)[0]) => {
+    const priceFilter: any = { gte: b.min };
+    if (b.max !== Number.MAX_SAFE_INTEGER) priceFilter.lt = b.max;
+    const where = { ...baseWhere, price: priceFilter };
+    if (type === 'service') {
+      return prisma.service.count({ where });
+    }
+    return prisma.product.count({ where });
+  };
+
+  const results = await Promise.all(buckets.map((b) => countForBucket(b)));
+
+  return buckets.map((b, i) => ({
+    label: b.label,
+    min: b.min,
+    max: b.max === Number.MAX_SAFE_INTEGER ? undefined : b.max,
+    count: results[i],
+  }));
+}
+
+// ============================================
+// PRODUCT BY SLUG
+// ============================================
+export async function getProductBySlug(slug: string) {
+  const product = await prisma.product.findFirst({
+    where: { slug, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      shortDescription: true,
+      price: true,
+      promotionalPrice: true,
+      currency: true,
+      images: true,
+      stock: true,
+      rating: true,
+      reviewCount: true,
+      tags: true,
+      deliveryFee: true,
+      createdAt: true,
+      category: { select: { id: true, name: true } },
+      business: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logo: true,
+          city: true,
+          country: true,
+          rating: true,
+          isVerified: true,
+          isPremium: true,
+        },
+      },
+      reviews: {
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+          user: { select: { firstName: true, lastName: true, avatar: true } },
+        },
+      },
+    },
+  });
+  return product;
 }

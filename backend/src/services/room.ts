@@ -40,7 +40,18 @@ interface ListFilters {
 
 export async function listRooms(ownerId: string, filters: ListFilters) {
   const business = await getBusinessByOwner(ownerId);
-  const { page, limit, search, minPrice, maxPrice, capacity, isActive, isAvailable, sortBy, sortOrder } = filters;
+  const {
+    page,
+    limit,
+    search,
+    minPrice,
+    maxPrice,
+    capacity,
+    isActive,
+    isAvailable,
+    sortBy,
+    sortOrder,
+  } = filters;
   const where: Prisma.RoomWhereInput = { businessId: business.id, deletedAt: null };
   if (isActive !== undefined) where.isActive = isActive;
   if (isAvailable !== undefined) where.isAvailable = isAvailable;
@@ -63,7 +74,13 @@ export async function listRooms(ownerId: string, filters: ListFilters) {
   else orderBy.push({ sortOrder: 'asc' as const }, { name: 'asc' as const });
 
   const [rooms, total] = await Promise.all([
-    prisma.room.findMany({ where, include: roomInclude, orderBy, skip: (page - 1) * limit, take: limit }),
+    prisma.room.findMany({
+      where,
+      include: roomInclude,
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
     prisma.room.count({ where }),
   ]);
 
@@ -125,10 +142,44 @@ export async function createRoom(ownerId: string, data: any) {
 
 export async function updateRoom(ownerId: string, roomId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.room.findFirst({ where: { id: roomId, businessId: business.id, deletedAt: null }, select: { id: true } });
+  const existing = await prisma.room.findFirst({
+    where: { id: roomId, businessId: business.id, deletedAt: null },
+    select: { id: true },
+  });
   if (!existing) throw new AppError('Chambre non trouvée', 404);
   const upd: any = {};
-  ['name','roomNumber','type','shortDescription','description','video','price','priceWeekend','priceHighSeason','priceLowSeason','currency','isPromotional','promotionalPrice','discountPercent','capacity','adults','children','beds','size','bathroom','breakfastIncluded','checkInTime','checkOutTime','quantity','featured','isActive','isAvailable','sortOrder','seoTitle','seoDescription'].forEach(k => {
+  [
+    'name',
+    'roomNumber',
+    'type',
+    'shortDescription',
+    'description',
+    'video',
+    'price',
+    'priceWeekend',
+    'priceHighSeason',
+    'priceLowSeason',
+    'currency',
+    'isPromotional',
+    'promotionalPrice',
+    'discountPercent',
+    'capacity',
+    'adults',
+    'children',
+    'beds',
+    'size',
+    'bathroom',
+    'breakfastIncluded',
+    'checkInTime',
+    'checkOutTime',
+    'quantity',
+    'featured',
+    'isActive',
+    'isAvailable',
+    'sortOrder',
+    'seoTitle',
+    'seoDescription',
+  ].forEach((k) => {
     if (data[k] !== undefined) upd[k] = data[k];
   });
   if (data.images !== undefined) upd.images = { set: data.images };
@@ -139,15 +190,24 @@ export async function updateRoom(ownerId: string, roomId: string, data: any) {
 
 export async function deleteRoom(ownerId: string, roomId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.room.findFirst({ where: { id: roomId, businessId: business.id, deletedAt: null }, select: { id: true } });
+  const existing = await prisma.room.findFirst({
+    where: { id: roomId, businessId: business.id, deletedAt: null },
+    select: { id: true },
+  });
   if (!existing) throw new AppError('Chambre non trouvée', 404);
-  await prisma.room.update({ where: { id: roomId }, data: { deletedAt: new Date(), isActive: false, isAvailable: false } });
+  await prisma.room.update({
+    where: { id: roomId },
+    data: { deletedAt: new Date(), isActive: false, isAvailable: false },
+  });
   return { deleted: true };
 }
 
 export async function toggleRoomActive(ownerId: string, roomId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const room = await prisma.room.findFirst({ where: { id: roomId, businessId: business.id, deletedAt: null }, select: { id: true, isActive: true } });
+  const room = await prisma.room.findFirst({
+    where: { id: roomId, businessId: business.id, deletedAt: null },
+    select: { id: true, isActive: true },
+  });
   if (!room) throw new AppError('Chambre non trouvée', 404);
   return prisma.room.update({
     where: { id: roomId },
@@ -158,21 +218,37 @@ export async function toggleRoomActive(ownerId: string, roomId: string) {
 
 export async function updateRoomStatus(ownerId: string, roomId: string, status: string) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.room.findFirst({ where: { id: roomId, businessId: business.id, deletedAt: null }, select: { id: true } });
+  const existing = await prisma.room.findFirst({
+    where: { id: roomId, businessId: business.id, deletedAt: null },
+    select: { id: true },
+  });
   if (!existing) throw new AppError('Chambre non trouvée', 404);
-  return prisma.room.update({ where: { id: roomId }, data: { isAvailable: status === 'AVAILABLE' }, include: roomInclude });
+  return prisma.room.update({
+    where: { id: roomId },
+    data: { isAvailable: status === 'AVAILABLE' },
+    include: roomInclude,
+  });
 }
 
-export async function blockRoomDates(ownerId: string, roomId: string, data: { startDate: string; endDate: string; reason: string; notes?: string }) {
+export async function blockRoomDates(
+  ownerId: string,
+  roomId: string,
+  _data: { startDate: string; endDate: string; reason: string; notes?: string }
+) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.room.findFirst({ where: { id: roomId, businessId: business.id, deletedAt: null }, select: { id: true } });
+  const existing = await prisma.room.findFirst({
+    where: { id: roomId, businessId: business.id, deletedAt: null },
+    select: { id: true },
+  });
   if (!existing) throw new AppError('Chambre non trouvée', 404);
   throw new AppError('Blocage de dates non pris en charge par le schéma actuel', 400);
 }
 
 export async function duplicateRoom(ownerId: string, roomId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const original = await prisma.room.findFirst({ where: { id: roomId, businessId: business.id, deletedAt: null } });
+  const original = await prisma.room.findFirst({
+    where: { id: roomId, businessId: business.id, deletedAt: null },
+  });
   if (!original) throw new AppError('Chambre non trouvée', 404);
   const { id, createdAt, updatedAt, deletedAt, ...data } = original;
   return prisma.room.create({
@@ -190,13 +266,13 @@ export async function duplicateRoom(ownerId: string, roomId: string) {
   });
 }
 
-export async function exportRooms(ownerId: string, format: string = 'csv') {
+export async function exportRooms(ownerId: string, _format: string = 'csv') {
   const business = await getBusinessByOwner(ownerId);
   const rooms = await prisma.room.findMany({
     where: { businessId: business.id, deletedAt: null },
     orderBy: { name: 'asc' },
   });
-  const rows = rooms.map(r => ({
+  const rows = rooms.map((r) => ({
     name: r.name,
     roomNumber: r.roomNumber || '',
     type: r.type,
@@ -275,9 +351,16 @@ export async function getRoomStats(ownerId: string) {
   const [total, active, available, featured, bookings, promo] = await Promise.all([
     prisma.room.count({ where: { businessId: bid, deletedAt: null } }),
     prisma.room.count({ where: { businessId: bid, deletedAt: null, isActive: true } }),
-    prisma.room.count({ where: { businessId: bid, deletedAt: null, isAvailable: true, isActive: true } }),
+    prisma.room.count({
+      where: { businessId: bid, deletedAt: null, isAvailable: true, isActive: true },
+    }),
     prisma.room.count({ where: { businessId: bid, deletedAt: null, featured: true } }),
-    prisma.booking.count({ where: { providerId: business.ownerId, status: { in: ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] } } }),
+    prisma.booking.count({
+      where: {
+        providerId: business.ownerId,
+        status: { in: ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'] },
+      },
+    }),
     prisma.room.count({ where: { businessId: bid, deletedAt: null, isPromotional: true } }),
   ]);
 

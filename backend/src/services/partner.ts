@@ -13,13 +13,16 @@ async function getBusinessId(ownerId: string) {
 
 // ===================== PARTNERS =====================
 
-export async function listPartners(ownerId: string, params?: {
-  category?: string;
-  search?: string;
-  isActive?: boolean;
-  page?: number;
-  limit?: number;
-}) {
+export async function listPartners(
+  ownerId: string,
+  params?: {
+    category?: string;
+    search?: string;
+    isActive?: boolean;
+    page?: number;
+    limit?: number;
+  }
+) {
   const businessId = await getBusinessId(ownerId);
   const where: Prisma.PartnerWhereInput = { businessId };
 
@@ -42,7 +45,9 @@ export async function listPartners(ownerId: string, params?: {
     prisma.partner.findMany({
       where,
       include: {
-        _count: { select: { contracts: true, transactions: true, assignments: true, reviews: true } },
+        _count: {
+          select: { contracts: true, transactions: true, assignments: true, reviews: true },
+        },
       },
       orderBy: { name: 'asc' },
       skip,
@@ -165,14 +170,18 @@ export async function createContract(ownerId: string, data: any) {
 
 export async function updateContract(ownerId: string, contractId: string, data: any) {
   const businessId = await getBusinessId(ownerId);
-  const existing = await prisma.partnerContract.findFirst({ where: { id: contractId, businessId } });
+  const existing = await prisma.partnerContract.findFirst({
+    where: { id: contractId, businessId },
+  });
   if (!existing) throw new AppError('Contrat non trouvé', 404);
   return prisma.partnerContract.update({ where: { id: contractId }, data });
 }
 
 export async function signContract(ownerId: string, contractId: string, byBusiness: boolean) {
   const businessId = await getBusinessId(ownerId);
-  const existing = await prisma.partnerContract.findFirst({ where: { id: contractId, businessId } });
+  const existing = await prisma.partnerContract.findFirst({
+    where: { id: contractId, businessId },
+  });
   if (!existing) throw new AppError('Contrat non trouvé', 404);
   const updateData: any = { signedAt: new Date() };
   if (byBusiness) updateData.signedByBusiness = true;
@@ -222,7 +231,9 @@ export async function createAssignment(ownerId: string, data: any) {
 
 export async function updateAssignment(ownerId: string, assignmentId: string, data: any) {
   const businessId = await getBusinessId(ownerId);
-  const existing = await prisma.partnerAssignment.findFirst({ where: { id: assignmentId, businessId } });
+  const existing = await prisma.partnerAssignment.findFirst({
+    where: { id: assignmentId, businessId },
+  });
   if (!existing) throw new AppError('Assignation non trouvée', 404);
   return prisma.partnerAssignment.update({ where: { id: assignmentId }, data });
 }
@@ -283,7 +294,9 @@ export async function createDocument(ownerId: string, data: any) {
 
 export async function deleteDocument(ownerId: string, documentId: string) {
   const businessId = await getBusinessId(ownerId);
-  const existing = await prisma.partnerDocument.findFirst({ where: { id: documentId, businessId } });
+  const existing = await prisma.partnerDocument.findFirst({
+    where: { id: documentId, businessId },
+  });
   if (!existing) throw new AppError('Document non trouvé', 404);
   return prisma.partnerDocument.delete({ where: { id: documentId } });
 }
@@ -310,14 +323,18 @@ export async function createPermission(ownerId: string, data: any) {
 
 export async function updatePermission(ownerId: string, permissionId: string, data: any) {
   const businessId = await getBusinessId(ownerId);
-  const existing = await prisma.partnerPermission.findFirst({ where: { id: permissionId, businessId } });
+  const existing = await prisma.partnerPermission.findFirst({
+    where: { id: permissionId, businessId },
+  });
   if (!existing) throw new AppError('Permission non trouvée', 404);
   return prisma.partnerPermission.update({ where: { id: permissionId }, data });
 }
 
 export async function deletePermission(ownerId: string, permissionId: string) {
   const businessId = await getBusinessId(ownerId);
-  const existing = await prisma.partnerPermission.findFirst({ where: { id: permissionId, businessId } });
+  const existing = await prisma.partnerPermission.findFirst({
+    where: { id: permissionId, businessId },
+  });
   if (!existing) throw new AppError('Permission non trouvée', 404);
   return prisma.partnerPermission.delete({ where: { id: permissionId } });
 }
@@ -332,7 +349,11 @@ export async function getPartnerAnalytics(ownerId: string) {
     orderBy: { score: 'desc' },
     take: 10,
     select: {
-      id: true, name: true, logo: true, score: true, category: true,
+      id: true,
+      name: true,
+      logo: true,
+      score: true,
+      category: true,
       _count: { select: { transactions: true, assignments: true } },
     },
   });
@@ -352,7 +373,11 @@ export async function getPartnerAnalytics(ownerId: string) {
   });
 
   const pendingContracts = await prisma.partnerContract.count({
-    where: { businessId, status: 'ACTIF', endDate: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) } },
+    where: {
+      businessId,
+      status: 'ACTIF',
+      endDate: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+    },
   });
 
   return {

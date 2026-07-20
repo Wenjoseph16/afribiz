@@ -1,28 +1,50 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
-  listEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee,
-  listEmployeeRoles, createEmployeeRole, updateEmployeeRole, deleteEmployeeRole,
-  listAttendances, clockIn, clockOut, markAbsent,
-  listEmployeeDocuments, createEmployeeDocument, deleteEmployeeDocument,
-  listEmployeePerformances, createEmployeePerformance,
-  listEmployeeActivities, getEmployeeStats,
+  listEmployees,
+  getEmployee,
+  createEmployee,
+  updateEmployee,
+  deleteEmployee,
+  listEmployeeRoles,
+  createEmployeeRole,
+  updateEmployeeRole,
+  deleteEmployeeRole,
+  listAttendances,
+  clockIn,
+  clockOut,
+  markAbsent,
+  listEmployeeDocuments,
+  createEmployeeDocument,
+  deleteEmployeeDocument,
+  listEmployeePerformances,
+  createEmployeePerformance,
+  listEmployeeActivities,
+  getEmployeeStats,
+  getEmployeeEnrichedStats,
+  generatePayslipPDF,
 } from '../controllers/employees';
 import {
-  createEmployeeSchema, updateEmployeeSchema,
-  createEmployeeRoleSchema, updateEmployeeRoleSchema,
-  clockInSchema, markAbsentSchema,
-  createEmployeeDocumentSchema, createEmployeePerformanceSchema,
+  createEmployeeSchema,
+  updateEmployeeSchema,
+  createEmployeeRoleSchema,
+  updateEmployeeRoleSchema,
+  clockInSchema,
+  markAbsentSchema,
+  createEmployeeDocumentSchema,
+  createEmployeePerformanceSchema,
 } from '../validators/employees';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 // ===== Static routes MUST come before /:id =====
 
 // Stats
 router.get('/stats', getEmployeeStats);
+router.get('/stats/enriched', getEmployeeEnrichedStats);
 
 // Roles (static paths before /:id)
 router.get('/roles/list', listEmployeeRoles);
@@ -41,13 +63,18 @@ router.post('/documents', validateBody(createEmployeeDocumentSchema), createEmpl
 router.delete('/documents/:id', deleteEmployeeDocument);
 
 // Performances
-router.post('/performances', validateBody(createEmployeePerformanceSchema), createEmployeePerformance);
+router.post(
+  '/performances',
+  validateBody(createEmployeePerformanceSchema),
+  createEmployeePerformance
+);
 
 // Activities
 router.get('/activities/logs', listEmployeeActivities);
 
 // ===== Employee CRUD with :id param (must be last) =====
 router.get('/', listEmployees);
+router.get('/:employeeId/payslip', generatePayslipPDF);
 router.get('/:id', getEmployee);
 router.post('/', validateBody(createEmployeeSchema), createEmployee);
 router.patch('/:id', validateBody(updateEmployeeSchema), updateEmployee);

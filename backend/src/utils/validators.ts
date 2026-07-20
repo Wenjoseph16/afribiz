@@ -38,9 +38,6 @@ export const isEmpty = (value: any): boolean => {
   );
 };
 
-export const validateArray = <T>(
-  arr: unknown,
-  validator: (item: any) => item is T
-): arr is T[] => {
+export const validateArray = <T>(arr: unknown, validator: (item: any) => item is T): arr is T[] => {
   return Array.isArray(arr) && arr.every(validator);
 };

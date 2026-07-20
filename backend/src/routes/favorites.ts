@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { getFavorites, addFavorite, removeFavorite } from '../controllers/favorites';
+import {
+  list as getFavorites,
+  add as addFavorite,
+  remove as removeFavorite,
+} from '../controllers/favorites';
 
 const router = Router();
 

@@ -15,7 +15,12 @@ export class OtpCodeRepository {
   }): Promise<OtpCode> {
     // Invalidate any existing active OTP for this user and type
     await prisma.otpCode.updateMany({
-      where: { userId: data.userId, type: data.type, verifiedAt: null, expiresAt: { gt: new Date() } },
+      where: {
+        userId: data.userId,
+        type: data.type,
+        verifiedAt: null,
+        expiresAt: { gt: new Date() },
+      },
       data: { expiresAt: new Date() }, // Mark as expired
     });
 

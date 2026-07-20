@@ -25,7 +25,8 @@ export const comparePasswords = async (password: string, hash: string): Promise<
  * - At least 1 special character
  */
 export const isValidPassword = (password: string): boolean => {
-  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])[A-Za-z\d!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]{8,}$/;
+  const regex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])[A-Za-z\d!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]{8,}$/;
   return regex.test(password);
 };
 
@@ -37,7 +38,7 @@ export const generateToken = (): string => {
 };
 
 /**
- * Generate cryptographically secure OTP code
+ * Generate random OTP code
  */
 export const generateOTP = (length: number = 6): string => {
   let otp = '';

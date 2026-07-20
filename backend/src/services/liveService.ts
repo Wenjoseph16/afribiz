@@ -1,7 +1,12 @@
 import { prisma } from '../lib/db';
-import { logger } from '../lib/logger';
+import { AppError } from '../middlewares/errorHandler';
 
-export async function getActiveLives(params?: { status?: string; businessId?: string; page?: number; limit?: number }) {
+export async function getActiveLives(params?: {
+  status?: string;
+  businessId?: string;
+  page?: number;
+  limit?: number;
+}) {
   const { status, businessId, page = 1, limit = 20 } = params || {};
   const skip = (page - 1) * limit;
   const where: any = {};
@@ -29,8 +34,12 @@ export async function getLiveById(liveId: string, includeProducts = true, includ
   return prisma.live.findUnique({
     where: { id: liveId },
     include: {
-      business: { select: { id: true, name: true, slug: true, logo: true, type: true, city: true } },
-      products: includeProducts ? { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } : false,
+      business: {
+        select: { id: true, name: true, slug: true, logo: true, type: true, city: true },
+      },
+      products: includeProducts
+        ? { where: { isActive: true }, orderBy: { sortOrder: 'asc' } }
+        : false,
       chats: includeChat ? { orderBy: { createdAt: 'desc' }, take: 50 } : false,
       _count: { select: { participants: true, reactions: true } },
     },
@@ -45,7 +54,14 @@ export async function createLive(data: {
   streamUrl?: string;
   hasEscrow?: boolean;
   scheduledAt?: string;
-  products?: Array<{ name: string; description?: string; price: number; currency?: string; image?: string; stock?: number }>;
+  products?: Array<{
+    name: string;
+    description?: string;
+    price: number;
+    currency?: string;
+    image?: string;
+    stock?: number;
+  }>;
 }) {
   const live = await prisma.live.create({
     data: {
@@ -96,8 +112,9 @@ export async function createLive(data: {
 
 export async function startLive(liveId: string, businessId: string, streamUrl?: string) {
   const live = await prisma.live.findFirst({ where: { id: liveId, businessId } });
-  if (!live) throw new Error('Live non trouvé');
-  if (live.status !== 'SCHEDULED') throw new Error('Le live doit être planifié pour être démarré');
+  if (!live) throw new AppError('Live non trouvé', 404);
+  if (live.status !== 'SCHEDULED')
+    throw new AppError('Le live doit être planifié pour être démarré', 400);
 
   return prisma.live.update({
     where: { id: liveId },
@@ -107,7 +124,7 @@ export async function startLive(liveId: string, businessId: string, streamUrl?: 
 
 export async function endLive(liveId: string, businessId: string) {
   const live = await prisma.live.findFirst({ where: { id: liveId, businessId } });
-  if (!live) throw new Error('Live non trouvé');
+  if (!live) throw new AppError('Live non trouvé', 404);
 
   return prisma.live.update({
     where: { id: liveId },
@@ -117,7 +134,7 @@ export async function endLive(liveId: string, businessId: string) {
 
 export async function updateLiveStatus(liveId: string, status: string, businessId: string) {
   const live = await prisma.live.findFirst({ where: { id: liveId, businessId } });
-  if (!live) throw new Error('Live non trouvé');
+  if (!live) throw new AppError('Live non trouvé', 404);
 
   const data: any = { status };
   if (status === 'LIVE') data.startedAt = new Date();
@@ -128,7 +145,7 @@ export async function updateLiveStatus(liveId: string, status: string, businessI
 
 export async function addLiveProduct(liveId: string, businessId: string, data: any) {
   const live = await prisma.live.findFirst({ where: { id: liveId, businessId } });
-  if (!live) throw new Error('Live non trouvé');
+  if (!live) throw new AppError('Live non trouvé', 404);
 
   return prisma.liveProduct.create({
     data: {
@@ -151,7 +168,8 @@ export async function updateLiveProduct(productId: string, businessId: string, d
     where: { id: productId },
     include: { live: { select: { businessId: true } } },
   });
-  if (!product || product.live.businessId !== businessId) throw new Error('Produit non trouvé');
+  if (!product || product.live.businessId !== businessId)
+    throw new AppError('Produit non trouvé', 404);
 
   return prisma.liveProduct.update({
     where: { id: productId },
@@ -174,14 +192,17 @@ export async function removeLiveProduct(productId: string, businessId: string) {
     where: { id: productId },
     include: { live: { select: { businessId: true } } },
   });
-  if (!product || product.live.businessId !== businessId) throw new Error('Produit non trouvé');
+  if (!product || product.live.businessId !== businessId)
+    throw new AppError('Produit non trouvé', 404);
   await prisma.liveProduct.delete({ where: { id: productId } });
 }
 
 export async function joinLive(liveId: string, userId?: string, userName?: string) {
-  const existing = userId ? await prisma.liveParticipant.findFirst({
-    where: { liveId, userId, isActive: true },
-  }) : null;
+  const existing = userId
+    ? await prisma.liveParticipant.findFirst({
+        where: { liveId, userId, isActive: true },
+      })
+    : null;
 
   if (!existing) {
     await prisma.liveParticipant.create({
@@ -204,7 +225,10 @@ export async function leaveLive(liveId: string, userId?: string) {
       data: { isActive: false, leftAt: new Date() },
     });
   }
-  const current = await prisma.live.findUnique({ where: { id: liveId }, select: { viewerCount: true } });
+  const current = await prisma.live.findUnique({
+    where: { id: liveId },
+    select: { viewerCount: true },
+  });
   if (current && current.viewerCount > 0) {
     await prisma.live.update({
       where: { id: liveId },
@@ -213,7 +237,12 @@ export async function leaveLive(liveId: string, userId?: string) {
   }
 }
 
-export async function sendChat(liveId: string, userId: string | undefined, userName: string, message: string) {
+export async function sendChat(
+  liveId: string,
+  userId: string | undefined,
+  userName: string,
+  message: string
+) {
   return prisma.liveChat.create({
     data: { liveId, userId, userName, message },
   });
@@ -241,5 +270,10 @@ export async function getLiveStats(businessId: string) {
     prisma.liveChat.count({ where: { live: { businessId } } }),
   ]);
 
-  return { totalLives, activeLives, totalViewers: totalViewers._sum.viewerCountPeak || 0, totalChats };
+  return {
+    totalLives,
+    activeLives,
+    totalViewers: totalViewers._sum.viewerCountPeak || 0,
+    totalChats,
+  };
 }

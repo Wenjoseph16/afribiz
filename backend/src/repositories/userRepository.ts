@@ -18,7 +18,6 @@ export class UserRepository {
     city?: string;
     neighborhood?: string;
     birthDate?: string;
-    gender?: string;
   }): Promise<User> {
     return prisma.user.create({
       data: {
@@ -32,7 +31,6 @@ export class UserRepository {
         city: data.city,
         neighborhood: data.neighborhood,
         birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
-        gender: data.gender,
         primaryRole: UserRole.CLIENT,
         roles: [UserRole.CLIENT],
       },
@@ -152,12 +150,24 @@ export class UserRepository {
   /**
    * Activate business role
    */
-  static async activateBusinessRole(id: string, businessName: string, registrationNumber: string): Promise<User> {
+  static async activateBusinessRole(
+    id: string,
+    businessName: string,
+    registrationNumber: string
+  ): Promise<User> {
+    const current = await prisma.user.findUnique({
+      where: { id },
+      select: { roles: true },
+    });
+    const currentRoles = (current?.roles || []) as UserRole[];
+    const updatedRoles = currentRoles.includes(UserRole.BUSINESS)
+      ? currentRoles
+      : [...currentRoles, UserRole.BUSINESS];
     return prisma.user.update({
       where: { id },
       data: {
         primaryRole: UserRole.BUSINESS,
-        roles: { push: UserRole.BUSINESS },
+        roles: updatedRoles,
         businessName,
         businessRegistration: registrationNumber,
       },
@@ -168,11 +178,19 @@ export class UserRepository {
    * Activate developer role
    */
   static async activateDeveloperRole(id: string): Promise<User> {
+    const current = await prisma.user.findUnique({
+      where: { id },
+      select: { roles: true },
+    });
+    const currentRoles = (current?.roles || []) as UserRole[];
+    const updatedRoles = currentRoles.includes(UserRole.DEVELOPER)
+      ? currentRoles
+      : [...currentRoles, UserRole.DEVELOPER];
     return prisma.user.update({
       where: { id },
       data: {
         primaryRole: UserRole.DEVELOPER,
-        roles: { push: UserRole.DEVELOPER },
+        roles: updatedRoles,
         developerApiKey: crypto.randomBytes(16).toString('hex'),
       },
     });

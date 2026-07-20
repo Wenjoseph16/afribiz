@@ -5,9 +5,21 @@ import { z } from 'zod';
 // ============================================
 
 const modulePermissionResourceEnum = z.enum([
-  'PRODUCTS', 'SERVICES', 'BOOKINGS', 'ORDERS', 'CLIENTS',
-  'CRM', 'MARKETING', 'PAYMENTS', 'ACCOUNTING', 'EMPLOYEES',
-  'DELIVERIES', 'EVENTS', 'TRAININGS', 'RENTALS', 'SETTINGS',
+  'PRODUCTS',
+  'SERVICES',
+  'BOOKINGS',
+  'ORDERS',
+  'CLIENTS',
+  'CRM',
+  'MARKETING',
+  'PAYMENTS',
+  'ACCOUNTING',
+  'EMPLOYEES',
+  'DELIVERIES',
+  'EVENTS',
+  'TRAININGS',
+  'RENTALS',
+  'SETTINGS',
   'DATA_EXPORT',
 ]);
 
@@ -15,11 +27,21 @@ const modulePermissionAccessEnum = z.enum(['READ', 'WRITE', 'ADMIN']);
 const licenseTypeEnum = z.enum(['FREE', 'STANDARD', 'PREMIUM', 'ENTERPRISE', 'TRIAL']);
 
 const webhookEventEnum = z.enum([
-  'MODULE_SUBMITTED', 'MODULE_APPROVED', 'MODULE_REJECTED',
-  'MODULE_INSTALLED', 'MODULE_UNINSTALLED', 'MODULE_SOLD',
-  'MODULE_REVIEWED', 'MODULE_UPDATED', 'MODULE_LICENSE_EXPIRING',
-  'MODULE_LICENSE_EXPIRED', 'MODULE_ERROR', 'PAYOUT_REQUESTED',
-  'PAYOUT_COMPLETED', 'TICKET_CREATED', 'TICKET_RESOLVED',
+  'MODULE_SUBMITTED',
+  'MODULE_APPROVED',
+  'MODULE_REJECTED',
+  'MODULE_INSTALLED',
+  'MODULE_UNINSTALLED',
+  'MODULE_SOLD',
+  'MODULE_REVIEWED',
+  'MODULE_UPDATED',
+  'MODULE_LICENSE_EXPIRING',
+  'MODULE_LICENSE_EXPIRED',
+  'MODULE_ERROR',
+  'PAYOUT_REQUESTED',
+  'PAYOUT_COMPLETED',
+  'TICKET_CREATED',
+  'TICKET_RESOLVED',
 ]);
 
 const validationStatusEnum = z.enum(['APPROVED', 'REJECTED', 'CHANGES_REQUESTED']);
@@ -49,7 +71,11 @@ export const createLicenseSchema = z.object({
   licenseType: licenseTypeEnum,
   price: z.number().positive('Le prix doit etre positif').optional(),
   currency: z.string().max(10).optional().default('FCFA'),
-  expiresAt: z.string().datetime('Date invalide').optional().transform((s) => s ? new Date(s) : undefined),
+  expiresAt: z
+    .string()
+    .datetime('Date invalide')
+    .optional()
+    .transform((s) => (s ? new Date(s) : undefined)),
   autoRenew: z.boolean().optional().default(false),
 });
 
@@ -77,7 +103,11 @@ export const checkLicenseQuerySchema = z.object({
 export const createApiKeySchema = z.object({
   name: z.string().min(2, 'Le nom est requis (min 2 caracteres)').max(100),
   scopes: z.array(modulePermissionResourceEnum).optional().default([]),
-  expiresAt: z.string().datetime('Date invalide').optional().transform((s) => s ? new Date(s) : undefined),
+  expiresAt: z
+    .string()
+    .datetime('Date invalide')
+    .optional()
+    .transform((s) => (s ? new Date(s) : undefined)),
 });
 
 // ============================================

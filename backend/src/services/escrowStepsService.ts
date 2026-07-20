@@ -37,9 +37,10 @@ export async function createStepEscrow(data: {
           description: desc,
           status: 'PENDING',
           releasedAt: null,
-          amount: i === data.totalSteps - 1
-            ? (data.amount - Math.floor(data.amount / data.totalSteps) * (data.totalSteps - 1))
-            : Math.floor((data.amount / data.totalSteps) * 100) / 100,
+          amount:
+            i === data.totalSteps - 1
+              ? data.amount - Math.floor(data.amount / data.totalSteps) * (data.totalSteps - 1)
+              : Math.floor((data.amount / data.totalSteps) * 100) / 100,
         })),
       }),
     },
@@ -53,7 +54,14 @@ export async function createStepEscrow(data: {
         action: 'MANUAL_ADJUSTMENT',
         amount: -fee,
         description: `Commission AfriBiz 2% sur escrow par étapes de ${data.amount} FCFA`,
-        metadata: { commissionType: 'ESCROW_FEE', escrowId: escrow.id, amount: data.amount, fee, feeRate: rate, netAmount },
+        metadata: {
+          commissionType: 'ESCROW_FEE',
+          escrowId: escrow.id,
+          amount: data.amount,
+          fee,
+          feeRate: rate,
+          netAmount,
+        },
       },
     });
   } catch (e) {
@@ -78,7 +86,8 @@ export async function releaseStep(escrowId: string, businessId: string, stepNumb
   if (escrow.status !== 'HELD') throw new AppError('Escrow non actif', 400);
 
   const notes = typeof escrow.notes === 'string' ? JSON.parse(escrow.notes) : escrow.notes;
-  if (!notes || notes.type !== 'STEPPED') throw new AppError('Escrow non configuré par étapes', 400);
+  if (!notes || notes.type !== 'STEPPED')
+    throw new AppError('Escrow non configuré par étapes', 400);
 
   const step = notes.steps.find((s: any) => s.step === stepNumber);
   if (!step) throw new AppError('Étape ' + stepNumber + ' introuvable', 404);
@@ -88,7 +97,7 @@ export async function releaseStep(escrowId: string, businessId: string, stepNumb
     .filter((s: any) => s.step < stepNumber)
     .every((s: any) => s.status === 'RELEASED');
   if (!previousStepsReleased) {
-    throw new AppError('Les étapes précédentes doivent être libérées d\'abord', 400);
+    throw new AppError("Les étapes précédentes doivent être libérées d'abord", 400);
   }
 
   step.status = 'RELEASED';
@@ -112,7 +121,10 @@ export async function releaseStep(escrowId: string, businessId: string, stepNumb
           const escrowFee = Number(escrow.fee || 0);
           const netAmount = Number(escrow.amount) - escrowFee;
           const newBalance = Number(wallet.balance) + netAmount;
-          await tx.wallet.update({ where: { businessId: escrow.businessId }, data: { balance: newBalance } });
+          await tx.wallet.update({
+            where: { businessId: escrow.businessId },
+            data: { balance: newBalance },
+          });
           await tx.walletTransaction.create({
             data: {
               walletId: wallet.id,

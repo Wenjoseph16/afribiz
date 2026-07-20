@@ -1,19 +1,16 @@
 FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
 FROM base AS deps
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY package.json package-lock.json ./
 COPY backend/package.json backend/tsconfig.json ./
 COPY shared/package.json shared/ ./
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/backend/node_modules ./backend/node_modules
-COPY --from=deps /app/shared/node_modules ./shared/node_modules
 COPY . .
-RUN pnpm build --filter=@afribiz/shared --filter=@afribiz/backend
+RUN npm run build -w shared && npm run build -w backend
 RUN cd backend && npx prisma generate
 
 FROM base AS runner
@@ -25,7 +22,7 @@ COPY --from=builder /app/backend/prisma ./backend/prisma
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/shared/package.json ./shared/
-RUN cd /app && pnpm prune --prod 2>/dev/null; npx prisma generate --schema=backend/prisma/schema.prisma
+RUN cd /app && npm prune --production 2>/dev/null; npx prisma generate --schema=backend/prisma/schema.prisma
 EXPOSE 3001
 ENV NODE_ENV=production
 ENTRYPOINT ["/sbin/tini", "--"]

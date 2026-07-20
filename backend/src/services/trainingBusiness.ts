@@ -44,7 +44,23 @@ export async function getBusinessTraining(userId: string, trainingId: string) {
     include: {
       TrainingLesson: {
         orderBy: { sortOrder: 'asc' },
-        include: { TrainingQuiz: { include: { QuizQuestion: { orderBy: { sortOrder: 'asc' } } } } },
+        include: {
+          TrainingQuiz: {
+            include: {
+              QuizQuestion: {
+                orderBy: { sortOrder: 'asc' },
+                select: {
+                  id: true,
+                  question: true,
+                  options: true,
+                  correctIndex: true,
+                  explanation: true,
+                  sortOrder: true,
+                },
+              },
+            },
+          },
+        },
       },
       users: {
         include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
@@ -73,7 +89,9 @@ export async function createBusinessTraining(userId: string, data: any) {
 
 export async function updateBusinessTraining(userId: string, trainingId: string, data: any) {
   const business = await getBusiness(userId);
-  const training = await prisma.training.findFirst({ where: { id: trainingId, businessId: business.id, deletedAt: null } });
+  const training = await prisma.training.findFirst({
+    where: { id: trainingId, businessId: business.id, deletedAt: null },
+  });
   if (!training) throw new AppError('Training not found', 404);
   return prisma.training.update({
     where: { id: trainingId },
@@ -84,7 +102,9 @@ export async function updateBusinessTraining(userId: string, trainingId: string,
 
 export async function deleteBusinessTraining(userId: string, trainingId: string) {
   const business = await getBusiness(userId);
-  const training = await prisma.training.findFirst({ where: { id: trainingId, businessId: business.id, deletedAt: null } });
+  const training = await prisma.training.findFirst({
+    where: { id: trainingId, businessId: business.id, deletedAt: null },
+  });
   if (!training) throw new AppError('Training not found', 404);
   await prisma.training.update({ where: { id: trainingId }, data: { deletedAt: new Date() } });
   return { message: 'Formation supprimée' };
@@ -93,7 +113,9 @@ export async function deleteBusinessTraining(userId: string, trainingId: string)
 // ===== STUDENTS =====
 export async function getTrainingStudents(userId: string, trainingId: string, filters: any = {}) {
   const business = await getBusiness(userId);
-  const training = await prisma.training.findFirst({ where: { id: trainingId, businessId: business.id, deletedAt: null } });
+  const training = await prisma.training.findFirst({
+    where: { id: trainingId, businessId: business.id, deletedAt: null },
+  });
   if (!training) throw new AppError('Training not found', 404);
   const where: any = { trainingId };
   if (filters.status) where.status = filters.status;
@@ -141,7 +163,9 @@ export async function getTrainingStats(userId: string) {
 // ===== LESSONS =====
 export async function listLessons(userId: string, trainingId: string) {
   const business = await getBusiness(userId);
-  const training = await prisma.training.findFirst({ where: { id: trainingId, businessId: business.id, deletedAt: null } });
+  const training = await prisma.training.findFirst({
+    where: { id: trainingId, businessId: business.id, deletedAt: null },
+  });
   if (!training) throw new AppError('Training not found', 404);
   return prisma.trainingLesson.findMany({
     where: { trainingId },
@@ -152,7 +176,9 @@ export async function listLessons(userId: string, trainingId: string) {
 
 export async function createLesson(userId: string, data: any) {
   const business = await getBusiness(userId);
-  const training = await prisma.training.findFirst({ where: { id: data.trainingId, businessId: business.id, deletedAt: null } });
+  const training = await prisma.training.findFirst({
+    where: { id: data.trainingId, businessId: business.id, deletedAt: null },
+  });
   if (!training) throw new AppError('Training not found', 404);
   const lesson = await prisma.trainingLesson.create({
     data: {
@@ -177,7 +203,8 @@ export async function updateLesson(userId: string, lessonId: string, data: any) 
     where: { id: lessonId },
     include: { training: { select: { business: { select: { ownerId: true } } } } },
   });
-  if (!lesson || !lesson.training.business || lesson.training.business.ownerId !== userId) throw new AppError('Leçon non trouvée', 404);
+  if (!lesson || !lesson.training.business || lesson.training.business.ownerId !== userId)
+    throw new AppError('Leçon non trouvée', 404);
   return prisma.trainingLesson.update({ where: { id: lessonId }, data });
 }
 
@@ -186,7 +213,8 @@ export async function deleteLesson(userId: string, lessonId: string) {
     where: { id: lessonId },
     include: { training: { select: { business: { select: { ownerId: true } } } } },
   });
-  if (!lesson || !lesson.training.business || lesson.training.business.ownerId !== userId) throw new AppError('Leçon non trouvée', 404);
+  if (!lesson || !lesson.training.business || lesson.training.business.ownerId !== userId)
+    throw new AppError('Leçon non trouvée', 404);
   const trainingId = lesson.trainingId;
   await prisma.trainingLesson.delete({ where: { id: lessonId } });
   // Update lesson count
@@ -201,7 +229,8 @@ export async function createQuiz(userId: string, data: any) {
     where: { id: data.lessonId },
     include: { training: { select: { business: { select: { ownerId: true } } } } },
   });
-  if (!lesson || !lesson.training.business || lesson.training.business.ownerId !== userId) throw new AppError('Lecon non trouvee', 404);
+  if (!lesson || !lesson.training.business || lesson.training.business.ownerId !== userId)
+    throw new AppError('Lecon non trouvee', 404);
   const quiz = await prisma.trainingQuiz.create({
     data: {
       lessonId: data.lessonId,
@@ -210,15 +239,17 @@ export async function createQuiz(userId: string, data: any) {
       passingScore: data.passingScore || 70,
       maxAttempts: data.maxAttempts || 3,
       timeLimit: data.timeLimit,
-      QuizQuestion: data.questions ? {
-        create: data.questions.map((q: any, i: number) => ({
-          question: q.question,
-          options: q.options,
-          correctIndex: q.correctIndex,
-          explanation: q.explanation,
-          sortOrder: i,
-        })),
-      } : undefined,
+      QuizQuestion: data.questions
+        ? {
+            create: data.questions.map((q: any, i: number) => ({
+              question: q.question,
+              options: q.options,
+              correctIndex: q.correctIndex,
+              explanation: q.explanation,
+              sortOrder: i,
+            })),
+          }
+        : undefined,
     },
     include: { QuizQuestion: { orderBy: { sortOrder: 'asc' } } },
   });
@@ -228,9 +259,12 @@ export async function createQuiz(userId: string, data: any) {
 export async function deleteQuiz(userId: string, quizId: string) {
   const quiz = await prisma.trainingQuiz.findUnique({
     where: { id: quizId },
-    include: { lesson: { include: { training: { select: { business: { select: { ownerId: true } } } } } } },
+    include: {
+      lesson: { include: { training: { select: { business: { select: { ownerId: true } } } } } },
+    },
   });
-  if (!quiz || !quiz.lesson.training.business || quiz.lesson.training.business.ownerId !== userId) throw new AppError('Quiz non trouve', 404);
+  if (!quiz || !quiz.lesson.training.business || quiz.lesson.training.business.ownerId !== userId)
+    throw new AppError('Quiz non trouve', 404);
   await prisma.trainingQuiz.delete({ where: { id: quizId } });
   return { message: 'Quiz supprime' };
 }

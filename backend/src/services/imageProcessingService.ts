@@ -32,7 +32,11 @@ async function getSharp() {
   }
 }
 
-function copyFileFallback(inputPath: string, outputPath: string, originalname: string): ProcessedImage {
+function copyFileFallback(
+  inputPath: string,
+  outputPath: string,
+  originalname: string
+): ProcessedImage {
   const ext = path.extname(originalname).toLowerCase();
   const outputFilename = path.basename(outputPath);
   const stat = fs.statSync(inputPath);
@@ -42,7 +46,7 @@ function copyFileFallback(inputPath: string, outputPath: string, originalname: s
   }
   return {
     filename: outputFilename,
-    mimetype: (IMAGE_MIME_MAP[ext] || 'application/octet-stream'),
+    mimetype: IMAGE_MIME_MAP[ext] || 'application/octet-stream',
     size: stat.size,
     width: 0,
     height: 0,
@@ -60,7 +64,11 @@ export async function processImage(
   const outputPath = path.join(config.UPLOAD_DIR, outputFilename);
 
   if (!sharp) {
-    return copyFileFallback(inputPath, path.join(config.UPLOAD_DIR, `${uuidv4()}${ext}`), originalname);
+    return copyFileFallback(
+      inputPath,
+      path.join(config.UPLOAD_DIR, `${uuidv4()}${ext}`),
+      originalname
+    );
   }
 
   let pipeline = sharp(inputPath).rotate();
@@ -70,13 +78,14 @@ export async function processImage(
   } else {
     const metadata = await sharp(inputPath).metadata();
     if (metadata.width && metadata.width > IMAGE_MAX_WIDTH) {
-      pipeline = pipeline.resize(IMAGE_MAX_WIDTH, undefined, { fit: 'inside', withoutEnlargement: true });
+      pipeline = pipeline.resize(IMAGE_MAX_WIDTH, undefined, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
     }
   }
 
-  const info = await pipeline
-    .webp({ quality: IMAGE_QUALITY, effort: 4 })
-    .toFile(outputPath);
+  const info = await pipeline.webp({ quality: IMAGE_QUALITY, effort: 4 }).toFile(outputPath);
 
   if (inputPath !== outputPath) {
     fs.unlink(inputPath, () => {});
@@ -118,13 +127,14 @@ export async function processImageBuffer(
   } else {
     const metadata = await sharp(buffer).metadata();
     if (metadata.width && metadata.width > IMAGE_MAX_WIDTH) {
-      pipeline = pipeline.resize(IMAGE_MAX_WIDTH, undefined, { fit: 'inside', withoutEnlargement: true });
+      pipeline = pipeline.resize(IMAGE_MAX_WIDTH, undefined, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
     }
   }
 
-  const info = await pipeline
-    .webp({ quality: IMAGE_QUALITY, effort: 4 })
-    .toFile(outputPath);
+  const info = await pipeline.webp({ quality: IMAGE_QUALITY, effort: 4 }).toFile(outputPath);
 
   return {
     filename: outputFilename,

@@ -2,6 +2,7 @@ import { Prisma, BusinessType, BusinessModule, BusinessVerificationStatus } from
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { getPublicPortfolio } from './portfolio';
+import { publishOnboardingCompleted, publishReviewResponse } from '../events/publishers';
 
 export async function getPublicBusiness(slug: string) {
   const business = await prisma.business.findUnique({
@@ -24,12 +25,18 @@ export async function getPublicBusiness(slug: string) {
 
   return {
     ...business,
-    owner: business.owner ? {
-      ...business.owner,
-      yearsOfExperience: null,
-      skills: [],
-      certifications: [],
-    } : null,
+    description: business.description || business.shortDescription,
+    mission: business.mission,
+    vision: business.vision,
+    foundedYear: business.foundedYear,
+    owner: business.owner
+      ? {
+          ...business.owner,
+          yearsOfExperience: business.experience,
+          skills: business.skills,
+          certifications: business.certifications,
+        }
+      : null,
   };
 }
 
@@ -196,7 +203,12 @@ export async function getMyBusiness(ownerId: string) {
       settings: true,
       owner: {
         select: {
-          id: true, firstName: true, lastName: true, email: true, phone: true, avatar: true,
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          avatar: true,
         },
       },
     },
@@ -206,11 +218,21 @@ export async function getMyBusiness(ownerId: string) {
 export async function getMyBusinessStats(ownerId: string) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, _count: { select: { orders: true, reviews: true, products: true, services: true } } },
+    select: {
+      id: true,
+      _count: { select: { orders: true, reviews: true, products: true, services: true } },
+    },
   });
 
   if (!business) {
-    return { clients: 0, orders: 0, revenue: 0, reviewsReceived: 0, visitors: 0, conversionRate: 0 };
+    return {
+      clients: 0,
+      orders: 0,
+      revenue: 0,
+      reviewsReceived: 0,
+      visitors: 0,
+      conversionRate: 0,
+    };
   }
 
   // Aggregate orders for revenue
@@ -277,20 +299,68 @@ export async function getAggregatedDashboardStats(ownerId: string) {
   ] = await Promise.all([
     prisma.order.count({ where: { businessId, createdAt: { gte: startOfDay, lt: endOfDay } } }),
     prisma.booking.count({ where: { businessId, startDate: { gte: startOfDay, lt: endOfDay } } }),
-    prisma.order.aggregate({ where: { businessId, paidAt: { gte: startOfDay, lt: endOfDay } }, _sum: { totalAmount: true } }).then(r => Number(r._sum.totalAmount || 0)),
-    prisma.payment.aggregate({ where: { order: { businessId }, status: 'COMPLETED', paidAt: { gte: startOfDay, lt: endOfDay } }, _sum: { amount: true } }).then(r => Number(r._sum.amount || 0)),
-    prisma.order.findMany({ where: { businessId, createdAt: { gte: startOfDay, lt: endOfDay }, buyerId: { not: null } }, select: { buyerId: true }, distinct: ['buyerId'] }).then(orders => orders.length),
+    prisma.order
+      .aggregate({
+        where: { businessId, paidAt: { gte: startOfDay, lt: endOfDay } },
+        _sum: { totalAmount: true },
+      })
+      .then((r) => Number(r._sum.totalAmount || 0)),
+    prisma.payment
+      .aggregate({
+        where: {
+          order: { businessId },
+          status: 'COMPLETED',
+          paidAt: { gte: startOfDay, lt: endOfDay },
+        },
+        _sum: { amount: true },
+      })
+      .then((r) => Number(r._sum.amount || 0)),
+    prisma.order
+      .findMany({
+        where: { businessId, createdAt: { gte: startOfDay, lt: endOfDay }, buyerId: { not: null } },
+        select: { buyerId: true },
+        distinct: ['buyerId'],
+      })
+      .then((orders) => orders.length),
     prisma.order.count({ where: { businessId, status: { in: ['PENDING', 'CONFIRMED'] } } }),
     prisma.quote.count({ where: { businessId, status: { in: ['DRAFT', 'SENT'] } } }),
-    prisma.invoice.aggregate({ where: { businessId, status: { in: ['SENT', 'PARTIALLY_PAID', 'OVERDUE'] } }, _sum: { totalAmount: true } }).then(r => Number(r._sum.totalAmount || 0)),
+    prisma.invoice
+      .aggregate({
+        where: { businessId, status: { in: ['SENT', 'PARTIALLY_PAID', 'OVERDUE'] } },
+        _sum: { totalAmount: true },
+      })
+      .then((r) => Number(r._sum.totalAmount || 0)),
     prisma.dispute.count({ where: { businessId, status: { in: ['OUVERT', 'EN_COURS'] } } }),
-    prisma.debt.aggregate({ where: { businessId, status: { in: ['ACTIVE', 'OVERDUE', 'CRITICAL'] } }, _sum: { remainingAmount: true } }).then(r => Number(r._sum.remainingAmount || 0)),
-    prisma.product.count({ where: { businessId, stock: { lte: 5 }, isActive: true, deletedAt: null } }),
+    prisma.debt
+      .aggregate({
+        where: { businessId, status: { in: ['ACTIVE', 'OVERDUE', 'CRITICAL'] } },
+        _sum: { remainingAmount: true },
+      })
+      .then((r) => Number(r._sum.remainingAmount || 0)),
+    prisma.product.count({
+      where: { businessId, stock: { lte: 5 }, isActive: true, deletedAt: null },
+    }),
     prisma.debt.count({ where: { businessId, status: 'OVERDUE' } }),
     prisma.invoice.count({ where: { businessId, status: 'OVERDUE' } }),
-    prisma.businessDocument.count({ where: { businessId, expiresAt: { gte: now, lte: new Date(now.getTime() + 7 * 86400000) } } }),
-    prisma.order.aggregate({ where: { businessId, paidAt: { gte: startOfYesterday, lt: endOfYesterday } }, _sum: { totalAmount: true } }).then(r => Number(r._sum.totalAmount || 0)),
-    prisma.payment.aggregate({ where: { order: { businessId }, status: 'COMPLETED', paidAt: { gte: startOfYesterday, lt: endOfYesterday } }, _sum: { amount: true } }).then(r => Number(r._sum.amount || 0)),
+    prisma.businessDocument.count({
+      where: { businessId, expiresAt: { gte: now, lte: new Date(now.getTime() + 7 * 86400000) } },
+    }),
+    prisma.order
+      .aggregate({
+        where: { businessId, paidAt: { gte: startOfYesterday, lt: endOfYesterday } },
+        _sum: { totalAmount: true },
+      })
+      .then((r) => Number(r._sum.totalAmount || 0)),
+    prisma.payment
+      .aggregate({
+        where: {
+          order: { businessId },
+          status: 'COMPLETED',
+          paidAt: { gte: startOfYesterday, lt: endOfYesterday },
+        },
+        _sum: { amount: true },
+      })
+      .then((r) => Number(r._sum.amount || 0)),
     prisma.order.count({ where: { businessId, createdAt: { gte: startOfWeek, lt: endOfWeek } } }),
     prisma.booking.count({ where: { businessId, startDate: { gte: startOfWeek, lt: endOfWeek } } }),
   ]);
@@ -304,8 +374,22 @@ export async function getAggregatedDashboardStats(ownerId: string) {
       const dayEnd = new Date(dayStart.getTime() + 86400000);
       const [ordersCount, paidOrdersSum, paymentsSum] = await Promise.all([
         prisma.order.count({ where: { businessId, createdAt: { gte: dayStart, lt: dayEnd } } }),
-        prisma.order.aggregate({ where: { businessId, paidAt: { gte: dayStart, lt: dayEnd } }, _sum: { totalAmount: true } }).then(r => Number(r._sum.totalAmount || 0)),
-        prisma.payment.aggregate({ where: { order: { businessId }, status: 'COMPLETED', paidAt: { gte: dayStart, lt: dayEnd } }, _sum: { amount: true } }).then(r => Number(r._sum.amount || 0)),
+        prisma.order
+          .aggregate({
+            where: { businessId, paidAt: { gte: dayStart, lt: dayEnd } },
+            _sum: { totalAmount: true },
+          })
+          .then((r) => Number(r._sum.totalAmount || 0)),
+        prisma.payment
+          .aggregate({
+            where: {
+              order: { businessId },
+              status: 'COMPLETED',
+              paidAt: { gte: dayStart, lt: dayEnd },
+            },
+            _sum: { amount: true },
+          })
+          .then((r) => Number(r._sum.amount || 0)),
       ]);
       return {
         date: dayStart.toISOString(),
@@ -352,11 +436,17 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
   const slug = await generateUniqueSlug(data.name);
 
   // Mandatory modules always activated
-  const mandatoryModules: BusinessModule[] = [];
+  const mandatoryModules: BusinessModule[] = ['PROMOTIONS' as BusinessModule];
 
   const allModules: BusinessModule[] = [...mandatoryModules, ...data.modules];
 
-  const { latitude, longitude, modules: inputModules, paymentMethods: inputPaymentMethods, ...rest } = data;
+  const {
+    latitude,
+    longitude,
+    modules: inputModules,
+    paymentMethods: inputPaymentMethods,
+    ...rest
+  } = data;
 
   const business = await prisma.$transaction(async (tx) => {
     const created = await tx.business.create({
@@ -367,6 +457,7 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
         modules: { set: allModules },
         onboardingCompleted: true,
         onboardedAt: new Date(),
+        verificationLevel: 'ARGENT',
         owner: {
           connect: { id: ownerId },
         },
@@ -396,7 +487,7 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
     // Create payment methods if provided
     if (inputPaymentMethods && inputPaymentMethods.length > 0) {
       await tx.businessPaymentMethod.createMany({
-        data: inputPaymentMethods.map(pm => ({
+        data: inputPaymentMethods.map((pm) => ({
           businessId: created.id,
           method: pm.method,
           name: pm.name || null,
@@ -406,16 +497,38 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
       });
     }
 
+    // Create moduleAssignments for the new migration system
+    if (allModules.length > 0) {
+      await tx.businessModuleAssignment.createMany({
+        data: allModules.map((mod) => ({
+          businessId: created.id,
+          module: mod,
+          status: 'ACTIVE',
+          activatedAt: new Date(),
+        })),
+        skipDuplicates: true,
+      });
+    }
+
     return created;
   });
 
-  const currentUser = await prisma.user.findUnique({ where: { id: ownerId }, select: { roles: true } });
+  const currentUser = await prisma.user.findUnique({
+    where: { id: ownerId },
+    select: { roles: true },
+  });
   const roles = currentUser?.roles ?? [];
   const updateData: Prisma.UserUpdateArgs['data'] = { primaryRole: 'BUSINESS' };
   if (!roles.includes('BUSINESS')) {
     updateData.roles = { push: 'BUSINESS' } as any;
   }
   await prisma.user.update({ where: { id: ownerId }, data: updateData });
+
+  publishOnboardingCompleted({
+    userId: ownerId,
+    businessId: business.id,
+    businessName: business.name,
+  });
 
   return prisma.business.findUnique({
     where: { id: business.id },
@@ -435,10 +548,47 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
   });
 }
 
-export async function submitVerification(userId: string, data: { identityDocument: string; companyDocument: string; taxDocument?: string; responsiblePhoto: string }) {
+export async function respondToBusinessReview(
+  slug: string,
+  reviewId: string,
+  ownerId: string,
+  response: string
+) {
+  const business = await prisma.business.findUnique({ where: { slug, ownerId, deletedAt: null } });
+  if (!business) throw new AppError('Business non trouvé ou accès refusé', 404);
+
+  const review = await prisma.businessReview.findUnique({
+    where: { id: reviewId, businessId: business.id },
+  });
+  if (!review) throw new AppError('Avis non trouvé', 404);
+
+  const updated = await prisma.businessReview.update({
+    where: { id: reviewId },
+    data: { response, responseAt: new Date() },
+  });
+
+  publishReviewResponse({
+    userId: review.userId,
+    businessId: business.id,
+    businessName: business.name,
+  });
+
+  return updated;
+}
+
+export async function submitVerification(
+  userId: string,
+  data: {
+    identityDocument: string;
+    companyDocument: string;
+    taxDocument?: string;
+    responsiblePhoto: string;
+  }
+) {
   const business = await prisma.business.findUnique({ where: { ownerId: userId } });
   if (!business) throw new AppError('Aucun commerce trouvé pour cet utilisateur', 404);
-  if (business.verificationStatus === 'VERIFIED') throw new AppError('Votre commerce est déjà vérifié', 409);
+  if (business.verificationStatus === 'VERIFIED')
+    throw new AppError('Votre commerce est déjà vérifié', 409);
 
   const updated = await prisma.business.update({
     where: { ownerId: userId },
@@ -453,3 +603,29 @@ export async function submitVerification(userId: string, data: { identityDocumen
   return updated;
 }
 
+export async function getBusinessBookings(slug: string) {
+  const business = await prisma.business.findUnique({
+    where: { slug, isActive: true, deletedAt: null },
+    select: { id: true },
+  });
+  if (!business) throw new AppError('Business non trouvé', 404);
+  return prisma.booking.findMany({
+    where: { businessId: business.id },
+    include: {
+      service: { select: { id: true, name: true, price: true, duration: true } },
+    },
+    orderBy: { startDate: 'asc' },
+  });
+}
+
+export async function getBusinessTrainings(slug: string) {
+  const business = await prisma.business.findUnique({
+    where: { slug, isActive: true, deletedAt: null },
+    select: { id: true },
+  });
+  if (!business) throw new AppError('Business non trouvé', 404);
+  return prisma.training.findMany({
+    where: { businessId: business.id, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+}

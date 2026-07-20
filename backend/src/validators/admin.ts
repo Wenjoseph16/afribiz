@@ -6,8 +6,6 @@ const developerActions = ['validate', 'verify', 'suspend', 'block', 'delete'] as
 const moduleActions = ['validate', 'reject', 'publish', 'archive', 'delete'] as const;
 const backupActions = ['manual', 'auto'] as const;
 const escrowDecisions = ['release', 'refund'] as const;
-const disputeActions = ['decide', 'close'] as const;
-const marketplaceItemActions = ['feature', 'unfeature'] as const;
 
 export const updateUserStatusSchema = z.object({
   action: z.enum(userActions),
@@ -77,4 +75,3 @@ export const updatePlatformSettingsSchema = z.object({
 export const updateAfriScoreRulesSchema = z.object({
   weights: z.record(z.string(), z.number().min(0).max(1000)),
 });
-

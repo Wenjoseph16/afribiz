@@ -36,11 +36,11 @@ export class QueueService {
     if (rows.length === 0) return [];
 
     await prisma.queuedEvent.updateMany({
-      where: { id: { in: rows.map(r => r.id) } },
+      where: { id: { in: rows.map((r) => r.id) } },
       data: { status: 'PROCESSING', attempts: { increment: 1 } },
     });
 
-    return rows.map(row => ({
+    return rows.map((row) => ({
       type: row.type as DomainEventType,
       userId: row.userId,
       payload: row.payload as Record<string, unknown>,

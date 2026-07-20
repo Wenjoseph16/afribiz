@@ -74,4 +74,3 @@ export const recordInteractionSchema = z.object({
   comment: z.string().optional(),
   metadata: z.any().optional(),
 });
-

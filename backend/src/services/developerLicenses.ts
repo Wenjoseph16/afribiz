@@ -27,14 +27,14 @@ export async function createLicense(
     autoRenew?: boolean;
   }
 ) {
-  const existing = await (prisma as any).moduleLicense.findFirst({
+  const existing = await prisma.moduleLicense.findFirst({
     where: { moduleId, businessId, status: 'ACTIVE' },
   });
   if (existing) throw new AppError('Une licence active existe déjà', 409);
 
   const licenseKey = generateLicenseKey();
 
-  return (prisma as any).moduleLicense.create({
+  return prisma.moduleLicense.create({
     data: {
       moduleId,
       businessId,
@@ -52,7 +52,7 @@ export async function createLicense(
  * Activate a license by key
  */
 export async function activateLicense(licenseKey: string) {
-  const license = await (prisma as any).moduleLicense.findUnique({
+  const license = await prisma.moduleLicense.findUnique({
     where: { licenseKey },
   });
   if (!license) throw new AppError('Licence non trouvée', 404);
@@ -61,7 +61,7 @@ export async function activateLicense(licenseKey: string) {
     throw new AppError('Cette licence ne peut pas être activée', 400);
   }
 
-  return (prisma as any).moduleLicense.update({
+  return prisma.moduleLicense.update({
     where: { id: license.id },
     data: {
       status: 'ACTIVE',
@@ -73,12 +73,8 @@ export async function activateLicense(licenseKey: string) {
 /**
  * Revoke a license
  */
-export async function revokeLicense(
-  userId: string,
-  licenseId: string,
-  reason?: string
-) {
-  const license = await (prisma as any).moduleLicense.findUnique({
+export async function revokeLicense(userId: string, licenseId: string, reason?: string) {
+  const license = await prisma.moduleLicense.findUnique({
     where: { id: licenseId },
     include: {
       module: { select: { developerId: true } },
@@ -91,7 +87,7 @@ export async function revokeLicense(
     throw new AppError('Non autorisé', 403);
   }
 
-  return (prisma as any).moduleLicense.update({
+  return prisma.moduleLicense.update({
     where: { id: licenseId },
     data: {
       status: 'REVOKED',
@@ -104,20 +100,67 @@ export async function revokeLicense(
 /**
  * Renew a license
  */
-export async function renewLicense(licenseId: string, durationDays: number = 365) {
-  const license = await (prisma as any).moduleLicense.findUnique({
+export async function renewLicense(
+  licenseId: string,
+  options?: { durationDays?: number; amount?: number; currency?: string }
+) {
+  const license = await prisma.moduleLicense.findUnique({
     where: { id: licenseId },
+    include: {
+      module: {
+        select: { id: true, developerId: true, totalRevenue: true, currency: true, price: true },
+      },
+    },
   });
   if (!license) throw new AppError('Licence non trouvée', 404);
+
+  const durationDays = options?.durationDays ?? 365;
+  const amount = options?.amount ?? (license.price || Number(license.module?.price || 0));
+  const currency = options?.currency || license.currency || license.module?.currency || 'FCFA';
 
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + durationDays);
 
-  return (prisma as any).moduleLicense.update({
+  // Record revenue for the renewal
+  const amountNum = Number(amount);
+  if (amountNum > 0 && license.module) {
+    try {
+      const { getMonetizationSettings } = await import('./monetizationConfig');
+      const settings = await getMonetizationSettings();
+      const commissionRate = settings.developerModuleCommissionRate;
+      const commissionAmount = amountNum * commissionRate;
+      const netAmount = amountNum - commissionAmount;
+
+      await prisma.developerRevenue.create({
+        data: {
+          developerId: license.module.developerId,
+          moduleId: license.moduleId,
+          type: 'MODULE_SALE' as any,
+          amount: amountNum,
+          commissionAmount,
+          netAmount,
+          commissionRate,
+          status: 'COMPLETED',
+        },
+      });
+
+      // Update total revenue on module
+      await prisma.developerModule.update({
+        where: { id: license.moduleId },
+        data: { totalRevenue: { increment: netAmount } },
+      });
+    } catch {
+      /* non-blocking */
+    }
+  }
+
+  return prisma.moduleLicense.update({
     where: { id: licenseId },
     data: {
       status: 'ACTIVE',
       expiresAt,
+      price: amount,
+      currency,
     },
   });
 }
@@ -126,15 +169,12 @@ export async function renewLicense(licenseId: string, durationDays: number = 365
  * Check if a business has a valid license for a module
  */
 export async function checkLicense(moduleId: string, businessId: string) {
-  const license = await (prisma as any).moduleLicense.findFirst({
+  const license = await prisma.moduleLicense.findFirst({
     where: {
       moduleId,
       businessId,
       status: 'ACTIVE',
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gte: new Date() } },
-      ],
+      OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
     },
   });
 
@@ -151,11 +191,10 @@ export async function checkLicense(moduleId: string, businessId: string) {
  * Get all licenses for a module (developer view)
  */
 export async function getModuleLicenses(moduleId: string) {
-  return (prisma as any).moduleLicense.findMany({
+  return prisma.moduleLicense.findMany({
     where: { moduleId },
     include: {
       business: { select: { id: true, name: true, slug: true, logo: true } },
-      subscriptions: true,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -165,7 +204,7 @@ export async function getModuleLicenses(moduleId: string) {
  * Get all licenses for a business
  */
 export async function getBusinessLicenses(businessId: string) {
-  return (prisma as any).moduleLicense.findMany({
+  return prisma.moduleLicense.findMany({
     where: { businessId },
     include: {
       module: { select: { id: true, name: true, slug: true, logo: true, version: true } },
@@ -179,19 +218,19 @@ export async function getBusinessLicenses(businessId: string) {
  */
 export async function getLicenseStats(developerId: string) {
   const [total, active, expired, revoked, revenue] = await Promise.all([
-    (prisma as any).moduleLicense.count({
+    prisma.moduleLicense.count({
       where: { module: { developerId } },
     }),
-    (prisma as any).moduleLicense.count({
+    prisma.moduleLicense.count({
       where: { module: { developerId }, status: 'ACTIVE' },
     }),
-    (prisma as any).moduleLicense.count({
+    prisma.moduleLicense.count({
       where: { module: { developerId }, status: 'EXPIRED' },
     }),
-    (prisma as any).moduleLicense.count({
+    prisma.moduleLicense.count({
       where: { module: { developerId }, status: 'REVOKED' },
     }),
-    (prisma as any).moduleLicense.aggregate({
+    prisma.moduleLicense.aggregate({
       where: { module: { developerId }, status: 'ACTIVE' },
       _sum: { price: true },
     }),

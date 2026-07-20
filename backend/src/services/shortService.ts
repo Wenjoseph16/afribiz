@@ -1,4 +1,5 @@
 import { prisma } from '../lib/db';
+import { AppError } from '../middlewares/errorHandler';
 
 export async function getShorts(params?: { businessId?: string; page?: number; limit?: number }) {
   const { businessId, page = 1, limit = 10 } = params || {};
@@ -10,7 +11,9 @@ export async function getShorts(params?: { businessId?: string; page?: number; l
     prisma.short.findMany({
       where,
       include: {
-        business: { select: { id: true, name: true, slug: true, logo: true, type: true, city: true } },
+        business: {
+          select: { id: true, name: true, slug: true, logo: true, type: true, city: true },
+        },
         _count: { select: { likes: true, comments: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -27,7 +30,9 @@ export async function getShortById(shortId: string, userId?: string) {
   const short = await prisma.short.findUnique({
     where: { id: shortId },
     include: {
-      business: { select: { id: true, name: true, slug: true, logo: true, type: true, city: true } },
+      business: {
+        select: { id: true, name: true, slug: true, logo: true, type: true, city: true },
+      },
       comments: { orderBy: { createdAt: 'desc' }, take: 20 },
       _count: { select: { likes: true, comments: true, views: true } },
     },
@@ -94,7 +99,7 @@ export async function createShort(data: {
 
 export async function updateShort(shortId: string, businessId: string, data: any) {
   const short = await prisma.short.findFirst({ where: { id: shortId, businessId } });
-  if (!short) throw new Error('Short non trouvé');
+  if (!short) throw new AppError('Short non trouvé', 404);
 
   return prisma.short.update({
     where: { id: shortId },
@@ -111,7 +116,7 @@ export async function updateShort(shortId: string, businessId: string, data: any
 
 export async function deleteShort(shortId: string, businessId: string) {
   const short = await prisma.short.findFirst({ where: { id: shortId, businessId } });
-  if (!short) throw new Error('Short non trouvé');
+  if (!short) throw new AppError('Short non trouvé', 404);
   await prisma.short.delete({ where: { id: shortId } });
 }
 
@@ -129,7 +134,12 @@ export async function likeShort(shortId: string, userId: string) {
   return { liked: true };
 }
 
-export async function addComment(shortId: string, userId: string | undefined, userName: string, content: string) {
+export async function addComment(
+  shortId: string,
+  userId: string | undefined,
+  userName: string,
+  content: string
+) {
   const comment = await prisma.shortComment.create({
     data: { shortId, userId, userName, content },
   });

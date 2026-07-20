@@ -30,10 +30,9 @@ export class SessionRepository {
   /**
    * Find all sessions for a user
    */
-  static async findByUserId(userId: string) {
+  static async findByUserId(userId: string): Promise<Session[]> {
     return prisma.session.findMany({
       where: { userId, isActive: true },
-      include: { device: true },
       orderBy: { createdAt: 'desc' },
     });
   }

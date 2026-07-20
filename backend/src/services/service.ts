@@ -2,9 +2,18 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { calculatePagination } from '../utils/helpers';
+import { publishServicePublished } from '../events/publishers';
+import { autoShareToSocial } from './socialShareService';
 
 function slugify(text: string): string {
-  return text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
 }
 
 async function getBusinessByOwner(ownerId: string) {
@@ -30,7 +39,8 @@ export async function listServices(ownerId: string, params: any) {
   const { skip, take } = calculatePagination(params.page || 1, params.limit || 20);
   const where: Prisma.ServiceWhereInput = { businessId: business.id, deletedAt: null };
   if (params.categoryId) where.categoryId = params.categoryId;
-  if (params.isActive !== undefined) where.isActive = params.isActive === true || params.isActive === 'true';
+  if (params.isActive !== undefined)
+    where.isActive = params.isActive === true || params.isActive === 'true';
   if (params.featured) where.featured = params.featured === true || params.featured === 'true';
   if (params.search) where.OR = [{ name: { contains: params.search, mode: 'insensitive' } }];
   const orderBy: any = {};
@@ -45,7 +55,12 @@ export async function listServices(ownerId: string, params: any) {
   ]);
   return {
     services,
-    pagination: { page: params.page || 1, limit: params.limit || 20, total, totalPages: Math.ceil(total / (params.limit || 20)) },
+    pagination: {
+      page: params.page || 1,
+      limit: params.limit || 20,
+      total,
+      totalPages: Math.ceil(total / (params.limit || 20)),
+    },
   };
 }
 
@@ -55,7 +70,12 @@ export async function getService(ownerId: string, serviceId: string) {
     where: { id: serviceId, businessId: business.id, deletedAt: null },
     include: {
       ...serviceInclude,
-      reviews: { where: { isActive: true }, orderBy: { createdAt: 'desc' }, take: 10, include: { user: { select: { id: true, firstName: true, lastName: true, avatar: true } } } },
+      reviews: {
+        where: { isActive: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        include: { user: { select: { id: true, firstName: true, lastName: true, avatar: true } } },
+      },
     },
   });
   if (!service) throw new AppError('Service not found', 404);
@@ -66,34 +86,77 @@ export async function createService(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
   return prisma.$transaction(async (tx) => {
     const cleaned: any = {};
-    Object.keys(data).forEach(k => { if (!['categoryId', 'employees'].includes(k)) cleaned[k] = data[k]; });
+    Object.keys(data).forEach((k) => {
+      if (!['categoryId', 'employees'].includes(k)) cleaned[k] = data[k];
+    });
     if (data.categoryId) {
-      const cat = await tx.serviceCategory.findFirst({ where: { id: data.categoryId, businessId: business.id } });
+      const cat = await tx.serviceCategory.findFirst({
+        where: { id: data.categoryId, businessId: business.id },
+      });
       if (!cat) throw new AppError('Category not found', 400);
       cleaned.category = { connect: { id: data.categoryId } };
     }
     if (data.promotionEndsAt) cleaned.promotionEndsAt = new Date(data.promotionEndsAt);
     const created = await tx.service.create({
-      data: { businessId: business.id, ...cleaned, tags: data.tags || [], images: data.images || [], isPromotional: data.isPromotional ?? false, bookingRequired: data.bookingRequired ?? true },
+      data: {
+        businessId: business.id,
+        ...cleaned,
+        tags: data.tags || [],
+        images: data.images || [],
+        isPromotional: data.isPromotional ?? false,
+        bookingRequired: data.bookingRequired ?? true,
+      },
     });
     if (data.employees?.length > 0) {
       await tx.serviceEmployee.createMany({
-        data: data.employees.map((e: any, i: number) => ({ serviceId: created.id, name: e.name, title: e.title || null, photo: e.photo || null, bio: e.bio || null, sortOrder: i })),
+        data: data.employees.map((e: any, i: number) => ({
+          serviceId: created.id,
+          name: e.name,
+          title: e.title || null,
+          photo: e.photo || null,
+          bio: e.bio || null,
+          sortOrder: i,
+        })),
       });
     }
+
+    publishServicePublished({
+      userId: ownerId,
+      serviceId: created.id,
+      businessId: business.id,
+      serviceName: created.name,
+    });
+
+    autoShareToSocial({
+      type: 'SERVICE',
+      title: created.name || '',
+      description: created.shortDescription || undefined,
+      imageUrl: created.images?.[0],
+      link: `/business/${business.name || ''}/services/${created.id}`,
+      businessId: business.id,
+      businessName: business.name || '',
+      ownerId,
+    }).catch(() => {});
+
     return tx.service.findUnique({ where: { id: created.id }, include: serviceInclude });
   });
 }
 
 export async function updateService(ownerId: string, serviceId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.service.findFirst({ where: { id: serviceId, businessId: business.id, deletedAt: null } });
+  const existing = await prisma.service.findFirst({
+    where: { id: serviceId, businessId: business.id, deletedAt: null },
+  });
   if (!existing) throw new AppError('Service not found', 404);
   return prisma.$transaction(async (tx) => {
     const cleaned: any = {};
-    Object.keys(data).forEach(k => { if (!['categoryId', 'employees'].includes(k)) cleaned[k] = data[k]; });
+    Object.keys(data).forEach((k) => {
+      if (!['categoryId', 'employees'].includes(k)) cleaned[k] = data[k];
+    });
     if (data.categoryId) {
-      const cat = await tx.serviceCategory.findFirst({ where: { id: data.categoryId, businessId: business.id } });
+      const cat = await tx.serviceCategory.findFirst({
+        where: { id: data.categoryId, businessId: business.id },
+      });
       if (!cat) throw new AppError('Category not found', 400);
       cleaned.category = { connect: { id: data.categoryId } };
     } else if (data.categoryId === null) cleaned.category = { disconnect: true };
@@ -103,7 +166,14 @@ export async function updateService(ownerId: string, serviceId: string, data: an
       await tx.serviceEmployee.deleteMany({ where: { serviceId } });
       if (data.employees.length > 0) {
         await tx.serviceEmployee.createMany({
-          data: data.employees.map((e: any, i: number) => ({ serviceId, name: e.name, title: e.title || null, photo: e.photo || null, bio: e.bio || null, sortOrder: i })),
+          data: data.employees.map((e: any, i: number) => ({
+            serviceId,
+            name: e.name,
+            title: e.title || null,
+            photo: e.photo || null,
+            bio: e.bio || null,
+            sortOrder: i,
+          })),
         });
       }
     }
@@ -113,24 +183,38 @@ export async function updateService(ownerId: string, serviceId: string, data: an
 
 export async function deleteService(ownerId: string, serviceId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.service.findFirst({ where: { id: serviceId, businessId: business.id, deletedAt: null } });
+  const existing = await prisma.service.findFirst({
+    where: { id: serviceId, businessId: business.id, deletedAt: null },
+  });
   if (!existing) throw new AppError('Service not found', 404);
-  await prisma.service.update({ where: { id: serviceId }, data: { deletedAt: new Date(), isActive: false } });
+  await prisma.service.update({
+    where: { id: serviceId },
+    data: { deletedAt: new Date(), isActive: false },
+  });
   return { message: 'Service deleted' };
 }
 
 export async function toggleServiceActive(ownerId: string, serviceId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const s = await prisma.service.findFirst({ where: { id: serviceId, businessId: business.id, deletedAt: null } });
+  const s = await prisma.service.findFirst({
+    where: { id: serviceId, businessId: business.id, deletedAt: null },
+  });
   if (!s) throw new AppError('Service not found', 404);
-  return prisma.service.update({ where: { id: serviceId }, data: { isActive: !s.isActive }, include: serviceInclude });
+  return prisma.service.update({
+    where: { id: serviceId },
+    data: { isActive: !s.isActive },
+    include: serviceInclude,
+  });
 }
 
 export async function listCategories(ownerId: string) {
   const business = await getBusinessByOwner(ownerId);
   return prisma.serviceCategory.findMany({
     where: { businessId: business.id, deletedAt: null },
-    include: { children: { where: { isActive: true }, orderBy: { sortOrder: 'asc' as const } }, _count: { select: { services: true } } },
+    include: {
+      children: { where: { isActive: true }, orderBy: { sortOrder: 'asc' as const } },
+      _count: { select: { services: true } },
+    },
     orderBy: { sortOrder: 'asc' as const },
   });
 }
@@ -138,28 +222,45 @@ export async function listCategories(ownerId: string) {
 export async function createCategory(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
   const slug = slugify(data.name);
-  const existing = await prisma.serviceCategory.findUnique({ where: { businessId_slug: { businessId: business.id, slug } } });
+  const existing = await prisma.serviceCategory.findUnique({
+    where: { businessId_slug: { businessId: business.id, slug } },
+  });
   if (existing) throw new AppError('Category already exists', 409);
   if (data.parentId) {
-    const parent = await prisma.serviceCategory.findFirst({ where: { id: data.parentId, businessId: business.id } });
+    const parent = await prisma.serviceCategory.findFirst({
+      where: { id: data.parentId, businessId: business.id },
+    });
     if (!parent) throw new AppError('Parent category not found', 404);
   }
   return prisma.serviceCategory.create({
-    data: { businessId: business.id, name: data.name, slug, description: data.description, icon: data.icon, image: data.image, parentId: data.parentId || null, sortOrder: data.sortOrder || 0 },
+    data: {
+      businessId: business.id,
+      name: data.name,
+      slug,
+      description: data.description,
+      icon: data.icon,
+      image: data.image,
+      parentId: data.parentId || null,
+      sortOrder: data.sortOrder || 0,
+    },
     include: { _count: { select: { services: true } } },
   });
 }
 
 export async function updateCategory(ownerId: string, categoryId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  const cat = await prisma.serviceCategory.findFirst({ where: { id: categoryId, businessId: business.id, deletedAt: null } });
+  const cat = await prisma.serviceCategory.findFirst({
+    where: { id: categoryId, businessId: business.id, deletedAt: null },
+  });
   if (!cat) throw new AppError('Category not found', 404);
   const updateData: any = { ...data };
   if (data.name) updateData.slug = slugify(data.name);
   if (data.parentId === null) updateData.parentId = null;
   else if (data.parentId) {
     if (data.parentId === categoryId) throw new AppError('Circular reference', 400);
-    const parent = await prisma.serviceCategory.findFirst({ where: { id: data.parentId, businessId: business.id } });
+    const parent = await prisma.serviceCategory.findFirst({
+      where: { id: data.parentId, businessId: business.id },
+    });
     if (!parent) throw new AppError('Parent category not found', 404);
   }
   return prisma.serviceCategory.update({
@@ -171,19 +272,28 @@ export async function updateCategory(ownerId: string, categoryId: string, data: 
 
 export async function deleteCategory(ownerId: string, categoryId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const cat = await prisma.serviceCategory.findFirst({ where: { id: categoryId, businessId: business.id, deletedAt: null }, include: { _count: { select: { services: true } } } });
+  const cat = await prisma.serviceCategory.findFirst({
+    where: { id: categoryId, businessId: business.id, deletedAt: null },
+    include: { _count: { select: { services: true } } },
+  });
   if (!cat) throw new AppError('Category not found', 404);
   if (cat._count.services > 0) throw new AppError('Cannot delete: has services', 400);
-  await prisma.serviceCategory.update({ where: { id: categoryId }, data: { deletedAt: new Date(), isActive: false } });
+  await prisma.serviceCategory.update({
+    where: { id: categoryId },
+    data: { deletedAt: new Date(), isActive: false },
+  });
   return { message: 'Category deleted' };
 }
 
 export async function duplicateService(ownerId: string, serviceId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const original = await prisma.service.findFirst({ where: { id: serviceId, businessId: business.id, deletedAt: null } });
+  const original = await prisma.service.findFirst({
+    where: { id: serviceId, businessId: business.id, deletedAt: null },
+  });
   if (!original) throw new AppError('Service not found', 404);
   return prisma.$transaction(async (tx) => {
-    const { id, createdAt, updatedAt, deletedAt, bookingCount, reviewCount, rating, ...data } = original;
+    const { id, createdAt, updatedAt, deletedAt, bookingCount, reviewCount, rating, ...data } =
+      original;
     const created = await tx.service.create({
       data: {
         ...data,
@@ -195,7 +305,9 @@ export async function duplicateService(ownerId: string, serviceId: string) {
         seoDescription: undefined,
       },
     });
-    const employees = await tx.serviceEmployee.findMany({ where: { serviceId: original.id, isActive: true } });
+    const employees = await tx.serviceEmployee.findMany({
+      where: { serviceId: original.id, isActive: true },
+    });
     if (employees.length > 0) {
       await tx.serviceEmployee.createMany({
         data: employees.map((e, i) => ({
@@ -212,14 +324,14 @@ export async function duplicateService(ownerId: string, serviceId: string) {
   });
 }
 
-export async function exportServices(ownerId: string, format: string = 'csv') {
+export async function exportServices(ownerId: string, _format: string = 'csv') {
   const business = await getBusinessByOwner(ownerId);
   const services = await prisma.service.findMany({
     where: { businessId: business.id, deletedAt: null },
     include: { category: true, _count: { select: { reviews: true, bookings: true } } },
     orderBy: { createdAt: 'desc' },
   });
-  const rows = services.map(s => ({
+  const rows = services.map((s) => ({
     name: s.name,
     shortDescription: s.shortDescription || '',
     price: s.price?.toString() || '',
@@ -296,8 +408,19 @@ export async function getServiceStats(ownerId: string) {
   const [total, active, catCount] = await Promise.all([
     prisma.service.count({ where: { businessId: business.id, deletedAt: null } }),
     prisma.service.count({ where: { businessId: business.id, deletedAt: null, isActive: true } }),
-    prisma.serviceCategory.count({ where: { businessId: business.id, deletedAt: null, isActive: true } }),
+    prisma.serviceCategory.count({
+      where: { businessId: business.id, deletedAt: null, isActive: true },
+    }),
   ]);
-  const bookings = await prisma.service.aggregate({ where: { businessId: business.id, deletedAt: null }, _sum: { bookingCount: true } });
-  return { totalServices: total, activeServices: active, inactiveServices: total - active, categoryCount: catCount, totalBookings: bookings._sum.bookingCount || 0 };
+  const bookings = await prisma.service.aggregate({
+    where: { businessId: business.id, deletedAt: null },
+    _sum: { bookingCount: true },
+  });
+  return {
+    totalServices: total,
+    activeServices: active,
+    inactiveServices: total - active,
+    categoryCount: catCount,
+    totalBookings: bookings._sum.bookingCount || 0,
+  };
 }

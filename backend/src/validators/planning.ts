@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
 const taskPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
-const taskStatuses = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED', 'BLOCKED', 'ON_HOLD', 'VALIDATION'] as const;
+const taskStatuses = [
+  'TODO',
+  'IN_PROGRESS',
+  'DONE',
+  'CANCELLED',
+  'BLOCKED',
+  'ON_HOLD',
+  'VALIDATION',
+] as const;
 const taskRecurrences = ['NONE', 'DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'CUSTOM'] as const;
 
 export const createTaskSchema = z.object({

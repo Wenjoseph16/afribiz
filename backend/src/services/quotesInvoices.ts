@@ -15,7 +15,15 @@ export async function getBusinessByOwner(ownerId: string, requireModule = true) 
 
 function generateNumber(prefix: string): string {
   const d = new Date();
-  return prefix + '-' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '-' + String(Math.floor(Math.random()*99999)).padStart(5,'0');
+  return (
+    prefix +
+    '-' +
+    d.getFullYear() +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0') +
+    '-' +
+    String(Math.floor(Math.random() * 99999)).padStart(5, '0')
+  );
 }
 
 const quoteInclude = {
@@ -40,14 +48,21 @@ export async function listQuotes(ownerId: string, filters: any) {
   const { page = 1, limit = 20, status, search } = filters;
   const where: Prisma.QuoteWhereInput = { businessId: business.id };
   if (status) where.status = status as any;
-  if (search) where.OR = [
-    { quoteNumber: { contains: search, mode: 'insensitive' } },
-    { clientName: { contains: search, mode: 'insensitive' } },
-    { clientPhone: { contains: search, mode: 'insensitive' } },
-  ];
+  if (search)
+    where.OR = [
+      { quoteNumber: { contains: search, mode: 'insensitive' } },
+      { clientName: { contains: search, mode: 'insensitive' } },
+      { clientPhone: { contains: search, mode: 'insensitive' } },
+    ];
   const skip = (page - 1) * limit;
   const [quotes, total] = await Promise.all([
-    prisma.quote.findMany({ where, include: quoteInclude, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+    prisma.quote.findMany({
+      where,
+      include: quoteInclude,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
     prisma.quote.count({ where }),
   ]);
   return { quotes, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -55,7 +70,10 @@ export async function listQuotes(ownerId: string, filters: any) {
 
 export async function getQuote(ownerId: string, quoteId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const quote = await prisma.quote.findFirst({ where: { id: quoteId, businessId: business.id }, include: quoteInclude });
+  const quote = await prisma.quote.findFirst({
+    where: { id: quoteId, businessId: business.id },
+    include: quoteInclude,
+  });
   if (!quote) throw new AppError('Devis non trouv\u00e9', 404);
   return quote;
 }
@@ -64,12 +82,15 @@ export async function createQuote(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
   const quoteNumber = generateNumber('DEV');
 
-  const subtotal = data.items?.reduce((s: number, i: any) => s + (Number(i.unitPrice) * (i.quantity || 1)), 0) || 0;
+  const subtotal =
+    data.items?.reduce((s: number, i: any) => s + Number(i.unitPrice) * (i.quantity || 1), 0) || 0;
   const tax = data.tax ?? 0;
   const discount = data.discount ?? 0;
   const total = subtotal + Number(tax) - Number(discount);
 
-  const expiresAt = data.validityDays ? new Date(Date.now() + data.validityDays * 24 * 60 * 60 * 1000) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const expiresAt = data.validityDays
+    ? new Date(Date.now() + data.validityDays * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   return prisma.quote.create({
     data: {
@@ -84,10 +105,21 @@ export async function createQuote(ownerId: string, data: any) {
       title: data.title,
       description: data.description,
       terms: data.termsConditions,
-      subtotal, taxAmount: tax || undefined, discountAmount: discount || undefined,
-      totalAmount: total, currency: data.currency || business.settings?.currency || 'FCFA',
-      status: 'DRAFT', validUntil: expiresAt,
-      quoteItems: { create: (data.items || []).map((i: any) => ({ description: i.description || i.name || '', quantity: i.quantity || 1, unitPrice: i.unitPrice, total: Number(i.unitPrice) * (i.quantity || 1) })) },
+      subtotal,
+      taxAmount: tax || undefined,
+      discountAmount: discount || undefined,
+      totalAmount: total,
+      currency: data.currency || business.settings?.currency || 'FCFA',
+      status: 'DRAFT',
+      validUntil: expiresAt,
+      quoteItems: {
+        create: (data.items || []).map((i: any) => ({
+          description: i.description || i.name || '',
+          quantity: i.quantity || 1,
+          unitPrice: i.unitPrice,
+          total: Number(i.unitPrice) * (i.quantity || 1),
+        })),
+      },
     },
     include: quoteInclude,
   });
@@ -95,27 +127,63 @@ export async function createQuote(ownerId: string, data: any) {
 
 export async function updateQuote(ownerId: string, quoteId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.quote.findFirst({ where: { id: quoteId, businessId: business.id } });
+  const existing = await prisma.quote.findFirst({
+    where: { id: quoteId, businessId: business.id },
+  });
   if (!existing) throw new AppError('Devis non trouv\u00e9', 404);
-  if (existing.status !== 'DRAFT') throw new AppError('Seuls les brouillons peuvent \u00eatre modifi\u00e9s', 403);
+  if (existing.status !== 'DRAFT')
+    throw new AppError('Seuls les brouillons peuvent \u00eatre modifi\u00e9s', 403);
 
   const upd: any = {};
-  for (const key of ['title','description','notes','terms','validUntil','clientName','clientPhone','clientEmail','currency']) {
+  for (const key of [
+    'title',
+    'description',
+    'notes',
+    'terms',
+    'validUntil',
+    'clientName',
+    'clientPhone',
+    'clientEmail',
+    'currency',
+  ]) {
     if (data[key] !== undefined) upd[key] = data[key];
   }
   if (data.items) {
-    const subtotal = data.items.reduce((s: number, i: any) => s + (Number(i.unitPrice) * (i.quantity || 1)), 0);
+    const subtotal = data.items.reduce(
+      (s: number, i: any) => s + Number(i.unitPrice) * (i.quantity || 1),
+      0
+    );
     const tax = data.tax ?? 0;
     const discount = data.discount ?? 0;
-    upd.subtotal = subtotal; upd.totalAmount = subtotal + Number(tax) - Number(discount); upd.taxAmount = tax; upd.discountAmount = discount;
+    upd.subtotal = subtotal;
+    upd.totalAmount = subtotal + Number(tax) - Number(discount);
+    upd.taxAmount = tax;
+    upd.discountAmount = discount;
     await prisma.quoteItem.deleteMany({ where: { quoteId } });
-    await prisma.quoteItem.createMany({ data: data.items.map((i: any) => ({ quoteId, description: i.description || i.name || '', quantity: i.quantity || 1, unitPrice: i.unitPrice, total: Number(i.unitPrice) * (i.quantity || 1) })) });
+    await prisma.quoteItem.createMany({
+      data: data.items.map((i: any) => ({
+        quoteId,
+        description: i.description || i.name || '',
+        quantity: i.quantity || 1,
+        unitPrice: i.unitPrice,
+        total: Number(i.unitPrice) * (i.quantity || 1),
+      })),
+    });
   }
   return prisma.quote.update({ where: { id: quoteId }, data: upd, include: quoteInclude });
 }
 
-export async function updateQuoteStatus(ownerId: string, quoteId: string, status: string, reason?: string) {
+export async function updateQuoteStatus(
+  ownerId: string,
+  quoteId: string,
+  status: string,
+  reason?: string
+) {
   const business = await getBusinessByOwner(ownerId);
+  const existing = await prisma.quote.findFirst({
+    where: { id: quoteId, businessId: business.id },
+  });
+  if (!existing) throw new AppError('Devis non trouvé', 404);
   const normalizedStatus = status === 'CANCELLED' ? 'REJECTED' : status;
   const upd: any = { status: normalizedStatus };
   if (status === 'CANCELLED' && reason) upd.notes = (upd.notes || '') + '\nCancelled: ' + reason;
@@ -124,22 +192,43 @@ export async function updateQuoteStatus(ownerId: string, quoteId: string, status
 
 export async function convertQuoteToInvoice(ownerId: string, quoteId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const quote = await prisma.quote.findFirst({ where: { id: quoteId, businessId: business.id }, include: { quoteItems: true } });
+  const quote = await prisma.quote.findFirst({
+    where: { id: quoteId, businessId: business.id },
+    include: { quoteItems: true },
+  });
   if (!quote) throw new AppError('Devis non trouv\u00e9', 404);
 
   const invoiceNumber = generateNumber('FAC');
   const dueDate = quote.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   const invoice = await prisma.invoice.create({
     data: {
-      invoiceNumber, quoteId: quote.id,
-      businessId: business.id, clientId: quote.clientId, clientName: quote.clientName,
-      clientPhone: quote.clientPhone, clientEmail: quote.clientEmail,
-      title: quote.title, description: quote.description, notes: quote.notes, terms: quote.terms,
-      subtotal: quote.subtotal, taxAmount: quote.taxAmount, discountAmount: quote.discountAmount,
-      totalAmount: quote.totalAmount, amountPaid: 0,
-      currency: quote.currency, status: 'DRAFT',
+      invoiceNumber,
+      quoteId: quote.id,
+      businessId: business.id,
+      clientId: quote.clientId,
+      clientName: quote.clientName,
+      clientPhone: quote.clientPhone,
+      clientEmail: quote.clientEmail,
+      title: quote.title,
+      description: quote.description,
+      notes: quote.notes,
+      terms: quote.terms,
+      subtotal: quote.subtotal,
+      taxAmount: quote.taxAmount,
+      discountAmount: quote.discountAmount,
+      totalAmount: quote.totalAmount,
+      amountPaid: 0,
+      currency: quote.currency,
+      status: 'DRAFT',
       dueDate,
-      invoiceItems: { create: quote.quoteItems.map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, total: i.total })) },
+      invoiceItems: {
+        create: quote.quoteItems.map((i) => ({
+          description: i.description,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          total: i.total,
+        })),
+      },
     },
     include: invoiceInclude,
   });
@@ -151,6 +240,7 @@ export async function convertQuoteToInvoice(ownerId: string, quoteId: string) {
       data: {
         invoiceId: invoice.id,
         businessId: business.id,
+        buyerId: invoice.clientId,
         totalAmount: invoice.totalAmount,
         remainingAmount: invoice.totalAmount,
         amountPaid: 0,
@@ -171,7 +261,6 @@ export async function acceptQuoteAndConvert(ownerId: string, quoteId: string) {
 }
 
 export async function deleteQuote(ownerId: string, quoteId: string) {
-  const business = await getBusinessByOwner(ownerId);
   await prisma.quote.update({ where: { id: quoteId }, data: { status: 'REJECTED' } });
 }
 
@@ -182,20 +271,29 @@ export async function listInvoices(ownerId: string, filters: any) {
   const { page = 1, limit = 20, status, search, dateFrom, dateTo, overdue } = filters;
   const where: Prisma.InvoiceWhereInput = { businessId: business.id };
   if (status) where.status = status as any;
-  if (overdue === 'true') { where.status = 'OVERDUE'; }
+  if (overdue === 'true') {
+    where.status = 'OVERDUE';
+  }
   if (dateFrom || dateTo) {
     where.createdAt = {};
     if (dateFrom) where.createdAt.gte = new Date(dateFrom);
     if (dateTo) where.createdAt.lte = new Date(dateTo + 'T23:59:59Z');
   }
-  if (search) where.OR = [
-    { invoiceNumber: { contains: search, mode: 'insensitive' } },
-    { clientName: { contains: search, mode: 'insensitive' } },
-    { clientPhone: { contains: search, mode: 'insensitive' } },
-  ];
+  if (search)
+    where.OR = [
+      { invoiceNumber: { contains: search, mode: 'insensitive' } },
+      { clientName: { contains: search, mode: 'insensitive' } },
+      { clientPhone: { contains: search, mode: 'insensitive' } },
+    ];
   const skip = (page - 1) * limit;
   const [invoices, total] = await Promise.all([
-    prisma.invoice.findMany({ where, include: invoiceInclude, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+    prisma.invoice.findMany({
+      where,
+      include: invoiceInclude,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
     prisma.invoice.count({ where }),
   ]);
   return { invoices, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -203,7 +301,10 @@ export async function listInvoices(ownerId: string, filters: any) {
 
 export async function getInvoice(ownerId: string, invoiceId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, businessId: business.id }, include: invoiceInclude });
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, businessId: business.id },
+    include: invoiceInclude,
+  });
   if (!invoice) throw new AppError('Facture non trouv\u00e9e', 404);
   return invoice;
 }
@@ -211,25 +312,51 @@ export async function getInvoice(ownerId: string, invoiceId: string) {
 export async function createInvoice(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
   const invoiceNumber = generateNumber('FAC');
-  const subtotal = data.items?.reduce((s: number, i: any) => s + (Number(i.unitPrice) * (i.quantity || 1)), 0) || 0;
-  const tax = data.tax ?? 0;
+  const subtotal =
+    data.items?.reduce((s: number, i: any) => s + Number(i.unitPrice) * (i.quantity || 1), 0) || 0;
+
+  // Dynamic Tax Calculation
+  const settings = business.settings as Record<string, any> | null;
+  const taxRate = settings?.taxRate || 0;
+  const taxAmount = subtotal * (taxRate / 100);
+
   const discount = data.discount ?? 0;
-  const total = subtotal + Number(tax) - Number(discount);
+  const total = subtotal + taxAmount - Number(discount);
   const amountPaid = data.amountPaid || 0;
   const remainingAmount = total - Number(amountPaid);
-  const dueDate = data.dueDate ? new Date(data.dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const dueDate = data.dueDate
+    ? new Date(data.dueDate)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
   const invoice = await prisma.invoice.create({
     data: {
-      invoiceNumber, businessId: business.id,
-      clientId: data.clientId || null, clientName: data.clientName || data.customerName || null, clientPhone: data.clientPhone || data.customerPhone || null,
+      invoiceNumber,
+      businessId: business.id,
+      clientId: data.clientId || null,
+      clientName: data.clientName || data.customerName || null,
+      clientPhone: data.clientPhone || data.customerPhone || null,
       clientEmail: data.clientEmail || data.customerEmail || null,
-      title: data.title, description: data.description, notes: data.notes, terms: data.termsConditions,
-      subtotal, taxAmount: tax || undefined, discountAmount: discount || undefined,
-      totalAmount: total, amountPaid, currency: data.currency || business.settings?.currency || 'FCFA',
+      title: data.title,
+      description: data.description,
+      notes: data.notes,
+      terms: data.termsConditions,
+      subtotal,
+      taxAmount: taxAmount,
+      discountAmount: discount || undefined,
+      totalAmount: total,
+      amountPaid,
+      currency: data.currency || business.settings?.currency || 'FCFA',
       status: 'DRAFT',
-      dueDate, paidAt: amountPaid >= total ? new Date() : undefined,
-      invoiceItems: { create: (data.items || []).map((i: any) => ({ description: i.description || i.name || '', quantity: i.quantity || 1, unitPrice: i.unitPrice, total: Number(i.unitPrice) * (i.quantity || 1) })) },
+      dueDate,
+      paidAt: amountPaid >= total ? new Date() : undefined,
+      invoiceItems: {
+        create: (data.items || []).map((i: any) => ({
+          description: i.description || i.name || '',
+          quantity: i.quantity || 1,
+          unitPrice: i.unitPrice,
+          total: Number(i.unitPrice) * (i.quantity || 1),
+        })),
+      },
     },
     include: invoiceInclude,
   });
@@ -240,6 +367,7 @@ export async function createInvoice(ownerId: string, data: any) {
       data: {
         invoiceId: invoice.id,
         businessId: business.id,
+        buyerId: invoice.clientId,
         totalAmount: total,
         remainingAmount,
         amountPaid: amountPaid || 0,
@@ -255,30 +383,46 @@ export async function createInvoice(ownerId: string, data: any) {
   return prisma.invoice.findUnique({ where: { id: invoice.id }, include: invoiceInclude });
 }
 
-export async function updateInvoiceStatus(ownerId: string, invoiceId: string, status: string, reason?: string) {
+export async function updateInvoiceStatus(
+  ownerId: string,
+  invoiceId: string,
+  status: string,
+  _reason?: string
+) {
   const business = await getBusinessByOwner(ownerId);
-  const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, businessId: business.id } });
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, businessId: business.id },
+  });
   if (!invoice) throw new AppError('Facture non trouv\u00e9e', 404);
   const now = new Date();
   const upd: any = { status: status as any };
-  if (status === 'PAID') { upd.paidAt = now; upd.amountPaid = Number(invoice.totalAmount); }
+  if (status === 'PAID') {
+    upd.paidAt = now;
+    upd.amountPaid = Number(invoice.totalAmount);
+  }
   return prisma.invoice.update({ where: { id: invoiceId }, data: upd, include: invoiceInclude });
 }
 
 export async function updateInvoicePayment(ownerId: string, invoiceId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, businessId: business.id } });
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, businessId: business.id },
+  });
   if (!invoice) throw new AppError('Facture non trouv\u00e9e', 404);
   const newPaid = Number(invoice.amountPaid || 0) + Number(data.amount || 0);
   const remaining = Number(invoice.totalAmount) - newPaid;
   const upd: any = { amountPaid: newPaid };
-  if (remaining <= 0) { upd.status = 'PAID'; upd.paidAt = new Date(); } else { upd.status = 'PARTIALLY_PAID'; }
+  if (remaining <= 0) {
+    upd.status = 'PAID';
+    upd.paidAt = new Date();
+  } else {
+    upd.status = 'PARTIALLY_PAID';
+  }
   // paymentMethod is not a field on Invoice in the current schema
   return prisma.invoice.update({ where: { id: invoiceId }, data: upd, include: invoiceInclude });
 }
 
 export async function deleteInvoice(ownerId: string, invoiceId: string) {
-  const business = await getBusinessByOwner(ownerId);
   await prisma.invoice.update({ where: { id: invoiceId }, data: { status: 'CANCELLED' } });
 }
 
@@ -288,9 +432,157 @@ export async function getFinStats(ownerId: string) {
   const [totalRevenue, paidRevenue, unpaidCount, overdueCount, quoteCount] = await Promise.all([
     prisma.invoice.aggregate({ where: { ...where, status: 'PAID' }, _sum: { totalAmount: true } }),
     prisma.invoice.aggregate({ where: { ...where, status: 'PAID' }, _sum: { amountPaid: true } }),
-    prisma.invoice.count({ where: { ...where, status: { in: ['SENT', 'PARTIALLY_PAID', 'OVERDUE'] } } }),
+    prisma.invoice.count({
+      where: { ...where, status: { in: ['SENT', 'PARTIALLY_PAID', 'OVERDUE'] } },
+    }),
     prisma.invoice.count({ where: { ...where, status: 'OVERDUE' } }),
     prisma.quote.count({ where: { ...where, status: { notIn: ['DRAFT', 'CONVERTED'] } } }),
   ]);
-  return { totalRevenue: totalRevenue._sum.totalAmount || 0, paidRevenue: paidRevenue._sum.amountPaid || 0, unpaidCount, overdueCount, activeQuotes: quoteCount };
+  return {
+    totalRevenue: totalRevenue._sum.totalAmount || 0,
+    paidRevenue: paidRevenue._sum.amountPaid || 0,
+    unpaidCount,
+    overdueCount,
+    activeQuotes: quoteCount,
+  };
+}
+
+// ===================== CLIENT-FACING QUOTES & INVOICES =====================
+
+export async function listClientQuotes(clientId: string, filters: any) {
+  const { page = 1, limit = 20, status } = filters;
+  const where: Prisma.QuoteWhereInput = { clientId };
+  if (status) where.status = status as any;
+  const skip = (page - 1) * limit;
+  const [quotes, total] = await Promise.all([
+    prisma.quote.findMany({
+      where,
+      include: {
+        quoteItems: true,
+        business: { select: { id: true, name: true, logo: true, phone: true, email: true } },
+        invoice: { select: { id: true, invoiceNumber: true, status: true } },
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.quote.count({ where }),
+  ]);
+  return { quotes, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+export async function getClientQuote(clientId: string, quoteId: string) {
+  const quote = await prisma.quote.findFirst({
+    where: { id: quoteId, clientId },
+    include: {
+      quoteItems: true,
+      business: {
+        select: {
+          id: true,
+          name: true,
+          logo: true,
+          phone: true,
+          email: true,
+          address: true,
+          city: true,
+          whatsapp: true,
+        },
+      },
+      invoice: {
+        select: {
+          id: true,
+          invoiceNumber: true,
+          status: true,
+          totalAmount: true,
+          amountPaid: true,
+          dueDate: true,
+        },
+      },
+    },
+  });
+  if (!quote) throw new AppError('Devis non trouvé ou accès non autorisé', 404);
+  return quote;
+}
+
+export async function listClientInvoices(clientId: string, filters: any) {
+  const { page = 1, limit = 20, status } = filters;
+  const where: Prisma.InvoiceWhereInput = { clientId };
+  if (status) where.status = status as any;
+  const skip = (page - 1) * limit;
+  const [invoices, total] = await Promise.all([
+    prisma.invoice.findMany({
+      where,
+      include: {
+        invoiceItems: true,
+        business: { select: { id: true, name: true, logo: true, phone: true, email: true } },
+        quote: { select: { id: true, quoteNumber: true } },
+        debt: { select: { id: true, remainingAmount: true, dueDate: true } },
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.invoice.count({ where }),
+  ]);
+  return { invoices, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+export async function getClientInvoice(clientId: string, invoiceId: string) {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, clientId },
+    include: {
+      invoiceItems: true,
+      business: {
+        select: {
+          id: true,
+          name: true,
+          logo: true,
+          phone: true,
+          email: true,
+          address: true,
+          city: true,
+          whatsapp: true,
+          website: true,
+          taxId: true,
+        },
+      },
+      quote: { select: { id: true, quoteNumber: true } },
+      debt: { select: { id: true, remainingAmount: true, dueDate: true } },
+      payments: {
+        select: {
+          id: true,
+          amount: true,
+          method: true,
+          status: true,
+          paidAt: true,
+          reference: true,
+        },
+      },
+    },
+  });
+  if (!invoice) throw new AppError('Facture non trouvée ou accès non autorisé', 404);
+  return invoice;
+}
+
+export async function listClientInvoicesStats(clientId: string) {
+  const where = { clientId };
+  const [totalCount, paidCount, unpaidCount, overdueCount, totalAmount] = await Promise.all([
+    prisma.invoice.count({ where }),
+    prisma.invoice.count({ where: { ...where, status: 'PAID' } }),
+    prisma.invoice.count({
+      where: { ...where, status: { in: ['SENT', 'PARTIALLY_PAID', 'OVERDUE'] } },
+    }),
+    prisma.invoice.count({ where: { ...where, status: 'OVERDUE' } }),
+    prisma.invoice.aggregate({
+      where: { ...where, status: { notIn: ['CANCELLED'] } },
+      _sum: { totalAmount: true },
+    }),
+  ]);
+  return {
+    totalCount,
+    paidCount,
+    unpaidCount,
+    overdueCount,
+    totalAmount: totalAmount._sum.totalAmount || 0,
+  };
 }

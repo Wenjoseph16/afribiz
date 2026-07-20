@@ -4,10 +4,6 @@ import { logger } from '../lib/logger';
 import { publishCommissionCharged } from '../events/publishers';
 import { calculateCommission } from './monetizationConfig';
 
-const PAYMENT_METHOD_ORDER = [
-  'MOBILE_MONEY', 'BANK_TRANSFER', 'CREDIT_CARD', 'CASH', 'ESCROW'
-];
-
 export async function getHybridPayments(orderId: string) {
   const [payments, order] = await Promise.all([
     prisma.payment.findMany({
@@ -22,10 +18,10 @@ export async function getHybridPayments(orderId: string) {
   ]);
 
   const totalPaid = payments
-    .filter(p => p.status === 'COMPLETED')
+    .filter((p) => p.status === 'COMPLETED')
     .reduce((sum, p) => sum + Number(p.amount), 0);
 
-  const methods = payments.map(p => ({
+  const methods = payments.map((p) => ({
     method: p.method,
     amount: Number(p.amount),
     status: p.status,
@@ -78,7 +74,7 @@ export async function addHybridPayment(data: {
       status: data.isManual ? 'VERIFYING' : 'COMPLETED',
       reference: data.reference || null,
       isManual: data.isManual || false,
-      description: data.notes || ('Paiement hybride - ' + data.method),
+      description: data.notes || 'Paiement hybride - ' + data.method,
       paidAt: data.isManual ? null : new Date(),
     },
   });
@@ -97,7 +93,10 @@ export async function addHybridPayment(data: {
     });
   }
 
-  const { rate: commissionRate, commission: platformCommission } = await calculateCommission(data.amount, 'transaction');
+  const { rate: commissionRate, commission: platformCommission } = await calculateCommission(
+    data.amount,
+    'transaction'
+  );
 
   await prisma.financialLog.create({
     data: {
@@ -105,8 +104,14 @@ export async function addHybridPayment(data: {
       userId: data.userId,
       action: 'PAYMENT_RECEIVED',
       amount: data.amount,
-      description: 'Paiement hybride (' + data.method + ') sur commande #' + data.orderId.slice(0, 8),
-      metadata: { orderId: data.orderId, paymentId: payment.id, method: data.method, isPartial: nowTotalPaid < Number(order.totalAmount) },
+      description:
+        'Paiement hybride (' + data.method + ') sur commande #' + data.orderId.slice(0, 8),
+      metadata: {
+        orderId: data.orderId,
+        paymentId: payment.id,
+        method: data.method,
+        isPartial: nowTotalPaid < Number(order.totalAmount),
+      },
     },
   });
 
@@ -119,8 +124,22 @@ export async function addHybridPayment(data: {
           userId: data.userId,
           action: 'MANUAL_ADJUSTMENT',
           amount: -platformCommission,
-          description: 'Commission AfriBiz ' + (commissionRate * 100).toFixed(1) + '% sur paiement hybride (' + data.method + ') de ' + data.amount + ' FCFA',
-          metadata: { commissionType: 'TRANSACTION_FEE', paymentId: payment.id, orderId: data.orderId, method: data.method, paymentAmount: data.amount, commissionRate },
+          description:
+            'Commission AfriBiz ' +
+            (commissionRate * 100).toFixed(1) +
+            '% sur paiement hybride (' +
+            data.method +
+            ') de ' +
+            data.amount +
+            ' FCFA',
+          metadata: {
+            commissionType: 'TRANSACTION_FEE',
+            paymentId: payment.id,
+            orderId: data.orderId,
+            method: data.method,
+            paymentAmount: data.amount,
+            commissionRate,
+          },
         },
       });
 
@@ -138,23 +157,44 @@ export async function addHybridPayment(data: {
   return payment;
 }
 
-export async function verifyHybridPayment(ownerId: string, paymentId: string, verified: boolean, notes?: string) {
-  const payment = await prisma.payment.findUnique({ where: { id: paymentId }, include: { order: true } });
+export async function verifyHybridPayment(
+  ownerId: string,
+  paymentId: string,
+  verified: boolean,
+  notes?: string
+) {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: { order: true },
+  });
   if (!payment) throw new AppError('Paiement non trouvé', 404);
-  if (payment.status !== 'VERIFYING') throw new AppError('Paiement pas en attente de vérification', 400);
+  if (payment.status !== 'VERIFYING')
+    throw new AppError('Paiement pas en attente de vérification', 400);
 
   if (verified) {
     await prisma.payment.update({
       where: { id: paymentId },
-      data: { status: 'COMPLETED', paidAt: new Date(), verifiedBy: ownerId, verifiedAt: new Date(), verificationNotes: notes || null },
+      data: {
+        status: 'COMPLETED',
+        paidAt: new Date(),
+        verifiedBy: ownerId,
+        verifiedAt: new Date(),
+        verificationNotes: notes || null,
+      },
     });
 
     // Charger la commission sur le paiement manuel vérifié
-    const { rate: commissionRate, commission: platformCommission } = await calculateCommission(Number(payment.amount), 'transaction');
+    const { rate: commissionRate, commission: platformCommission } = await calculateCommission(
+      Number(payment.amount),
+      'transaction'
+    );
     if (platformCommission > 0) {
       try {
         const orderBiz = payment.orderId
-          ? await prisma.order.findUnique({ where: { id: payment.orderId }, select: { businessId: true } })
+          ? await prisma.order.findUnique({
+              where: { id: payment.orderId },
+              select: { businessId: true },
+            })
           : null;
         const bizId = orderBiz?.businessId || ownerId;
         await prisma.financialLog.create({
@@ -164,7 +204,12 @@ export async function verifyHybridPayment(ownerId: string, paymentId: string, ve
             action: 'MANUAL_ADJUSTMENT',
             amount: -platformCommission,
             description: `Commission AfriBiz ${(commissionRate * 100).toFixed(1)}% sur paiement manuel vérifié de ${payment.amount} FCFA`,
-            metadata: { commissionType: 'VERIFIED_PAYMENT_FEE', paymentId, paymentAmount: Number(payment.amount), commissionRate },
+            metadata: {
+              commissionType: 'VERIFIED_PAYMENT_FEE',
+              paymentId,
+              paymentAmount: Number(payment.amount),
+              commissionRate,
+            },
           },
         });
         publishCommissionCharged({
@@ -179,10 +224,15 @@ export async function verifyHybridPayment(ownerId: string, paymentId: string, ve
     }
 
     if (payment.order) {
-      const allPayments = await prisma.payment.findMany({ where: { orderId: payment.orderId, status: 'COMPLETED' } });
+      const allPayments = await prisma.payment.findMany({
+        where: { orderId: payment.orderId, status: 'COMPLETED' },
+      });
       const totalPaid = allPayments.reduce((s, p) => s + Number(p.amount), 0);
       if (totalPaid >= Number(payment.order.totalAmount)) {
-        await prisma.order.update({ where: { id: payment.orderId! }, data: { status: 'CONFIRMED', paidAt: new Date() } });
+        await prisma.order.update({
+          where: { id: payment.orderId! },
+          data: { status: 'CONFIRMED', paidAt: new Date() },
+        });
       }
     }
   } else {

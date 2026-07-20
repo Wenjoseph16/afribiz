@@ -70,7 +70,7 @@ type CacheClient = {
   flush(): Promise<void>;
 };
 
-let client: CacheClient;
+let client: CacheClient = new MemoryCache();
 let redisClient: any = null;
 
 /**
@@ -114,7 +114,9 @@ export async function initCache(redisUrl?: string): Promise<void> {
 
       logger.info('🚀 Cache: Redis connecté');
     } catch (err) {
-      logger.warn(`⚠️  Cache: Redis indisponible (${(err as Error).message}), utilisation du cache mémoire`);
+      logger.warn(
+        `⚠️  Cache: Redis indisponible (${(err as Error).message}), utilisation du cache mémoire`
+      );
       client = new MemoryCache();
     }
   } else {
@@ -127,13 +129,74 @@ export async function initCache(redisUrl?: string): Promise<void> {
 export const CacheKeys = {
   marketplace: (q: string) => `cache:marketplace:${q}`,
   trending: 'cache:marketplace:trending',
+  dashboard: {
+    client: 'cache:dashboard:client',
+    business: 'cache:dashboard:business',
+    developer: 'cache:dashboard:developer',
+    admin: 'cache:dashboard:admin',
+  },
+  feed: {
+    main: 'cache:feed:main',
+    trending: 'cache:feed:trending',
+  },
+  recommendations: 'cache:recommendations',
+  adminFinance: {
+    overview: 'cache:admin:finance:overview',
+    transactions: 'cache:admin:finance:transactions',
+    escrows: 'cache:admin:finance:escrows',
+    fraud: 'cache:admin:finance:fraud',
+    debt: 'cache:admin:finance:debt',
+  },
+  analytics: {
+    searchTrends: 'cache:analytics:search-trends',
+    conversionFunnel: 'cache:analytics:conversion-funnel',
+    retentionCohorts: 'cache:analytics:retention-cohorts',
+    productRecommendations: 'cache:analytics:product-recommendations',
+    engagement: 'cache:analytics:engagement',
+  },
+  copilot: {
+    dailyTips: 'cache:copilot:daily-tips',
+    businessHealth: 'cache:copilot:business-health',
+  },
+  growth: {
+    brief: 'cache:growth:brief',
+    summary: 'cache:growth:summary',
+    calendar: 'cache:growth:calendar',
+    history: 'cache:growth:history',
+  },
+  afriScore: {
+    mine: 'cache:afriscore:mine',
+    history: 'cache:afriscore:history',
+    badges: 'cache:afriscore:badges',
+    benchmark: 'cache:afriscore:benchmark',
+    public: 'cache:afriscore:public',
+    hub: {
+      overview: 'cache:afriscore:hub:overview',
+      sectors: 'cache:afriscore:hub:sectors',
+      geographic: 'cache:afriscore:hub:geographic',
+      trends: 'cache:afriscore:hub:trends',
+      payments: 'cache:afriscore:hub:payments',
+    },
+    partner: {
+      business: 'cache:afriscore:partner:business',
+      report: 'cache:afriscore:partner:report',
+      sector: 'cache:afriscore:partner:sector',
+    },
+    admin: {
+      partners: 'cache:afriscore:admin:partners',
+      reports: 'cache:afriscore:admin:reports',
+      accessLogs: 'cache:afriscore:admin:access-logs',
+      subscriptions: 'cache:afriscore:admin:subscriptions',
+      revenue: 'cache:afriscore:admin:revenue',
+    },
+  },
 } as const;
 
 /** Default TTLs in milliseconds */
 export const CacheTTL = {
-  SHORT: 30_000,   // 30s — search results (freshness matters)
+  SHORT: 30_000, // 30s — search results (freshness matters)
   MEDIUM: 300_000, // 5min — trending, categories
-  LONG: 3600_000,  // 1h — static data
+  LONG: 3600_000, // 1h — static data
 } as const;
 
 // Export cache client functions

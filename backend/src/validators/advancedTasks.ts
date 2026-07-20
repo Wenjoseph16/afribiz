@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-const taskPriorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
-const recurrenceTypes = ['NONE', 'DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'CUSTOM'] as const;
-
 export const createChecklistItemSchema = z.object({
   label: z.string().min(1, 'Libellé requis').max(300),
   assignedTo: z.string().optional(),

@@ -39,17 +39,38 @@ function saveBackupManifest(manifest: any[]): void {
 // ============================================
 
 export async function getPlatformSettings(): Promise<Record<string, any>> {
-  const settings = await prisma.platformSetting.findMany();
+  const settings = await (prisma as any).platformSetting.findMany();
   const map: Record<string, any> = {};
   for (const s of settings) {
-    map[s.key] = s.value;
+    // Type-safe conversion: string → number for numeric settings
+    if (
+      s.key.includes('Rate') ||
+      s.key.includes('Fee') ||
+      s.key === 'maxFileUploadSize' ||
+      s.key === 'retentionDays'
+    ) {
+      map[s.key] = s.value !== null && s.value !== '' ? Number(s.value) : null;
+    } else if (
+      s.key.includes('Enabled') ||
+      s.key === 'maintenanceMode' ||
+      s.key === 'registrationOpen' ||
+      s.key === 'emailVerificationRequired' ||
+      s.key === 'phoneVerificationRequired' ||
+      s.key === 'twoFactorEnabled'
+    ) {
+      map[s.key] = s.value === 'true' || s.value === true;
+    } else {
+      map[s.key] = s.value;
+    }
   }
   return map;
 }
 
-export async function updatePlatformSettings(data: Record<string, any>): Promise<Record<string, any>> {
+export async function updatePlatformSettings(
+  data: Record<string, any>
+): Promise<Record<string, any>> {
   for (const [key, value] of Object.entries(data)) {
-    await prisma.platformSetting.upsert({
+    await (prisma as any).platformSetting.upsert({
       where: { key },
       create: { key, value, category: 'general' },
       update: { value },
@@ -58,11 +79,32 @@ export async function updatePlatformSettings(data: Record<string, any>): Promise
   return getPlatformSettings();
 }
 
-export async function getPlatformSettingsByCategory(category: string): Promise<Record<string, any>> {
-  const settings = await prisma.platformSetting.findMany({ where: { category } });
+export async function getPlatformSettingsByCategory(
+  category: string
+): Promise<Record<string, any>> {
+  const settings = await (prisma as any).platformSetting.findMany({ where: { category } });
   const map: Record<string, any> = {};
   for (const s of settings) {
-    map[s.key] = s.value;
+    // Same type-safe conversion as getPlatformSettings()
+    if (
+      s.key.includes('Rate') ||
+      s.key.includes('Fee') ||
+      s.key === 'maxFileUploadSize' ||
+      s.key === 'retentionDays'
+    ) {
+      map[s.key] = s.value !== null && s.value !== '' ? Number(s.value) : null;
+    } else if (
+      s.key.includes('Enabled') ||
+      s.key === 'maintenanceMode' ||
+      s.key === 'registrationOpen' ||
+      s.key === 'emailVerificationRequired' ||
+      s.key === 'phoneVerificationRequired' ||
+      s.key === 'twoFactorEnabled'
+    ) {
+      map[s.key] = s.value === 'true' || s.value === true;
+    } else {
+      map[s.key] = s.value;
+    }
   }
   return map;
 }
@@ -85,13 +127,29 @@ export async function getFeatureFlag(key: string) {
   return flag;
 }
 
-export async function createFeatureFlag(data: { key: string; label: string; description?: string; enabled?: boolean; scope?: string; scopeValue?: string }) {
+export async function createFeatureFlag(data: {
+  key: string;
+  label: string;
+  description?: string;
+  enabled?: boolean;
+  scope?: string;
+  scopeValue?: string;
+}) {
   const existing = await prisma.featureFlag.findUnique({ where: { key: data.key } });
   if (existing) throw new AppError('Feature flag with this key already exists', 400);
   return prisma.featureFlag.create({ data: { ...data, scope: (data.scope as any) || 'GLOBAL' } });
 }
 
-export async function updateFeatureFlag(id: string, data: { label?: string; description?: string; enabled?: boolean; scope?: string; scopeValue?: string }) {
+export async function updateFeatureFlag(
+  id: string,
+  data: {
+    label?: string;
+    description?: string;
+    enabled?: boolean;
+    scope?: string;
+    scopeValue?: string;
+  }
+) {
   const flag = await prisma.featureFlag.findUnique({ where: { id } });
   if (!flag) throw new AppError('Feature flag not found', 404);
   return prisma.featureFlag.update({ where: { id }, data: data as any });
@@ -119,14 +177,20 @@ export async function getAdminRoles() {
     orderBy: { createdAt: 'desc' },
     include: {
       permissions: {
-        include: { permission: true },
+        include: {
+          permission: { select: { id: true, resource: true, action: true, description: true } },
+        },
       },
       _count: { select: { admins: true } },
     },
   });
 }
 
-export async function createAdminRole(data: { name: string; description?: string; permissionIds?: string[] }) {
+export async function createAdminRole(data: {
+  name: string;
+  description?: string;
+  permissionIds?: string[];
+}) {
   const existing = await prisma.adminRole.findUnique({ where: { name: data.name } });
   if (existing) throw new AppError('Role already exists', 400);
   const role = await prisma.adminRole.create({
@@ -137,12 +201,21 @@ export async function createAdminRole(data: { name: string; description?: string
         ? { create: data.permissionIds.map((pid) => ({ permissionId: pid })) }
         : undefined,
     },
-    include: { permissions: { include: { permission: true } } },
+    include: {
+      permissions: {
+        include: {
+          permission: { select: { id: true, resource: true, action: true, description: true } },
+        },
+      },
+    },
   });
   return role;
 }
 
-export async function updateAdminRole(id: string, data: { name?: string; description?: string; permissionIds?: string[] }) {
+export async function updateAdminRole(
+  id: string,
+  data: { name?: string; description?: string; permissionIds?: string[] }
+) {
   const role = await prisma.adminRole.findUnique({ where: { id } });
   if (!role) throw new AppError('Role not found', 404);
   if (role.isSystem) throw new AppError('System roles cannot be modified', 403);
@@ -156,7 +229,13 @@ export async function updateAdminRole(id: string, data: { name?: string; descrip
   return prisma.adminRole.update({
     where: { id },
     data: { name: data.name, description: data.description },
-    include: { permissions: { include: { permission: true } } },
+    include: {
+      permissions: {
+        include: {
+          permission: { select: { id: true, resource: true, action: true, description: true } },
+        },
+      },
+    },
   });
 }
 
@@ -203,15 +282,43 @@ export async function getUserRoles(userId: string) {
   if (!user) throw new AppError('User not found', 404);
   return prisma.adminRoleAssignment.findMany({
     where: { userId },
-    include: { role: { include: { permissions: { include: { permission: true } } } } },
+    include: {
+      role: {
+        include: {
+          permissions: {
+            include: {
+              permission: { select: { id: true, resource: true, action: true, description: true } },
+            },
+          },
+        },
+      },
+    },
   });
 }
 
 export async function getAdminUsers() {
   const assignments = await prisma.adminRoleAssignment.findMany({
     include: {
-      user: { select: { id: true, email: true, firstName: true, lastName: true, avatar: true, isActive: true, createdAt: true } },
-      role: { include: { permissions: { include: { permission: true } } } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          isActive: true,
+          createdAt: true,
+        },
+      },
+      role: {
+        include: {
+          permissions: {
+            include: {
+              permission: { select: { id: true, resource: true, action: true, description: true } },
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -246,8 +353,15 @@ export async function getAutomationRule(id: string) {
 }
 
 export async function createAutomationRule(data: {
-  name: string; description?: string; trigger: string; triggerConfig?: any;
-  conditions?: any; actionType: string; actionConfig: any; cooldownMinutes?: number; status?: string;
+  name: string;
+  description?: string;
+  trigger: string;
+  triggerConfig?: any;
+  conditions?: any;
+  actionType: string;
+  actionConfig: any;
+  cooldownMinutes?: number;
+  status?: string;
 }) {
   return prisma.automationRule.create({ data: data as any });
 }
@@ -284,21 +398,51 @@ export async function getAutomationExecutionLogs(ruleId: string) {
 
 export async function getAutomationTriggers() {
   return [
-    'STOCK_LOW', 'STOCK_OUT', 'STOCK_BACK_IN', 'PAYMENT_RECEIVED', 'PAYMENT_FAILED',
-    'PAYMENT_REFUNDED', 'ORDER_PLACED', 'ORDER_CONFIRMED', 'ORDER_CANCELLED',
-    'BOOKING_MADE', 'BOOKING_CONFIRMED', 'BOOKING_CANCELLED', 'BOOKING_REMINDER',
-    'REVIEW_PUBLISHED', 'NEW_CLIENT', 'CLIENT_INACTIVE', 'SUBSCRIPTION_EXPIRING',
-    'SUBSCRIPTION_EXPIRED', 'MODULE_INSTALLED', 'MODULE_UNINSTALLED', 'SCORE_CHANGED',
-    'BADGE_EARNED', 'DEBT_OVERDUE', 'DISPUTE_OPENED', 'AD_COMPLETED', 'EVENT_SCHEDULED',
+    'STOCK_LOW',
+    'STOCK_OUT',
+    'STOCK_BACK_IN',
+    'PAYMENT_RECEIVED',
+    'PAYMENT_FAILED',
+    'PAYMENT_REFUNDED',
+    'ORDER_PLACED',
+    'ORDER_CONFIRMED',
+    'ORDER_CANCELLED',
+    'BOOKING_MADE',
+    'BOOKING_CONFIRMED',
+    'BOOKING_CANCELLED',
+    'BOOKING_REMINDER',
+    'REVIEW_PUBLISHED',
+    'NEW_CLIENT',
+    'CLIENT_INACTIVE',
+    'SUBSCRIPTION_EXPIRING',
+    'SUBSCRIPTION_EXPIRED',
+    'MODULE_INSTALLED',
+    'MODULE_UNINSTALLED',
+    'SCORE_CHANGED',
+    'BADGE_EARNED',
+    'DEBT_OVERDUE',
+    'DISPUTE_OPENED',
+    'AD_COMPLETED',
+    'EVENT_SCHEDULED',
     'CUSTOM_WEBHOOK',
   ];
 }
 
 export async function getAutomationActionTypes() {
   return [
-    'SEND_NOTIFICATION', 'SEND_EMAIL', 'SEND_SMS', 'SEND_WHATSAPP',
-    'UPDATE_STATUS', 'APPLY_DISCOUNT', 'ASSIGN_TAG', 'CREATE_TASK',
-    'UPDATE_SCORE', 'BLOCK_USER', 'SUSPEND_BUSINESS', 'CALL_WEBHOOK', 'LOG_EVENT',
+    'SEND_NOTIFICATION',
+    'SEND_EMAIL',
+    'SEND_SMS',
+    'SEND_WHATSAPP',
+    'UPDATE_STATUS',
+    'APPLY_DISCOUNT',
+    'ASSIGN_TAG',
+    'CREATE_TASK',
+    'UPDATE_SCORE',
+    'BLOCK_USER',
+    'SUSPEND_BUSINESS',
+    'CALL_WEBHOOK',
+    'LOG_EVENT',
   ];
 }
 
@@ -306,15 +450,16 @@ export async function getAutomationActionTypes() {
 // CMS PAGES
 // ============================================
 
-export async function getCmsPages(filters?: { category?: string; status?: string; search?: string }) {
+export async function getCmsPages(filters?: {
+  category?: string;
+  status?: string;
+  search?: string;
+}) {
   const where: any = {};
   if (filters?.category) where.category = filters.category;
   if (filters?.status) where.status = filters.status;
   if (filters?.search) {
-    where.OR = [
-      { title: { contains: filters.search } },
-      { content: { contains: filters.search } },
-    ];
+    where.OR = [{ title: { contains: filters.search } }, { content: { contains: filters.search } }];
   }
   return prisma.cmsPage.findMany({
     where,
@@ -332,7 +477,18 @@ export async function getCmsPage(slug: string) {
   return page;
 }
 
-export async function createCmsPage(data: { slug: string; title: string; content: string; excerpt?: string; category?: string; tags?: string[]; status?: string }, authorId: string) {
+export async function createCmsPage(
+  data: {
+    slug: string;
+    title: string;
+    content: string;
+    excerpt?: string;
+    category?: string;
+    tags?: string[];
+    status?: string;
+  },
+  authorId: string
+) {
   const existing = await prisma.cmsPage.findUnique({ where: { slug: data.slug } });
   if (existing) throw new AppError('A page with this slug already exists', 400);
   return prisma.cmsPage.create({
@@ -350,10 +506,25 @@ export async function createCmsPage(data: { slug: string; title: string; content
   });
 }
 
-export async function updateCmsPage(id: string, data: { slug?: string; title?: string; content?: string; excerpt?: string; category?: string; tags?: string[]; status?: string }) {
+export async function updateCmsPage(
+  id: string,
+  data: {
+    slug?: string;
+    title?: string;
+    content?: string;
+    excerpt?: string;
+    category?: string;
+    tags?: string[];
+    status?: string;
+  }
+) {
   const page = await prisma.cmsPage.findUnique({ where: { id } });
   if (!page) throw new AppError('CMS page not found', 404);
-  return prisma.cmsPage.update({ where: { id }, data: data as any, include: { author: { select: { id: true, firstName: true, lastName: true } } } });
+  return prisma.cmsPage.update({
+    where: { id },
+    data: data as any,
+    include: { author: { select: { id: true, firstName: true, lastName: true } } },
+  });
 }
 
 export async function deleteCmsPage(id: string) {
@@ -377,13 +548,21 @@ export async function getCmsCategories() {
   return prisma.cmsCategory.findMany({ orderBy: { sortOrder: 'asc' } });
 }
 
-export async function createCmsCategory(data: { slug: string; name: string; description?: string; sortOrder?: number }) {
+export async function createCmsCategory(data: {
+  slug: string;
+  name: string;
+  description?: string;
+  sortOrder?: number;
+}) {
   const existing = await prisma.cmsCategory.findUnique({ where: { slug: data.slug } });
   if (existing) throw new AppError('Category with this slug already exists', 400);
   return prisma.cmsCategory.create({ data });
 }
 
-export async function updateCmsCategory(id: string, data: { slug?: string; name?: string; description?: string; sortOrder?: number }) {
+export async function updateCmsCategory(
+  id: string,
+  data: { slug?: string; name?: string; description?: string; sortOrder?: number }
+) {
   const cat = await prisma.cmsCategory.findUnique({ where: { id } });
   if (!cat) throw new AppError('CMS category not found', 404);
   return prisma.cmsCategory.update({ where: { id }, data });
@@ -416,16 +595,45 @@ export async function getFormTemplate(slug: string) {
   return template;
 }
 
-export async function createFormTemplate(data: { name: string; slug: string; description?: string; category?: string; schema: any; uiSchema?: any; status?: string }) {
+export async function createFormTemplate(data: {
+  name: string;
+  slug: string;
+  description?: string;
+  category?: string;
+  schema: any;
+  uiSchema?: any;
+  status?: string;
+}) {
   const existing = await prisma.formTemplate.findUnique({ where: { slug: data.slug } });
   if (existing) throw new AppError('Form template with this slug already exists', 400);
-  return prisma.formTemplate.create({ data: { ...data, schema: data.schema, uiSchema: data.uiSchema || {}, status: (data.status as any) || 'DRAFT' } });
+  return prisma.formTemplate.create({
+    data: {
+      ...data,
+      schema: data.schema,
+      uiSchema: data.uiSchema || {},
+      status: (data.status as any) || 'DRAFT',
+    },
+  });
 }
 
-export async function updateFormTemplate(id: string, data: { name?: string; slug?: string; description?: string; category?: string; schema?: any; uiSchema?: any; status?: string }) {
+export async function updateFormTemplate(
+  id: string,
+  data: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    category?: string;
+    schema?: any;
+    uiSchema?: any;
+    status?: string;
+  }
+) {
   const template = await prisma.formTemplate.findUnique({ where: { id } });
   if (!template) throw new AppError('Form template not found', 404);
-  return prisma.formTemplate.update({ where: { id }, data: { ...data, version: template.version + 1 } as any });
+  return prisma.formTemplate.update({
+    where: { id },
+    data: { ...data, version: template.version + 1 } as any,
+  });
 }
 
 export async function deleteFormTemplate(id: string) {
@@ -454,7 +662,10 @@ export async function getFormSubmissions(templateId: string) {
 export async function getFormSubmission(id: string) {
   const submission = await prisma.formSubmission.findUnique({
     where: { id },
-    include: { template: true, user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+    include: {
+      template: true,
+      user: { select: { id: true, firstName: true, lastName: true, email: true } },
+    },
   });
   if (!submission) throw new AppError('Form submission not found', 404);
   return submission;
@@ -477,11 +688,30 @@ export async function getNotificationTemplate(id: string) {
   return tpl;
 }
 
-export async function createNotificationTemplate(data: { type: string; channel: string; subject?: string; title?: string; content: string; variables?: string[]; isActive?: boolean }) {
+export async function createNotificationTemplate(data: {
+  type: string;
+  channel: string;
+  subject?: string;
+  title?: string;
+  content: string;
+  variables?: string[];
+  isActive?: boolean;
+}) {
   return prisma.notificationTemplate.create({ data: data as any });
 }
 
-export async function updateNotificationTemplate(id: string, data: { type?: string; channel?: string; subject?: string; title?: string; content?: string; variables?: string[]; isActive?: boolean }) {
+export async function updateNotificationTemplate(
+  id: string,
+  data: {
+    type?: string;
+    channel?: string;
+    subject?: string;
+    title?: string;
+    content?: string;
+    variables?: string[];
+    isActive?: boolean;
+  }
+) {
   const tpl = await prisma.notificationTemplate.findUnique({ where: { id } });
   if (!tpl) throw new AppError('Notification template not found', 404);
   return prisma.notificationTemplate.update({ where: { id }, data: data as any });
@@ -496,13 +726,35 @@ export async function deleteNotificationTemplate(id: string) {
 
 export async function getNotificationTypes() {
   return [
-    'ORDER_PLACED', 'ORDER_CONFIRMED', 'ORDER_PREPARING', 'ORDER_SHIPPED', 'ORDER_DELIVERED', 'ORDER_CANCELLED',
-    'BOOKING_CONFIRMED', 'BOOKING_REMINDER', 'BOOKING_CANCELLED',
-    'PAYMENT_RECEIVED', 'PAYMENT_REMINDER', 'PAYMENT_REFUNDED',
-    'REVIEW_RESPONSE', 'NEW_MESSAGE', 'PROMOTION', 'NEW_EVENT', 'SECURITY_ALERT',
-    'DISPUTE_OPENED', 'DISPUTE_RESOLVED', 'SYSTEM', 'WELCOME',
-    'MODULE_APPROVED', 'MODULE_REJECTED', 'AD_VALIDATED', 'AD_REJECTED', 'AD_SUSPENDED',
-    'VERIFICATION_APPROVED', 'VERIFICATION_REJECTED', 'ACCOUNT_SUSPENDED',
+    'ORDER_PLACED',
+    'ORDER_CONFIRMED',
+    'ORDER_PREPARING',
+    'ORDER_SHIPPED',
+    'ORDER_DELIVERED',
+    'ORDER_CANCELLED',
+    'BOOKING_CONFIRMED',
+    'BOOKING_REMINDER',
+    'BOOKING_CANCELLED',
+    'PAYMENT_RECEIVED',
+    'PAYMENT_REMINDER',
+    'PAYMENT_REFUNDED',
+    'REVIEW_RESPONSE',
+    'NEW_MESSAGE',
+    'PROMOTION',
+    'NEW_EVENT',
+    'SECURITY_ALERT',
+    'DISPUTE_OPENED',
+    'DISPUTE_RESOLVED',
+    'SYSTEM',
+    'WELCOME',
+    'MODULE_APPROVED',
+    'MODULE_REJECTED',
+    'AD_VALIDATED',
+    'AD_REJECTED',
+    'AD_SUSPENDED',
+    'VERIFICATION_APPROVED',
+    'VERIFICATION_REJECTED',
+    'ACCOUNT_SUSPENDED',
   ];
 }
 
@@ -584,7 +836,13 @@ export async function getMediaModerationItem(id: string) {
   return item;
 }
 
-export async function reportMedia(contentType: string, contentId: string, reportedById: string, reason?: string, description?: string) {
+export async function reportMedia(
+  contentType: string,
+  contentId: string,
+  reportedById: string,
+  reason?: string,
+  description?: string
+) {
   return prisma.mediaModerationItem.create({
     data: {
       contentType: contentType as any,
@@ -656,13 +914,37 @@ export async function getCommissionConfig(key: string) {
   };
 }
 
-export async function createCommissionConfig(data: { key: string; label: string; description?: string; rate?: number; scope?: string; scopeValue?: string; minFee?: number; maxFee?: number; currency?: string; isActive?: boolean }) {
+export async function createCommissionConfig(data: {
+  key: string;
+  label: string;
+  description?: string;
+  rate?: number;
+  scope?: string;
+  scopeValue?: string;
+  minFee?: number;
+  maxFee?: number;
+  currency?: string;
+  isActive?: boolean;
+}) {
   const existing = await prisma.commissionConfig.findUnique({ where: { key: data.key } });
   if (existing) throw new AppError('Commission config with this key already exists', 400);
   return prisma.commissionConfig.create({ data: data as any });
 }
 
-export async function updateCommissionConfig(id: string, data: { label?: string; description?: string; rate?: number; scope?: string; scopeValue?: string; minFee?: number; maxFee?: number; currency?: string; isActive?: boolean }) {
+export async function updateCommissionConfig(
+  id: string,
+  data: {
+    label?: string;
+    description?: string;
+    rate?: number;
+    scope?: string;
+    scopeValue?: string;
+    minFee?: number;
+    maxFee?: number;
+    currency?: string;
+    isActive?: boolean;
+  }
+) {
   const config = await prisma.commissionConfig.findUnique({ where: { id } });
   if (!config) throw new AppError('Commission config not found', 404);
   return prisma.commissionConfig.update({ where: { id }, data: data as any });
@@ -689,7 +971,13 @@ export async function getUserWarnings(userId: string) {
   });
 }
 
-export async function issueWarning(userId: string, issuedById: string, reason: string, description?: string, action?: string) {
+export async function issueWarning(
+  userId: string,
+  issuedById: string,
+  reason: string,
+  description?: string,
+  action?: string
+) {
   const [user, issuer] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
     prisma.user.findUnique({ where: { id: issuedById } }),
@@ -748,11 +1036,23 @@ export async function getSubscriptionPlan(id: string) {
 }
 
 export async function createSubscriptionPlan(data: {
-  name: string; description?: string; type?: string; price: number; currency?: string;
-  billingCycle?: string; trialDays?: number; durationDays?: number;
-  maxUsage?: number; maxClients?: number; maxBookings?: number;
-  benefits?: string[]; isPublic?: boolean; isActive?: boolean; sortOrder?: number;
-  featured?: boolean; badge?: string;
+  name: string;
+  description?: string;
+  type?: string;
+  price: number;
+  currency?: string;
+  billingCycle?: string;
+  trialDays?: number;
+  durationDays?: number;
+  maxUsage?: number;
+  maxClients?: number;
+  maxBookings?: number;
+  benefits?: string[];
+  isPublic?: boolean;
+  isActive?: boolean;
+  sortOrder?: number;
+  featured?: boolean;
+  badge?: string;
 }) {
   return prisma.subscriptionPlan.create({ data: data as any });
 }
@@ -770,13 +1070,33 @@ export async function deleteSubscriptionPlan(id: string) {
   return { message: 'Subscription plan deleted' };
 }
 
-export async function addPlanPrivilege(planId: string, data: { code: string; label: string; description?: string; value?: number; valueType?: string; sortOrder?: number }) {
+export async function addPlanPrivilege(
+  planId: string,
+  data: {
+    code: string;
+    label: string;
+    description?: string;
+    value?: number;
+    valueType?: string;
+    sortOrder?: number;
+  }
+) {
   const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } });
   if (!plan) throw new AppError('Subscription plan not found', 404);
   return prisma.subscriptionPrivilege.create({ data: { planId, ...data } });
 }
 
-export async function updatePlanPrivilege(id: string, data: { code?: string; label?: string; description?: string; value?: number; valueType?: string; sortOrder?: number }) {
+export async function updatePlanPrivilege(
+  id: string,
+  data: {
+    code?: string;
+    label?: string;
+    description?: string;
+    value?: number;
+    valueType?: string;
+    sortOrder?: number;
+  }
+) {
   const priv = await prisma.subscriptionPrivilege.findUnique({ where: { id } });
   if (!priv) throw new AppError('Privilege not found', 404);
   return prisma.subscriptionPrivilege.update({ where: { id }, data });
@@ -796,8 +1116,12 @@ export async function removePlanPrivilege(id: string) {
 export async function getBackups() {
   ensureBackupDir();
   const manifest = getBackupManifest();
-  const files = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith('.sql') || f.endsWith('.sql.gz') || f.endsWith('.json'));
-  const autoBackup = await prisma.platformSetting.findUnique({ where: { key: 'autoBackupEnabled' } });
+  const files = fs
+    .readdirSync(BACKUP_DIR)
+    .filter((f) => f.endsWith('.sql') || f.endsWith('.sql.gz') || f.endsWith('.json'));
+  const autoBackup = await (prisma as any).platformSetting.findUnique({
+    where: { key: 'autoBackupEnabled' },
+  });
   return {
     backups: manifest.map((b: any) => ({
       ...b,
@@ -847,13 +1171,17 @@ export async function createBackup() {
     const tables = await prisma.$queryRawUnsafe<Array<{ table_name: string }>>(
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
     );
+    const validTableNames = tables
+      .map((r) => r.table_name)
+      .filter((name): name is string => !!name && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name));
     const backupData: Record<string, any> = {};
-    for (const row of tables) {
-      const tableName = row.table_name;
+    for (const tableName of validTableNames) {
       try {
         const rows = await prisma.$queryRawUnsafe(`SELECT * FROM "${tableName}"`);
         backupData[tableName] = rows;
-      } catch { /* empty - table may not exist */ }
+      } catch {
+        /* empty - table may not exist */
+      }
     }
     fs.writeFileSync(fallbackFilepath, JSON.stringify(backupData, null, 2), 'utf-8');
     const stat = fs.statSync(fallbackFilepath);
@@ -905,9 +1233,14 @@ export async function getBackupDownloadUrl(backupId: string) {
 }
 
 export async function toggleAutoBackup(enabled: boolean) {
-  await prisma.platformSetting.upsert({
+  await (prisma as any).platformSetting.upsert({
     where: { key: 'autoBackupEnabled' },
-    create: { key: 'autoBackupEnabled', value: enabled, category: 'backup', label: 'Auto backup enabled' },
+    create: {
+      key: 'autoBackupEnabled',
+      value: enabled,
+      category: 'backup',
+      label: 'Auto backup enabled',
+    },
     update: { value: enabled },
   });
   return { autoBackupEnabled: enabled };
@@ -919,18 +1252,28 @@ export async function toggleAutoBackup(enabled: boolean) {
 
 export async function recomputeAllAfriScores() {
   const count = await recomputeAllScores();
-  await prisma.platformSetting.upsert({
+  await (prisma as any).platformSetting.upsert({
     where: { key: 'lastAfriScoreRecompute' },
-    create: { key: 'lastAfriScoreRecompute', value: new Date().toISOString(), category: 'afriscore', label: 'Last AfriScore recompute' },
+    create: {
+      key: 'lastAfriScoreRecompute',
+      value: new Date().toISOString(),
+      category: 'afriscore',
+      label: 'Last AfriScore recompute',
+    },
     update: { value: new Date().toISOString() },
   });
   return { success: true, message: `Recompute initiated for ${count} businesses`, count };
 }
 
 export async function updateAfriScoreRules(rules: Record<string, any>) {
-  await prisma.platformSetting.upsert({
+  await (prisma as any).platformSetting.upsert({
     where: { key: 'afriScoreRules' },
-    create: { key: 'afriScoreRules', value: rules, category: 'afriscore', label: 'AfriScore scoring rules' },
+    create: {
+      key: 'afriScoreRules',
+      value: rules,
+      category: 'afriscore',
+      label: 'AfriScore scoring rules',
+    },
     update: { value: rules },
   });
   return { success: true, message: 'AfriScore rules updated', rules };

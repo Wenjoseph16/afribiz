@@ -2,7 +2,13 @@ import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import { inviteReferralSchema } from '../validators/referral';
-import { getMyReferralCode, inviteReferral, getMyReferrals, getMyReferralRewards, getReferralStats } from '../controllers/referral';
+import {
+  getMyReferralCode,
+  inviteReferral,
+  getMyReferrals,
+  getMyReferralRewards,
+  getReferralStats,
+} from '../controllers/referral';
 
 const router = Router();
 router.use(authMiddleware);

@@ -2,13 +2,26 @@ import { Router } from 'express';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
-  listBusinessOrders, getBusinessOrder, createBusinessOrder,
-  updateBusinessOrderStatus, updateBusinessDeliveryStatus,
-  updateBusinessOrderPayment, deleteBusinessOrder, getBusinessOrderStats,
-  listBusinessDebts, payBusinessDebt, settleBusinessDebt,
+  listBusinessOrders,
+  getBusinessOrder,
+  createBusinessOrder,
+  updateBusinessOrderStatus,
+  updateBusinessDeliveryStatus,
+  updateBusinessOrderPayment,
+  deleteBusinessOrder,
+  getBusinessOrderStats,
+  listBusinessDebts,
+  payBusinessDebt,
+  settleBusinessDebt,
+  exportOrdersCSV,
+  exportOrderInvoicePDF,
 } from '../controllers/orders';
 import {
-  createOrderSchema, updateStatusSchema, updateDeliverySchema, updatePaymentSchema, payDebtSchema,
+  createOrderSchema,
+  updateStatusSchema,
+  updateDeliverySchema,
+  updatePaymentSchema,
+  payDebtSchema,
 } from '../validators/orders';
 
 const router = Router();
@@ -25,6 +38,10 @@ router.put('/:id/status', validateBody(updateStatusSchema), updateBusinessOrderS
 router.put('/:id/delivery', validateBody(updateDeliverySchema), updateBusinessDeliveryStatus);
 router.put('/:id/payment', validateBody(updatePaymentSchema), updateBusinessOrderPayment);
 router.delete('/:id', deleteBusinessOrder);
+
+// Export
+router.get('/export/csv', exportOrdersCSV);
+router.get('/export/invoice/:id', exportOrderInvoicePDF);
 
 // Debts
 router.get('/debts/list', listBusinessDebts);

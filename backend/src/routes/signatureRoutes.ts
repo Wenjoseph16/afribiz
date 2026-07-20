@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { createSignatureReq, signDocumentCtrl, verifySignatureCtrl, listSignatureReqs } from '../controllers/signatureController';
+import {
+  createSignatureReq,
+  signDocumentCtrl,
+  verifySignatureCtrl,
+  listSignatureReqs,
+} from '../controllers/signatureController';
 
 const router = Router();
 
@@ -12,5 +17,7 @@ router.get('/verify/:documentId', verifySignatureCtrl);
 router.use(authMiddleware);
 router.post('/requests', createSignatureReq);
 router.get('/requests', listSignatureReqs);
+router.post('/signatures', createSignatureReq);
+router.get('/signatures', listSignatureReqs);
 
 export default router;

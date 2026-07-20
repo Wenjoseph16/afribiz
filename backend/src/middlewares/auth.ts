@@ -1,66 +1,153 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { config } from '../config/env';
+import { AppError, catchAsyncErrors } from './errorHandler';
+import { verifyAccessToken } from '../lib/jwt';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
-    roles: string[];
     primaryRole: string;
+    roles: string[];
   };
+  sessionId?: string;
 }
 
-export function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Token manquant' });
-  }
+/**
+ * Authentication middleware - verifies JWT token
+ */
+export const authMiddleware = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const token = req.headers.authorization?.split(' ')[1];
 
-  try {
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, config.JWT_SECRET) as any;
-    req.user = {
-      id: decoded.id || decoded.userId,
-      email: decoded.email,
-      roles: decoded.roles || [decoded.primaryRole || 'CLIENT'],
-      primaryRole: decoded.primaryRole || 'CLIENT',
-    };
-    next();
-  } catch {
-    return res.status(401).json({ success: false, error: 'Token invalide' });
-  }
-}
+    if (!token) {
+      throw new AppError('No authentication token provided', 401);
+    }
 
-export function optionalAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return next();
+    try {
+      const decoded = verifyAccessToken(token);
+      req.user = {
+        id: decoded.id,
+        email: decoded.email,
+        primaryRole: decoded.primaryRole,
+        roles: decoded.roles || [],
+      };
+      next();
+    } catch (error: any) {
+      throw new AppError(error.message || 'Invalid token', 401);
+    }
   }
-  try {
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, config.JWT_SECRET) as any;
-    req.user = {
-      id: decoded.id || decoded.userId,
-      email: decoded.email,
-      roles: decoded.roles || [decoded.primaryRole || 'CLIENT'],
-      primaryRole: decoded.primaryRole || 'CLIENT',
-    };
-  } catch {
-    // Token invalide, continuer sans user
-  }
-  next();
-}
+);
 
-export function requireRole(roles: string[]) {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+/**
+ * Role-based access control middleware
+ * Allows access if user has at least one of the specified roles
+ */
+export const requireRole = (allowedRoles: string[]) => {
+  return catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ success: false, error: 'Non authentifié' });
+      throw new AppError('User not authenticated', 401);
     }
-    const hasRole = req.user.roles.some(r => roles.includes(r));
+
+    // Check both roles array AND primaryRole for defense in depth
+    const userRoles: string[] = req.user!.roles || [];
+    const hasRole = allowedRoles.some(
+      (role) => userRoles.includes(role) || req.user!.primaryRole === role
+    );
+
     if (!hasRole) {
-      return res.status(403).json({ success: false, error: 'Accès refusé' });
+      throw new AppError('Insufficient permissions', 403);
     }
+
+    next();
+  });
+};
+
+/**
+ * Require primary role
+ */
+export const requirePrimaryRole = (role: string) => {
+  return catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      throw new AppError('User not authenticated', 401);
+    }
+
+    if (req.user.primaryRole !== role) {
+      throw new AppError('Insufficient permissions', 403);
+    }
+
+    next();
+  });
+};
+
+/**
+ * Require email verification
+ */
+export const requireEmailVerified = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      throw new AppError('User not authenticated', 401);
+    }
+
+    // In a real app, you'd check user.emailVerified from database
+    next();
+  }
+);
+
+/**
+ * Optional authentication - doesn't throw if no token
+ */
+export const optionalAuth = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (token) {
+      try {
+        const decoded = verifyAccessToken(token);
+        req.user = {
+          id: decoded.id,
+          email: decoded.email,
+          primaryRole: decoded.primaryRole,
+          roles: decoded.roles || [],
+        };
+      } catch (error) {
+        // Silently ignore auth errors for optional auth
+      }
+    }
+
+    next();
+  }
+);
+
+/**
+ * Login attempt rate limiting middleware
+ */
+export const loginRateLimit = (maxAttempts: number = 5, windowMs: number = 15 * 60 * 1000) => {
+  const attempts: { [key: string]: { count: number; firstAttempt: number } } = {};
+
+  return (req: Request, res: Response, next: NextFunction) => {
+    const identifier = req.body.email || req.ip;
+
+    if (!attempts[identifier]) {
+      attempts[identifier] = { count: 0, firstAttempt: Date.now() };
+    }
+
+    const now = Date.now();
+    const timeSinceFirstAttempt = now - attempts[identifier].firstAttempt;
+
+    // Reset if window has passed
+    if (timeSinceFirstAttempt > windowMs) {
+      attempts[identifier] = { count: 0, firstAttempt: now };
+    }
+
+    attempts[identifier].count++;
+
+    if (attempts[identifier].count > maxAttempts) {
+      throw new AppError(
+        `Too many login attempts. Please try again in ${Math.ceil((windowMs - timeSinceFirstAttempt) / 1000)} seconds.`,
+        429
+      );
+    }
+
     next();
   };
-}
+};

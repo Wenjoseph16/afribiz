@@ -17,9 +17,7 @@ export const validateBody = (schema: ZodSchema) => {
           message: err.message,
         }));
         throw new AppError(
-          errors.length > 0
-            ? `${errors[0].field}: ${errors[0].message}`
-            : 'Validation failed',
+          errors.length > 0 ? `${errors[0].field}: ${errors[0].message}` : 'Validation failed',
           400
         );
       }
@@ -43,9 +41,7 @@ export const validateQuery = (schema: ZodSchema) => {
           message: err.message,
         }));
         throw new AppError(
-          errors.length > 0
-            ? `${errors[0].field}: ${errors[0].message}`
-            : 'Validation failed',
+          errors.length > 0 ? `${errors[0].field}: ${errors[0].message}` : 'Validation failed',
           400
         );
       }
@@ -68,4 +64,3 @@ export const validatePagination = catchAsyncErrors(
     next();
   }
 );
- 

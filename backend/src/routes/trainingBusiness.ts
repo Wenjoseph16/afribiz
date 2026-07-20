@@ -1,15 +1,24 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import {
-  listBusinessTrainings, getBusinessTraining, createBusinessTraining,
-  updateBusinessTraining, deleteBusinessTraining,
-  getTrainingStudents, getTrainingStats,
-  listLessons, createLesson, updateLesson, deleteLesson,
-  createQuiz, deleteQuiz,
+  listBusinessTrainings,
+  getBusinessTraining,
+  createBusinessTraining,
+  updateBusinessTraining,
+  deleteBusinessTraining,
+  getTrainingStudents,
+  getTrainingStats,
+  listLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+  createQuiz,
+  deleteQuiz,
 } from '../controllers/trainingBusiness';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 // Stats
 router.get('/stats', getTrainingStats);

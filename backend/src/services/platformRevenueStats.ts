@@ -25,11 +25,20 @@ export async function getPlatformRevenueStats(
   const now = new Date();
   let dateFrom: Date | undefined;
   switch (period) {
-    case '7d': dateFrom = new Date(now.getTime() - 7 * 86400000); break;
-    case '30d': dateFrom = new Date(now.getTime() - 30 * 86400000); break;
-    case '90d': dateFrom = new Date(now.getTime() - 90 * 86400000); break;
-    case '1y': dateFrom = new Date(now.getTime() - 365 * 86400000); break;
-    default: dateFrom = undefined;
+    case '7d':
+      dateFrom = new Date(now.getTime() - 7 * 86400000);
+      break;
+    case '30d':
+      dateFrom = new Date(now.getTime() - 30 * 86400000);
+      break;
+    case '90d':
+      dateFrom = new Date(now.getTime() - 90 * 86400000);
+      break;
+    case '1y':
+      dateFrom = new Date(now.getTime() - 365 * 86400000);
+      break;
+    default:
+      dateFrom = undefined;
   }
 
   const dateFilter = dateFrom ? { createdAt: { gte: dateFrom } } : {};
@@ -52,7 +61,10 @@ export async function getPlatformRevenueStats(
   for (const log of commissionLogs) {
     const meta = log.metadata as any;
     const amount = Math.abs(Number(log.amount || 0));
-    if (meta?.commissionType === 'TRANSACTION_FEE' || meta?.commissionType === 'VERIFIED_PAYMENT_FEE') {
+    if (
+      meta?.commissionType === 'TRANSACTION_FEE' ||
+      meta?.commissionType === 'VERIFIED_PAYMENT_FEE'
+    ) {
       transactionCommissions += amount;
     } else if (meta?.commissionType === 'ESCROW_FEE') {
       escrowCommissions += amount;
@@ -80,8 +92,12 @@ export async function getPlatformRevenueStats(
     prisma.escrow.count({ where: { status: { in: ['RELEASED', 'HELD'] }, ...dateFilter } }),
   ]);
 
-  const totalRevenue = transactionCommissions + escrowCommissions + developerModuleCommissions +
-    Number(subAgg._sum.price || 0) + Number(adAgg._sum.budget || 0);
+  const totalRevenue =
+    transactionCommissions +
+    escrowCommissions +
+    developerModuleCommissions +
+    Number(subAgg._sum.price || 0) +
+    Number(adAgg._sum.budget || 0);
 
   // Répartition mensuelle
   const monthlyLogs = await prisma.financialLog.findMany({
@@ -100,7 +116,10 @@ export async function getPlatformRevenueStats(
     if (!monthlyMap[month]) monthlyMap[month] = { transactions: 0, escrows: 0, modules: 0 };
     const meta = log.metadata as any;
     const amount = Math.abs(Number(log.amount || 0));
-    if (meta?.commissionType === 'TRANSACTION_FEE' || meta?.commissionType === 'VERIFIED_PAYMENT_FEE') {
+    if (
+      meta?.commissionType === 'TRANSACTION_FEE' ||
+      meta?.commissionType === 'VERIFIED_PAYMENT_FEE'
+    ) {
       monthlyMap[month].transactions += amount;
     } else if (meta?.commissionType === 'ESCROW_FEE') {
       monthlyMap[month].escrows += amount;
@@ -111,18 +130,33 @@ export async function getPlatformRevenueStats(
 
   const monthlyBreakdown: { month: string; revenue: number; type: string }[] = [];
   for (const [month, values] of Object.entries(monthlyMap)) {
-    if (values.transactions > 0) monthlyBreakdown.push({ month, revenue: Math.round(values.transactions * 100) / 100, type: 'Transactions' });
-    if (values.escrows > 0) monthlyBreakdown.push({ month, revenue: Math.round(values.escrows * 100) / 100, type: 'Escrow' });
-    if (values.modules > 0) monthlyBreakdown.push({ month, revenue: Math.round(values.modules * 100) / 100, type: 'Modules' });
+    if (values.transactions > 0)
+      monthlyBreakdown.push({
+        month,
+        revenue: Math.round(values.transactions * 100) / 100,
+        type: 'Transactions',
+      });
+    if (values.escrows > 0)
+      monthlyBreakdown.push({
+        month,
+        revenue: Math.round(values.escrows * 100) / 100,
+        type: 'Escrow',
+      });
+    if (values.modules > 0)
+      monthlyBreakdown.push({
+        month,
+        revenue: Math.round(values.modules * 100) / 100,
+        type: 'Modules',
+      });
   }
 
   // Top businesses (basé sur les logs de commission)
-  const bizIds = [...new Set(commissionLogs.filter(l => l.businessId).map(l => l.businessId))];
   const bizRevenue: Record<string, number> = {};
   const bizTxn: Record<string, number> = {};
   for (const log of commissionLogs) {
     if (!log.businessId) continue;
-    bizRevenue[log.businessId] = (bizRevenue[log.businessId] || 0) + Math.abs(Number(log.amount || 0));
+    bizRevenue[log.businessId] =
+      (bizRevenue[log.businessId] || 0) + Math.abs(Number(log.amount || 0));
     bizTxn[log.businessId] = (bizTxn[log.businessId] || 0) + 1;
   }
 
@@ -136,9 +170,14 @@ export async function getPlatformRevenueStats(
       where: { id: { in: sortedBizs.map(([id]) => id) } },
       select: { id: true, name: true },
     });
-    const nameMap = new Map(bizNames.map(b => [b.id, b.name]));
+    const nameMap = new Map(bizNames.map((b) => [b.id, b.name]));
     for (const [id, revenue] of sortedBizs) {
-      topBusinesses.push({ id, name: nameMap.get(id) || 'Inconnu', revenue: Math.round(revenue * 100) / 100, transactions: bizTxn[id] || 0 });
+      topBusinesses.push({
+        id,
+        name: nameMap.get(id) || 'Inconnu',
+        revenue: Math.round(revenue * 100) / 100,
+        transactions: bizTxn[id] || 0,
+      });
     }
   }
 

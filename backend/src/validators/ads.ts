@@ -1,10 +1,47 @@
 import { z } from 'zod';
 
 const advertiserTypeEnum = z.enum(['BUSINESS', 'DEVELOPER', 'EXTERNAL']);
-const placementPageEnum = z.enum(['HOMEPAGE', 'MARKETPLACE', 'DASHBOARD_CLIENT', 'DASHBOARD_BUSINESS', 'DASHBOARD_DEVELOPER', 'MODULE_PAGE', 'EVENT_PAGE', 'NOTIFICATION_CENTER']);
-const placementPositionEnum = z.enum(['HERO_BANNER', 'TOP_BANNER', 'BOTTOM_BANNER', 'SIDEBAR', 'SPONSORED_CARD', 'SPONSORED_RESULT', 'CAROUSEL', 'FEATURED_BLOCK', 'PROMO_WIDGET', 'RECOMMENDED', 'POPUP']);
-const formatEnum = z.enum(['BANNER_HORIZONTAL', 'BANNER_VERTICAL', 'SPONSORED_CARD', 'CAROUSEL', 'WIDGET', 'VIDEO', 'POPUP', 'NOTIFICATION']);
-const objectiveEnum = z.enum(['BRAND_AWARENESS', 'TRAFFIC', 'LEADS', 'SALES', 'INSTALLS', 'PROMOTION']);
+const placementPageEnum = z.enum([
+  'HOMEPAGE',
+  'MARKETPLACE',
+  'DASHBOARD_CLIENT',
+  'DASHBOARD_BUSINESS',
+  'DASHBOARD_DEVELOPER',
+  'MODULE_PAGE',
+  'EVENT_PAGE',
+  'NOTIFICATION_CENTER',
+]);
+const placementPositionEnum = z.enum([
+  'HERO_BANNER',
+  'TOP_BANNER',
+  'BOTTOM_BANNER',
+  'SIDEBAR',
+  'SPONSORED_CARD',
+  'SPONSORED_RESULT',
+  'CAROUSEL',
+  'FEATURED_BLOCK',
+  'PROMO_WIDGET',
+  'RECOMMENDED',
+  'POPUP',
+]);
+const formatEnum = z.enum([
+  'BANNER_HORIZONTAL',
+  'BANNER_VERTICAL',
+  'SPONSORED_CARD',
+  'CAROUSEL',
+  'WIDGET',
+  'VIDEO',
+  'POPUP',
+  'NOTIFICATION',
+]);
+const objectiveEnum = z.enum([
+  'BRAND_AWARENESS',
+  'TRAFFIC',
+  'LEADS',
+  'SALES',
+  'INSTALLS',
+  'PROMOTION',
+]);
 
 const creativeSchema = z.object({
   placementPage: placementPageEnum,
@@ -98,6 +135,16 @@ export const trackClickSchema = z.object({
   userId: z.string().optional(),
   ipAddress: z.string().optional(),
   userAgent: z.string().optional(),
+});
+
+export const trackConversionSchema = z.object({
+  campaignId: z.string(),
+  clickId: z.string().optional(),
+  creativeId: z.string().optional(),
+  type: z.string().optional(),
+  value: z.number().optional(),
+  reference: z.string().optional(),
+  userId: z.string().optional(),
 });
 
 export const createPackageSchema = z.object({

@@ -1,12 +1,17 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import {
-  listDocuments, getDocument, createDocument,
-  updateDocument, deleteDocument, getDocumentStats,
+  listDocuments,
+  getDocument,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+  getDocumentStats,
 } from '../controllers/documentBusiness';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 router.get('/stats', getDocumentStats);
 router.get('/', listDocuments);

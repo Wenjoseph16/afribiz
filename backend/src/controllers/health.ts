@@ -1,25 +1,65 @@
 import { Request, Response } from 'express';
-import { catchAsyncErrors } from '../middlewares/errorHandler';
-import { prisma } from '../lib/db';
+import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
+import { runAllChecks, checkDatabase, checkRedis, checkStorage } from '../services/healthService';
 
-export const healthCheck = catchAsyncErrors(async (req: Request, res: Response) => {
-  let dbStatus = 'disconnected';
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    dbStatus = 'connected';
-  } catch {
-    dbStatus = 'error';
-  }
+const HEALTH_VERSION = 'v1';
 
-  const status = dbStatus === 'connected' ? 200 : 503;
-
-  res.status(status).json({
-    success: dbStatus === 'connected',
-    message: dbStatus === 'connected' ? 'Le serveur fonctionne' : 'Base de données indisponible',
+function buildHealthResponse(db: any, redis: any, storage: any, cron: any) {
+  const isHealthy = db.status === 'connected';
+  return {
+    success: isHealthy,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    database: dbStatus,
     node: process.version,
     environment: process.env.NODE_ENV || 'development',
+    services: { database: db, redis, storage, cron },
+    version: HEALTH_VERSION,
+  };
+}
+
+export const healthCheck = catchAsyncErrors(async (req: Request, res: Response) => {
+  const { database: db, redis, storage, cron, isHealthy } = await runAllChecks();
+  res.status(isHealthy ? 200 : 503).json({
+    ...buildHealthResponse(db, redis, storage, cron),
+    message: isHealthy ? 'Le serveur fonctionne' : 'Services critiques indisponibles',
   });
+});
+
+export const healthDetailed = catchAsyncErrors(async (req: Request, res: Response) => {
+  const { database: db, redis, storage, cron } = await runAllChecks();
+  res.status(db.status === 'connected' ? 200 : 503).json({
+    ...buildHealthResponse(db, redis, storage, cron),
+    platform: process.platform,
+    memory: process.memoryUsage(),
+    cpu: process.cpuUsage(),
+  });
+});
+
+export const healthDb = catchAsyncErrors(async (req: Request, res: Response) => {
+  const db = await checkDatabase();
+  res
+    .status(db.status === 'connected' ? 200 : 503)
+    .json({ success: db.status === 'connected', ...db });
+});
+
+export const healthRedis = catchAsyncErrors(async (req: Request, res: Response) => {
+  const result = await checkRedis();
+  res
+    .status(result.status === 'connected' ? 200 : 503)
+    .json({ success: result.status === 'connected', ...result });
+});
+
+export const healthStorage = catchAsyncErrors(async (req: Request, res: Response) => {
+  const result = await checkStorage();
+  res
+    .status(result.status === 'connected' ? 200 : 503)
+    .json({ success: result.status === 'connected', ...result });
+});
+
+export const testEmail = catchAsyncErrors(async (req: Request, res: Response) => {
+  const { to, subject, text } = req.body;
+  if (!to) throw new AppError('Email requis (to)', 400);
+  const { sendEmail } = await import('../lib/mail');
+  await sendEmail(to, subject || 'Test AfriBiz', text || 'Email de test depuis le serveur AfriBiz');
+  res.json({ success: true, message: 'Email de test envoye avec succes' });
 });

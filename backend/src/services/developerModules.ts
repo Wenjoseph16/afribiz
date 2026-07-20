@@ -1,13 +1,18 @@
 import {
   NotificationType,
+  ModuleActivityType,
   ModulePricingType,
   ModuleStatus,
 } from '@prisma/client';
 import * as paymentProcessor from './paymentProcessor';
+import * as fedapay from '../lib/fedapay';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { DeveloperRepository } from '../repositories/developerRepository';
 import { searchIdsByText } from '../lib/fulltext';
+import { getMonetizationSettings } from './monetizationConfig';
+import { createLicense } from './developerLicenses';
+import { logger } from '../lib/logger';
 
 function slugify(text: string): string {
   return text
@@ -28,7 +33,10 @@ async function generateUniqueModuleSlug(name: string): Promise<string> {
   let counter = 1;
   while (exists) {
     const newSlug = `${slug}-${counter}`;
-    exists = await prisma.developerModule.findUnique({ where: { slug: newSlug }, select: { id: true } });
+    exists = await prisma.developerModule.findUnique({
+      where: { slug: newSlug },
+      select: { id: true },
+    });
     if (!exists) return newSlug;
     counter++;
   }
@@ -51,31 +59,105 @@ async function getBusinessIdByOwnerId(ownerId: string): Promise<string> {
 }
 
 /**
+ * Ensure MODULE_MARKETPLACE is active in Business.modules
+ * Called when a marketplace module is installed, purchased, or trialed.
+ */
+async function ensureModuleMarketplaceActive(
+  businessId: string,
+  _businessOwnerId?: string
+): Promise<void> {
+  try {
+    const biz = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { modules: true },
+    });
+    if (!biz) return;
+    const modules = biz.modules as string[];
+    if (!modules.includes('MODULE_MARKETPLACE')) {
+      await prisma.business.update({
+        where: { id: businessId },
+        data: {
+          modules: { set: [...modules, 'MODULE_MARKETPLACE'] as any },
+        },
+      });
+      // Also create BusinessModuleAssignment for the new migration system
+      try {
+        await prisma.businessModuleAssignment.create({
+          data: {
+            businessId,
+            module: 'MODULE_MARKETPLACE' as any,
+            status: 'ACTIVE',
+            activatedAt: new Date(),
+          },
+        });
+      } catch {
+        // Non-blocking — assignment may already exist
+      }
+    }
+  } catch {
+    // Non-blocking — marketplace module status is best-effort
+  }
+}
+
+/**
+ * Remove MODULE_MARKETPLACE from Business.modules if no more installations exist.
+ */
+async function maybeDeactivateModuleMarketplace(businessId: string): Promise<void> {
+  try {
+    const remaining = await prisma.developerModuleInstallation.count({
+      where: {
+        businessId,
+        status: { not: 'UNINSTALLED' },
+      },
+    });
+    if (remaining === 0) {
+      const biz = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { modules: true },
+      });
+      if (!biz) return;
+      const modules = (biz.modules as string[]).filter((m) => m !== 'MODULE_MARKETPLACE');
+      await prisma.business.update({
+        where: { id: businessId },
+        data: {
+          modules: { set: modules as any },
+        },
+      });
+    }
+  } catch {
+    // Non-blocking
+  }
+}
+
+/**
  * Create a new module
  */
-export async function createModule(userId: string, data: {
-  name: string;
-  category: string;
-  description?: string;
-  shortDescription?: string;
-  price?: number;
-  currency?: string;
-  fullDescription?: string;
-  logo?: string;
-  images?: string[];
-  subcategory?: string;
-  demoVideo?: string;
-  documentation?: string;
-  installationGuide?: string;
-  hasFreeVersion?: boolean;
-  hasPremiumVersion?: boolean;
-  freeVersionFeatures?: string[];
-  premiumVersionFeatures?: string[];
-  termsOfUse?: string;
-  supportPolicy?: string;
-  licenseType?: string;
-  requires?: string[];
-}) {
+export async function createModule(
+  userId: string,
+  data: {
+    name: string;
+    category: string;
+    description?: string;
+    shortDescription?: string;
+    price?: number;
+    currency?: string;
+    fullDescription?: string;
+    logo?: string;
+    images?: string[];
+    subcategory?: string;
+    demoVideo?: string;
+    documentation?: string;
+    installationGuide?: string;
+    hasFreeVersion?: boolean;
+    hasPremiumVersion?: boolean;
+    freeVersionFeatures?: string[];
+    premiumVersionFeatures?: string[];
+    termsOfUse?: string;
+    supportPolicy?: string;
+    licenseType?: string;
+    requires?: string[];
+  }
+) {
   const developerId = await getDeveloperIdByUserId(userId);
   const slug = await generateUniqueModuleSlug(data.name);
 
@@ -94,8 +176,14 @@ export async function createModule(userId: string, data: {
       subcategory: data.subcategory || undefined,
       // map installationGuide -> setupGuide, requires -> requirements, combine features arrays
       setupGuide: data.installationGuide || undefined,
-      requirements: data.requires ? (Array.isArray(data.requires) ? data.requires.join(',') : String(data.requires)) : undefined,
-      features: ((data.freeVersionFeatures || []) as string[]).concat((data.premiumVersionFeatures || []) as string[]),
+      requirements: data.requires
+        ? Array.isArray(data.requires)
+          ? data.requires.join(',')
+          : String(data.requires)
+        : undefined,
+      features: ((data.freeVersionFeatures || []) as string[]).concat(
+        (data.premiumVersionFeatures || []) as string[]
+      ),
       isFree: data.hasFreeVersion || false,
     },
   });
@@ -260,7 +348,12 @@ export async function getMarketplaceModules(
 
   if (category) where.category = category;
   if (search) {
-    const ids = await searchIdsByText('DeveloperModule', ['name', 'description', 'fullDescription'], search, '"isPublished" = true');
+    const ids = await searchIdsByText(
+      'DeveloperModule',
+      ['name', 'description', 'fullDescription'],
+      search,
+      '"isPublished" = true'
+    );
     where.id = ids.length > 0 ? { in: ids } : { in: [] };
   }
 
@@ -307,16 +400,20 @@ export async function getMarketplaceModules(
 /**
  * Purchase a module (paid) — initiates payment before installation
  */
-export async function purchaseModule(moduleId: string, userId: string, data: {
-  provider: string;
-  phone: string;
-}) {
+export async function purchaseModule(
+  moduleId: string,
+  userId: string,
+  data: {
+    provider: string;
+    phone: string;
+  }
+) {
   const module = await prisma.developerModule.findUnique({
     where: { id: moduleId },
   });
   if (!module) throw new AppError('Module non trouvé', 404);
   if (!(module as any).isPublished) {
-    throw new AppError('Ce module n\'est pas disponible', 400);
+    throw new AppError("Ce module n'est pas disponible", 400);
   }
 
   const businessId = await getBusinessIdByOwnerId(userId);
@@ -334,13 +431,41 @@ export async function purchaseModule(moduleId: string, userId: string, data: {
     return installModule(moduleId, userId);
   }
 
-  // Paid module — initiate payment first
-  const result = await paymentProcessor.processMobileMoney(
-    data.provider,
-    data.phone,
-    amount,
-    `Module: ${module.name}`
-  );
+  // Paid module — initiate payment via FedaPay (or mobile money stub)
+  let result;
+  if (fedapay.isFedaPayAvailable()) {
+    try {
+      const mode = fedapay.fedapayModeForProvider(data.provider);
+      const tx = await fedapay.createTransaction({
+        amount,
+        mode,
+        description: `Module: ${module.name}`,
+        customerPhone: data.phone,
+        customerName: `Client AfriBiz`,
+      });
+      result = {
+        providerRef: tx.id,
+        status: tx.status === 'approved' ? 'SUCCESS' : 'PENDING',
+        fee: Math.round(amount * 0.012),
+        message: `Paiement ${data.provider} initié via FedaPay. Confirmez sur votre téléphone.`,
+      };
+    } catch (err: any) {
+      logger.error('FedaPay purchase failed, falling back to MM stub', { error: err.message });
+      result = await paymentProcessor.processMobileMoney(
+        data.provider,
+        data.phone,
+        amount,
+        `Module: ${module.name}`
+      );
+    }
+  } else {
+    result = await paymentProcessor.processMobileMoney(
+      data.provider,
+      data.phone,
+      amount,
+      `Module: ${module.name}`
+    );
+  }
 
   // Save the transaction
   await paymentProcessor.saveTransaction({
@@ -357,6 +482,7 @@ export async function purchaseModule(moduleId: string, userId: string, data: {
 
   if (result.status === 'SUCCESS') {
     // Payment confirmed immediately (test mode) — install module
+    await ensureModuleMarketplaceActive(businessId);
     return completeModulePurchase(moduleId, userId, businessId, amount);
   }
 
@@ -379,46 +505,75 @@ export async function completeModulePurchase(
 ) {
   const module = await prisma.developerModule.findUnique({
     where: { id: moduleId },
+    include: { developer: { select: { userId: true } } },
   });
   if (!module) throw new AppError('Module non trouvé', 404);
 
+  // Find latest version
+  const latestVersion = await prisma.developerModuleVersion.findFirst({
+    where: { moduleId },
+    orderBy: { createdAt: 'desc' },
+  });
+
   // Create installation
-  const installation = await prisma.developerModuleInstallation.create({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const installation = await (prisma as any).developerModuleInstallation.create({
     data: {
       moduleId,
       businessId,
       status: 'ACTIVE',
       installedAt: new Date(),
+      currentVersionId: latestVersion?.id || null,
     },
   });
 
   // Create license for the module
-  const license = await createLicenseForModule(moduleId, businessId, amount, module.currency || 'FCFA');
+  const license = await createLicenseForModule(
+    moduleId,
+    businessId,
+    amount,
+    module.currency || 'FCFA'
+  );
 
   // Record developer revenue
-  const commissionRate = 0.30;
+  const monetization = await getMonetizationSettings();
+  const commissionRate = monetization.developerModuleCommissionRate;
   const commissionAmount = amount * commissionRate;
   const netAmount = amount - commissionAmount;
 
   try {
-    // Revenue recording is best-effort (schema may vary)
-    try {
-      await (prisma.developerRevenue.create as any)({
-        data: {
-          developerId: (module as any).developerId,
-          moduleId,
-          type: 'MODULE_SALE',
-          amount,
-          commissionAmount,
-          netAmount,
-          status: 'COMPLETED',
-        },
-      });
-    } catch (e) {
-      // Non-blocking
-    }
-  } catch (e) {
-    // Revenue table might have different schema; non-blocking
+    await prisma.developerRevenue.create({
+      data: {
+        developerId: module.developerId,
+        moduleId,
+        type: 'MODULE_SALE' as any,
+        amount,
+        commissionAmount,
+        netAmount,
+        commissionRate,
+        status: 'COMPLETED',
+      },
+    });
+  } catch {
+    // Non-blocking
+  }
+
+  // Populate ModuleCommission for admin reporting
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma as any).moduleCommission.create({
+      data: {
+        moduleId,
+        developerId: module.developerId,
+        transactionAmount: amount,
+        commissionRate,
+        commissionAmount,
+        netAmount,
+        currency: module.currency || 'FCFA',
+      },
+    });
+  } catch {
+    // Non-blocking
   }
 
   // Notify the business owner
@@ -433,8 +588,70 @@ export async function completeModulePurchase(
         metadata: { moduleId, moduleName: module.name, businessId },
       },
     });
-  } catch (e) {
+  } catch {
     // Non-blocking
+  }
+
+  // Notify the developer
+  if (module.developer?.userId) {
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: module.developer.userId,
+          type: NotificationType.SYSTEM,
+          title: 'Module vendu',
+          description: `Votre module ${module.name} a été acheté !`,
+          link: `/dashboard/developer/modules/${module.id}`,
+          metadata: { moduleId, moduleName: module.name, businessId, amount },
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
+  }
+
+  // Create subscription if module has recurring pricing
+  if (
+    module.pricingType &&
+    ['MONTHLY', 'QUARTERLY', 'SEMESTRIAL', 'YEARLY', 'SUBSCRIPTION'].includes(module.pricingType)
+  ) {
+    try {
+      const period =
+        module.pricingType === 'SUBSCRIPTION' ? 'MONTHLY' : (module.pricingType as any);
+      const now = new Date();
+      const periodEnd = new Date(now);
+      switch (period) {
+        case 'MONTHLY':
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+          break;
+        case 'QUARTERLY':
+          periodEnd.setMonth(periodEnd.getMonth() + 3);
+          break;
+        case 'SEMESTRIAL':
+          periodEnd.setMonth(periodEnd.getMonth() + 6);
+          break;
+        case 'YEARLY':
+          periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+          break;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).developerModuleSubscription.create({
+        data: {
+          moduleId,
+          businessId,
+          period,
+          amount,
+          currency: module.currency || 'FCFA',
+          status: 'ACTIVE',
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          nextBillingAt: periodEnd,
+          autoRenew: true,
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
   }
 
   return {
@@ -451,13 +668,14 @@ export async function completeModulePurchase(
 export async function startTrial(moduleId: string, userId: string) {
   const module = await prisma.developerModule.findUnique({
     where: { id: moduleId },
+    include: { developer: { select: { userId: true } } },
   });
   if (!module) throw new AppError('Module non trouvé', 404);
   if (!(module as any).isPublished) {
-    throw new AppError('Ce module n\'est pas disponible', 400);
+    throw new AppError("Ce module n'est pas disponible", 400);
   }
   if ((module as any).isFree || !module.price || Number(module.price) <= 0) {
-    throw new AppError('Ce module est gratuit, utilisez l\'installation directe', 400);
+    throw new AppError("Ce module est gratuit, utilisez l'installation directe", 400);
   }
 
   const businessId = await getBusinessIdByOwnerId(userId);
@@ -471,13 +689,19 @@ export async function startTrial(moduleId: string, userId: string) {
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
-  const installation = await prisma.developerModuleInstallation.create({
+  const trialLatestVersion = await prisma.developerModuleVersion.findFirst({
+    where: { moduleId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const installation = await (prisma as any).developerModuleInstallation.create({
     data: {
       moduleId,
       businessId,
       status: 'TRIAL',
       installedAt: new Date(),
-      settings: { isTrial: true, trialEndsAt: trialEndsAt.toISOString() },
+      currentVersionId: trialLatestVersion?.id || null,
     },
   });
 
@@ -485,6 +709,9 @@ export async function startTrial(moduleId: string, userId: string) {
     where: { id: businessId },
     select: { ownerId: true, name: true },
   });
+
+  // Ensure MODULE_MARKETPLACE is active in Business.modules
+  await ensureModuleMarketplaceActive(businessId);
 
   if (business) {
     await createLicenseForModule(moduleId, businessId, 0, module.currency || 'FCFA');
@@ -500,7 +727,31 @@ export async function startTrial(moduleId: string, userId: string) {
           metadata: { moduleId, moduleName: module.name, businessId, isTrial: true, trialEndsAt },
         },
       });
-    } catch (e) { /* empty - notification failure is non-blocking */ }
+    } catch {
+      /* empty - notification failure is non-blocking */
+    }
+
+    try {
+      if (module.developer?.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: module.developer.userId,
+            type: NotificationType.SYSTEM,
+            title: 'Essai démarré',
+            description: `${business.name} a démarré un essai de ${module.name}.`,
+            link: `/dashboard/developer/modules/${module.id}`,
+            metadata: {
+              moduleId: module.id,
+              moduleName: module.name,
+              businessId,
+              businessName: business.name,
+            },
+          },
+        });
+      }
+    } catch {
+      /* empty */
+    }
   }
 
   return {
@@ -521,31 +772,20 @@ async function createLicenseForModule(
   currency: string
 ) {
   try {
-    const licenseData = {
-      moduleId,
-      businessId,
+    return await createLicense(moduleId, businessId, {
       licenseType: amount > 0 ? 'STANDARD' : 'FREE',
       price: amount || undefined,
       currency,
-      status: 'ACTIVE',
-      startsAt: new Date(),
-    };
-
-    return await (prisma as any).moduleLicense.create({
-      data: licenseData,
     });
-  } catch (e) {
-    return null; // Non-blocking if license table doesn't exist
+  } catch {
+    return null; // Non-blocking
   }
 }
 
 /**
  * Confirm a pending payment for a module (called by webhook or manual confirm)
  */
-export async function confirmModulePayment(
-  userId: string,
-  providerRef: string
-) {
+export async function confirmModulePayment(userId: string, providerRef: string) {
   // Find the transaction
   const transaction = await prisma.paymentTransaction.findFirst({
     where: { providerRef, userId },
@@ -572,12 +812,7 @@ export async function confirmModulePayment(
       select: { id: true },
     });
     if (business) {
-      return completeModulePurchase(
-        metadata.moduleId,
-        userId,
-        business.id,
-        transaction.amount
-      );
+      return completeModulePurchase(metadata.moduleId, userId, business.id, transaction.amount);
     }
   }
 
@@ -590,10 +825,11 @@ export async function confirmModulePayment(
 export async function installModule(moduleId: string, userId: string) {
   const module = await prisma.developerModule.findUnique({
     where: { id: moduleId },
+    include: { developer: { select: { userId: true } } },
   });
   if (!module) throw new AppError('Module non trouvé', 404);
   if (!(module as any).isPublished) {
-    throw new AppError('Ce module n\'est pas disponible', 400);
+    throw new AppError("Ce module n'est pas disponible", 400);
   }
 
   const businessId = await getBusinessIdByOwnerId(userId);
@@ -603,16 +839,53 @@ export async function installModule(moduleId: string, userId: string) {
   });
   if (existing) throw new AppError('Module déjà installé sur ce business', 409);
 
-  const installation = await prisma.developerModuleInstallation.create({
+  // Find latest version for this module
+  const latestVersion = await prisma.developerModuleVersion.findFirst({
+    where: { moduleId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const installation = await (prisma as any).developerModuleInstallation.create({
     data: {
       moduleId,
       businessId,
-
+      status: 'ACTIVE',
       installedAt: new Date(),
+      currentVersionId: latestVersion?.id || null,
     },
   });
 
-    // Incrementing install counters or revenue is optional depending on schema
+  await Promise.all([
+    // Increment total installs counter
+    prisma.developerModule.update({
+      where: { id: moduleId },
+      data: { totalInstalls: { increment: 1 } },
+    }),
+    // Create activity log entry
+    prisma.moduleActivityLog.create({
+      data: {
+        moduleId,
+        businessId,
+        installationId: installation.id,
+        activityType: ModuleActivityType.INSTALLED,
+        description: `Module installé sur le business`,
+        metadata: { free: true },
+      },
+    }),
+    // Auto-create module configuration
+    prisma.moduleConfiguration.upsert({
+      where: { moduleId_businessId: { moduleId, businessId } },
+      create: {
+        moduleId,
+        businessId,
+        installationId: installation.id,
+        isActive: true,
+        settings: {},
+      },
+      update: { installationId: installation.id, isActive: true },
+    }),
+  ]);
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },
@@ -620,12 +893,7 @@ export async function installModule(moduleId: string, userId: string) {
   });
 
   if (business) {
-    const amount = module.price || 0;
-    const commissionRate = 0.30;
-    const commissionAmount = Number(amount) * commissionRate;
-    const netAmount = Number(amount) - commissionAmount;
-
-    await Promise.all([
+    const notifs = [
       prisma.notification.create({
         data: {
           userId: business.ownerId,
@@ -640,6 +908,30 @@ export async function installModule(moduleId: string, userId: string) {
           },
         },
       }),
+    ];
+
+    if (module.developer?.userId) {
+      notifs.push(
+        prisma.notification.create({
+          data: {
+            userId: module.developer.userId,
+            type: NotificationType.MODULE_APPROVED as any,
+            title: 'Nouvelle installation',
+            description: `Votre module ${module.name} a été installé par ${business.name}.`,
+            link: `/dashboard/developer/modules/${module.id}`,
+            metadata: {
+              moduleId: module.id,
+              moduleName: module.name,
+              businessId,
+              businessName: business.name,
+            },
+          },
+        })
+      );
+    }
+
+    await Promise.all([
+      ...notifs,
       prisma.businessSettings.upsert({
         where: { businessId },
         create: {
@@ -651,9 +943,11 @@ export async function installModule(moduleId: string, userId: string) {
         },
         update: {},
       }),
-      // developerRevenue table may not exist in schema; skip revenue recording here
     ]);
   }
+
+  // Ensure MODULE_MARKETPLACE is active in Business.modules
+  await ensureModuleMarketplaceActive(businessId);
 
   return installation;
 }
@@ -664,26 +958,117 @@ export async function installModule(moduleId: string, userId: string) {
 export async function uninstallModule(installationId: string) {
   const installation = await prisma.developerModuleInstallation.findUnique({
     where: { id: installationId },
+    include: {
+      module: {
+        select: {
+          id: true,
+          name: true,
+          developer: { select: { userId: true } },
+        },
+      },
+      business: { select: { name: true } },
+    },
   });
   if (!installation) throw new AppError('Installation non trouvée', 404);
 
-  return prisma.developerModuleInstallation.update({
+  const result = await prisma.developerModuleInstallation.update({
     where: { id: installationId },
     data: {
       status: 'UNINSTALLED',
       uninstalledAt: new Date(),
     },
   });
+
+  // Notify the developer
+  const devUserId = installation.module?.developer?.userId;
+  if (devUserId) {
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: devUserId,
+          type: NotificationType.SYSTEM,
+          title: 'Module désinstallé',
+          description: `${installation.business?.name || 'Un business'} a désinstallé ${installation.module.name}.`,
+          link: `/dashboard/developer/modules/${installation.module.id}`,
+          metadata: {
+            moduleId: installation.module.id,
+            moduleName: installation.module.name,
+            businessId: installation.businessId,
+          },
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
+  }
+
+  // Remove MODULE_MARKETPLACE if no more installations
+  await maybeDeactivateModuleMarketplace(installation.businessId);
+
+  return result;
+}
+
+/**
+ * Reinstall a previously uninstalled module
+ */
+export async function reinstallModule(moduleId: string, businessId: string, _userId: string) {
+  const existing = await prisma.developerModuleInstallation.findFirst({
+    where: { moduleId, businessId, status: 'UNINSTALLED' },
+    include: { module: { select: { isPublished: true } as any } },
+  });
+  if (!existing) throw new AppError('Aucune installation précédente trouvée à réinstaller', 404);
+  if (!(existing.module as any).isPublished) {
+    throw new AppError("Ce module n'est plus disponible", 400);
+  }
+
+  // Find latest version
+  const latestVersion = await prisma.developerModuleVersion.findFirst({
+    where: { moduleId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const installation = await (prisma as any).developerModuleInstallation.update({
+    where: { id: existing.id },
+    data: {
+      status: 'ACTIVE',
+      uninstalledAt: null,
+      installedAt: new Date(),
+      currentVersionId: latestVersion?.id || null,
+    },
+  });
+
+  // Reactivate configuration
+  await prisma.moduleConfiguration.updateMany({
+    where: { moduleId, businessId },
+    data: { isActive: true },
+  });
+
+  // Log activity
+  await prisma.moduleActivityLog.create({
+    data: {
+      moduleId,
+      businessId,
+      installationId: installation.id,
+      activityType: ModuleActivityType.INSTALLED,
+      description: 'Module réinstallé',
+    },
+  });
+
+  return installation;
 }
 
 /**
  * Create a new module version
  */
-export async function createModuleVersion(moduleId: string, data: {
-  version: string;
-  releaseNotes?: string;
-  changelog?: string;
-}) {
+export async function createModuleVersion(
+  moduleId: string,
+  data: {
+    version: string;
+    releaseNotes?: string;
+    changelog?: string;
+  }
+) {
   const module = await prisma.developerModule.findUnique({
     where: { id: moduleId },
   });
@@ -702,6 +1087,58 @@ export async function createModuleVersion(moduleId: string, data: {
     where: { id: moduleId },
     data: { version: data.version },
   });
+
+  // Notify all businesses with active installations about the new version
+  try {
+    const installations = await prisma.developerModuleInstallation.findMany({
+      where: { moduleId, status: { in: ['ACTIVE', 'TRIAL'] } },
+      include: { business: { select: { ownerId: true, name: true } } },
+    });
+
+    for (const inst of installations) {
+      if (inst.business?.ownerId) {
+        await prisma.notification.create({
+          data: {
+            userId: inst.business.ownerId,
+            type: NotificationType.SYSTEM,
+            title: 'Nouvelle version disponible',
+            description: `Une nouvelle version (v${data.version}) de ${module.name} est disponible.`,
+            link: `/dashboard/marketplace/${module.slug}`,
+            metadata: {
+              moduleId,
+              moduleName: module.name,
+              version: data.version,
+              releaseNotes: data.releaseNotes,
+            },
+          },
+        });
+      }
+    }
+
+    // Also notify developer
+    const devProfile = await prisma.developerProfile.findUnique({
+      where: { id: module.developerId },
+    });
+    if (devProfile) {
+      await prisma.notification.create({
+        data: {
+          userId: devProfile.userId,
+          type: NotificationType.SYSTEM,
+          title: 'Version publiée',
+          description: `La version v${data.version} de ${module.name} a été publiée. ${installations.length} installation${installations.length > 1 ? 's' : ''} ont été notifiée${installations.length > 1 ? 's' : ''}.`,
+          link: `/dashboard/developer/modules/${module.id}/versions`,
+          metadata: {
+            moduleId,
+            moduleName: module.name,
+            version: data.version,
+            notifiedBusinesses: installations.length,
+          },
+        },
+      });
+    }
+  } catch {
+    // Non-blocking
+  }
 
   return version;
 }
@@ -734,7 +1171,12 @@ export async function searchModules(
   const where: any = { status: ModuleStatus.PUBLISHED };
 
   if (query) {
-    const ids = await searchIdsByText('DeveloperModule', ['name', 'description', 'fullDescription'], query, `"status" = '${ModuleStatus.PUBLISHED}'`);
+    const ids = await searchIdsByText(
+      'DeveloperModule',
+      ['name', 'description', 'fullDescription'],
+      query,
+      `"status" = '${ModuleStatus.PUBLISHED}'`
+    );
     where.id = ids.length > 0 ? { in: ids } : { in: [] };
   }
 
@@ -789,7 +1231,11 @@ export async function searchModules(
 /**
  * Create a review for a module
  */
-export async function createReview(moduleId: string, userId: string, data: { rating: number; title?: string; comment?: string }) {
+export async function createReview(
+  moduleId: string,
+  userId: string,
+  data: { rating: number; title?: string; comment?: string }
+) {
   const module = await prisma.developerModule.findUnique({
     where: { id: moduleId },
     select: { id: true, developerId: true },
@@ -843,7 +1289,7 @@ export async function respondToReview(reviewId: string, userId: string, response
   });
   if (!review) throw new AppError('Avis non trouvé', 404);
   if (review.module.developer.userId !== userId) {
-    throw new AppError('Vous n\'êtes pas autorisé à répondre à cet avis', 403);
+    throw new AppError("Vous n'êtes pas autorisé à répondre à cet avis", 403);
   }
 
   return prisma.developerModuleReview.update({
@@ -891,14 +1337,17 @@ async function recalculateDeveloperRating(developerId: string) {
 /**
  * Create a support ticket (by developer or business)
  */
-export async function createTicket(userId: string, data: {
-  businessId: string;
-  subject: string;
-  description: string;
-  priority?: string;
-  category?: string;
-  moduleId?: string;
-}) {
+export async function createTicket(
+  userId: string,
+  data: {
+    businessId: string;
+    subject: string;
+    description: string;
+    priority?: string;
+    category?: string;
+    moduleId?: string;
+  }
+) {
   const developerProfile = await DeveloperRepository.findByUserId(userId);
   if (!developerProfile) throw new AppError('Profil développeur non trouvé', 404);
 
@@ -927,7 +1376,9 @@ export async function getMyTickets(userId: string) {
     include: {
       module: { select: { id: true, name: true, slug: true } },
       messages: {
-        include: { sender: { select: { id: true, firstName: true, lastName: true, avatar: true } } },
+        include: {
+          sender: { select: { id: true, firstName: true, lastName: true, avatar: true } },
+        },
         orderBy: { createdAt: 'asc' },
       },
     },
@@ -947,7 +1398,9 @@ export async function getTicketById(ticketId: string, userId: string) {
     include: {
       module: { select: { id: true, name: true, slug: true } },
       messages: {
-        include: { sender: { select: { id: true, firstName: true, lastName: true, avatar: true } } },
+        include: {
+          sender: { select: { id: true, firstName: true, lastName: true, avatar: true } },
+        },
         orderBy: { createdAt: 'asc' },
       },
     },
@@ -989,14 +1442,9 @@ export async function updateTicketStatus(ticketId: string, userId: string, statu
   });
   if (!ticket) throw new AppError('Ticket non trouvé', 404);
 
-  const data: any = { status };
-  if (status === 'RESOLVED' || status === 'CLOSED') {
-    data.resolvedAt = new Date();
-  }
-
   return prisma.developerSupportTicket.update({
     where: { id: ticketId },
-    data,
+    data: { status },
   });
 }
 
@@ -1029,24 +1477,23 @@ export async function getRevenueSummary(userId: string) {
 
   const [totalRevenue, totalCommissions, monthlyRevenue, byType] = await Promise.all([
     prisma.developerRevenue.aggregate({
-      where: { developerId: developerProfile.id, status: 'COMPLETED' },
+      where: { developerId: developerProfile.id },
       _sum: { netAmount: true, amount: true, commissionAmount: true },
     }),
     prisma.developerRevenue.aggregate({
-      where: { developerId: developerProfile.id, status: 'COMPLETED' },
+      where: { developerId: developerProfile.id },
       _sum: { commissionAmount: true },
     }),
     prisma.developerRevenue.findMany({
       where: {
         developerId: developerProfile.id,
-        status: 'COMPLETED',
         createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
       },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.developerRevenue.groupBy({
       by: ['type'],
-      where: { developerId: developerProfile.id, status: 'COMPLETED' },
+      where: { developerId: developerProfile.id },
       _sum: { netAmount: true },
     }),
   ]);
@@ -1061,6 +1508,118 @@ export async function getRevenueSummary(userId: string) {
       return acc;
     }, {}),
   };
+}
+
+// ============================================
+// SUBSCRIPTION & TRIAL CONVERSION
+// ============================================
+
+/**
+ * Renew a module subscription for another period
+ */
+export async function renewModuleSubscription(subscriptionId: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sub = await (prisma as any).developerModuleSubscription.findUnique({
+    where: { id: subscriptionId },
+  });
+  if (!sub) throw new AppError('Abonnement non trouvé', 404);
+  if (sub.status !== 'ACTIVE') throw new AppError("Cet abonnement n'est plus actif", 400);
+
+  const now = new Date();
+  const periodEnd = new Date(now);
+  switch (sub.period) {
+    case 'MONTHLY':
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      break;
+    case 'QUARTERLY':
+      periodEnd.setMonth(periodEnd.getMonth() + 3);
+      break;
+    case 'SEMESTRIAL':
+      periodEnd.setMonth(periodEnd.getMonth() + 6);
+      break;
+    case 'YEARLY':
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+      break;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (prisma as any).developerModuleSubscription.update({
+    where: { id: subscriptionId },
+    data: {
+      currentPeriodStart: now,
+      currentPeriodEnd: periodEnd,
+      nextBillingAt: sub.autoRenew ? periodEnd : null,
+    },
+  });
+}
+
+/**
+ * Convert a trial installation to a paid subscription
+ */
+export async function convertTrialToPaid(installationId: string, amount: number) {
+  const installation = await prisma.developerModuleInstallation.findUnique({
+    where: { id: installationId },
+    include: { module: true },
+  });
+  if (!installation) throw new AppError('Installation non trouvée', 404);
+  if (installation.status !== 'EXPIRED')
+    throw new AppError("L'installation n'est pas expirée", 400);
+
+  // Update installation to ACTIVE
+  await prisma.developerModuleInstallation.update({
+    where: { id: installationId },
+    data: { status: 'ACTIVE' },
+  });
+
+  // Create subscription
+  if (
+    installation.module.pricingType &&
+    ['MONTHLY', 'QUARTERLY', 'SEMESTRIAL', 'YEARLY', 'SUBSCRIPTION'].includes(
+      installation.module.pricingType
+    )
+  ) {
+    try {
+      const period =
+        installation.module.pricingType === 'SUBSCRIPTION'
+          ? 'MONTHLY'
+          : (installation.module.pricingType as any);
+      const now = new Date();
+      const periodEnd = new Date(now);
+      switch (period) {
+        case 'MONTHLY':
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+          break;
+        case 'QUARTERLY':
+          periodEnd.setMonth(periodEnd.getMonth() + 3);
+          break;
+        case 'SEMESTRIAL':
+          periodEnd.setMonth(periodEnd.getMonth() + 6);
+          break;
+        case 'YEARLY':
+          periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+          break;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).developerModuleSubscription.create({
+        data: {
+          moduleId: installation.moduleId,
+          businessId: installation.businessId,
+          period,
+          amount,
+          currency: installation.module.currency || 'FCFA',
+          status: 'ACTIVE',
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          nextBillingAt: periodEnd,
+          autoRenew: true,
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
+  }
+
+  return { success: true, message: 'Conversion réussie' };
 }
 
 // ============================================
@@ -1089,7 +1648,10 @@ export async function getDeveloperInstallations(userId: string, status?: string)
   });
 }
 
-export async function getDeveloperOrders(userId: string, params?: { type?: string; page?: number; limit?: number }) {
+export async function getDeveloperOrders(
+  userId: string,
+  params?: { type?: string; page?: number; limit?: number }
+) {
   const developerProfile = await DeveloperRepository.findByUserId(userId);
   if (!developerProfile) throw new AppError('Profil développeur introuvable', 404);
 
@@ -1125,7 +1687,17 @@ export async function getDeveloperSubscriptions(userId: string) {
       autoUpdate: true,
     },
     include: {
-      module: { select: { id: true, name: true, slug: true, logo: true, pricingType: true, price: true, currency: true } },
+      module: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logo: true,
+          pricingType: true,
+          price: true,
+          currency: true,
+        },
+      },
       business: { select: { id: true, name: true, slug: true, logo: true } },
     },
     orderBy: { createdAt: 'desc' },
@@ -1147,27 +1719,202 @@ export async function getPayoutHistory(userId: string) {
 /**
  * Request a payout
  */
-export async function requestPayout(userId: string, data: {
-  amount: number;
-  method: string;
-  currency?: string;
-  notes?: string;
-}) {
+export async function getAvailableBalance(developerId: string) {
+  const [revenueAgg, payoutAgg] = await Promise.all([
+    prisma.developerRevenue.aggregate({
+      where: { developerId, status: 'COMPLETED' },
+      _sum: { netAmount: true },
+    }),
+    prisma.developerPayout.aggregate({
+      where: { developerId, status: { in: ['PENDING', 'COMPLETED'] } },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const earned = Number(revenueAgg._sum.netAmount || 0);
+  const paid = Number(payoutAgg._sum.amount || 0);
+  return { available: earned - paid, earned, paid };
+}
+
+export async function requestPayout(
+  userId: string,
+  data: {
+    amount: number;
+    method: string;
+    currency?: string;
+    notes?: string;
+  }
+) {
   const developerProfile = await DeveloperRepository.findByUserId(userId);
   if (!developerProfile) throw new AppError('Profil développeur non trouvé', 404);
 
-  const commissionRate = 0.30;
-  const commissionAmount = data.amount * commissionRate;
-  const netAmount = data.amount - commissionAmount;
+  // Validate available balance
+  const { available } = await getAvailableBalance(developerProfile.id);
+  if (data.amount > available) {
+    throw new AppError(
+      `Solde insuffisant. Disponible : ${available.toLocaleString()} ${data.currency || 'FCFA'}, demandé : ${data.amount.toLocaleString()}`,
+      400
+    );
+  }
 
+  // Commission already deducted at purchase time in completeModulePurchase
   return prisma.developerPayout.create({
     data: {
       developerId: developerProfile.id,
       amount: data.amount,
       currency: data.currency || 'FCFA',
-      commissionAmount,
+      commissionAmount: 0,
       method: data.method,
       notes: data.notes || undefined,
+      status: 'PENDING',
     },
   });
+}
+
+// ============================================
+// ADMIN PAYOUT MANAGEMENT
+// ============================================
+
+/**
+ * Get all payout requests (admin) with optional filters
+ */
+export async function getAllPayouts(filters?: { status?: string; developerId?: string }) {
+  const where: any = {};
+  if (filters?.status) where.status = filters.status;
+  if (filters?.developerId) where.developerId = filters.developerId;
+
+  return prisma.developerPayout.findMany({
+    where,
+    include: {
+      developer: {
+        select: {
+          id: true,
+          companyName: true,
+          user: { select: { firstName: true, lastName: true, email: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+/**
+ * Approve a pending payout — marks as COMPLETED, notifies developer
+ */
+export async function approvePayout(payoutId: string, adminUserId: string) {
+  const payout = await prisma.developerPayout.findUnique({ where: { id: payoutId } });
+  if (!payout) throw new AppError('Paiement non trouvé', 404);
+  if (payout.status !== 'PENDING') throw new AppError('Ce paiement a déjà été traité', 400);
+
+  // Initiate real payout via FedaPay if configured
+  let fedapayRef: string | null = null;
+  if (fedapay.isFedaPayAvailable() && payout.method !== 'BANK') {
+    try {
+      const profile = await prisma.developerProfile.findUnique({
+        where: { id: payout.developerId },
+        select: { userId: true, companyName: true },
+      });
+      const user = profile?.userId
+        ? await prisma.user.findUnique({ where: { id: profile.userId }, select: { phone: true } })
+        : null;
+      if (user?.phone) {
+        const fp = await fedapay.createPayout({
+          amount: Number(payout.amount),
+          currency: payout.currency || 'XOF',
+          recipientPhone: user.phone,
+          recipientName: profile?.companyName || 'Développeur AfriBiz',
+          description: `Payout développeur #${payoutId.slice(0, 8)}`,
+        });
+        fedapayRef = fp.id;
+        logger.info(
+          `Payout ${payoutId}: FedaPay transfer initiated, ref: ${fp.id}, status: ${fp.status}`
+        );
+      }
+    } catch (err: any) {
+      logger.error('FedaPay payout failed, completing in DB only', {
+        error: err.message,
+        payoutId,
+      });
+      // Non-blocking — payout still marked completed
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (prisma as any).developerPayout.update({
+    where: { id: payoutId },
+    data: {
+      status: 'COMPLETED',
+      processedAt: new Date(),
+      processedBy: adminUserId,
+      ...(fedapayRef ? { metadata: { fedapayRef } as any } : {}),
+    },
+  });
+
+  // Notify the developer
+  try {
+    const profile = await prisma.developerProfile.findUnique({
+      where: { id: payout.developerId },
+      select: { userId: true, companyName: true },
+    });
+    if (profile?.userId) {
+      const transferMsg = fedapayRef ? ' — le transfert a été initié via FedaPay.' : '.';
+      await prisma.notification.create({
+        data: {
+          userId: profile.userId,
+          type: 'SYSTEM' as any,
+          title: 'Paiement approuvé',
+          description: `Votre demande de paiement de ${Number(payout.amount).toLocaleString()} ${payout.currency} a été approuvée${transferMsg}`,
+          link: '/dashboard/developer/revenues',
+          metadata: { payoutId, amount: payout.amount, currency: payout.currency, fedapayRef },
+        },
+      });
+    }
+  } catch {
+    /* non-blocking */
+  }
+
+  return { success: true, message: 'Paiement approuvé', fedapayRef };
+}
+
+/**
+ * Reject a pending payout — marks as REJECTED, notifies developer with reason
+ */
+export async function rejectPayout(payoutId: string, adminUserId: string, reason?: string) {
+  const payout = await prisma.developerPayout.findUnique({ where: { id: payoutId } });
+  if (!payout) throw new AppError('Paiement non trouvé', 404);
+  if (payout.status !== 'PENDING') throw new AppError('Ce paiement a déjà été traité', 400);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (prisma as any).developerPayout.update({
+    where: { id: payoutId },
+    data: {
+      status: 'REJECTED',
+      processedBy: adminUserId,
+      notes: reason || payout.notes,
+    },
+  });
+
+  // Notify the developer
+  try {
+    const profile = await prisma.developerProfile.findUnique({
+      where: { id: payout.developerId },
+      select: { userId: true, companyName: true },
+    });
+    if (profile?.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: profile.userId,
+          type: 'SYSTEM' as any,
+          title: 'Paiement rejeté',
+          description: `Votre demande de paiement de ${Number(payout.amount).toLocaleString()} ${payout.currency} a été rejetée.${reason ? ` Motif : ${reason}` : ''}`,
+          link: '/dashboard/developer/revenues',
+          metadata: { payoutId, amount: payout.amount, currency: payout.currency, reason },
+        },
+      });
+    }
+  } catch {
+    /* non-blocking */
+  }
+
+  return { success: true, message: 'Paiement rejeté' };
 }

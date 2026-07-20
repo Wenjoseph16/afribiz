@@ -16,13 +16,31 @@ export async function globalSearch(ownerId: string, query: string) {
   const businessId = business.id;
   const hasQuery = query.trim().length > 0;
 
-  let products: any[], services: any[], menuItems: any[], bookings: any[],
-      quotes: any[], invoices: any[], debts: any[], clients: any[],
-      disputes: any[], documents: any[];
+  let products: any[] = [],
+    services: any[] = [],
+    menuItems: any[] = [],
+    bookings: any[] = [],
+    quotes: any[] = [],
+    invoices: any[] = [],
+    debts: any[] = [],
+    clients: any[] = [],
+    disputes: any[] = [],
+    documents: any[] = [];
 
   if (!hasQuery) {
     const baseWhere = { businessId, deletedAt: null };
-    [products, services, menuItems, bookings, quotes, invoices, debts, clients, disputes, documents] = await Promise.all([
+    [
+      products,
+      services,
+      menuItems,
+      bookings,
+      quotes,
+      invoices,
+      debts,
+      clients,
+      disputes,
+      documents,
+    ] = await Promise.all([
       prisma.product.findMany({ where: baseWhere }),
       prisma.service.findMany({ where: baseWhere }),
       prisma.menuItem.findMany({ where: baseWhere }),
@@ -38,7 +56,19 @@ export async function globalSearch(ownerId: string, query: string) {
       where: { businessId },
       select: { id: true, orderNumber: true, totalAmount: true, status: true, contactName: true },
     });
-    return { clients, orders: allOrders, bookings, quotes, invoices, products, services, menuItems, debts, disputes, documents };
+    return {
+      clients,
+      orders: allOrders,
+      bookings,
+      quotes,
+      invoices,
+      products,
+      services,
+      menuItems,
+      debts,
+      disputes,
+      documents,
+    };
   }
 
   const orderMatch = await prisma.order.findMany({
@@ -59,13 +89,20 @@ export async function globalSearch(ownerId: string, query: string) {
 
   const ftsResults = await Promise.all(
     FTS_ENTITIES.map(({ table, fields, clientKey }) =>
-      searchIdsByText(table, fields, query, undefined, undefined, businessId).then(ids =>
+      searchIdsByText(table, fields, query, undefined, undefined, businessId).then((ids) =>
         ids.length > 0 ? (prisma[clientKey] as any).findMany({ where: { id: { in: ids } } }) : []
       )
     )
   );
 
-  [products, services, menuItems, bookings, quotes, invoices, disputes, documents] = ftsResults;
+  products = ftsResults[0];
+  services = ftsResults[1];
+  menuItems = ftsResults[2];
+  bookings = ftsResults[3];
+  quotes = ftsResults[4];
+  invoices = ftsResults[5];
+  disputes = ftsResults[6];
+  documents = ftsResults[7];
 
   // Debts: search by notes + buyer name
   debts = await (async () => {
@@ -80,7 +117,7 @@ export async function globalSearch(ownerId: string, query: string) {
       },
       select: { id: true },
     });
-    const buyerIdList = buyerIds.map(b => b.id);
+    const buyerIdList = buyerIds.map((b) => b.id);
     if (ids.length === 0 && buyerIdList.length === 0) return [];
     return prisma.debt.findMany({
       where: {
@@ -118,7 +155,10 @@ export async function globalSearch(ownerId: string, query: string) {
     disputes,
     documents,
   };
-  const totalCount = Object.values(results).reduce((sum: number, arr: any) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+  const totalCount = Object.values(results).reduce(
+    (sum: number, arr: any) => sum + (Array.isArray(arr) ? arr.length : 0),
+    0
+  );
   trackSearchQuery(query, totalCount);
   return results;
 }

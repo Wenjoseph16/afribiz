@@ -2,9 +2,19 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { calculatePagination } from '../utils/helpers';
+import { findProductByBusinessAndSlug as dbFindProductByBusinessAndSlug } from '../data';
+import {
+  publishProductPublished,
+  publishProductModified,
+  publishProductDeleted,
+} from '../events/publishers';
+import { autoShareToSocial } from './socialShareService';
+import { triggerAlertsForBackInStock, triggerAlertsForPriceDrop } from './alertService';
 
 function slugify(text: string): string {
-  return text.toLowerCase().trim()
+  return text
+    .toLowerCase()
+    .trim()
     .replace(/\s+/g, '-')
     .replace(/[^\w-]+/g, '')
     .replace(/--+/g, '-')
@@ -15,15 +25,11 @@ function slugify(text: string): string {
 function generateProductSlug(name: string, businessId: string): Promise<string> {
   return (async () => {
     let slug = slugify(name) || 'produit';
-    let exists = await prisma.product.findFirst({
-      where: { slug, businessId }, select: { id: true }
-    });
+    let exists = await dbFindProductByBusinessAndSlug(businessId, slug);
     let counter = 1;
     while (exists) {
       slug = `${slugify(name) || 'produit'}-${counter}`;
-      exists = await prisma.product.findFirst({
-        where: { slug, businessId }, select: { id: true }
-      });
+      exists = await dbFindProductByBusinessAndSlug(businessId, slug);
       counter++;
     }
     return slug;
@@ -87,7 +93,7 @@ export async function listProducts(ownerId: string, params: any) {
 
   let filtered = products;
   if (params.stock === 'low') {
-    filtered = products.filter(p => p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 0));
+    filtered = products.filter((p) => p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 0));
   }
 
   return {
@@ -127,7 +133,7 @@ export async function createProduct(ownerId: string, data: any) {
 
   return prisma.$transaction(async (tx) => {
     const cleaned: any = {};
-    Object.keys(data).forEach(k => {
+    Object.keys(data).forEach((k) => {
       if (!['variants', 'categoryId'].includes(k)) cleaned[k] = data[k];
     });
     if (data.categoryId) {
@@ -168,6 +174,24 @@ export async function createProduct(ownerId: string, data: any) {
       });
     }
 
+    publishProductPublished({
+      userId: ownerId,
+      productId: created.id,
+      businessId: business.id,
+      productName: created.name,
+    });
+
+    autoShareToSocial({
+      type: 'PRODUCT',
+      title: created.name || '',
+      description: created.shortDescription || created.description || undefined,
+      imageUrl: created.images?.[0],
+      link: `/business/${business.name || ''}/${created.slug || ''}`,
+      businessId: business.id,
+      businessName: business.name || '',
+      ownerId,
+    }).catch(() => {});
+
     return tx.product.findUnique({
       where: { id: created.id },
       include: productInclude,
@@ -184,7 +208,7 @@ export async function updateProduct(ownerId: string, productId: string, data: an
 
   return prisma.$transaction(async (tx) => {
     const cleaned: any = {};
-    Object.keys(data).forEach(k => {
+    Object.keys(data).forEach((k) => {
       if (!['variants', 'categoryId'].includes(k)) cleaned[k] = data[k];
     });
     if (data.categoryId) cleaned.category = { connect: { id: data.categoryId } };
@@ -192,6 +216,26 @@ export async function updateProduct(ownerId: string, productId: string, data: an
     if (data.promotionEndsAt) cleaned.promotionEndsAt = new Date(data.promotionEndsAt);
 
     await tx.product.update({ where: { id: productId }, data: cleaned });
+
+    publishProductModified({
+      userId: ownerId,
+      productId,
+      businessId: business.id,
+      productName: existing.name,
+    });
+
+    if (existing.stock === 0 && (data.stock ?? existing.stock) > 0) {
+      triggerAlertsForBackInStock(productId, existing.name, business.id).catch(() => {});
+    }
+    if (data.price !== undefined && data.price < Number(existing.price)) {
+      triggerAlertsForPriceDrop(
+        productId,
+        existing.name,
+        business.id,
+        data.price,
+        Number(existing.price)
+      ).catch(() => {});
+    }
 
     if (data.variants !== undefined) {
       await tx.productVariant.deleteMany({ where: { productId } });
@@ -223,9 +267,16 @@ export async function deleteProduct(ownerId: string, productId: string) {
   });
   if (!existing) throw new AppError('Product not found', 404);
 
+  const product = existing;
   await prisma.product.update({
     where: { id: productId },
     data: { deletedAt: new Date(), isActive: false },
+  });
+  publishProductDeleted({
+    userId: ownerId,
+    productId,
+    businessId: business.id,
+    productName: product.name,
   });
   return { message: 'Product deleted' };
 }
@@ -263,17 +314,17 @@ export async function duplicateProduct(ownerId: string, productId: string) {
     });
 
     for (const v of original.variants) {
-        await tx.productVariant.create({
-          data: {
-            productId: dup.id,
-            name: v.name,
-            sku: v.sku ? v.sku + '-COPY' : null,
-            price: v.price,
-            stock: 0,
-            isActive: v.isActive,
-          },
-        });
-      }
+      await tx.productVariant.create({
+        data: {
+          productId: dup.id,
+          name: v.name,
+          sku: v.sku ? v.sku + '-COPY' : null,
+          price: v.price,
+          stock: 0,
+          isActive: v.isActive,
+        },
+      });
+    }
     return tx.product.findUnique({
       where: { id: dup.id },
       include: productInclude,
@@ -407,8 +458,8 @@ export async function getStockAlerts(ownerId: string) {
     include: productInclude,
     orderBy: { stock: 'asc' },
   });
-  const lowStock = all.filter(p => p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 0));
-  const outOfStock = all.filter(p => p.stock === 0);
+  const lowStock = all.filter((p) => p.stock > 0 && p.stock <= (p.lowStockThreshold ?? 0));
+  const outOfStock = all.filter((p) => p.stock === 0);
   return { lowStock, outOfStock, totalAlerts: lowStock.length + outOfStock.length };
 }
 
@@ -446,7 +497,7 @@ export async function exportProducts(ownerId: string, format: string, params: an
     orderBy: { createdAt: 'desc' },
   });
 
-  const rows = products.map(p => ({
+  const rows = products.map((p) => ({
     name: p.name,
     shortDescription: p.shortDescription || '',
     description: p.description || '',
@@ -495,7 +546,14 @@ export async function importProducts(ownerId: string, products: any[]) {
           sku: data.sku || null,
           barcode: data.barcode || null,
           categoryId: data.categoryId || null,
-          tags: Array.isArray(data.tags) ? data.tags : (typeof data.tags === 'string' ? data.tags.split(/[;,]/).map((t: string) => t.trim()).filter(Boolean) : []),
+          tags: Array.isArray(data.tags)
+            ? data.tags
+            : typeof data.tags === 'string'
+              ? data.tags
+                  .split(/[;,]/)
+                  .map((t: string) => t.trim())
+                  .filter(Boolean)
+              : [],
           price: Number(data.price),
           currency: data.currency || 'FCFA',
           images: data.images || [],
@@ -504,7 +562,10 @@ export async function importProducts(ownerId: string, products: any[]) {
           unit: data.unit || 'piece',
           weight: data.weight ? Number(data.weight) : undefined,
           isActive: true,
-          isPromotional: data.isPromotional === true || data.isPromotional === 'true' || data.isPromotional === 'Oui',
+          isPromotional:
+            data.isPromotional === true ||
+            data.isPromotional === 'true' ||
+            data.isPromotional === 'Oui',
           promotionalPrice: data.promotionalPrice ? Number(data.promotionalPrice) : undefined,
           discountPercent: Number(data.discountPercent) || 0,
         },

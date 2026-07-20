@@ -18,12 +18,12 @@ export async function trackAnalytics(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const existing = await (prisma as any).moduleAnalytics.findUnique({
+  const existing = await prisma.moduleAnalytics.findUnique({
     where: { moduleId_date: { moduleId, date: today } },
   });
 
   if (existing) {
-    return (prisma as any).moduleAnalytics.update({
+    return prisma.moduleAnalytics.update({
       where: { id: existing.id },
       data: {
         installs: { increment: data.installs || 0 },
@@ -37,7 +37,7 @@ export async function trackAnalytics(
     });
   }
 
-  return (prisma as any).moduleAnalytics.create({
+  return prisma.moduleAnalytics.create({
     data: {
       moduleId,
       date: today,
@@ -49,11 +49,7 @@ export async function trackAnalytics(
 /**
  * Get analytics for a module (daily aggregates)
  */
-export async function getModuleAnalytics(
-  moduleId: string,
-  startDate?: Date,
-  endDate?: Date
-) {
+export async function getModuleAnalytics(moduleId: string, startDate?: Date, endDate?: Date) {
   const where: any = { moduleId };
   if (startDate || endDate) {
     where.date = {};
@@ -61,7 +57,7 @@ export async function getModuleAnalytics(
     if (endDate) where.date.lte = endDate;
   }
 
-  const data = await (prisma as any).moduleAnalytics.findMany({
+  const data = await prisma.moduleAnalytics.findMany({
     where,
     orderBy: { date: 'asc' },
   });
@@ -97,9 +93,10 @@ export async function getModuleAnalytics(
   return {
     daily: data,
     totals,
-    retention: data.length > 1
-      ? (data[data.length - 1].activeUsers / Math.max(data[0].activeUsers, 1)) * 100
-      : 0,
+    retention:
+      data.length > 1
+        ? (data[data.length - 1].activeUsers / Math.max(data[0].activeUsers, 1)) * 100
+        : 0,
   };
 }
 
@@ -117,7 +114,7 @@ export async function logModuleError(
     metadata?: any;
   }
 ) {
-  return (prisma as any).moduleErrorLog.create({
+  return prisma.moduleErrorLog.create({
     data: {
       moduleId,
       installationId: data.installationId,
@@ -133,15 +130,11 @@ export async function logModuleError(
 /**
  * Get error logs for a module
  */
-export async function getModuleErrors(
-  moduleId: string,
-  resolved?: boolean,
-  limit: number = 50
-) {
+export async function getModuleErrors(moduleId: string, resolved?: boolean, limit: number = 50) {
   const where: any = { moduleId };
   if (resolved !== undefined) where.resolved = resolved;
 
-  return (prisma as any).moduleErrorLog.findMany({
+  return prisma.moduleErrorLog.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: limit,
@@ -152,7 +145,7 @@ export async function getModuleErrors(
  * Resolve a module error
  */
 export async function resolveError(errorId: string) {
-  return (prisma as any).moduleErrorLog.update({
+  return prisma.moduleErrorLog.update({
     where: { id: errorId },
     data: { resolved: true, resolvedAt: new Date() },
   });
@@ -170,7 +163,7 @@ export async function getDeveloperAnalyticsOverview(developerId: string) {
   const moduleIds = modules.map((m) => m.id);
 
   const [totalAnalytics, totalErrors, recentErrors] = await Promise.all([
-    (prisma as any).moduleAnalytics.aggregate({
+    prisma.moduleAnalytics.aggregate({
       where: { moduleId: { in: moduleIds } },
       _sum: {
         installs: true,
@@ -181,10 +174,10 @@ export async function getDeveloperAnalyticsOverview(developerId: string) {
         refunds: true,
       },
     }),
-    (prisma as any).moduleErrorLog.count({
+    prisma.moduleErrorLog.count({
       where: { moduleId: { in: moduleIds }, resolved: false },
     }),
-    (prisma as any).moduleErrorLog.findMany({
+    prisma.moduleErrorLog.findMany({
       where: { moduleId: { in: moduleIds }, resolved: false },
       orderBy: { createdAt: 'desc' },
       take: 10,

@@ -19,6 +19,9 @@ export async function createAdCampaign(userId: string, data: any): Promise<any> 
     if (!business) {
       throw new AppError('Business non trouvé', 404);
     }
+    if (business.ownerId !== userId) {
+      throw new AppError("Vous n'êtes pas le propriétaire de ce business", 403);
+    }
   } else if (advertiserType === 'DEVELOPER') {
     if (!developerId) {
       throw new AppError('developerId requis pour un annonceur DEVELOPER', 400);
@@ -27,8 +30,11 @@ export async function createAdCampaign(userId: string, data: any): Promise<any> 
     if (!developer) {
       throw new AppError('Développeur non trouvé', 404);
     }
+    if (developer.userId !== userId) {
+      throw new AppError("Vous n'êtes pas le propriétaire de ce profil développeur", 403);
+    }
   } else {
-    throw new AppError('Type d\'annonceur invalide', 400);
+    throw new AppError("Type d'annonceur invalide", 400);
   }
 
   // Vérifier que la durée ne dépasse pas 48h
@@ -125,6 +131,7 @@ export async function getAdCampaignById(campaignId: string): Promise<any> {
     include: {
       creatives: true,
       package: true,
+      invoice: true,
       business: {
         select: { id: true, name: true, slug: true, logo: true },
       },
@@ -240,7 +247,11 @@ export async function suspendAdCampaign(campaignId: string, reason: string): Pro
   });
 }
 
-export async function getActiveAdCreatives(page?: string, position?: string, country?: string): Promise<any[]> {
+export async function getActiveAdCreatives(
+  page?: string,
+  position?: string,
+  country?: string
+): Promise<any[]> {
   const where: any = {
     isActive: true,
     campaign: {
@@ -352,9 +363,19 @@ export async function trackConversion(campaignId: string, data: any): Promise<vo
       userId: data.userId || undefined,
     },
   });
+
+  if (data.creativeId) {
+    await prisma.adCreative.update({
+      where: { id: data.creativeId },
+      data: { conversions: { increment: 1 } },
+    });
+  }
 }
 
-export async function reportAd(campaignId: string, data: { reason: string; reporterEmail?: string; details?: string }): Promise<void> {
+export async function reportAd(
+  campaignId: string,
+  data: { reason: string; reporterEmail?: string; details?: string }
+): Promise<void> {
   const campaign = await prisma.adCampaign.findUnique({ where: { id: campaignId } });
   if (!campaign) {
     throw new AppError('Campagne publicitaire non trouvée', 404);
@@ -511,7 +532,11 @@ export async function getAdvertiserStats(userId: string, role: string): Promise<
   };
 }
 
-export async function getAllAdCampaigns(params?: { status?: string; page?: number; limit?: number }): Promise<any> {
+export async function getAllAdCampaigns(params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<any> {
   const page = params?.page || 1;
   const limit = params?.limit || 20;
   const skip = (page - 1) * limit;
@@ -554,7 +579,7 @@ export async function getAllAdCampaigns(params?: { status?: string; page?: numbe
   };
 }
 
-export async function getMyCampaigns(userId: string, role: string, filters?: any): Promise<any[]> {
+export async function getMyCampaigns(userId: string, role: string, _filters?: any): Promise<any[]> {
   if (role === 'BUSINESS') {
     const business = await prisma.business.findUnique({ where: { ownerId: userId } });
     if (!business) return [];
@@ -609,34 +634,36 @@ export async function getAdPackages(): Promise<any[]> {
 }
 
 export async function getAdRevenue(): Promise<any> {
-  const [totalInvoices, monthlyInvoices, pendingInvoices, totalImpressionCost, totalClickCost] = await Promise.all([
-    prisma.adInvoice.aggregate({
-      _sum: { amount: true },
-    }),
-    prisma.adInvoice.findMany({
-      where: {
-        issuedAt: {
-          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  const [totalInvoices, monthlyInvoices, pendingInvoices, totalImpressionCost, totalClickCost] =
+    await Promise.all([
+      prisma.adInvoice.aggregate({
+        _sum: { amount: true },
+      }),
+      prisma.adInvoice.findMany({
+        where: {
+          issuedAt: {
+            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          },
         },
-      },
-      select: { amount: true, status: true, issuedAt: true },
-    }),
-    prisma.adInvoice.findMany({
-      where: { status: 'PENDING' },
-      select: { amount: true },
-    }),
-    prisma.adImpression.aggregate({
-      _sum: { cost: true },
-    }),
-    prisma.adClick.aggregate({
-      _sum: { cost: true },
-    }),
-  ]);
+        select: { amount: true, status: true, issuedAt: true },
+      }),
+      prisma.adInvoice.findMany({
+        where: { status: 'PENDING' },
+        select: { amount: true },
+      }),
+      prisma.adImpression.aggregate({
+        _sum: { cost: true },
+      }),
+      prisma.adClick.aggregate({
+        _sum: { cost: true },
+      }),
+    ]);
 
   const invoiceTotal = totalInvoices._sum.amount?.toNumber() || 0;
   const monthlyTotal = monthlyInvoices.reduce((sum, inv) => sum + (inv.amount?.toNumber() || 0), 0);
   const pendingTotal = pendingInvoices.reduce((sum, inv) => sum + (inv.amount?.toNumber() || 0), 0);
-  const adSpend = (totalImpressionCost._sum.cost?.toNumber() || 0) + (totalClickCost._sum.cost?.toNumber() || 0);
+  const adSpend =
+    (totalImpressionCost._sum.cost?.toNumber() || 0) + (totalClickCost._sum.cost?.toNumber() || 0);
 
   return {
     totalRevenue: invoiceTotal,
@@ -697,13 +724,22 @@ export async function updateAdPackage(id: string, data: any): Promise<any> {
   });
 }
 
-async function isCampaignOwner(campaign: { businessId?: string | null; developerId?: string | null }, userId: string): Promise<boolean> {
+async function isCampaignOwner(
+  campaign: { businessId?: string | null; developerId?: string | null },
+  userId: string
+): Promise<boolean> {
   if (campaign.businessId) {
-    const business = await prisma.business.findUnique({ where: { id: campaign.businessId }, select: { ownerId: true } });
+    const business = await prisma.business.findUnique({
+      where: { id: campaign.businessId },
+      select: { ownerId: true },
+    });
     if (business?.ownerId === userId) return true;
   }
   if (campaign.developerId) {
-    const developer = await prisma.developerProfile.findUnique({ where: { id: campaign.developerId }, select: { userId: true } });
+    const developer = await prisma.developerProfile.findUnique({
+      where: { id: campaign.developerId },
+      select: { userId: true },
+    });
     if (developer?.userId === userId) return true;
   }
   return false;
@@ -715,9 +751,10 @@ export async function pauseAdCampaign(campaignId: string, userId: string): Promi
     include: { business: { select: { ownerId: true } } },
   });
   if (!campaign) throw new AppError('Campagne publicitaire non trouvée', 404);
-  if (campaign.status !== 'ACTIVE') throw new AppError('Seules les campagnes actives peuvent être mises en pause', 400);
+  if (campaign.status !== 'ACTIVE')
+    throw new AppError('Seules les campagnes actives peuvent être mises en pause', 400);
   const isOwner = await isCampaignOwner(campaign, userId);
-  if (!isOwner) throw new AppError('Vous n\'êtes pas autorisé à modifier cette campagne', 403);
+  if (!isOwner) throw new AppError("Vous n'êtes pas autorisé à modifier cette campagne", 403);
   return prisma.adCampaign.update({
     where: { id: campaignId },
     data: { status: 'PAUSED' as any },
@@ -730,9 +767,10 @@ export async function resumeAdCampaign(campaignId: string, userId: string): Prom
     where: { id: campaignId },
   });
   if (!campaign) throw new AppError('Campagne publicitaire non trouvée', 404);
-  if (campaign.status !== 'PAUSED') throw new AppError('Seules les campagnes en pause peuvent être reprises', 400);
+  if (campaign.status !== 'PAUSED')
+    throw new AppError('Seules les campagnes en pause peuvent être reprises', 400);
   const isOwner = await isCampaignOwner(campaign, userId);
-  if (!isOwner) throw new AppError('Vous n\'êtes pas autorisé à modifier cette campagne', 403);
+  if (!isOwner) throw new AppError("Vous n'êtes pas autorisé à modifier cette campagne", 403);
   return prisma.adCampaign.update({
     where: { id: campaignId },
     data: { status: 'ACTIVE' },
@@ -746,14 +784,18 @@ export async function deleteAdCampaign(campaignId: string, userId: string): Prom
   });
   if (!campaign) throw new AppError('Campagne publicitaire non trouvée', 404);
   const isOwner = await isCampaignOwner(campaign, userId);
-  if (!isOwner) throw new AppError('Vous n\'êtes pas autorisé à supprimer cette campagne', 403);
+  if (!isOwner) throw new AppError("Vous n'êtes pas autorisé à supprimer cette campagne", 403);
   if (!['PENDING', 'REJECTED', 'COMPLETED', 'PAUSED'].includes(campaign.status)) {
     throw new AppError('Cette campagne ne peut pas être supprimée dans son état actuel', 400);
   }
   await prisma.adCampaign.delete({ where: { id: campaignId } });
 }
 
-export async function updateAdCampaign(campaignId: string, userId: string, data: any): Promise<any> {
+export async function updateAdCampaign(
+  campaignId: string,
+  userId: string,
+  data: any
+): Promise<any> {
   const campaign = await prisma.adCampaign.findUnique({
     where: { id: campaignId },
     include: { business: { select: { ownerId: true } } },
@@ -761,10 +803,11 @@ export async function updateAdCampaign(campaignId: string, userId: string, data:
   if (!campaign) throw new AppError('Campagne publicitaire non trouvée', 404);
 
   const isOwner = await isCampaignOwner(campaign as any, userId);
-  if (!isOwner) throw new AppError('Vous n\'êtes pas autorisé à modifier cette campagne', 403);
+  if (!isOwner) throw new AppError("Vous n'êtes pas autorisé à modifier cette campagne", 403);
 
   const canEdit = ['PENDING', 'REJECTED', 'PAUSED'].includes(campaign.status);
-  if (!canEdit) throw new AppError('Cette campagne ne peut pas être modifiée dans son état actuel', 400);
+  if (!canEdit)
+    throw new AppError('Cette campagne ne peut pas être modifiée dans son état actuel', 400);
 
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
@@ -788,7 +831,7 @@ export async function updateAdCampaign(campaignId: string, userId: string, data:
     updateData.rejectionReason = null;
   }
 
-  const updated = await prisma.adCampaign.update({
+  await prisma.adCampaign.update({
     where: { id: campaignId },
     data: updateData,
     include: { creatives: true, package: true },
@@ -803,9 +846,12 @@ export async function updateAdCampaign(campaignId: string, userId: string, data:
           data: {
             adText: creative.adText !== undefined ? creative.adText : undefined,
             mainImage: creative.mainImage !== undefined ? creative.mainImage : undefined,
-            destinationUrl: creative.destinationUrl !== undefined ? creative.destinationUrl : undefined,
-            placementPage: creative.placementPage !== undefined ? creative.placementPage : undefined,
-            placementPosition: creative.placementPosition !== undefined ? creative.placementPosition : undefined,
+            destinationUrl:
+              creative.destinationUrl !== undefined ? creative.destinationUrl : undefined,
+            placementPage:
+              creative.placementPage !== undefined ? creative.placementPage : undefined,
+            placementPosition:
+              creative.placementPosition !== undefined ? creative.placementPosition : undefined,
             format: creative.format !== undefined ? creative.format : undefined,
             cta: creative.cta !== undefined ? creative.cta : undefined,
           },

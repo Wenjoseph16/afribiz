@@ -1,23 +1,39 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/auth';
+import { authMiddleware, requireRole } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
-  createPortfolioItemSchema, updatePortfolioItemSchema,
-  createCategorySchema, updateCategorySchema,
+  createPortfolioItemSchema,
+  updatePortfolioItemSchema,
+  createCategorySchema,
+  updateCategorySchema,
   addMediaSchema,
-  createTestimonialSchema, updateTestimonialSchema,
+  createTestimonialSchema,
+  updateTestimonialSchema,
   recordInteractionSchema,
 } from '../validators/portfolio';
 import {
-  listPortfolioItems, getPortfolioItem, createPortfolioItem, updatePortfolioItem, deletePortfolioItem,
-  listPortfolioCategories, createPortfolioCategory, updatePortfolioCategory, deletePortfolioCategory,
-  addPortfolioMedia, deletePortfolioMedia,
-  listPortfolioTestimonials, createPortfolioTestimonial, updatePortfolioTestimonial, deletePortfolioTestimonial,
-  recordInteraction, getPortfolioStats,
+  listPortfolioItems,
+  getPortfolioItem,
+  createPortfolioItem,
+  updatePortfolioItem,
+  deletePortfolioItem,
+  listPortfolioCategories,
+  createPortfolioCategory,
+  updatePortfolioCategory,
+  deletePortfolioCategory,
+  addPortfolioMedia,
+  deletePortfolioMedia,
+  listPortfolioTestimonials,
+  createPortfolioTestimonial,
+  updatePortfolioTestimonial,
+  deletePortfolioTestimonial,
+  recordInteraction,
+  getPortfolioStats,
 } from '../controllers/portfolio';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requireRole(['BUSINESS', 'ADMIN']));
 
 // Stats (must be before /:id)
 router.get('/stats', getPortfolioStats);
@@ -35,7 +51,11 @@ router.delete('/media/:id', deletePortfolioMedia);
 // Testimonials
 router.get('/testimonials', listPortfolioTestimonials);
 router.post('/testimonials', validateBody(createTestimonialSchema), createPortfolioTestimonial);
-router.patch('/testimonials/:id', validateBody(updateTestimonialSchema), updatePortfolioTestimonial);
+router.patch(
+  '/testimonials/:id',
+  validateBody(updateTestimonialSchema),
+  updatePortfolioTestimonial
+);
 router.delete('/testimonials/:id', deletePortfolioTestimonial);
 
 // Interactions

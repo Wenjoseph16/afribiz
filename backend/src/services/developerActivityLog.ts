@@ -29,10 +29,7 @@ export async function logActivity(
 /**
  * Get activity feed for a module
  */
-export async function getModuleActivity(
-  moduleId: string,
-  limit: number = 50
-) {
+export async function getModuleActivity(moduleId: string, limit: number = 50) {
   return prisma.moduleActivityLog.findMany({
     where: { moduleId },
     include: {
@@ -46,10 +43,7 @@ export async function getModuleActivity(
 /**
  * Get activity feed for a developer
  */
-export async function getDeveloperActivity(
-  developerId: string,
-  limit: number = 50
-) {
+export async function getDeveloperActivity(developerId: string, limit: number = 50) {
   return prisma.moduleActivityLog.findMany({
     where: { module: { developerId } },
     include: {
@@ -64,10 +58,7 @@ export async function getDeveloperActivity(
 /**
  * Get activity feed for a business
  */
-export async function getBusinessActivity(
-  businessId: string,
-  limit: number = 50
-) {
+export async function getBusinessActivity(businessId: string, limit: number = 50) {
   return prisma.moduleActivityLog.findMany({
     where: { businessId },
     include: {

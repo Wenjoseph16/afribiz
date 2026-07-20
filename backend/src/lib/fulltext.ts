@@ -25,7 +25,7 @@ function validateIdentifiers(table: string, fields: string[]): void {
 // Build a tsquery condition for one or more columns.
 // $1 is always the user query (parameterized).
 function buildTsVectorExpr(fields: string[]): string {
-  return fields.map(f => `coalesce("${f}", '')`).join(` || ' ' || `);
+  return fields.map((f) => `coalesce("${f}", '')`).join(` || ' ' || `);
 }
 
 // Search for IDs matching a full-text query on given table + columns.
@@ -43,7 +43,7 @@ export async function searchIdsByText(
   extraWhere?: string,
   limit?: number,
   businessId?: string,
-  includeDeleted?: boolean,
+  includeDeleted?: boolean
 ): Promise<string[]>;
 
 export async function searchIdsByText(
@@ -53,7 +53,7 @@ export async function searchIdsByText(
   extraWhereOrBusinessId?: string,
   limitOrUndefined?: number,
   businessIdOrUndefined?: string,
-  includeDeleted?: boolean,
+  includeDeleted?: boolean
 ): Promise<string[]> {
   if (!query || query.trim().length === 0) return [];
 
@@ -104,7 +104,7 @@ export async function searchIdsByText(
   const params = businessId ? [query, businessId] : [query];
   const rows = await prisma.$queryRawUnsafe<{ id: string }[]>(sql, ...params);
 
-  return rows.map(r => r.id);
+  return rows.map((r) => r.id);
 }
 
 // Search IDs with pagination
@@ -114,7 +114,7 @@ export async function searchIdsByTextPaged(
   query: string,
   extraWhere: string = 'TRUE',
   limit: number = 20,
-  offset: number = 0,
+  offset: number = 0
 ): Promise<{ ids: string[]; total: number }> {
   if (!query || query.trim().length === 0) return { ids: [], total: 0 };
 
@@ -133,16 +133,16 @@ export async function searchIdsByTextPaged(
   const [rows, countResult] = await Promise.all([
     prisma.$queryRawUnsafe<{ id: string }[]>(
       `SELECT id FROM "${table}" WHERE ${whereClause} ORDER BY ${rankOrder} LIMIT ${limit} OFFSET ${offset}`,
-      query,
+      query
     ),
     prisma.$queryRawUnsafe<{ count: bigint }[]>(
       `SELECT COUNT(*) as count FROM "${table}" WHERE ${whereClause}`,
-      query,
+      query
     ),
   ]);
 
   return {
-    ids: rows.map(r => r.id),
+    ids: rows.map((r) => r.id),
     total: Number(countResult[0]?.count || 0),
   };
 }

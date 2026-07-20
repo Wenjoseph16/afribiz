@@ -1,7 +1,6 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { DeveloperRepository } from '../repositories/developerRepository';
-import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 function generateApiKey(): string {
@@ -24,7 +23,7 @@ export async function createApiKey(
 
   const key = generateApiKey();
 
-  return (prisma as any).developerApiKey.create({
+  return prisma.developerApiKey.create({
     data: {
       developerId: profile.id,
       name: data.name,
@@ -42,7 +41,7 @@ export async function getApiKeys(userId: string) {
   const profile = await DeveloperRepository.findByUserId(userId);
   if (!profile) throw new AppError('Profil développeur non trouvé', 404);
 
-  return (prisma as any).developerApiKey.findMany({
+  return prisma.developerApiKey.findMany({
     where: { developerId: profile.id },
     orderBy: { createdAt: 'desc' },
   });
@@ -55,12 +54,12 @@ export async function revokeApiKey(userId: string, keyId: string) {
   const profile = await DeveloperRepository.findByUserId(userId);
   if (!profile) throw new AppError('Profil développeur non trouvé', 404);
 
-  const key = await (prisma as any).developerApiKey.findFirst({
+  const key = await prisma.developerApiKey.findFirst({
     where: { id: keyId, developerId: profile.id },
   });
   if (!key) throw new AppError('Clé API non trouvée', 404);
 
-  return (prisma as any).developerApiKey.update({
+  return prisma.developerApiKey.update({
     where: { id: keyId },
     data: { isActive: false },
   });
@@ -86,7 +85,7 @@ export async function createWebhook(
 
   const secret = generateWebhookSecret();
 
-  return (prisma as any).moduleWebhook.create({
+  return prisma.moduleWebhook.create({
     data: {
       developerId: profile.id,
       moduleId: data.moduleId,
@@ -104,7 +103,7 @@ export async function getWebhooks(userId: string) {
   const profile = await DeveloperRepository.findByUserId(userId);
   if (!profile) throw new AppError('Profil développeur non trouvé', 404);
 
-  return (prisma as any).moduleWebhook.findMany({
+  return prisma.moduleWebhook.findMany({
     where: { developerId: profile.id },
     include: {
       module: { select: { id: true, name: true, slug: true } },
@@ -121,12 +120,12 @@ export async function deleteWebhook(userId: string, webhookId: string) {
   const profile = await DeveloperRepository.findByUserId(userId);
   if (!profile) throw new AppError('Profil développeur non trouvé', 404);
 
-  const webhook = await (prisma as any).moduleWebhook.findFirst({
+  const webhook = await prisma.moduleWebhook.findFirst({
     where: { id: webhookId, developerId: profile.id },
   });
   if (!webhook) throw new AppError('Webhook non trouvé', 404);
 
-  await (prisma as any).moduleWebhook.delete({ where: { id: webhookId } });
+  await prisma.moduleWebhook.delete({ where: { id: webhookId } });
   return { success: true };
 }
 
@@ -143,10 +142,10 @@ export async function triggerWebhookEvent(
   if (moduleId) where.moduleId = moduleId;
   if (developerId) where.developerId = developerId;
 
-  const webhooks = await (prisma as any).moduleWebhook.findMany({ where });
+  const webhooks = await prisma.moduleWebhook.findMany({ where });
 
   for (const webhook of webhooks) {
-    await (prisma as any).webhookDelivery.create({
+    await prisma.webhookDelivery.create({
       data: {
         webhookId: webhook.id,
         event,
@@ -163,7 +162,7 @@ export async function triggerWebhookEvent(
  * Get webhook delivery logs
  */
 export async function getWebhookDeliveries(webhookId: string, limit: number = 20) {
-  return (prisma as any).webhookDelivery.findMany({
+  return prisma.webhookDelivery.findMany({
     where: { webhookId },
     orderBy: { createdAt: 'desc' },
     take: limit,

@@ -14,6 +14,35 @@ if (process.env.NODE_ENV === 'production') {
   prisma = globalForPrisma.__db__;
 }
 
+// Soft-delete middleware: auto-filter deletedAt: null on find/count operations
+// Seuls les modèles qui ont une colonne deletedAt dans le schéma Prisma doivent être listés ici
+const SOFT_DELETE_MODELS = new Set([
+  'ServiceCategory',
+  'ProductCategory',
+  'MenuCategory',
+  'Rental',
+  'Post',
+  'Training',
+  'BusinessDocument',
+]);
+
+prisma.$use(async (params, next) => {
+  const { model, action, args } = params;
+  if (!model || !SOFT_DELETE_MODELS.has(model)) return next(params);
+
+  const isQuery = ['findUnique', 'findFirst', 'findMany', 'count', 'aggregate'].includes(action);
+  const isMutation = ['update', 'updateMany', 'delete', 'deleteMany'].includes(action);
+
+  if (isQuery || isMutation) {
+    if (!args.where) args.where = {};
+    if (args.where.deletedAt === undefined) {
+      args.where.deletedAt = null;
+    }
+  }
+
+  return next(params);
+});
+
 if (process.env.NODE_ENV === 'development') {
   prisma.$connect().then(() => {
     logger.info('Database connected');

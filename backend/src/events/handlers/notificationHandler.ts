@@ -4,9 +4,16 @@ import { handleNotificationEvent, handleEmailEvent } from '../../services/Notifi
 import { logger } from '../../lib/logger';
 import { getIO } from '../../services/socket';
 
+let registered = false;
+
 export function registerNotificationHandlers(): void {
+  if (registered) return;
+  registered = true;
   eventBus.subscribeToAll(async (event: DomainEvent) => {
-    const notification = await handleNotificationEvent(event);
+    const [notification] = await Promise.all([
+      handleNotificationEvent(event),
+      handleEmailEvent(event),
+    ]);
     if (notification) {
       const io = getIO();
       if (io) {
@@ -15,10 +22,6 @@ export function registerNotificationHandlers(): void {
     }
   });
 
-  eventBus.subscribeToAll(async (event: DomainEvent) => {
-    await handleEmailEvent(event);
-  });
-
-  const count = Object.keys(DomainEventType).length / 2;
+  const count = Object.keys(DomainEventType).length;
   logger.info(`Notification handlers registered for ${count} event types`);
 }

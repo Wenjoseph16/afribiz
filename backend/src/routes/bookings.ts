@@ -1,15 +1,33 @@
 import { Router } from 'express';
 import {
-  listBusinessBookings, getBusinessBooking, createBooking, updateBooking, updateBookingStatus, deleteBooking, getBookingStats,
-  listTimeSlots, createTimeSlot, updateTimeSlot, deleteTimeSlot,
-  listResources, createResource, updateResource, deleteResource,
-  getCalendarBookings, sendReminder,
+  listBusinessBookings,
+  getBusinessBooking,
+  createBooking,
+  updateBooking,
+  updateBookingStatus,
+  deleteBooking,
+  getBookingStats,
+  listTimeSlots,
+  createTimeSlot,
+  updateTimeSlot,
+  deleteTimeSlot,
+  listResources,
+  createResource,
+  updateResource,
+  deleteResource,
+  getCalendarBookings,
+  sendReminder,
 } from '../controllers/bookings';
 import { validateBody } from '../middlewares/validators';
 import {
-  createBookingSchema, updateBookingSchema, updateBookingStatusSchema,
-  createTimeSlotSchema, updateTimeSlotSchema,
-  createResourceSchema, updateResourceSchema, sendReminderSchema,
+  createBookingSchema,
+  updateBookingSchema,
+  updateBookingStatusSchema,
+  createTimeSlotSchema,
+  updateTimeSlotSchema,
+  createResourceSchema,
+  updateResourceSchema,
+  sendReminderSchema,
 } from '../validators/bookings';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 

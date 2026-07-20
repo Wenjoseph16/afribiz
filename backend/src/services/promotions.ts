@@ -1,6 +1,8 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
+import { publishPromotionStarted, publishCampaignScheduled } from '../events/publishers';
+import { autoShareToSocial } from './socialShareService';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
@@ -8,7 +10,6 @@ async function getBusinessByOwner(ownerId: string) {
     select: { id: true, name: true, modules: true, settings: true },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('PROMOTIONS')) throw new AppError('Module Promotions non activé', 403);
   return business;
 }
 
@@ -28,7 +29,16 @@ const promoInclude = {
 
 export async function listPromotions(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page = 1, limit = 20, promotionType, isActive, isFeatured, search, dateFrom, dateTo } = filters;
+  const {
+    page = 1,
+    limit = 20,
+    promotionType,
+    isActive,
+    isFeatured,
+    search,
+    dateFrom,
+    dateTo,
+  } = filters;
   const where: Prisma.PromotionWhereInput = { businessId: business.id, deletedAt: null };
   if (promotionType) where.promotionType = promotionType as any;
   if (isActive !== undefined) where.isActive = isActive === 'true';
@@ -42,7 +52,13 @@ export async function listPromotions(ownerId: string, filters: any) {
   if (search) where.title = { contains: search, mode: 'insensitive' };
   const skip = (page - 1) * limit;
   const [promotions, total] = await Promise.all([
-    prisma.promotion.findMany({ where, include: promoInclude, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+    prisma.promotion.findMany({
+      where,
+      include: promoInclude,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
     prisma.promotion.count({ where }),
   ]);
   return { promotions, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -50,7 +66,10 @@ export async function listPromotions(ownerId: string, filters: any) {
 
 export async function getPromotion(ownerId: string, promoId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const promo = await prisma.promotion.findFirst({ where: { id: promoId, businessId: business.id }, include: promoInclude });
+  const promo = await prisma.promotion.findFirst({
+    where: { id: promoId, businessId: business.id },
+    include: promoInclude,
+  });
   if (!promo) throw new AppError('Promotion non trouvée', 404);
   return promo;
 }
@@ -81,16 +100,54 @@ export async function createPromotion(ownerId: string, data: any) {
     },
     include: promoInclude,
   });
+  publishPromotionStarted({
+    userId: ownerId,
+    businessId: business.id,
+    promotionId: promo.id,
+    promotionName: promo.title,
+  });
+
+  autoShareToSocial({
+    type: 'PROMOTION',
+    title: promo.title || '',
+    description: promo.description || undefined,
+    imageUrl: promo.image || promo.bannerImage || undefined,
+    link: `/business/${business.name || ''}/promotions/${promo.id}`,
+    businessId: business.id,
+    businessName: business.name || '',
+    ownerId,
+  }).catch(() => {});
+
   return promo;
 }
 
 export async function updatePromotion(ownerId: string, promoId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  const existing = await prisma.promotion.findFirst({ where: { id: promoId, businessId: business.id } });
+  const existing = await prisma.promotion.findFirst({
+    where: { id: promoId, businessId: business.id },
+  });
   if (!existing) throw new AppError('Promotion non trouvée', 404);
 
   const upd: any = {};
-  for (const key of ['title', 'description', 'promotionType', 'discountValue', 'code', 'targetType', 'targetIds', 'minOrderAmount', 'maxUsageCount', 'perCustomerLimit', 'conditions', 'badgeLabel', 'image', 'bannerImage', 'autoApply', 'isActive', 'isFeatured']) {
+  for (const key of [
+    'title',
+    'description',
+    'promotionType',
+    'discountValue',
+    'code',
+    'targetType',
+    'targetIds',
+    'minOrderAmount',
+    'maxUsageCount',
+    'perCustomerLimit',
+    'conditions',
+    'badgeLabel',
+    'image',
+    'bannerImage',
+    'autoApply',
+    'isActive',
+    'isFeatured',
+  ]) {
     if (data[key] !== undefined) upd[key] = data[key];
   }
   if (data.startsAt) upd.startsAt = new Date(data.startsAt);
@@ -100,7 +157,6 @@ export async function updatePromotion(ownerId: string, promoId: string, data: an
 }
 
 export async function deletePromotion(ownerId: string, promoId: string) {
-  const business = await getBusinessByOwner(ownerId);
   await prisma.promotion.update({ where: { id: promoId }, data: { deletedAt: new Date() } });
 }
 
@@ -112,13 +168,23 @@ export async function listCoupons(ownerId: string, filters: any) {
   const where: any = { businessId: business.id };
   if (status) where.status = status;
   if (promotionId) where.promotionId = promotionId;
-  if (search) where.OR = [
-    { code: { contains: search, mode: 'insensitive' } },
-    { client: { firstName: { contains: search, mode: 'insensitive' } } },
-  ];
+  if (search)
+    where.OR = [
+      { code: { contains: search, mode: 'insensitive' } },
+      { client: { firstName: { contains: search, mode: 'insensitive' } } },
+    ];
   const skip = (page - 1) * limit;
   const [coupons, total] = await Promise.all([
-    prisma.coupon.findMany({ where, include: { promotion: { select: { id: true, title: true } }, client: { select: { id: true, firstName: true, lastName: true } } }, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+    prisma.coupon.findMany({
+      where,
+      include: {
+        promotion: { select: { id: true, title: true } },
+        client: { select: { id: true, firstName: true, lastName: true } },
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
     prisma.coupon.count({ where }),
   ]);
   return { coupons, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -153,7 +219,13 @@ export async function listBundles(ownerId: string, filters: any) {
   if (isActive !== undefined) where.isActive = isActive === 'true';
   const skip = (page - 1) * limit;
   const [bundles, total] = await Promise.all([
-    prisma.bundle.findMany({ where, include: { items: true, promotion: { select: { id: true, title: true } } }, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+    prisma.bundle.findMany({
+      where,
+      include: { items: true, promotion: { select: { id: true, title: true } } },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
     prisma.bundle.count({ where }),
   ]);
   return { bundles, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -162,7 +234,10 @@ export async function listBundles(ownerId: string, filters: any) {
 export async function createBundle(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
   const items = data.items || [];
-  const originalPrice = items.reduce((s: number, i: any) => s + Number(i.unitPrice) * (i.quantity || 1), 0);
+  const originalPrice = items.reduce(
+    (s: number, i: any) => s + Number(i.unitPrice) * (i.quantity || 1),
+    0
+  );
   const bundlePrice = data.bundlePrice || originalPrice;
 
   const bundle = await prisma.bundle.create({
@@ -175,7 +250,13 @@ export async function createBundle(ownerId: string, data: any) {
       bundlePrice,
       savings: originalPrice - bundlePrice,
       image: data.image || null,
-      items: { create: items.map((i: any) => ({ itemType: i.itemType || (i.productId ? 'PRODUCT' : i.menuItemId ? 'MENU_ITEM' : 'OTHER'), itemId: i.itemId || i.productId || i.menuItemId || i.serviceId || '', quantity: i.quantity || 1 })) },
+      items: {
+        create: items.map((i: any) => ({
+          itemType: i.itemType || (i.productId ? 'PRODUCT' : i.menuItemId ? 'MENU_ITEM' : 'OTHER'),
+          itemId: i.itemId || i.productId || i.menuItemId || i.serviceId || '',
+          quantity: i.quantity || 1,
+        })),
+      },
     },
     include: { items: true },
   });
@@ -199,7 +280,7 @@ export async function listCampaigns(ownerId: string, filters: any) {
 
 export async function createCampaign(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  return prisma.marketingCampaign.create({
+  const campaign = await prisma.marketingCampaign.create({
     data: {
       businessId: business.id,
       promotionId: data.promotionId || null,
@@ -212,6 +293,8 @@ export async function createCampaign(ownerId: string, data: any) {
       image: data.image || null,
     },
   });
+  publishCampaignScheduled({ userId: ownerId, businessId: business.id, campaignId: campaign.id });
+  return campaign;
 }
 
 // ===================== LOYALTY =====================
@@ -228,7 +311,21 @@ export async function getLoyaltyProgram(ownerId: string) {
 export async function updateLoyaltyProgram(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
   const upd: any = {};
-  for (const key of ['isActive', 'pointsPerAmount', 'pointsValue', 'expiryDays', 'autoEnroll', 'tiers', 'bronzeMinPoints', 'silverMinPoints', 'goldMinPoints', 'platinumMinPoints', 'cashbackPercent', 'birthdayBonus', 'birthdayPromoId']) {
+  for (const key of [
+    'isActive',
+    'pointsPerAmount',
+    'pointsValue',
+    'expiryDays',
+    'autoEnroll',
+    'tiers',
+    'bronzeMinPoints',
+    'silverMinPoints',
+    'goldMinPoints',
+    'platinumMinPoints',
+    'cashbackPercent',
+    'birthdayBonus',
+    'birthdayPromoId',
+  ]) {
     if (data[key] !== undefined) upd[key] = data[key];
   }
   return prisma.loyaltyProgram.upsert({
@@ -240,7 +337,9 @@ export async function updateLoyaltyProgram(ownerId: string, data: any) {
 
 export async function getClientLoyalty(ownerId: string, clientId: string) {
   const business = await getBusinessByOwner(ownerId);
-  let lp = await prisma.loyaltyPoints.findUnique({ where: { businessId_clientId: { businessId: business.id, clientId } } });
+  let lp = await prisma.loyaltyPoints.findUnique({
+    where: { businessId_clientId: { businessId: business.id, clientId } },
+  });
   if (!lp) {
     lp = await prisma.loyaltyPoints.create({ data: { businessId: business.id, clientId } });
   }
@@ -250,7 +349,12 @@ export async function getClientLoyalty(ownerId: string, clientId: string) {
   });
 }
 
-export async function redeemPoints(userId: string, businessId: string, points: number, reward?: { title?: string; type?: string }) {
+export async function redeemPoints(
+  userId: string,
+  businessId: string,
+  points: number,
+  reward?: { title?: string; type?: string }
+) {
   const lp = await prisma.loyaltyPoints.findUnique({
     where: { businessId_clientId: { businessId, clientId: userId } },
   });
@@ -290,7 +394,16 @@ export async function getPromoStats(ownerId: string) {
   const business = await getBusinessByOwner(ownerId);
   const where = { businessId: business.id };
 
-  const [activePromos, totalPromos, totalCoupons, activeCoupons, totalCampaigns, totalBundles, totalUsage, totalLoyaltyPoints] = await Promise.all([
+  const [
+    activePromos,
+    totalPromos,
+    totalCoupons,
+    activeCoupons,
+    totalCampaigns,
+    totalBundles,
+    totalUsage,
+    totalLoyaltyPoints,
+  ] = await Promise.all([
     prisma.promotion.count({ where: { ...where, isActive: true } }),
     prisma.promotion.count({ where: { ...where } }),
     prisma.coupon.count({ where }),
@@ -301,5 +414,14 @@ export async function getPromoStats(ownerId: string) {
     prisma.loyaltyPoints.aggregate({ where: { ...where }, _sum: { totalPoints: true } }),
   ]);
 
-  return { activePromos, totalPromos, totalCoupons, activeCoupons, totalCampaigns, totalBundles, totalUsage, totalLoyaltyPoints: totalLoyaltyPoints._sum.totalPoints || 0 };
+  return {
+    activePromos,
+    totalPromos,
+    totalCoupons,
+    activeCoupons,
+    totalCampaigns,
+    totalBundles,
+    totalUsage,
+    totalLoyaltyPoints: totalLoyaltyPoints._sum.totalPoints || 0,
+  };
 }

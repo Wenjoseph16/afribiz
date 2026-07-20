@@ -31,7 +31,16 @@ export const createServiceSchema = z.object({
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   featured: z.boolean().default(false),
-  employees: z.array(z.object({ name: z.string(), title: z.string().optional(), photo: z.string().optional(), bio: z.string().optional() })).optional(),
+  employees: z
+    .array(
+      z.object({
+        name: z.string(),
+        title: z.string().optional(),
+        photo: z.string().optional(),
+        bio: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export const updateServiceSchema = createServiceSchema.partial();

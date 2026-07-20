@@ -1,13 +1,40 @@
 import { z } from 'zod';
 
-const menuItemTypes = ['BREAKFAST','LUNCH','DINNER','SNACK','DESSERT','DRINK','COCKTAIL','SPECIAL','EVENT'] as const;
-const menuItemStatuses = ['AVAILABLE','OUT_OF_STOCK','DISABLED','PROMO'] as const;
-const orderTypes = ['DINE_IN','TAKEAWAY','DELIVERY','ONLINE'] as const;
-const orderStatuses = ['PENDING','ACCEPTED','PREPARING','READY','DELIVERING','DELIVERED','COMPLETED','CANCELLED'] as const;
-const tableStatuses = ['FREE','RESERVED','OCCUPIED','CLEANING'] as const;
-const tableLocations = ['SALLE','TERRASSE','VIP','JARDIN','BAR'] as const;
-const ingredientCategories = ['LEGUME','VIANDE','POISSON','EPICE','LAITAGE','BOISSON','AUTRE'] as const;
-const variantTypes = ['SIZE','PORTION','FLAVOR','SPICE_LEVEL','SUPPLEMENT'] as const;
+const menuItemTypes = [
+  'BREAKFAST',
+  'LUNCH',
+  'DINNER',
+  'SNACK',
+  'DESSERT',
+  'DRINK',
+  'COCKTAIL',
+  'SPECIAL',
+  'EVENT',
+] as const;
+const menuItemStatuses = ['AVAILABLE', 'OUT_OF_STOCK', 'DISABLED', 'PROMO'] as const;
+const orderTypes = ['DINE_IN', 'TAKEAWAY', 'DELIVERY', 'ONLINE'] as const;
+const orderStatuses = [
+  'PENDING',
+  'ACCEPTED',
+  'PREPARING',
+  'READY',
+  'DELIVERING',
+  'DELIVERED',
+  'COMPLETED',
+  'CANCELLED',
+] as const;
+const tableStatuses = ['FREE', 'RESERVED', 'OCCUPIED', 'CLEANING'] as const;
+const tableLocations = ['SALLE', 'TERRASSE', 'VIP', 'JARDIN', 'BAR'] as const;
+const ingredientCategories = [
+  'LEGUME',
+  'VIANDE',
+  'POISSON',
+  'EPICE',
+  'LAITAGE',
+  'BOISSON',
+  'AUTRE',
+] as const;
+const variantTypes = ['SIZE', 'PORTION', 'FLAVOR', 'SPICE_LEVEL', 'SUPPLEMENT'] as const;
 
 export const createMenuItemSchema = z.object({
   name: z.string().min(2).max(200),
@@ -36,15 +63,19 @@ export const createMenuItemSchema = z.object({
   seoTitle: z.string().max(70).optional(),
   seoDescription: z.string().max(160).optional(),
   hasVariants: z.boolean().default(false),
-  variants: z.array(z.object({
-    name: z.string().min(1),
-    type: z.enum(variantTypes).default('SIZE'),
-    price: z.number().positive(),
-    currency: z.string().default('FCFA'),
-    stock: z.number().int().default(0),
-    isAvailable: z.boolean().default(true),
-    sortOrder: z.number().int().default(0),
-  })).optional(),
+  variants: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        type: z.enum(variantTypes).default('SIZE'),
+        price: z.number().positive(),
+        currency: z.string().default('FCFA'),
+        stock: z.number().int().default(0),
+        isAvailable: z.boolean().default(true),
+        sortOrder: z.number().int().default(0),
+      })
+    )
+    .optional(),
 });
 
 export const updateMenuItemSchema = createMenuItemSchema.partial();
@@ -78,15 +109,19 @@ export const createOrderSchema = z.object({
   paymentMethod: z.string().optional(),
   deliveryFee: z.number().min(0).optional().default(0),
   discount: z.number().min(0).optional().default(0),
-  items: z.array(z.object({
-    menuItemId: z.string().uuid(),
-    variantId: z.string().uuid().optional(),
-    name: z.string(),
-    variantName: z.string().optional(),
-    quantity: z.number().int().positive(),
-    unitPrice: z.number().positive(),
-    notes: z.string().optional(),
-  })).min(1),
+  items: z
+    .array(
+      z.object({
+        menuItemId: z.string().uuid(),
+        variantId: z.string().uuid().optional(),
+        name: z.string(),
+        variantName: z.string().optional(),
+        quantity: z.number().int().positive(),
+        unitPrice: z.number().positive(),
+        notes: z.string().optional(),
+      })
+    )
+    .min(1),
 });
 
 export const updateOrderStatusSchema = z.object({

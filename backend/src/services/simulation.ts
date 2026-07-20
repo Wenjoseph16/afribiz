@@ -1,4 +1,5 @@
 import { prisma } from '../lib/db';
+import { AppError } from '../middlewares/errorHandler';
 
 export async function getSimulationEnvironments(developerId: string) {
   const profile = await prisma.developerProfile.findUnique({ where: { userId: developerId } });
@@ -21,27 +22,61 @@ export async function getSimulationEnvironments(developerId: string) {
   }));
 }
 
-export async function testEndpoint(developerId: string, moduleSlug: string, endpoint: string, method: string, body?: any) {
+export async function testEndpoint(
+  developerId: string,
+  moduleSlug: string,
+  endpoint: string,
+  method: string,
+  body?: any
+) {
   const profile = await prisma.developerProfile.findUnique({ where: { userId: developerId } });
-  if (!profile) throw new Error('Developer profile not found');
+  if (!profile) throw new AppError('Developer profile not found', 404);
 
   const module = await prisma.developerModule.findFirst({
     where: { slug: moduleSlug, developerId: profile.id },
   });
-  if (!module) throw new Error('Module not found');
+  if (!module) throw new AppError('Module not found', 404);
 
   const mockResponses: Record<string, any> = {
-    '/install': { success: true, data: { id: 'sim_' + Date.now(), status: 'installed', module: module.name, version: module.version, installedAt: new Date().toISOString() } },
-    '/uninstall': { success: true, data: { id: 'sim_' + Date.now(), status: 'uninstalled', module: module.name } },
-    '/configure': { success: true, data: { id: 'sim_' + Date.now(), status: 'configured', settings: body || {} } },
-    '/health': { success: true, data: { status: 'healthy', module: module.name, version: module.version, uptime: '99.9%' } },
+    '/install': {
+      success: true,
+      data: {
+        id: 'sim_' + Date.now(),
+        status: 'installed',
+        module: module.name,
+        version: module.version,
+        installedAt: new Date().toISOString(),
+      },
+    },
+    '/uninstall': {
+      success: true,
+      data: { id: 'sim_' + Date.now(), status: 'uninstalled', module: module.name },
+    },
+    '/configure': {
+      success: true,
+      data: { id: 'sim_' + Date.now(), status: 'configured', settings: body || {} },
+    },
+    '/health': {
+      success: true,
+      data: { status: 'healthy', module: module.name, version: module.version, uptime: '99.9%' },
+    },
     '/data': { success: true, data: { items: [], total: 0, page: 1, limit: 20, simulated: true } },
-    '/webhook': { success: true, data: { received: true, timestamp: new Date().toISOString(), payload: body || {} } },
+    '/webhook': {
+      success: true,
+      data: { received: true, timestamp: new Date().toISOString(), payload: body || {} },
+    },
   };
 
   const response = mockResponses[endpoint] || {
     success: true,
-    data: { message: 'Endpoint simulé', endpoint, method, module: module.name, simulated: true, timestamp: new Date().toISOString() },
+    data: {
+      message: 'Endpoint simulé',
+      endpoint,
+      method,
+      module: module.name,
+      simulated: true,
+      timestamp: new Date().toISOString(),
+    },
   };
 
   const latency = Math.floor(Math.random() * 200) + 50;
@@ -62,7 +97,9 @@ export async function getSimulationLogs(developerId: string, moduleSlug?: string
 
   const where: any = { developerId: profile.id };
   if (moduleSlug) {
-    const module = await prisma.developerModule.findFirst({ where: { slug: moduleSlug, developerId: profile.id } });
+    const module = await prisma.developerModule.findFirst({
+      where: { slug: moduleSlug, developerId: profile.id },
+    });
     if (module) where.moduleId = module.id;
   }
 
@@ -71,7 +108,7 @@ export async function getSimulationLogs(developerId: string, moduleSlug?: string
 
 export async function getMockData(developerId: string, moduleSlug: string, dataType: string) {
   const profile = await prisma.developerProfile.findUnique({ where: { userId: developerId } });
-  if (!profile) throw new Error('Developer profile not found');
+  if (!profile) throw new AppError('Developer profile not found', 404);
 
   const mockDataSets: Record<string, any[]> = {
     businesses: Array.from({ length: 5 }, (_, i) => ({
@@ -85,7 +122,18 @@ export async function getMockData(developerId: string, moduleSlug: string, dataT
     })),
     users: Array.from({ length: 10 }, (_, i) => ({
       id: `user_${i + 1}`,
-      firstName: ['Alice', 'Bob', 'Charles', 'Diana', 'Eve', 'Frank', 'Grace', 'Hugo', 'Iris', 'Jean'][i],
+      firstName: [
+        'Alice',
+        'Bob',
+        'Charles',
+        'Diana',
+        'Eve',
+        'Frank',
+        'Grace',
+        'Hugo',
+        'Iris',
+        'Jean',
+      ][i],
       lastName: 'Simulé',
       email: `user${i + 1}@test.afribiz.com`,
       role: i < 3 ? 'BUSINESS' : 'CLIENT',
@@ -114,11 +162,36 @@ export async function getMockData(developerId: string, moduleSlug: string, dataT
 
 export async function getAvailableEndpoints() {
   return [
-    { path: '/install', method: 'POST', description: 'Installer le module sur une entreprise', params: { businessId: 'string (required)' } },
-    { path: '/uninstall', method: 'POST', description: 'Désinstaller le module', params: { businessId: 'string (required)' } },
-    { path: '/configure', method: 'PUT', description: 'Configurer les paramètres du module', params: { settings: 'object (required)' } },
-    { path: '/health', method: 'GET', description: 'Vérifier l\'état du module' },
-    { path: '/data', method: 'GET', description: 'Récupérer les données du module', params: { page: 'number', limit: 'number' } },
-    { path: '/webhook', method: 'POST', description: 'Tester un webhook', params: { event: 'string (required)', payload: 'object' } },
+    {
+      path: '/install',
+      method: 'POST',
+      description: 'Installer le module sur une entreprise',
+      params: { businessId: 'string (required)' },
+    },
+    {
+      path: '/uninstall',
+      method: 'POST',
+      description: 'Désinstaller le module',
+      params: { businessId: 'string (required)' },
+    },
+    {
+      path: '/configure',
+      method: 'PUT',
+      description: 'Configurer les paramètres du module',
+      params: { settings: 'object (required)' },
+    },
+    { path: '/health', method: 'GET', description: "Vérifier l'état du module" },
+    {
+      path: '/data',
+      method: 'GET',
+      description: 'Récupérer les données du module',
+      params: { page: 'number', limit: 'number' },
+    },
+    {
+      path: '/webhook',
+      method: 'POST',
+      description: 'Tester un webhook',
+      params: { event: 'string (required)', payload: 'object' },
+    },
   ];
 }

@@ -17,7 +17,12 @@ export async function activateDeveloperRole(userId: string) {
   }
 
   const updatedUser = await UserRepository.activateDeveloperRole(userId);
-  const tokens = createTokenPair({ id: updatedUser.id, email: updatedUser.email, primaryRole: updatedUser.primaryRole, roles: updatedUser.roles });
+  const tokens = createTokenPair({
+    id: updatedUser.id,
+    email: updatedUser.email,
+    primaryRole: updatedUser.primaryRole,
+    roles: updatedUser.roles,
+  });
 
   let profile = await DeveloperRepository.findByUserId(userId);
   if (!profile) {
@@ -139,8 +144,10 @@ export async function updateProfile(userId: string, data: any) {
 
   // Map skills separately from specialties/technologies
   if (data.skills && Array.isArray(data.skills)) mappedData.skills = [...new Set(data.skills)];
-  if (data.specialties && Array.isArray(data.specialties)) mappedData.specialties = [...new Set(data.specialties)];
-  if (data.technologies && Array.isArray(data.technologies)) mappedData.technologies = [...new Set(data.technologies)];
+  if (data.specialties && Array.isArray(data.specialties))
+    mappedData.specialties = [...new Set(data.specialties)];
+  if (data.technologies && Array.isArray(data.technologies))
+    mappedData.technologies = [...new Set(data.technologies)];
 
   if (data.github !== undefined) mappedData.github = data.github;
   if (data.linkedin !== undefined) mappedData.linkedin = data.linkedin;
@@ -254,9 +261,8 @@ export async function getDeveloperDashboard(userId: string) {
       totalSubs,
       totalReviews: reviews.length,
       totalTickets: tickets.length,
-      averageRating: modules.length > 0
-        ? modules.reduce((sum, m) => sum + m.rating, 0) / modules.length
-        : 0,
+      averageRating:
+        modules.length > 0 ? modules.reduce((sum, m) => sum + m.rating, 0) / modules.length : 0,
     },
     recentModules: modules.slice(0, 5),
     recentInstallations: installations,

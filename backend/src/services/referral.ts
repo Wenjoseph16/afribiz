@@ -1,6 +1,10 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
-import { publishReferralInvited, publishReferralConverted, publishReferralRewardAwarded } from '../events/publishers';
+import {
+  publishReferralInvited,
+  publishReferralConverted,
+  publishReferralRewardAwarded,
+} from '../events/publishers';
 
 function generateReferralCode(_userId: string): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -26,7 +30,9 @@ export async function getMyReferralCode(userId: string) {
     prisma.referral.findMany({
       where: { referrerId: userId },
       include: {
-        referee: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
+        referee: {
+          select: { id: true, firstName: true, lastName: true, email: true, avatar: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -57,7 +63,10 @@ export async function createReferral(referrerId: string, refereeEmail: string) {
 
   const code = generateReferralCode(referrerId);
 
-  const referrer = await prisma.user.findUnique({ where: { id: referrerId }, select: { firstName: true, lastName: true } });
+  const referrer = await prisma.user.findUnique({
+    where: { id: referrerId },
+    select: { firstName: true, lastName: true },
+  });
   if (!referrer) throw new AppError('Utilisateur non trouvé', 404);
 
   const referral = await prisma.referral.create({
@@ -205,7 +214,8 @@ export async function getReferralStats(userId: string) {
   return {
     totalReferrals,
     convertedReferrals,
-    conversionRate: totalReferrals > 0 ? Math.round((convertedReferrals / totalReferrals) * 100) : 0,
+    conversionRate:
+      totalReferrals > 0 ? Math.round((convertedReferrals / totalReferrals) * 100) : 0,
     totalPointsEarned: totalRewards._sum.points || 0,
     totalCashEarned: totalRewards._sum.amount || 0,
   };

@@ -1,4 +1,4 @@
-import { PrismaClient, NotificationType, NotificationChannel } from '@prisma/client';
+import { NotificationType, NotificationChannel } from '@prisma/client';
 import { prisma } from '../lib/db';
 
 interface CreateNotificationParams {
@@ -61,6 +61,13 @@ export class NotificationRepository {
   async markAllAsRead(userId: string): Promise<void> {
     await prisma.notification.updateMany({
       where: { userId, read: false },
+      data: { read: true, readAt: new Date() },
+    });
+  }
+
+  async markMultipleAsRead(ids: string[], userId: string): Promise<void> {
+    await prisma.notification.updateMany({
+      where: { id: { in: ids }, userId },
       data: { read: true, readAt: new Date() },
     });
   }
