@@ -43,7 +43,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: 3001
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/afribiz
       REDIS_URL: redis://redis:6379
@@ -68,7 +68,7 @@ services:
     depends_on:
       - backend
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-development}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
       NEXT_PUBLIC_APP_NAME: AfriBiz
       NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}

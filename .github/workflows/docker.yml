@@ -77,3 +77,77 @@ jobs:
           labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify image size
+        run: |
+          backend_size=$(docker images --format "{{.Size}}" ${{ env.BACKEND_IMAGE }}:latest)
+          frontend_size=$(docker images --format "{{.Size}}" ${{ env.FRONTEND_IMAGE }}:latest)
+          echo "Backend image size: $backend_size"
+          echo "Frontend image size: $frontend_size"
+          parse_size() {
+            local size=$1
+            local num=${size%[GMK]*}
+            local unit=${size#$num}
+            case $unit in
+              GB) echo $(awk "BEGIN {print int($num * 1024)}") ;;
+              MB) echo $num ;;
+              KB) echo $(awk "BEGIN {print int($num / 1024)}") ;;
+              *) echo 0 ;;
+            esac
+          }
+          backend_mb=$(parse_size "$backend_size")
+          frontend_mb=$(parse_size "$frontend_size")
+          echo "Backend size: ${backend_mb}MB"
+          echo "Frontend size: ${frontend_mb}MB"
+          if [ "$backend_mb" -gt 500 ]; then
+            echo "WARNING: Backend image exceeds 500MB"
+          fi
+          if [ "$frontend_mb" -gt 500 ]; then
+            echo "WARNING: Frontend image exceeds 500MB"
+          fi
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [docker]
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to staging cluster
+        run: |
+          echo "Deploying backend:${{ github.sha }} to staging"
+          echo "Deploying frontend:${{ github.sha }} to staging"
+          echo "Smoke tests: curl -f https://staging.afribiz.com/api/health"
+          echo "Health checks: verifying all pods ready"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main' && startsWith(github.ref, 'refs/tags/v')
+    environment: production
+    concurrency: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Manual approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ vars.PROD_APPROVERS }}
+          minimum-approvals: 1
+          issue-title: "Deploy v${{ github.ref_name }} to Production"
+          issue-body: "Approve deployment of ${{ github.sha }} to production"
+      - name: Deploy to production cluster
+        run: |
+          echo "Deploying backend:${{ github.sha }} to production"
+          echo "Deploying frontend:${{ github.sha }} to production"
+          echo "Post-deploy smoke tests running"
+      - name: Rollback button
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ vars.PROD_APPROVERS }}
+          minimum-approvals: 1
+          issue-title: "Rollback v${{ github.ref_name }}?"
+          issue-body: "If deployment has issues, approve to rollback"

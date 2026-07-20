@@ -38,7 +38,7 @@ coverage/
 *.json
 !package.json
 !package-lock.json
-!pnpm-workspace.yaml
+
 !tsconfig*.json
 !*.code-workspace
 !.eslintrc.json
@@ -52,13 +52,15 @@ coverage/
 !docs/**/*.json
 cookies*
 *.txt
-!pnpm-lock.yaml
+
 
 # Environment files
 .env
 .env.local
 .env.*.local
 .env.docker
+.env.production
+.env.staging
 
 # Logs
 *.log
@@ -78,3 +80,4 @@ docker-compose.override.yml
 # Test artifacts
 test-results/
 playwright-report/
+.aider*
