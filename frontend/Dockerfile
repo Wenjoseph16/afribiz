@@ -1,19 +1,16 @@
 FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
 FROM base AS deps
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY package.json package-lock.json ./
 COPY frontend/package.json frontend/next.config.js frontend/tsconfig.json ./
 COPY shared/package.json shared/ ./
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/frontend/node_modules ./frontend/node_modules
-COPY --from=deps /app/shared/node_modules ./shared/node_modules
 COPY . .
-RUN pnpm build --filter=@afribiz/shared --filter=@afribiz/frontend
+RUN npm run build -w shared && npm run build -w frontend
 
 FROM base AS runner
 RUN apk add --no-cache tini

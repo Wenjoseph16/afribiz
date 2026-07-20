@@ -38,10 +38,12 @@ export default function NewSubscriptionPage() {
       };
       await createPlan.mutateAsync(payload);
       router.push('/dashboard/subscriptions');
-    } catch (e) { console.error('Failed to create plan', e); }
+    } catch (e) {
+      console.error('Failed to create plan', e);
+    }
   };
 
-  const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
+  const update = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
 
   const addFeature = () => {
     const trimmed = featureInput.trim();
@@ -57,71 +59,149 @@ export default function NewSubscriptionPage() {
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
-      <PageHeader title="Nouveau plan d'abonnement" description="Créez un plan d'abonnement pour vos clients"
-        breadcrumbs={[{ label: 'Abonnements', href: '/dashboard/subscriptions' }, { label: 'Nouveau' }]}
-        actions={<Link href="/dashboard/subscriptions"><Button variant="outline" size="sm"><ArrowLeft className="h-4 w-4 mr-1.5" />Retour</Button></Link>}
+      <PageHeader
+        title="Nouveau plan d'abonnement"
+        description="Créez un plan d'abonnement pour vos clients"
+        breadcrumbs={[
+          { label: 'Abonnements', href: '/dashboard/subscriptions' },
+          { label: 'Nouveau' },
+        ]}
+        actions={
+          <Link href="/dashboard/subscriptions">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Retour
+            </Button>
+          </Link>
+        }
       />
       <Card padding="lg">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom *</label>
-            <input type="text" value={form.name} onChange={e => update('name', e.target.value)} required
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nom *
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => update('name', e.target.value)}
+              required
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-            <textarea rows={4} value={form.description} onChange={e => update('description', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description
+            </label>
+            <textarea
+              rows={4}
+              value={form.description}
+              onChange={(e) => update('description', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prix (FCFA)</label>
-              <input type="number" value={form.price} onChange={e => update('price', e.target.value)} required
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Prix (FCFA)
+              </label>
+              <input
+                type="number"
+                value={form.price}
+                onChange={(e) => update('price', e.target.value)}
+                required
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Durée *</label>
-              <select value={form.duration} onChange={e => update('duration', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100">
-                {DURATIONS.map(d => <option key={d} value={d}>{d}</option>)}
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Durée *
+              </label>
+              <select
+                value={form.duration}
+                onChange={(e) => update('duration', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              >
+                {DURATIONS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max employés</label>
-              <input type="number" value={form.maxEmployees} onChange={e => update('maxEmployees', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Max employés
+              </label>
+              <input
+                type="number"
+                value={form.maxEmployees}
+                onChange={(e) => update('maxEmployees', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stockage max (GB)</label>
-              <input type="number" value={form.maxStorage} onChange={e => update('maxStorage', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Stockage max (GB)
+              </label>
+              <input
+                type="number"
+                value={form.maxStorage}
+                onChange={(e) => update('maxStorage', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Statut</label>
-            <select value={form.status} onChange={e => update('status', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Statut
+            </label>
+            <select
+              value={form.status}
+              onChange={(e) => update('status', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            >
               <option value="ACTIVE">Actif</option>
               <option value="INACTIVE">Inactif</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fonctionnalités</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Fonctionnalités
+            </label>
             <div className="flex gap-2 mb-2">
-              <input type="text" value={featureInput} onChange={e => setFeatureInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addFeature(); } }}
+              <input
+                type="text"
+                value={featureInput}
+                onChange={(e) => setFeatureInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addFeature();
+                  }
+                }}
                 placeholder="Ajouter une fonctionnalité..."
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
-              <Button type="button" size="sm" onClick={addFeature}><Plus className="h-4 w-4" /></Button>
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
+              <Button type="button" size="sm" onClick={addFeature}>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
             {features.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {features.map((f, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-brand-50 text-brand rounded-full">
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-brand-50 text-brand rounded-full"
+                  >
                     {f}
-                    <button type="button" onClick={() => removeFeature(i)} className="hover:text-red-600 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => removeFeature(i)}
+                      className="hover:text-red-600 transition-colors"
+                    >
                       <X className="h-3 w-3" />
                     </button>
                   </span>
@@ -130,9 +210,14 @@ export default function NewSubscriptionPage() {
             )}
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <Link href="/dashboard/subscriptions"><Button variant="outline" type="button">Annuler</Button></Link>
+            <Link href="/dashboard/subscriptions">
+              <Button variant="outline" type="button">
+                Annuler
+              </Button>
+            </Link>
             <Button type="submit" disabled={createPlan.isPending}>
-              <Save className="h-4 w-4 mr-1.5" />{createPlan.isPending ? 'Création...' : 'Créer le plan'}
+              <Save className="h-4 w-4 mr-1.5" />
+              {createPlan.isPending ? 'Création...' : 'Créer le plan'}
             </Button>
           </div>
         </form>

@@ -3,11 +3,31 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  Users, Plus, Search, UserPlus, Package, Truck,
-  Briefcase, Building2, Wrench, Star, FileText,
-  TrendingUp, DollarSign, Shield, Handshake,
-  Filter, ArrowUpDown, MoreHorizontal, Eye, Pencil,
-  Phone, Mail, MapPin, Globe, ChevronRight,
+  Users,
+  Plus,
+  Search,
+  UserPlus,
+  Package,
+  Truck,
+  Briefcase,
+  Building2,
+  Wrench,
+  Star,
+  FileText,
+  TrendingUp,
+  DollarSign,
+  Shield,
+  Handshake,
+  Filter,
+  ArrowUpDown,
+  MoreHorizontal,
+  Eye,
+  Pencil,
+  Phone,
+  Mail,
+  MapPin,
+  Globe,
+  ChevronRight,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { PageHeader } from '@/components/dashboard/PageHeader';
@@ -18,6 +38,7 @@ import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { usePartners, usePartnerStats } from '@/features/partnerHooks';
+import { CopilotTips } from '@/components/copilot/CopilotTips';
 
 const CATEGORY_MAP: Record<string, { label: string; icon: any; color: string }> = {
   FOURNISSEUR: { label: 'Fournisseur', icon: Package, color: 'text-blue-600 bg-blue-50' },
@@ -33,17 +54,20 @@ export default function PartnersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('TOUS');
   const [sortBy, setSortBy] = useState('name');
-  const { data: partnersData, isLoading, refetch } = usePartners({
+  const {
+    data: partnersData,
+    isLoading,
+    refetch,
+  } = usePartners({
     search: searchQuery || undefined,
     category: categoryFilter !== 'TOUS' ? categoryFilter : undefined,
   });
   const { data: stats } = usePartnerStats();
 
-  const partners: any[] = Array.isArray(partnersData)
-    ? partnersData
-    : (partnersData?.data || []);
+  const partners: any[] = Array.isArray(partnersData) ? partnersData : partnersData?.data || [];
 
-  const catInfo = (cat: string) => CATEGORY_MAP[cat] || { label: cat, icon: Users, color: 'text-gray-600 bg-gray-50' };
+  const catInfo = (cat: string) =>
+    CATEGORY_MAP[cat] || { label: cat, icon: Users, color: 'text-gray-600 bg-gray-50' };
 
   if (isLoading) return <Loader />;
 
@@ -63,20 +87,52 @@ export default function PartnersPage() {
         }
       />
 
+      <CopilotTips moduleKey="PARTNERS" />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatsCard icon={<Users className="h-5 w-5" />} iconColor="text-blue-600" iconBg="bg-blue-50"
-          label="Partenaires" value={stats?.total || 0} />
-        <StatsCard icon={<Star className="h-5 w-5" />} iconColor="text-emerald-600" iconBg="bg-emerald-50"
-          label="Actifs" value={stats?.actif || 0} />
-        <StatsCard icon={<Handshake className="h-5 w-5" />} iconColor="text-purple-600" iconBg="bg-purple-50"
-          label="Collaborations" value={stats?.collaborations || 0} />
-        <StatsCard icon={<DollarSign className="h-5 w-5" />} iconColor="text-amber-600" iconBg="bg-amber-50"
-          label="Revenus générés" value={`${(stats?.revenusGeneres || 0).toLocaleString()} FCFA`} />
-        <StatsCard icon={<FileText className="h-5 w-5" />} iconColor="text-rose-600" iconBg="bg-rose-50"
-          label="Contrats actifs" value={stats?.contratsActifs || 0} />
-        <StatsCard icon={<Shield className="h-5 w-5" />} iconColor="text-indigo-600" iconBg="bg-indigo-50"
-          label="Vérifiés" value={stats?.partenairesVerifies || 0} />
+        <StatsCard
+          icon={<Users className="h-5 w-5" />}
+          iconColor="text-blue-600"
+          iconBg="bg-blue-50"
+          label="Partenaires"
+          value={stats?.total || 0}
+        />
+        <StatsCard
+          icon={<Star className="h-5 w-5" />}
+          iconColor="text-emerald-600"
+          iconBg="bg-emerald-50"
+          label="Actifs"
+          value={stats?.actif || 0}
+        />
+        <StatsCard
+          icon={<Handshake className="h-5 w-5" />}
+          iconColor="text-purple-600"
+          iconBg="bg-purple-50"
+          label="Collaborations"
+          value={stats?.collaborations || 0}
+        />
+        <StatsCard
+          icon={<DollarSign className="h-5 w-5" />}
+          iconColor="text-amber-600"
+          iconBg="bg-amber-50"
+          label="Revenus générés"
+          value={`${(stats?.revenusGeneres || 0).toLocaleString()} FCFA`}
+        />
+        <StatsCard
+          icon={<FileText className="h-5 w-5" />}
+          iconColor="text-rose-600"
+          iconBg="bg-rose-50"
+          label="Contrats actifs"
+          value={stats?.contratsActifs || 0}
+        />
+        <StatsCard
+          icon={<Shield className="h-5 w-5" />}
+          iconColor="text-indigo-600"
+          iconBg="bg-indigo-50"
+          label="Vérifiés"
+          value={stats?.partenairesVerifies || 0}
+        />
       </div>
 
       {/* Search & Filters */}
@@ -113,8 +169,12 @@ export default function PartnersPage() {
       {partners.length === 0 ? (
         <Card className="p-12 text-center">
           <Users className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Aucun partenaire</h3>
-          <p className="text-sm text-gray-500 mb-6">Ajoutez votre premier partenaire pour centraliser vos relations professionnelles</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Aucun partenaire
+          </h3>
+          <p className="text-sm text-gray-500 mb-6">
+            Ajoutez votre premier partenaire pour centraliser vos relations professionnelles
+          </p>
           <Link href="/dashboard/partners/new">
             <Button>
               <UserPlus className="h-4 w-4 mr-1.5" />
@@ -137,7 +197,9 @@ export default function PartnersPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{partner.name}</h3>
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {partner.name}
+                          </h3>
                           <span className="text-xs text-gray-500">{info.label}</span>
                         </div>
                         <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -147,7 +209,9 @@ export default function PartnersPage() {
                       {typeof partner.score === 'number' && (
                         <div className="flex items-center gap-1.5 mt-2">
                           <Star className="h-3.5 w-3.5 text-amber-400" fill="currentColor" />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{partner.score}</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {partner.score}
+                          </span>
                           <span className="text-xs text-gray-400">/100</span>
                         </div>
                       )}

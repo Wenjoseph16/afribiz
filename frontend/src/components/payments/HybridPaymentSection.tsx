@@ -9,21 +9,59 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { Loader } from '@/components/ui/Loader';
 import {
-  Wallet, CheckCircle, Clock, XCircle, Shield,
-  Smartphone, Building, CreditCard, Banknote,
-  PlusCircle, FileText, AlertTriangle, ArrowRight,
+  Wallet,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Shield,
+  Smartphone,
+  Building,
+  CreditCard,
+  Banknote,
+  PlusCircle,
+  FileText,
+  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PAYMENT_METHODS = [
-  { id: 'CASH', label: 'Espèces', icon: Banknote, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
-  { id: 'MOBILE_MONEY', label: 'Mobile Money', icon: Smartphone, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
-  { id: 'BANK_TRANSFER', label: 'Virement', icon: Building, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' },
-  { id: 'CREDIT_CARD', label: 'Carte bancaire', icon: CreditCard, color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/20' },
-  { id: 'ESCROW', label: 'Escrow sécurisé', icon: Shield, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20' },
+  {
+    id: 'CASH',
+    label: 'Espèces',
+    icon: Banknote,
+    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20',
+  },
+  {
+    id: 'MOBILE_MONEY',
+    label: 'Mobile Money',
+    icon: Smartphone,
+    color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20',
+  },
+  {
+    id: 'BANK_TRANSFER',
+    label: 'Virement',
+    icon: Building,
+    color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20',
+  },
+  {
+    id: 'CREDIT_CARD',
+    label: 'Carte bancaire',
+    icon: CreditCard,
+    color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/20',
+  },
+  {
+    id: 'ESCROW',
+    label: 'Escrow sécurisé',
+    icon: Shield,
+    color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20',
+  },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default'; icon: any }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default'; icon: any }
+> = {
   COMPLETED: { label: 'Payé', variant: 'success', icon: CheckCircle },
   VERIFYING: { label: 'En vérification', variant: 'warning', icon: Clock },
   PENDING: { label: 'En attente', variant: 'warning', icon: Clock },
@@ -50,14 +88,14 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
   const { data: paymentsData, isLoading } = useQuery({
     queryKey: ['hybrid-payments', orderId],
     queryFn: async () => {
-      const res = await apiClient.get(`/orders/${orderId}/payments`);
+      const res = await apiClient.getOrderPayments(orderId);
       return res.data.data;
     },
     enabled: !!orderId,
   });
 
   const addPaymentMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post(`/orders/${orderId}/payments/hybrid`, data),
+    mutationFn: (data: any) => apiClient.initiateHybridPayment(orderId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hybrid-payments', orderId] });
       setAmount('');
@@ -69,8 +107,15 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
   });
 
   const verifyPaymentMutation = useMutation({
-    mutationFn: ({ paymentId, verified, notes: vNotes }: { paymentId: string; verified: boolean; notes?: string }) =>
-      apiClient.post(`/payments/${paymentId}/verify`, { verified, notes: vNotes }),
+    mutationFn: ({
+      paymentId,
+      verified,
+      notes: vNotes,
+    }: {
+      paymentId: string;
+      verified: boolean;
+      notes?: string;
+    }) => apiClient.verifyPayment(paymentId, { verified, notes: vNotes }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hybrid-payments', orderId] });
     },
@@ -79,7 +124,13 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
   if (isLoading) return <Loader className="py-8" />;
   if (!paymentsData) return null;
 
-  const { payments = [], methods = [], totalPaid = 0, orderTotal: total = orderTotal || 0, isFullyPaid = false } = paymentsData;
+  const {
+    payments = [],
+    methods = [],
+    totalPaid = 0,
+    orderTotal: total = orderTotal || 0,
+    isFullyPaid = false,
+  } = paymentsData;
   const remaining = Math.max(0, total - totalPaid);
   const progressPercent = total > 0 ? Math.min(100, Math.round((totalPaid / total) * 100)) : 0;
 
@@ -130,7 +181,12 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
             const Icon = methodIcons[m.method] || Wallet;
             const status = STATUS_CONFIG[m.status];
             return (
-              <Badge key={i} variant={status?.variant || 'default'} size="sm" className="flex items-center gap-1.5">
+              <Badge
+                key={i}
+                variant={status?.variant || 'default'}
+                size="sm"
+                className="flex items-center gap-1.5"
+              >
                 <Icon className="h-3 w-3" />
                 {m.method} · {Number(m.amount).toLocaleString()} FCFA
                 {m.isManual && <FileText className="h-3 w-3 ml-0.5" />}
@@ -181,7 +237,9 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
                       <Button
                         variant="primary"
                         size="xs"
-                        onClick={() => verifyPaymentMutation.mutate({ paymentId: payment.id, verified: true })}
+                        onClick={() =>
+                          verifyPaymentMutation.mutate({ paymentId: payment.id, verified: true })
+                        }
                         isLoading={verifyPaymentMutation.isPending}
                       >
                         <CheckCircle className="h-3 w-3 mr-1" />
@@ -190,7 +248,9 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
                       <Button
                         variant="secondary"
                         size="xs"
-                        onClick={() => verifyPaymentMutation.mutate({ paymentId: payment.id, verified: false })}
+                        onClick={() =>
+                          verifyPaymentMutation.mutate({ paymentId: payment.id, verified: false })
+                        }
                       >
                         <XCircle className="h-3 w-3 mr-1" />
                         Rejeter
@@ -215,7 +275,10 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
       {!isFullyPaid && (
         <>
           {showAddPayment ? (
-            <Card padding="md" className="border-dashed border-2 border-brand/30 dark:border-brand/20">
+            <Card
+              padding="md"
+              className="border-dashed border-2 border-brand/30 dark:border-brand/20"
+            >
               <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                 <PlusCircle className="h-4 w-4 text-brand" />
                 Ajouter un paiement
@@ -245,7 +308,9 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Montant</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Montant
+                  </label>
                   <input
                     type="number"
                     value={amount}
@@ -256,7 +321,9 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Référence (optionnel)</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Référence (optionnel)
+                  </label>
                   <input
                     type="text"
                     value={reference}
@@ -269,7 +336,9 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">URL de preuve (optionnel)</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    URL de preuve (optionnel)
+                  </label>
                   <input
                     type="text"
                     value={proofUrl}
@@ -279,7 +348,9 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Notes (optionnel)</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Notes (optionnel)
+                  </label>
                   <input
                     type="text"
                     value={notes}
@@ -332,7 +403,8 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
           ) : (
             <Button variant="secondary" size="sm" onClick={() => setShowAddPayment(true)}>
               <PlusCircle className="h-4 w-4 mr-1.5" />
-              Ajouter un paiement {remaining > 0 && `(${Number(remaining).toLocaleString()} FCFA restant)`}
+              Ajouter un paiement{' '}
+              {remaining > 0 && `(${Number(remaining).toLocaleString()} FCFA restant)`}
             </Button>
           )}
         </>

@@ -2,8 +2,16 @@
 
 import { useState } from 'react';
 import {
-  HelpCircle, FileText, MessageCircle, Ticket, ChevronDown,
-  Search, Mail, BookOpen, Headphones, Send,
+  HelpCircle,
+  FileText,
+  MessageCircle,
+  Ticket,
+  ChevronDown,
+  Search,
+  Mail,
+  BookOpen,
+  Headphones,
+  Send,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -15,27 +23,33 @@ import { apiClient } from '@/services/apiClient';
 const FAQS = [
   {
     question: 'Comment créer un nouveau produit ?',
-    answer: 'Allez dans le module Produits depuis la sidebar, puis cliquez sur "Ajouter un produit". Remplissez les informations et publiez.',
+    answer:
+      'Allez dans le module Produits depuis la sidebar, puis cliquez sur "Ajouter un produit". Remplissez les informations et publiez.',
   },
   {
     question: 'Comment configurer les paiements ?',
-    answer: 'Rendez-vous dans Paramètres > Paiements pour connecter vos moyens de paiement (Orange Money, MTN, Wave, etc.).',
+    answer:
+      'Rendez-vous dans Paramètres > Paiements pour connecter vos moyens de paiement (Orange Money, MTN, Wave, etc.).',
   },
   {
     question: 'Comment inviter un collaborateur ?',
-    answer: 'Dans Paramètres > Utilisateurs, cliquez sur "Inviter un utilisateur" et entrez son email.',
+    answer:
+      'Dans Paramètres > Utilisateurs, cliquez sur "Inviter un utilisateur" et entrez son email.',
   },
   {
     question: 'Comment personnaliser ma page publique ?',
-    answer: 'Allez dans Page publique depuis le menu principal. Vous pouvez modifier le logo, la couverture, la description, les horaires et plus.',
+    answer:
+      'Allez dans Page publique depuis le menu principal. Vous pouvez modifier le logo, la couverture, la description, les horaires et plus.',
   },
   {
     question: 'Comment gérer les commandes ?',
-    answer: 'Le module Commandes vous permet de voir, traiter et suivre toutes les commandes de vos clients.',
+    answer:
+      'Le module Commandes vous permet de voir, traiter et suivre toutes les commandes de vos clients.',
   },
   {
     question: 'Comment exporter mes données ?',
-    answer: 'Dans Statistiques, cliquez sur "Exporter les données" pour télécharger un rapport au format CSV ou Excel.',
+    answer:
+      'Dans Statistiques, cliquez sur "Exporter les données" pour télécharger un rapport au format CSV ou Excel.',
   },
 ];
 
@@ -53,7 +67,7 @@ export default function SupportPage() {
   );
 
   const quickLinks = [
-    { label: 'Centre d\'aide', icon: BookOpen, href: '#' },
+    { label: "Centre d'aide", icon: BookOpen, href: '#' },
     { label: 'Documentation API', icon: FileText, href: '#' },
     { label: 'Guide de démarrage', icon: HelpCircle, href: '#' },
     { label: 'Communauté', icon: MessageCircle, href: '#' },
@@ -61,11 +75,7 @@ export default function SupportPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader
-        title="Support"
-        description="Comment pouvons-nous vous aider ?"
-        gradient
-      />
+      <PageHeader title="Support" description="Comment pouvons-nous vous aider ?" gradient />
 
       {/* Search */}
       <div className="relative max-w-xl">
@@ -90,7 +100,9 @@ export default function SupportPage() {
             <div className="p-3 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand group-hover:scale-110 transition-transform">
               <link.icon className="h-5 w-5" />
             </div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{link.label}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {link.label}
+            </span>
           </a>
         ))}
       </div>
@@ -99,17 +111,29 @@ export default function SupportPage() {
         {/* FAQ */}
         <Card title="Questions fréquentes" className="lg:col-span-1">
           {filteredFaqs.length === 0 ? (
-            <p className="text-sm text-gray-400 py-8 text-center">Aucun résultat pour &quot;{search}&quot;</p>
+            <p className="text-sm text-gray-400 py-8 text-center">
+              Aucun résultat pour &quot;{search}&quot;
+            </p>
           ) : (
             <div className="space-y-1">
               {filteredFaqs.map((faq) => (
-                <div key={faq.question} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <div
+                  key={faq.question}
+                  className="border-b border-gray-100 dark:border-gray-700 last:border-0"
+                >
                   <button
                     onClick={() => setOpenFaq(openFaq === faq.question ? null : faq.question)}
                     className="w-full flex items-center justify-between py-3.5 text-left"
                   >
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 pr-4">{faq.question}</span>
-                    <ChevronDown className={cn('h-4 w-4 text-gray-400 shrink-0 transition-transform', openFaq === faq.question && 'rotate-180')} />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 pr-4">
+                      {faq.question}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 text-gray-400 shrink-0 transition-transform',
+                        openFaq === faq.question && 'rotate-180'
+                      )}
+                    />
                   </button>
                   {openFaq === faq.question && (
                     <div className="pb-3.5">
@@ -129,13 +153,18 @@ export default function SupportPage() {
               Notre équipe vous répond sous 24h ouvrées.
             </p>
             <div className="space-y-3">
-              <a href="mailto:support@afribiz.ci" className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+              <a
+                href="mailto:support@afribiz.ci"
+                className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+              >
                 <Mail className="h-4 w-4 text-brand" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">support@afribiz.ci</span>
               </a>
               <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                 <Headphones className="h-4 w-4 text-brand" />
-                <span className="text-sm text-gray-700 dark:text-gray-300">+225 01 XX XX XX XX</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  +225 01 XX XX XX XX
+                </span>
               </div>
             </div>
           </Card>
@@ -143,9 +172,16 @@ export default function SupportPage() {
           {showTicketForm ? (
             <Card title="Nouveau ticket">
               <div className="space-y-3">
-                <Input label="Sujet" placeholder="Résumé du problème" value={ticketSubject} onChange={(e: any) => setTicketSubject(e.target.value)} />
+                <Input
+                  label="Sujet"
+                  placeholder="Résumé du problème"
+                  value={ticketSubject}
+                  onChange={(e: any) => setTicketSubject(e.target.value)}
+                />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Description
+                  </label>
                   <textarea
                     rows={4}
                     value={ticketDescription}
@@ -163,22 +199,37 @@ export default function SupportPage() {
                   <Button
                     variant="gradient"
                     onClick={async () => {
-                      if (!ticketSubject.trim() || !ticketDescription.trim() || ticketLoading) return;
+                      if (!ticketSubject.trim() || !ticketDescription.trim() || ticketLoading)
+                        return;
                       setTicketLoading(true);
                       try {
-                        await apiClient.createSupportTicket({ subject: ticketSubject, description: ticketDescription });
+                        await apiClient.createSupportTicket({
+                          subject: ticketSubject,
+                          description: ticketDescription,
+                        });
                         setTicketSuccess(true);
                         setTicketSubject('');
                         setTicketDescription('');
-                      } catch (e) { console.error(e); }
+                      } catch (e) {
+                        console.error(e);
+                      }
                       setTicketLoading(false);
                     }}
                     isLoading={ticketLoading}
                     disabled={!ticketSubject.trim() || !ticketDescription.trim()}
                   >
-                    <Send className="h-4 w-4 mr-1.5" />Envoyer
+                    <Send className="h-4 w-4 mr-1.5" />
+                    Envoyer
                   </Button>
-                  <Button variant="outline" onClick={() => { setShowTicketForm(false); setTicketSuccess(false); }}>Annuler</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowTicketForm(false);
+                      setTicketSuccess(false);
+                    }}
+                  >
+                    Annuler
+                  </Button>
                 </div>
               </div>
             </Card>

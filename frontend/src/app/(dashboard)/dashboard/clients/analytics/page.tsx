@@ -3,12 +3,30 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Users, TrendingUp, ShoppingBag, Star, DollarSign,
-  ArrowLeft, Calendar, Activity, Award, Sparkles,
+  Users,
+  TrendingUp,
+  ShoppingBag,
+  Star,
+  DollarSign,
+  ArrowLeft,
+  Calendar,
+  Activity,
+  Award,
+  Sparkles,
 } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from 'recharts';
 import { Card } from '@/components/ui/Card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -44,7 +62,10 @@ export default function CrmAnalyticsPage() {
 
   // Generate client acquisition data (last 12 months)
   const monthlyData = useMemo(() => {
-    const months: Record<string, { month: string; nouveaux: number; commandes: number; revenu: number }> = {};
+    const months: Record<
+      string,
+      { month: string; nouveaux: number; commandes: number; revenu: number }
+    > = {};
     for (let i = 11; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
@@ -92,14 +113,19 @@ export default function CrmAnalyticsPage() {
   if (statsLoading) return <Loader variant="spinner" size="lg" fullScreen />;
   if (error) {
     const errorMessage = error instanceof Error ? error.message : '';
-    const isNoBusiness = errorMessage.includes('business') || errorMessage.includes('404') || errorMessage.includes('Failed to fetch');
+    const isNoBusiness =
+      errorMessage.includes('business') ||
+      errorMessage.includes('404') ||
+      errorMessage.includes('Failed to fetch');
     return (
       <div>
         <ErrorState
           title="Impossible de charger les analytics CRM"
-          message={isNoBusiness
-            ? "Vous devez avoir un business actif pour accéder aux analytics CRM. Créez ou activez votre business depuis votre espace business."
-            : "Une erreur est survenue lors du chargement des analytics. Vérifiez que le backend est accessible."}
+          message={
+            isNoBusiness
+              ? 'Vous devez avoir un business actif pour accéder aux analytics CRM. Créez ou activez votre business depuis votre espace business.'
+              : 'Une erreur est survenue lors du chargement des analytics. Vérifiez que le backend est accessible.'
+          }
         />
         {isNoBusiness && (
           <div className="flex justify-center -mt-4">
@@ -129,10 +155,34 @@ export default function CrmAnalyticsPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard icon={<Users className="h-5 w-5" />} iconBg="bg-blue-50 dark:bg-blue-900/30" iconColor="text-blue-600" label="Total clients" value={stats?.totalClients ?? 0} />
-        <StatsCard icon={<TrendingUp className="h-5 w-5" />} iconBg="bg-emerald-50 dark:bg-emerald-900/30" iconColor="text-emerald-600" label="Nouveaux (30j)" value={stats?.newClients30d ?? 0} />
-        <StatsCard icon={<ShoppingBag className="h-5 w-5" />} iconBg="bg-purple-50 dark:bg-purple-900/30" iconColor="text-purple-600" label="Actifs (30j)" value={stats?.activeClients ?? 0} />
-        <StatsCard icon={<Star className="h-5 w-5" />} iconBg="bg-amber-50 dark:bg-amber-900/30" iconColor="text-amber-600" label="Rétention" value={`${stats?.retentionRate ?? 0}%`} />
+        <StatsCard
+          icon={<Users className="h-5 w-5" />}
+          iconBg="bg-blue-50 dark:bg-blue-900/30"
+          iconColor="text-blue-600"
+          label="Total clients"
+          value={stats?.totalClients ?? 0}
+        />
+        <StatsCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+          iconColor="text-emerald-600"
+          label="Nouveaux (30j)"
+          value={stats?.newClients30d ?? 0}
+        />
+        <StatsCard
+          icon={<ShoppingBag className="h-5 w-5" />}
+          iconBg="bg-purple-50 dark:bg-purple-900/30"
+          iconColor="text-purple-600"
+          label="Actifs (30j)"
+          value={stats?.activeClients ?? 0}
+        />
+        <StatsCard
+          icon={<Star className="h-5 w-5" />}
+          iconBg="bg-amber-50 dark:bg-amber-900/30"
+          iconColor="text-amber-600"
+          label="Rétention"
+          value={`${stats?.retentionRate ?? 0}%`}
+        />
       </div>
 
       {/* Charts Grid */}
@@ -156,7 +206,14 @@ export default function CrmAnalyticsPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#9ca3af" />
                 <YAxis tick={{ fontSize: 11 }} stroke="#9ca3af" />
                 <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="nouveaux" stroke="#6366f1" fill="url(#clientsGrad)" strokeWidth={2} name="Nouveaux clients" />
+                <Area
+                  type="monotone"
+                  dataKey="nouveaux"
+                  stroke="#6366f1"
+                  fill="url(#clientsGrad)"
+                  strokeWidth={2}
+                  name="Nouveaux clients"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -181,7 +238,14 @@ export default function CrmAnalyticsPage() {
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#9ca3af" />
                 <YAxis tick={{ fontSize: 11 }} stroke="#9ca3af" />
                 <Tooltip content={<ChartTooltip />} />
-                <Area type="monotone" dataKey="revenu" stroke="#10b981" fill="url(#revenueGrad)" strokeWidth={2} name="Revenu" />
+                <Area
+                  type="monotone"
+                  dataKey="revenu"
+                  stroke="#10b981"
+                  fill="url(#revenueGrad)"
+                  strokeWidth={2}
+                  name="Revenu"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -204,9 +268,11 @@ export default function CrmAnalyticsPage() {
                   outerRadius={90}
                   paddingAngle={3}
                   dataKey="value"
-                  label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                  label={({ name, percent }: any) =>
+                    `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                  }
                 >
-                  {segmentData.map((entry: {color: string}, i: number) => (
+                  {segmentData.map((entry: { color: string }, i: number) => (
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
@@ -225,12 +291,27 @@ export default function CrmAnalyticsPage() {
           <div className="h-64">
             {topClientsData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topClientsData} layout="vertical" margin={{ top: 5, right: 20, left: 60, bottom: 5 }}>
+                <BarChart
+                  data={topClientsData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 60, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis type="number" tick={{ fontSize: 11 }} stroke="#9ca3af" />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} stroke="#9ca3af" width={80} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 10 }}
+                    stroke="#9ca3af"
+                    width={80}
+                  />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="dépenses" fill="#6366f1" radius={[0, 4, 4, 0]} name="Dépenses (FCFA)" />
+                  <Bar
+                    dataKey="dépenses"
+                    fill="#6366f1"
+                    radius={[0, 4, 4, 0]}
+                    name="Dépenses (FCFA)"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -242,41 +323,61 @@ export default function CrmAnalyticsPage() {
         </Card>
       </div>
 
-      {/* Stats Grid */ }
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand/10"><Users className="w-5 h-5 text-brand" /></div>
+            <div className="p-2 rounded-lg bg-brand/10">
+              <Users className="w-5 h-5 text-brand" />
+            </div>
             <div>
               <p className="text-[10px] text-gray-500 uppercase font-semibold">Segments</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{stats?.totalSegments ?? 0}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                {stats?.totalSegments ?? 0}
+              </p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-100"><Sparkles className="w-5 h-5 text-amber-600" /></div>
+            <div className="p-2 rounded-lg bg-amber-100">
+              <Sparkles className="w-5 h-5 text-amber-600" />
+            </div>
             <div>
               <p className="text-[10px] text-gray-500 uppercase font-semibold">Tags</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{stats?.totalTags ?? 0}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                {stats?.totalTags ?? 0}
+              </p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-100"><Star className="w-5 h-5 text-purple-600" /></div>
+            <div className="p-2 rounded-lg bg-purple-100">
+              <Star className="w-5 h-5 text-purple-600" />
+            </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase font-semibold">Moy. commandes/client</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{stats?.avgOrdersPerClient?.toFixed(1) ?? '0'}</p>
+              <p className="text-[10px] text-gray-500 uppercase font-semibold">
+                Moy. commandes/client
+              </p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                {stats?.avgOrdersPerClient?.toFixed(1) ?? '0'}
+              </p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100"><Calendar className="w-5 h-5 text-blue-600" /></div>
+            <div className="p-2 rounded-lg bg-blue-100">
+              <Calendar className="w-5 h-5 text-blue-600" />
+            </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase font-semibold">Clients aujourd'hui</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{stats?.clientsToday ?? 0}</p>
+              <p className="text-[10px] text-gray-500 uppercase font-semibold">
+                Clients aujourd'hui
+              </p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                {stats?.clientsToday ?? 0}
+              </p>
             </div>
           </div>
         </Card>

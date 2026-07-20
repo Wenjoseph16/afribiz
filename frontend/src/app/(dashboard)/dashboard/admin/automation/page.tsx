@@ -1,34 +1,55 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Bot, Plus, Search, X, Pencil, Trash2, Play, Pause, FileText, Eye,
-} from 'lucide-react';
+import { Bot, Plus, Search, X, Pencil, Trash2, Play, Pause, FileText, Eye } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
 
 const TRIGGERS = [
-  'user_registered', 'user_logged_in', 'business_created',
-  'transaction_completed', 'review_submitted', 'subscription_updated',
-  'scheduled_daily', 'scheduled_weekly', 'scheduled_monthly',
+  'user_registered',
+  'user_logged_in',
+  'business_created',
+  'transaction_completed',
+  'review_submitted',
+  'subscription_updated',
+  'scheduled_daily',
+  'scheduled_weekly',
+  'scheduled_monthly',
 ];
 
-const ACTIONS = ['send_email', 'send_sms', 'send_whatsapp', 'webhook', 'update_status', 'assign_role'];
+const ACTIONS = [
+  'send_email',
+  'send_sms',
+  'send_whatsapp',
+  'webhook',
+  'update_status',
+  'assign_role',
+];
 
 const STATUSES = ['ACTIVE', 'PAUSED', 'ARCHIVED'];
 
-const STATUS_LABELS: Record<string, string> = { ACTIVE: 'Actif', PAUSED: 'Suspendu', ARCHIVED: 'Archivé' };
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Actif',
+  PAUSED: 'Suspendu',
+  ARCHIVED: 'Archivé',
+};
 
-const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'default'> = { ACTIVE: 'success', PAUSED: 'warning', ARCHIVED: 'default' };
+const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'default'> = {
+  ACTIVE: 'success',
+  PAUSED: 'warning',
+  ARCHIVED: 'default',
+};
 
 interface AutomationRule {
   id: string;
@@ -103,23 +124,39 @@ export default function AdminAutomationPage() {
   const { data: logs, isLoading: logsLoading } = useLogs(selectedRuleForLogs?.id ?? null);
 
   const createMutation = useMutation({
-    mutationFn: (data: RuleForm) => apiClient.post('/admin/automation/rules', { ...data, config: JSON.parse(data.config || '{}') }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'automation', 'rules'] }); },
+    mutationFn: (data: RuleForm) =>
+      apiClient.post('/admin/automation/rules', {
+        ...data,
+        config: JSON.parse(data.config || '{}'),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'automation', 'rules'] });
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<RuleForm> }) => apiClient.put(`/admin/automation/rules/${id}`, { ...data, config: data.config ? JSON.parse(data.config) : undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'automation', 'rules'] }); },
+    mutationFn: ({ id, data }: { id: string; data: Partial<RuleForm> }) =>
+      apiClient.put(`/admin/automation/rules/${id}`, {
+        ...data,
+        config: data.config ? JSON.parse(data.config) : undefined,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'automation', 'rules'] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/admin/automation/rules/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'automation', 'rules'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'automation', 'rules'] });
+    },
   });
 
   const toggleMutation = useMutation({
     mutationFn: (id: string) => apiClient.patch(`/admin/automation/rules/${id}/toggle`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'automation', 'rules'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'automation', 'rules'] });
+    },
   });
 
   const openCreate = () => {
@@ -151,18 +188,25 @@ export default function AdminAutomationPage() {
       }
       setModalOpen(false);
     } catch {
-      setToast({ message: 'Erreur lors de l\'enregistrement de la règle', type: 'error' });
+      setToast({ message: "Erreur lors de l'enregistrement de la règle", type: 'error' });
     }
   };
 
-  const handleDelete = async (rule: AutomationRule) => {
-    if (!window.confirm(`Supprimer la règle « ${rule.name} » ?`)) return;
+  const [deleteRuleTarget, setDeleteRuleTarget] = useState<AutomationRule | null>(null);
+
+  const confirmDeleteRule = async () => {
+    if (!deleteRuleTarget) return;
     try {
-      await deleteMutation.mutateAsync(rule.id);
+      await deleteMutation.mutateAsync(deleteRuleTarget.id);
       setToast({ message: 'Règle supprimée avec succès', type: 'success' });
     } catch {
       setToast({ message: 'Erreur lors de la suppression', type: 'error' });
     }
+    setDeleteRuleTarget(null);
+  };
+
+  const handleDelete = async (rule: AutomationRule) => {
+    setDeleteRuleTarget(rule);
   };
 
   const handleToggle = async (rule: AutomationRule) => {
@@ -196,13 +240,17 @@ export default function AdminAutomationPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -234,26 +282,22 @@ export default function AdminAutomationPage() {
               className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
           </div>
-          <select
+          <Select
             value={triggerFilter}
             onChange={(e) => setTriggerFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          >
-            <option value="">Tous les déclencheurs</option>
-            {TRIGGERS.map((t) => (
-              <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
-            ))}
-          </select>
-          <select
+            options={[
+              { value: '', label: 'Tous les déclencheurs' },
+              ...TRIGGERS.map((t) => ({ value: t, label: t.replace(/_/g, ' ') })),
+            ]}
+          />
+          <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          >
-            <option value="">Tous les statuts</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-            ))}
-          </select>
+            options={[
+              { value: '', label: 'Tous les statuts' },
+              ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+            ]}
+          />
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
               <X className="h-4 w-4" />
@@ -283,10 +327,17 @@ export default function AdminAutomationPage() {
               </thead>
               <tbody>
                 {ruleList.map((rule) => (
-                  <tr key={rule.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">{rule.name}</td>
+                  <tr
+                    key={rule.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
+                      {rule.name}
+                    </td>
                     <td className="p-4">
-                      <Badge variant="info" size="xs">{rule.trigger.replace(/_/g, ' ')}</Badge>
+                      <Badge variant="info" size="xs">
+                        {rule.trigger.replace(/_/g, ' ')}
+                      </Badge>
                     </td>
                     <td className="p-4 text-gray-500">{rule.actionType.replace(/_/g, ' ')}</td>
                     <td className="p-4">
@@ -335,8 +386,17 @@ export default function AdminAutomationPage() {
           <EmptyState
             icon={<Bot className="h-8 w-8" />}
             title="Aucune règle d'automatisation"
-            description={hasActiveFilters ? 'Aucune règle ne correspond aux filtres.' : 'Créez votre première règle d\'automatisation.'}
-            action={<Button size="sm" onClick={openCreate}><Plus className="h-4 w-4" />Créer une règle</Button>}
+            description={
+              hasActiveFilters
+                ? 'Aucune règle ne correspond aux filtres.'
+                : "Créez votre première règle d'automatisation."
+            }
+            action={
+              <Button size="sm" onClick={openCreate}>
+                <Plus className="h-4 w-4" />
+                Créer une règle
+              </Button>
+            }
           />
         )}
       </Card>
@@ -344,7 +404,7 @@ export default function AdminAutomationPage() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingRule ? 'Modifier la règle' : 'Nouvelle règle d\'automatisation'}
+        title={editingRule ? 'Modifier la règle' : "Nouvelle règle d'automatisation"}
         size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -359,33 +419,27 @@ export default function AdminAutomationPage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Déclencheur
             </label>
-            <select
+            <Select
               value={form.trigger}
               onChange={(e) => setForm({ ...form, trigger: e.target.value })}
-              required
-              className="w-full px-4 py-2.5 rounded-xl border-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring"
-            >
-              <option value="">Sélectionner un déclencheur</option>
-              {TRIGGERS.map((t) => (
-                <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'Sélectionner un déclencheur' },
+                ...TRIGGERS.map((t) => ({ value: t, label: t.replace(/_/g, ' ') })),
+              ]}
+            />
           </div>
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Type d'action
             </label>
-            <select
+            <Select
               value={form.actionType}
               onChange={(e) => setForm({ ...form, actionType: e.target.value })}
-              required
-              className="w-full px-4 py-2.5 rounded-xl border-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring"
-            >
-              <option value="">Sélectionner une action</option>
-              {ACTIONS.map((a) => (
-                <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'Sélectionner une action' },
+                ...ACTIONS.map((a) => ({ value: a, label: a.replace(/_/g, ' ') })),
+              ]}
+            />
           </div>
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
@@ -412,7 +466,10 @@ export default function AdminAutomationPage() {
 
       <Modal
         open={logsModalOpen}
-        onClose={() => { setLogsModalOpen(false); setSelectedRuleForLogs(null); }}
+        onClose={() => {
+          setLogsModalOpen(false);
+          setSelectedRuleForLogs(null);
+        }}
         title={`Logs d'exécution - ${selectedRuleForLogs?.name || ''}`}
         size="xl"
       >
@@ -423,9 +480,21 @@ export default function AdminAutomationPage() {
         ) : logs && logs.length > 0 ? (
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             {(logs as ExecutionLog[]).map((log) => (
-              <div key={log.id} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700">
+              <div
+                key={log.id}
+                className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700"
+              >
                 <div className="flex items-center justify-between mb-1">
-                  <Badge variant={log.status === 'SUCCESS' ? 'success' : log.status === 'FAILED' ? 'danger' : 'warning'} size="xs">
+                  <Badge
+                    variant={
+                      log.status === 'SUCCESS'
+                        ? 'success'
+                        : log.status === 'FAILED'
+                          ? 'danger'
+                          : 'warning'
+                    }
+                    size="xs"
+                  >
                     {log.status}
                   </Badge>
                   <span className="text-xs text-gray-400">
@@ -445,6 +514,15 @@ export default function AdminAutomationPage() {
             description="Cette règle n'a pas encore été exécutée."
           />
         )}
+        <ConfirmationModal
+          open={!!deleteRuleTarget}
+          onClose={() => setDeleteRuleTarget(null)}
+          onConfirm={confirmDeleteRule}
+          title="Supprimer la règle"
+          description={deleteRuleTarget ? `Supprimer la règle « ${deleteRuleTarget.name} » ?` : ''}
+          confirmLabel="Supprimer"
+          variant="danger"
+        />
       </Modal>
     </div>
   );

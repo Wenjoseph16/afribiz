@@ -3,9 +3,24 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  UserPlus, Package, Truck, Briefcase, Building2, Wrench,
-  Phone, Mail, Globe, MapPin, MessageCircle, Camera, Music4, FileText,
-  ChevronLeft, ChevronRight, Save, Star,
+  UserPlus,
+  Package,
+  Truck,
+  Briefcase,
+  Building2,
+  Wrench,
+  Phone,
+  Mail,
+  Globe,
+  MapPin,
+  MessageCircle,
+  Camera,
+  Music4,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  Star,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -14,11 +29,36 @@ import { Input } from '@/components/ui/Input';
 import { useCreatePartner } from '@/features/partnerHooks';
 
 const CATEGORIES = [
-  { value: 'FOURNISSEUR', label: 'Fournisseur', icon: Package, desc: 'Matières premières, produits, équipements' },
-  { value: 'LIVREUR', label: 'Livreur', icon: Truck, desc: 'Livreurs, agences transport, chauffeurs' },
-  { value: 'SERVICE', label: 'Service', icon: Briefcase, desc: 'Freelances, développeurs, designers, consultants' },
-  { value: 'COMMERCIAL', label: 'Commercial', icon: Building2, desc: 'Distributeurs, revendeurs, sponsors' },
-  { value: 'TECHNIQUE', label: 'Technique', icon: Wrench, desc: 'Maintenance, réparation, sécurité' },
+  {
+    value: 'FOURNISSEUR',
+    label: 'Fournisseur',
+    icon: Package,
+    desc: 'Matières premières, produits, équipements',
+  },
+  {
+    value: 'LIVREUR',
+    label: 'Livreur',
+    icon: Truck,
+    desc: 'Livreurs, agences transport, chauffeurs',
+  },
+  {
+    value: 'SERVICE',
+    label: 'Service',
+    icon: Briefcase,
+    desc: 'Freelances, développeurs, designers, consultants',
+  },
+  {
+    value: 'COMMERCIAL',
+    label: 'Commercial',
+    icon: Building2,
+    desc: 'Distributeurs, revendeurs, sponsors',
+  },
+  {
+    value: 'TECHNIQUE',
+    label: 'Technique',
+    icon: Wrench,
+    desc: 'Maintenance, réparation, sécurité',
+  },
 ];
 
 const COLLAB_LEVELS = [
@@ -33,10 +73,25 @@ export default function NewPartnerPage() {
   const createPartner = useCreatePartner();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    name: '', category: 'FOURNISSEUR', description: '', specialite: '',
-    phone: '', whatsapp: '', email: '', website: '', address: '', city: '', country: '',
-    servicesProposes: '', produitsFournis: '', zonesCouvertes: '', horairesDisponibilite: '',
-    facebook: '', instagram: '', linkedin: '', tiktok: '',
+    name: '',
+    category: 'FOURNISSEUR',
+    description: '',
+    specialite: '',
+    phone: '',
+    whatsapp: '',
+    email: '',
+    website: '',
+    address: '',
+    city: '',
+    country: '',
+    servicesProposes: '',
+    produitsFournis: '',
+    zonesCouvertes: '',
+    horairesDisponibilite: '',
+    facebook: '',
+    instagram: '',
+    linkedin: '',
+    tiktok: '',
     collaborationLevel: 'PONCTUEL',
     logo: '',
   });
@@ -48,7 +103,9 @@ export default function NewPartnerPage() {
     try {
       await createPartner.mutateAsync(form);
       router.push('/dashboard/partners');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const CatIcon = CATEGORIES.find((c) => c.value === form.category)?.icon || Package;
@@ -82,16 +139,31 @@ export default function NewPartnerPage() {
             >
               {step > s ? '✓' : s}
             </button>
-            {s < 6 && <div className={cn('h-0.5 flex-1 rounded', step > s ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700')} />}
+            {s < 6 && (
+              <div
+                className={cn(
+                  'h-0.5 flex-1 rounded',
+                  step > s ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700'
+                )}
+              />
+            )}
           </div>
         ))}
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); if (step < 6) setStep(step + 1); else handleSubmit(); }}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (step < 6) setStep(step + 1);
+          else handleSubmit();
+        }}
+      >
         {/* Step 1: General Info */}
         {step === 1 && (
           <Card className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">1. Informations générales</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              1. Informations générales
+            </h2>
 
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 dark:border-gray-600 cursor-pointer hover:border-brand transition-colors">
@@ -105,11 +177,20 @@ export default function NewPartnerPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom du partenaire *</label>
-                <Input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Nom du partenaire" required />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nom du partenaire *
+                </label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => update('name', e.target.value)}
+                  placeholder="Nom du partenaire"
+                  required
+                />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type de partenaire</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Type de partenaire
+                </label>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   {CATEGORIES.map((cat) => {
                     const Icon = cat.icon;
@@ -126,8 +207,12 @@ export default function NewPartnerPage() {
                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                         )}
                       >
-                        <Icon className={cn('h-5 w-5 mb-1', isActive ? 'text-brand' : 'text-gray-400')} />
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{cat.label}</p>
+                        <Icon
+                          className={cn('h-5 w-5 mb-1', isActive ? 'text-brand' : 'text-gray-400')}
+                        />
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {cat.label}
+                        </p>
                         <p className="text-xs text-gray-500 mt-0.5">{cat.desc}</p>
                       </button>
                     );
@@ -135,7 +220,9 @@ export default function NewPartnerPage() {
                 </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Description
+                </label>
                 <textarea
                   value={form.description}
                   onChange={(e) => update('description', e.target.value)}
@@ -145,8 +232,14 @@ export default function NewPartnerPage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Spécialité</label>
-                <Input value={form.specialite} onChange={(e) => update('specialite', e.target.value)} placeholder="Ex: Plomberie, Développement web, Transport frigorifique..." />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Spécialité
+                </label>
+                <Input
+                  value={form.specialite}
+                  onChange={(e) => update('specialite', e.target.value)}
+                  placeholder="Ex: Plomberie, Développement web, Transport frigorifique..."
+                />
               </div>
             </div>
           </Card>
@@ -155,45 +248,80 @@ export default function NewPartnerPage() {
         {/* Step 2: Contact Info */}
         {step === 2 && (
           <Card className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">2. Coordonnées</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              2. Coordonnées
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <Phone className="h-3.5 w-3.5 inline mr-1" /> Téléphone
                 </label>
-                <Input value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+225 01 02 03 04 05" />
+                <Input
+                  value={form.phone}
+                  onChange={(e) => update('phone', e.target.value)}
+                  placeholder="+225 01 02 03 04 05"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <MessageCircle className="h-3.5 w-3.5 inline mr-1" /> WhatsApp
                 </label>
-                <Input value={form.whatsapp} onChange={(e) => update('whatsapp', e.target.value)} placeholder="+225 01 02 03 04 05" />
+                <Input
+                  value={form.whatsapp}
+                  onChange={(e) => update('whatsapp', e.target.value)}
+                  placeholder="+225 01 02 03 04 05"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <Mail className="h-3.5 w-3.5 inline mr-1" /> Email
                 </label>
-                <Input value={form.email} onChange={(e) => update('email', e.target.value)} type="email" placeholder="contact@partenaire.com" />
+                <Input
+                  value={form.email}
+                  onChange={(e) => update('email', e.target.value)}
+                  type="email"
+                  placeholder="contact@partenaire.com"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <Globe className="h-3.5 w-3.5 inline mr-1" /> Site web
                 </label>
-                <Input value={form.website} onChange={(e) => update('website', e.target.value)} placeholder="https://..." />
+                <Input
+                  value={form.website}
+                  onChange={(e) => update('website', e.target.value)}
+                  placeholder="https://..."
+                />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <MapPin className="h-3.5 w-3.5 inline mr-1" /> Adresse
                 </label>
-                <Input value={form.address} onChange={(e) => update('address', e.target.value)} placeholder="Adresse complète" />
+                <Input
+                  value={form.address}
+                  onChange={(e) => update('address', e.target.value)}
+                  placeholder="Adresse complète"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ville</label>
-                <Input value={form.city} onChange={(e) => update('city', e.target.value)} placeholder="Abidjan" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Ville
+                </label>
+                <Input
+                  value={form.city}
+                  onChange={(e) => update('city', e.target.value)}
+                  placeholder="Abidjan"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pays</label>
-                <Input value={form.country} onChange={(e) => update('country', e.target.value)} placeholder="Côte d'Ivoire" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Pays
+                </label>
+                <Input
+                  value={form.country}
+                  onChange={(e) => update('country', e.target.value)}
+                  placeholder="Côte d'Ivoire"
+                />
               </div>
             </div>
           </Card>
@@ -202,10 +330,14 @@ export default function NewPartnerPage() {
         {/* Step 3: Professional Info */}
         {step === 3 && (
           <Card className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">3. Informations professionnelles</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              3. Informations professionnelles
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Services proposés</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Services proposés
+                </label>
                 <textarea
                   value={form.servicesProposes}
                   onChange={(e) => update('servicesProposes', e.target.value)}
@@ -215,7 +347,9 @@ export default function NewPartnerPage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Produits fournis</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Produits fournis
+                </label>
                 <textarea
                   value={form.produitsFournis}
                   onChange={(e) => update('produitsFournis', e.target.value)}
@@ -225,12 +359,24 @@ export default function NewPartnerPage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zones couvertes</label>
-                <Input value={form.zonesCouvertes} onChange={(e) => update('zonesCouvertes', e.target.value)} placeholder="Ex: Abidjan, Yamoussoukro, Bouaké..." />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Zones couvertes
+                </label>
+                <Input
+                  value={form.zonesCouvertes}
+                  onChange={(e) => update('zonesCouvertes', e.target.value)}
+                  placeholder="Ex: Abidjan, Yamoussoukro, Bouaké..."
+                />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Horaires de disponibilité</label>
-                <Input value={form.horairesDisponibilite} onChange={(e) => update('horairesDisponibilite', e.target.value)} placeholder="Ex: Lun-Ven 8h-18h, Sam 9h-13h" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Horaires de disponibilité
+                </label>
+                <Input
+                  value={form.horairesDisponibilite}
+                  onChange={(e) => update('horairesDisponibilite', e.target.value)}
+                  placeholder="Ex: Lun-Ven 8h-18h, Sam 9h-13h"
+                />
               </div>
             </div>
           </Card>
@@ -239,31 +385,49 @@ export default function NewPartnerPage() {
         {/* Step 4: Social Media */}
         {step === 4 && (
           <Card className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">4. Réseaux sociaux</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              4. Réseaux sociaux
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <Globe className="h-3.5 w-3.5 inline mr-1 text-blue-600" /> Facebook
                 </label>
-                <Input value={form.facebook} onChange={(e) => update('facebook', e.target.value)} placeholder="URL Facebook" />
+                <Input
+                  value={form.facebook}
+                  onChange={(e) => update('facebook', e.target.value)}
+                  placeholder="URL Facebook"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <Camera className="h-3.5 w-3.5 inline mr-1 text-pink-600" /> Instagram
                 </label>
-                <Input value={form.instagram} onChange={(e) => update('instagram', e.target.value)} placeholder="URL Instagram" />
+                <Input
+                  value={form.instagram}
+                  onChange={(e) => update('instagram', e.target.value)}
+                  placeholder="URL Instagram"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <Briefcase className="h-3.5 w-3.5 inline mr-1 text-blue-700" /> LinkedIn
                 </label>
-                <Input value={form.linkedin} onChange={(e) => update('linkedin', e.target.value)} placeholder="URL LinkedIn" />
+                <Input
+                  value={form.linkedin}
+                  onChange={(e) => update('linkedin', e.target.value)}
+                  placeholder="URL LinkedIn"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <Music4 className="h-3.5 w-3.5 inline mr-1" /> TikTok
                 </label>
-                <Input value={form.tiktok} onChange={(e) => update('tiktok', e.target.value)} placeholder="URL TikTok" />
+                <Input
+                  value={form.tiktok}
+                  onChange={(e) => update('tiktok', e.target.value)}
+                  placeholder="URL TikTok"
+                />
               </div>
             </div>
           </Card>
@@ -272,12 +436,18 @@ export default function NewPartnerPage() {
         {/* Step 5: Documents & Collaboration Level */}
         {step === 5 && (
           <Card className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">5. Documents & Niveau de collaboration</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              5. Documents & Niveau de collaboration
+            </h2>
 
             <div className="p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-center">
               <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Documents professionnels</p>
-              <p className="text-xs text-gray-500 mt-1">Contrat, licence, certifications, accord de partenariat</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Documents professionnels
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Contrat, licence, certifications, accord de partenariat
+              </p>
               <Button type="button" variant="outline" size="sm" className="mt-3">
                 <FileText className="h-4 w-4 mr-1.5" />
                 Ajouter des documents
@@ -285,7 +455,9 @@ export default function NewPartnerPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Niveau de collaboration</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Niveau de collaboration
+              </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {COLLAB_LEVELS.map((level) => {
                   const isActive = form.collaborationLevel === level.value;
@@ -301,8 +473,15 @@ export default function NewPartnerPage() {
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                       )}
                     >
-                      <Star className={cn('h-5 w-5 mx-auto mb-1', isActive ? 'text-brand' : 'text-gray-400')} />
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{level.label}</p>
+                      <Star
+                        className={cn(
+                          'h-5 w-5 mx-auto mb-1',
+                          isActive ? 'text-brand' : 'text-gray-400'
+                        )}
+                      />
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {level.label}
+                      </p>
                       <p className="text-xs text-gray-500 mt-1">{level.desc}</p>
                     </button>
                   );
@@ -315,15 +494,22 @@ export default function NewPartnerPage() {
         {/* Step 6: Review */}
         {step === 6 && (
           <Card className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">6. Récapitulatif</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              6. Récapitulatif
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                 <div className="p-3 rounded-xl bg-brand/10">
                   <CatIcon className="h-6 w-6 text-brand" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{form.name || 'Nom non défini'}</p>
-                  <p className="text-sm text-gray-500">{CATEGORIES.find((c) => c.value === form.category)?.label} • {COLLAB_LEVELS.find((c) => c.value === form.collaborationLevel)?.label}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    {form.name || 'Nom non défini'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {CATEGORIES.find((c) => c.value === form.category)?.label} •{' '}
+                    {COLLAB_LEVELS.find((c) => c.value === form.collaborationLevel)?.label}
+                  </p>
                 </div>
               </div>
               {form.email && (
@@ -359,15 +545,24 @@ export default function NewPartnerPage() {
 
         {/* Navigation buttons */}
         <div className="flex items-center justify-between mt-6">
-          <Button type="button" variant="outline" onClick={() => step > 1 ? setStep(step - 1) : router.back()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => (step > 1 ? setStep(step - 1) : router.back())}
+          >
             <ChevronLeft className="h-4 w-4 mr-1.5" />
             {step > 1 ? 'Étape précédente' : 'Annuler'}
           </Button>
           <Button type="submit" disabled={createPartner.isPending}>
             {step < 6 ? (
-              <>Suivant <ChevronRight className="h-4 w-4 ml-1.5" /></>
+              <>
+                Suivant <ChevronRight className="h-4 w-4 ml-1.5" />
+              </>
             ) : (
-              <><Save className="h-4 w-4 mr-1.5" /> {createPartner.isPending ? 'Enregistrement...' : 'Enregistrer le partenaire'}</>
+              <>
+                <Save className="h-4 w-4 mr-1.5" />{' '}
+                {createPartner.isPending ? 'Enregistrement...' : 'Enregistrer le partenaire'}
+              </>
             )}
           </Button>
         </div>

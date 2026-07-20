@@ -3,9 +3,18 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  GraduationCap, Clock, Calendar, Award, FileText,
-  Search, ChevronRight, PlayCircle, CheckCircle2,
-  BookOpen, Download, Percent,
+  GraduationCap,
+  Clock,
+  Calendar,
+  Award,
+  FileText,
+  Search,
+  ChevronRight,
+  PlayCircle,
+  CheckCircle2,
+  BookOpen,
+  Download,
+  Percent,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -18,7 +27,10 @@ import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default' }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default' }
+> = {
   IN_PROGRESS: { label: 'En cours', variant: 'info' },
   COMPLETED: { label: 'Terminé', variant: 'success' },
   NOT_STARTED: { label: 'Non commencé', variant: 'warning' },
@@ -46,34 +58,49 @@ export default function MyTrainingsPage() {
   });
 
   const trainings = useMemo(() => {
-    const d = Array.isArray(data) ? data : (data?.trainings || data?.items || []);
+    const d = Array.isArray(data) ? data : data?.trainings || data?.items || [];
     return d as any[];
   }, [data]);
 
-  const stats = useMemo(() => ({
-    total: trainings.length,
-    inProgress: trainings.filter((t: any) => t.status === 'IN_PROGRESS').length,
-    completed: trainings.filter((t: any) => t.status === 'COMPLETED').length,
-    notStarted: trainings.filter((t: any) => t.status === 'NOT_STARTED' || t.status === 'PENDING').length,
-    certificates: trainings.filter((t: any) => t.certificate).length,
-    averageProgress: trainings.length > 0
-      ? Math.round(trainings.reduce((sum: number, t: any) => sum + (t.progress || 0), 0) / trainings.length)
-      : 0,
-  }), [trainings]);
+  const stats = useMemo(
+    () => ({
+      total: trainings.length,
+      inProgress: trainings.filter((t: any) => t.status === 'IN_PROGRESS').length,
+      completed: trainings.filter((t: any) => t.status === 'COMPLETED').length,
+      notStarted: trainings.filter((t: any) => t.status === 'NOT_STARTED' || t.status === 'PENDING')
+        .length,
+      certificates: trainings.filter((t: any) => t.certificate).length,
+      averageProgress:
+        trainings.length > 0
+          ? Math.round(
+              trainings.reduce((sum: number, t: any) => sum + (t.progress || 0), 0) /
+                trainings.length
+            )
+          : 0,
+    }),
+    [trainings]
+  );
 
   const filtered = useMemo(() => {
     let f = [...trainings];
     switch (activeTab) {
-      case 'in_progress': f = f.filter((t: any) => t.status === 'IN_PROGRESS'); break;
-      case 'not_started': f = f.filter((t: any) => t.status === 'NOT_STARTED' || t.status === 'PENDING'); break;
-      case 'completed': f = f.filter((t: any) => t.status === 'COMPLETED'); break;
+      case 'in_progress':
+        f = f.filter((t: any) => t.status === 'IN_PROGRESS');
+        break;
+      case 'not_started':
+        f = f.filter((t: any) => t.status === 'NOT_STARTED' || t.status === 'PENDING');
+        break;
+      case 'completed':
+        f = f.filter((t: any) => t.status === 'COMPLETED');
+        break;
     }
     if (search) {
       const q = search.toLowerCase();
-      f = f.filter((t: any) =>
-        t.title?.toLowerCase().includes(q) ||
-        t.businessName?.toLowerCase().includes(q) ||
-        t.category?.toLowerCase().includes(q)
+      f = f.filter(
+        (t: any) =>
+          t.title?.toLowerCase().includes(q) ||
+          t.businessName?.toLowerCase().includes(q) ||
+          t.category?.toLowerCase().includes(q)
       );
     }
     return f;
@@ -110,7 +137,9 @@ export default function MyTrainingsPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">En cours</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.inProgress}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.inProgress}
+              </p>
             </div>
           </div>
         </Card>
@@ -121,7 +150,9 @@ export default function MyTrainingsPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Terminées</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.completed}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.completed}
+              </p>
             </div>
           </div>
         </Card>
@@ -132,7 +163,9 @@ export default function MyTrainingsPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">À commencer</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.notStarted}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.notStarted}
+              </p>
             </div>
           </div>
         </Card>
@@ -143,7 +176,9 @@ export default function MyTrainingsPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Certificats</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.certificates}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.certificates}
+              </p>
             </div>
           </div>
         </Card>
@@ -154,7 +189,9 @@ export default function MyTrainingsPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Progression moy.</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.averageProgress}%</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.averageProgress}%
+              </p>
             </div>
           </div>
         </Card>
@@ -209,7 +246,10 @@ export default function MyTrainingsPage() {
       ) : (
         <div className="space-y-4">
           {filtered.map((training: any) => {
-            const statusInfo = STATUS_CONFIG[training.status] || { label: training.status, variant: 'default' as const };
+            const statusInfo = STATUS_CONFIG[training.status] || {
+              label: training.status,
+              variant: 'default' as const,
+            };
             const progress = training.progress || 0;
 
             return (
@@ -236,14 +276,19 @@ export default function MyTrainingsPage() {
                           )}
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {training.businessName || training.instructor || training.business || 'Formateur'}
+                          {training.businessName ||
+                            training.instructor ||
+                            training.business ||
+                            'Formateur'}
                         </p>
 
                         {/* Progress bar */}
                         <div className="mt-3">
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="text-gray-500">Progression</span>
-                            <span className="font-medium text-gray-700 dark:text-gray-300">{progress}%</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              {progress}%
+                            </span>
                           </div>
                           <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div

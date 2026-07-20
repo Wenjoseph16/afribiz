@@ -62,7 +62,9 @@ describe('useCreateBusinessOrder', () => {
 
   it('devrait creer une commande avec succes', async () => {
     const newOrder = { businessId: 'biz-1', items: [{ productId: 'p-1', quantity: 2 }] };
-    (apiClient.createBusinessOrder as jest.Mock).mockResolvedValue({ data: { data: { id: 'order-1', ...newOrder } } });
+    (apiClient.createBusinessOrder as jest.Mock).mockResolvedValue({
+      data: { data: { id: 'order-1', ...newOrder } },
+    });
 
     const { result } = renderHook(() => useCreateBusinessOrder(), { wrapper });
 
@@ -86,6 +88,7 @@ describe('useCreateBusinessOrder', () => {
 describe('useCart', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    queryClient.clear();
   });
 
   it('devrait retourner le panier vide', async () => {

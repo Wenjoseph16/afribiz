@@ -1,32 +1,100 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  ShoppingBag, Clock, Package, Truck, CheckCircle2, XCircle,
-  Search, ChevronRight, Store, User, Phone, AlertTriangle, RefreshCw,
-  TrendingUp, Loader,
+  ShoppingBag,
+  Clock,
+  Package,
+  Truck,
+  CheckCircle2,
+  XCircle,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Store,
+  User,
+  Phone,
+  AlertTriangle,
+  RefreshCw,
+  TrendingUp,
+  Loader,
+  MessageCircle,
 } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { CopilotTips } from '@/components/copilot/CopilotTips';
 import { cn } from '@/lib/utils';
-import { useMyBusinessOrders, useBusinessOrderStats, useUpdateBusinessOrderStatus } from '@/features/hooks';
+import {
+  useMyBusinessOrders,
+  useBusinessOrderStats,
+  useUpdateBusinessOrderStatus,
+} from '@/features/hooks/orders';
 import { formatPrice } from '@/utils/helpers';
 import OrderActionModal from '@/components/orders/OrderActionModal';
+import { Order, OrderStats } from '@/types';
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'warning' | 'success' | 'danger' | 'info' | 'default'; color: string }> = {
-  PENDING: { label: 'En attente', variant: 'warning', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  CONFIRMED: { label: 'Confirmée', variant: 'info', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  ACCEPTED: { label: 'Acceptée', variant: 'success', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  PREPARING: { label: 'En préparation', variant: 'info', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-  READY: { label: 'Prête', variant: 'success', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
-  DELIVERING: { label: 'En livraison', variant: 'info', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-  DELIVERED: { label: 'Livrée', variant: 'success', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  COMPLETED: { label: 'Terminée', variant: 'default', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-  REFUSED: { label: 'Refusée', variant: 'danger', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  CANCELLED: { label: 'Annulée', variant: 'danger', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  DISPUTE: { label: 'Litige', variant: 'danger', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' },
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: 'warning' | 'success' | 'danger' | 'info' | 'default'; color: string }
+> = {
+  PENDING: {
+    label: 'En attente',
+    variant: 'warning',
+    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  CONFIRMED: {
+    label: 'Confirmée',
+    variant: 'info',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  ACCEPTED: {
+    label: 'Acceptée',
+    variant: 'success',
+    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  PREPARING: {
+    label: 'En préparation',
+    variant: 'info',
+    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  },
+  READY: {
+    label: 'Prête',
+    variant: 'success',
+    color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+  },
+  DELIVERING: {
+    label: 'En livraison',
+    variant: 'info',
+    color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+  },
+  DELIVERED: {
+    label: 'Livrée',
+    variant: 'success',
+    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  COMPLETED: {
+    label: 'Terminée',
+    variant: 'default',
+    color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  },
+  REFUSED: {
+    label: 'Refusée',
+    variant: 'danger',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
+  CANCELLED: {
+    label: 'Annulée',
+    variant: 'danger',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
+  DISPUTE: {
+    label: 'Litige',
+    variant: 'danger',
+    color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+  },
 };
 
 const TABS = [
@@ -44,10 +112,11 @@ export default function BusinessOrdersPage() {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount'>('newest');
-  const [actionOrder, setActionOrder] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [actionOrder, setActionOrder] = useState<Order | null>(null);
 
   const params = useMemo(() => {
-    const p: any = { limit: 100 };
+    const p: Record<string, unknown> = { limit: 15, page };
     if (activeTab !== 'all' && activeTab !== 'today') p.status = activeTab;
     if (search) p.search = search;
     if (dateFilter === 'today') {
@@ -67,10 +136,21 @@ export default function BusinessOrdersPage() {
   }, [activeTab, search, dateFilter]);
 
   const { data: ordersData, isLoading, error, refetch } = useMyBusinessOrders(params);
-  const { data: statsData } = useBusinessOrderStats();
+  const { data: statsData, refetch: refetchStats } = useBusinessOrderStats();
+
+  // ─── Auto-rafraîchissement toutes les 30s ───
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+      refetchStats();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [refetch, refetchStats]);
 
   const orders = ordersData?.orders || [];
-  const pagination = ordersData;
+  const pagination = ordersData as
+    | { orders?: unknown[]; totalPages?: number; page?: number; total?: number }
+    | undefined;
 
   const stats = useMemo(() => {
     const s = statsData || {};
@@ -91,9 +171,18 @@ export default function BusinessOrdersPage() {
   const sortedOrders = useMemo(() => {
     const list = [...orders];
     switch (sortBy) {
-      case 'oldest': return list.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      case 'amount': return list.sort((a: any, b: any) => Number(b.totalAmount || 0) - Number(a.totalAmount || 0));
-      default: return list.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case 'oldest':
+        return list.sort(
+          (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      case 'amount':
+        return list.sort(
+          (a: any, b: any) => Number(b.totalAmount || 0) - Number(a.totalAmount || 0)
+        );
+      default:
+        return list.sort(
+          (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
     }
   }, [orders, sortBy]);
 
@@ -101,12 +190,16 @@ export default function BusinessOrdersPage() {
     return (
       <div className="animate-fade-in space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Commandes reçues</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Commandes reçues
+          </h1>
         </div>
         <Card className="p-12 text-center">
           <AlertTriangle className="h-12 w-12 text-red-300 mx-auto mb-3" />
           <p className="text-gray-500">Erreur de chargement des commandes</p>
-          <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>Réessayer</Button>
+          <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
+            Réessayer
+          </Button>
         </Card>
       </div>
     );
@@ -115,7 +208,9 @@ export default function BusinessOrdersPage() {
   if (isLoading) {
     return (
       <div className="animate-fade-in space-y-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Commandes reçues</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+          Commandes reçues
+        </h1>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader className="h-8 w-8 animate-spin text-brand" />
         </div>
@@ -151,6 +246,8 @@ export default function BusinessOrdersPage() {
           </Link>
         </div>
       </div>
+
+      <CopilotTips moduleKey="ORDERS" />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -216,7 +313,9 @@ export default function BusinessOrdersPage() {
             </div>
             <div>
               <p className="text-[10px] text-gray-500">Revenu</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">{formatPrice(stats.totalRevenue)}</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                {formatPrice(stats.totalRevenue)}
+              </p>
             </div>
           </div>
         </Card>
@@ -224,12 +323,23 @@ export default function BusinessOrdersPage() {
 
       {/* Pending orders alert */}
       {stats.pending > 0 && (
-        <Card className={cn('p-4 border-2', stats.pending >= 5 ? 'border-red-200 dark:border-red-800' : 'border-amber-200 dark:border-amber-800')}>
+        <Card
+          className={cn(
+            'p-4 border-2',
+            stats.pending >= 5
+              ? 'border-red-200 dark:border-red-800'
+              : 'border-amber-200 dark:border-amber-800'
+          )}
+        >
           <div className="flex items-center gap-3">
-            <div className={cn(
-              'p-2 rounded-xl',
-              stats.pending >= 5 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-            )}>
+            <div
+              className={cn(
+                'p-2 rounded-xl',
+                stats.pending >= 5
+                  ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                  : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+              )}
+            >
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div className="flex-1">
@@ -243,7 +353,10 @@ export default function BusinessOrdersPage() {
               </p>
             </div>
             <button
-              onClick={() => setActiveTab('PENDING')}
+              onClick={() => {
+                setActiveTab('PENDING');
+                setPage(1);
+              }}
               className="px-4 py-2 rounded-xl text-xs font-medium bg-brand text-white hover:bg-brand-700 transition-colors shrink-0"
             >
               Voir les {stats.pending} commande{stats.pending > 1 ? 's' : ''}
@@ -261,7 +374,10 @@ export default function BusinessOrdersPage() {
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setPage(1);
+                }}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
                   activeTab === tab.key
@@ -284,30 +400,36 @@ export default function BusinessOrdersPage() {
               type="text"
               placeholder="Rechercher par n° commande, client, téléphone..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none bg-transparent dark:text-gray-100"
             />
           </div>
           <div className="flex gap-2">
-            <select
+            <Select
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value as any)}
-              className="px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent dark:text-gray-100 outline-none focus:ring-2 focus:ring-brand/20"
-            >
-              <option value="all">Toute période</option>
-              <option value="today">Aujourd'hui</option>
-              <option value="week">7 derniers jours</option>
-              <option value="month">30 derniers jours</option>
-            </select>
-            <select
+              onChange={(e) => {
+                setDateFilter(e.target.value as 'all' | 'today' | 'week' | 'month');
+                setPage(1);
+              }}
+              options={[
+                { value: 'all', label: 'Toute période' },
+                { value: 'today', label: "Aujourd'hui" },
+                { value: 'week', label: '7 derniers jours' },
+                { value: 'month', label: '30 derniers jours' },
+              ]}
+            />
+            <Select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent dark:text-gray-100 outline-none focus:ring-2 focus:ring-brand/20"
-            >
-              <option value="newest">Plus récentes</option>
-              <option value="oldest">Plus anciennes</option>
-              <option value="amount">Montant ↓</option>
-            </select>
+              onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'amount')}
+              options={[
+                { value: 'newest', label: 'Plus récentes' },
+                { value: 'oldest', label: 'Plus anciennes' },
+                { value: 'amount', label: 'Montant ↓' },
+              ]}
+            />
           </div>
         </div>
       </div>
@@ -319,7 +441,7 @@ export default function BusinessOrdersPage() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {search || activeTab !== 'all'
               ? 'Aucune commande trouvée'
-              : 'Vous n\'avez pas encore reçu de commande'}
+              : "Vous n'avez pas encore reçu de commande"}
           </h3>
           <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
             {search
@@ -335,12 +457,15 @@ export default function BusinessOrdersPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {sortedOrders.map((order: any) => {
+          {sortedOrders.map((order) => {
             const s = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
             const itemCount = order.items?.length || 0;
-            const buyerName = order.contactName
-              || (order.buyer ? `${order.buyer.firstName || ''} ${order.buyer.lastName || ''}`.trim() : null)
-              || 'Client';
+            const buyerName =
+              order.contactName ||
+              (order.buyer
+                ? `${order.buyer.firstName || ''} ${order.buyer.lastName || ''}`.trim()
+                : null) ||
+              'Client';
             const buyerPhone = order.contactPhone || order.buyer?.phone;
             const isPending = order.status === 'PENDING';
             const elapsed = order.createdAt
@@ -350,13 +475,15 @@ export default function BusinessOrdersPage() {
             return (
               <div key={order.id} className="group">
                 <div className="flex items-start gap-2">
-                  <Link
-                    href={`/dashboard/business/orders/${order.id}`}
-                    className="flex-1 min-w-0"
-                  >
+                  <Link href={`/dashboard/business/orders/${order.id}`} className="flex-1 min-w-0">
                     <Card className="p-4 hover:shadow-md transition-all duration-200 cursor-pointer">
                       <div className="flex items-start gap-4">
-                        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', s.color)}>
+                        <div
+                          className={cn(
+                            'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                            s.color
+                          )}
+                        >
                           <ShoppingBag className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -366,7 +493,9 @@ export default function BusinessOrdersPage() {
                                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                                   {order.orderNumber || `#${order.id.slice(0, 8)}`}
                                 </h3>
-                                <Badge variant={s.variant} size="xs">{s.label}</Badge>
+                                <Badge variant={s.variant} size="xs">
+                                  {s.label}
+                                </Badge>
                                 {isPending && elapsed > 15 && (
                                   <span className="flex items-center gap-1 text-[10px] text-amber-600 font-medium bg-amber-50 dark:bg-amber-950/30 px-1.5 py-0.5 rounded-full">
                                     <AlertTriangle className="h-3 w-3" />
@@ -389,6 +518,17 @@ export default function BusinessOrdersPage() {
                                     {buyerPhone}
                                   </a>
                                 )}
+                                {/* Contact par messagerie */}
+                                {order.buyer?.id && (
+                                  <Link
+                                    href={`/dashboard/messages?userId=${order.buyer.id}`}
+                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                    className="flex items-center gap-1 text-brand hover:text-brand-700"
+                                  >
+                                    <MessageCircle className="w-3 h-3" />
+                                    Message
+                                  </Link>
+                                )}
                               </div>
                             </div>
                             <div className="text-right shrink-0">
@@ -405,7 +545,10 @@ export default function BusinessOrdersPage() {
                               <Clock className="w-3.5 h-3.5" />
                               {order.createdAt
                                 ? new Date(order.createdAt).toLocaleDateString('fr-FR', {
-                                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
                                   })
                                 : ''}
                             </span>
@@ -435,10 +578,29 @@ export default function BusinessOrdersPage() {
             );
           })}
 
-          {/* Pagination info */}
-          {pagination?.totalPages > 1 && (
-            <div className="text-center text-xs text-gray-500 py-4">
-              Page {pagination?.page || 1} sur {pagination?.totalPages || 1} · {pagination?.total || orders.length} commande{orders.length > 1 ? 's' : ''} au total
+          {/* Pagination */}
+          {(pagination?.totalPages ?? 0) > 1 && (
+            <div className="flex items-center justify-center gap-2 py-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Précédent
+              </button>
+              <span className="text-xs text-gray-500 px-3">
+                Page {pagination?.page || page} / {pagination?.totalPages || 1} (
+                {pagination?.total || orders.length} commandes)
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(pagination?.totalPages || 1, p + 1))}
+                disabled={page === (pagination?.totalPages || 1)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Suivant
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           )}
         </div>
@@ -455,9 +617,12 @@ export default function BusinessOrdersPage() {
           id: actionOrder?.id || '',
           orderNumber: actionOrder?.orderNumber,
           totalAmount: actionOrder?.totalAmount,
-          contactName: actionOrder?.contactName
-            || (actionOrder?.buyer ? `${actionOrder.buyer.firstName || ''} ${actionOrder.buyer.lastName || ''}`.trim() : null)
-            || undefined,
+          contactName:
+            actionOrder?.contactName ||
+            (actionOrder?.buyer
+              ? `${actionOrder.buyer.firstName || ''} ${actionOrder.buyer.lastName || ''}`.trim()
+              : null) ||
+            undefined,
           contactPhone: actionOrder?.contactPhone || actionOrder?.buyer?.phone,
           createdAt: actionOrder?.createdAt,
           items: actionOrder?.items,

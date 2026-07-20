@@ -1,26 +1,62 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import {
-  Plus, Trash2, Save, ArrowLeft, Calculator,
-  FileText, Send, Edit3, FileSignature, AlertTriangle,
-  Clock, CheckCircle, XCircle, ExternalLink,
+  Plus,
+  Trash2,
+  Save,
+  ArrowLeft,
+  Calculator,
+  FileText,
+  Send,
+  Edit3,
+  FileSignature,
+  AlertTriangle,
+  Clock,
+  CheckCircle,
+  XCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { useQuote, useUpdateQuoteStatus, useConvertQuoteToInvoice, useDeleteQuote } from '@/features/hooks';
+import {
+  useQuote,
+  useUpdateQuoteStatus,
+  useConvertQuoteToInvoice,
+  useDeleteQuote,
+} from '@/features/hooks';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: 'Brouillon', color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
-  SENT: { label: 'Envoyé', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  ACCEPTED: { label: 'Accepté', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  REJECTED: { label: 'Rejeté', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  EXPIRED: { label: 'Expiré', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  CONVERTED: { label: 'Converti', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+  DRAFT: {
+    label: 'Brouillon',
+    color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  },
+  SENT: {
+    label: 'Envoyé',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  ACCEPTED: {
+    label: 'Accepté',
+    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  REJECTED: {
+    label: 'Rejeté',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
+  EXPIRED: {
+    label: 'Expiré',
+    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  CONVERTED: {
+    label: 'Converti',
+    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  },
 };
 
 export default function QuoteDetailPage() {
@@ -32,6 +68,7 @@ export default function QuoteDetailPage() {
   const updateStatus = useUpdateQuoteStatus();
   const convertToInvoice = useConvertQuoteToInvoice();
   const deleteQuote = useDeleteQuote();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleSend = () => {
     updateStatus.mutate({ id, status: 'SENT' });
@@ -44,11 +81,12 @@ export default function QuoteDetailPage() {
   };
 
   const handleDelete = () => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')) {
-      deleteQuote.mutate(id, {
-        onSuccess: () => router.push('/dashboard/quotes'),
-      });
-    }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    await deleteQuote.mutateAsync(id);
+    router.push('/dashboard/quotes');
   };
 
   if (isLoading) return <Loader variant="spinner" size="md" fullScreen />;
@@ -66,8 +104,10 @@ export default function QuoteDetailPage() {
   const statusConfig = STATUS_CONFIG[quote.status] || STATUS_CONFIG.DRAFT;
   const items: Array<{ description: string; quantity: number; unitPrice: number }> =
     quote.items || [];
-  const subtotal = items.reduce((s: number, i: any) => s + (i.quantity * i.unitPrice), 0);
-  const totalAmount = quote.totalAmount ?? (subtotal + Number(quote.taxAmount || 0) - Number(quote.discountAmount || 0));
+  const subtotal = items.reduce((s: number, i: any) => s + i.quantity * i.unitPrice, 0);
+  const totalAmount =
+    quote.totalAmount ??
+    subtotal + Number(quote.taxAmount || 0) - Number(quote.discountAmount || 0);
 
   let actions: React.ReactNode = null;
 
@@ -75,28 +115,33 @@ export default function QuoteDetailPage() {
     actions = (
       <>
         <Button onClick={handleSend} isLoading={updateStatus.isPending}>
-          <Send className="h-4 w-4 mr-1.5" />Envoyer
+          <Send className="h-4 w-4 mr-1.5" />
+          Envoyer
         </Button>
         <Link href={`/dashboard/quotes/${id}/edit`}>
           <Button variant="secondary">
-            <Edit3 className="h-4 w-4 mr-1.5" />Modifier
+            <Edit3 className="h-4 w-4 mr-1.5" />
+            Modifier
           </Button>
         </Link>
         <Button variant="danger" onClick={handleDelete} isLoading={deleteQuote.isPending}>
-          <Trash2 className="h-4 w-4 mr-1.5" />Supprimer
+          <Trash2 className="h-4 w-4 mr-1.5" />
+          Supprimer
         </Button>
       </>
     );
   } else if (quote.status === 'SENT') {
     actions = (
       <Button onClick={handleConvert} isLoading={convertToInvoice.isPending}>
-        <FileSignature className="h-4 w-4 mr-1.5" />Convertir en facture
+        <FileSignature className="h-4 w-4 mr-1.5" />
+        Convertir en facture
       </Button>
     );
   } else if (quote.status === 'ACCEPTED') {
     actions = (
       <Button onClick={handleConvert} isLoading={convertToInvoice.isPending}>
-        <FileSignature className="h-4 w-4 mr-1.5" />Convertir en facture
+        <FileSignature className="h-4 w-4 mr-1.5" />
+        Convertir en facture
       </Button>
     );
   }
@@ -114,7 +159,8 @@ export default function QuoteDetailPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <Link href="/dashboard/quotes">
               <Button variant="secondary">
-                <ArrowLeft className="h-4 w-4 mr-1.5" />Retour
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
+                Retour
               </Button>
             </Link>
             {actions}
@@ -127,7 +173,9 @@ export default function QuoteDetailPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <p className="text-brand-100 text-sm mb-1">Statut</p>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${statusConfig.color}`}>
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${statusConfig.color}`}
+              >
                 {statusConfig.label}
               </span>
             </div>
@@ -142,7 +190,9 @@ export default function QuoteDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Articles</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Articles
+            </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -157,8 +207,12 @@ export default function QuoteDetailPage() {
                   {items.map((item: any, i: number) => (
                     <tr key={i}>
                       <td className="py-3 text-gray-900 dark:text-gray-100">{item.description}</td>
-                      <td className="py-3 text-center text-gray-600 dark:text-gray-400">{item.quantity}</td>
-                      <td className="py-3 text-right text-gray-600 dark:text-gray-400">{Number(item.unitPrice).toLocaleString()} FCFA</td>
+                      <td className="py-3 text-center text-gray-600 dark:text-gray-400">
+                        {item.quantity}
+                      </td>
+                      <td className="py-3 text-right text-gray-600 dark:text-gray-400">
+                        {Number(item.unitPrice).toLocaleString()} FCFA
+                      </td>
                       <td className="py-3 text-right font-semibold text-gray-900 dark:text-gray-100">
                         {(item.quantity * item.unitPrice).toLocaleString()} FCFA
                       </td>
@@ -176,14 +230,17 @@ export default function QuoteDetailPage() {
                   <FileSignature className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">Converti en facture</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    Converti en facture
+                  </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Ce devis a été converti en facture
                   </p>
                 </div>
                 <Link href={`/dashboard/invoices/${quote.convertedInvoiceId}`}>
                   <Button variant="outline" size="sm">
-                    <ExternalLink className="h-4 w-4 mr-1.5" />Voir la facture
+                    <ExternalLink className="h-4 w-4 mr-1.5" />
+                    Voir la facture
                   </Button>
                 </Link>
               </div>
@@ -193,14 +250,20 @@ export default function QuoteDetailPage() {
           {quote.notes && (
             <Card>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Notes</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{quote.notes}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                {quote.notes}
+              </p>
             </Card>
           )}
 
           {quote.terms && (
             <Card>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Conditions générales</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{quote.terms}</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Conditions générales
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                {quote.terms}
+              </p>
             </Card>
           )}
         </div>
@@ -211,7 +274,9 @@ export default function QuoteDetailPage() {
             <div className="space-y-3">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Nom</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{quote.clientName}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {quote.clientName}
+                </p>
               </div>
               {quote.clientEmail && (
                 <div>
@@ -229,28 +294,40 @@ export default function QuoteDetailPage() {
           </Card>
 
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Résumé financier</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Résumé financier
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Sous-total</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{subtotal.toLocaleString()} FCFA</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  {subtotal.toLocaleString()} FCFA
+                </span>
               </div>
               {Number(quote.taxAmount) > 0 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Taxe</span>
-                  <span className="text-gray-900 dark:text-gray-100">{Number(quote.taxAmount).toLocaleString()} FCFA</span>
+                  <span className="text-gray-900 dark:text-gray-100">
+                    {Number(quote.taxAmount).toLocaleString()} FCFA
+                  </span>
                 </div>
               )}
               {Number(quote.discountAmount) > 0 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Remise</span>
-                  <span className="text-red-500">-{Number(quote.discountAmount).toLocaleString()} FCFA</span>
+                  <span className="text-red-500">
+                    -{Number(quote.discountAmount).toLocaleString()} FCFA
+                  </span>
                 </div>
               )}
               <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-semibold text-gray-900 dark:text-gray-100">Total</span>
-                  <span className="text-lg font-bold text-brand">{totalAmount.toLocaleString()} FCFA</span>
+                  <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    Total
+                  </span>
+                  <span className="text-lg font-bold text-brand">
+                    {totalAmount.toLocaleString()} FCFA
+                  </span>
                 </div>
               </div>
             </div>
@@ -258,7 +335,9 @@ export default function QuoteDetailPage() {
 
           {(quote.validUntil || quote.currency) && (
             <Card>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Informations</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Informations
+              </h3>
               <div className="space-y-3">
                 {quote.validUntil && (
                   <div>
@@ -271,7 +350,9 @@ export default function QuoteDetailPage() {
                 {quote.currency && (
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Devise</p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{quote.currency}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {quote.currency}
+                    </p>
                   </div>
                 )}
               </div>
@@ -279,6 +360,16 @@ export default function QuoteDetailPage() {
           )}
         </div>
       </div>
+      <ConfirmationModal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDelete}
+        title="Supprimer ce devis ?"
+        description="Cette action est irréversible. Le devis sera définitivement supprimé."
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="danger"
+      />
     </div>
   );
 }

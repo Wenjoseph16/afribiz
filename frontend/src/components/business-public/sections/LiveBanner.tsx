@@ -16,10 +16,7 @@ export function LiveBanner({ businessId }: LiveBannerProps) {
   if (isLoading || !activeLive) return null;
 
   return (
-    <Link
-      href={`/live/${activeLive.id}`}
-      className="block mb-6 group"
-    >
+    <Link href={`/live/${activeLive.id}`} className="block mb-6 group">
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-red-600 to-red-500 p-1">
         <div className="rounded-xl bg-gray-900/90 p-4 sm:p-5">
           <div className="flex items-center gap-3">

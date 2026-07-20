@@ -3,8 +3,19 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Building2, Shield, Package, Server, ShoppingCart, Star, ChevronLeft,
-  FileText, CreditCard, Scale, Activity, BarChart3, TrendingUp,
+  Building2,
+  Shield,
+  Package,
+  Server,
+  ShoppingCart,
+  Star,
+  ChevronLeft,
+  FileText,
+  CreditCard,
+  Scale,
+  Activity,
+  BarChart3,
+  TrendingUp,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -102,13 +113,21 @@ export default function AdminBusinessDetailPage() {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {business.name || 'N/A'}
               </h1>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                STATUS_STYLES[business.status] || 'bg-gray-100 text-gray-600'
-              }`}>{business.status}</span>
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  STATUS_STYLES[business.status] || 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {business.status}
+              </span>
               {business.verificationStatus && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  VERIF_STYLES[business.verificationStatus] || 'bg-gray-100 text-gray-600'
-                }`}>{business.verificationStatus}</span>
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    VERIF_STYLES[business.verificationStatus] || 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {business.verificationStatus}
+                </span>
               )}
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand text-sm font-bold">
                 <BarChart3 className="h-3.5 w-3.5" />
@@ -116,7 +135,8 @@ export default function AdminBusinessDetailPage() {
               </span>
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              {business.type} {business.sector ? `· ${business.sector}` : ''} {business.country ? `· ${business.country}` : ''}
+              {business.type} {business.sector ? `· ${business.sector}` : ''}{' '}
+              {business.country ? `· ${business.country}` : ''}
             </p>
             <p className="text-sm text-gray-400 mt-0.5">{business.email}</p>
           </div>
@@ -126,11 +146,31 @@ export default function AdminBusinessDetailPage() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Produits', value: business.productsCount ?? 0, icon: Package, color: 'text-blue-500' },
-          { label: 'Services', value: business.servicesCount ?? 0, icon: Server, color: 'text-purple-500' },
-          { label: 'Commandes', value: business.ordersCount ?? 0, icon: ShoppingCart, color: 'text-emerald-500' },
+          {
+            label: 'Produits',
+            value: business.productsCount ?? 0,
+            icon: Package,
+            color: 'text-blue-500',
+          },
+          {
+            label: 'Services',
+            value: business.servicesCount ?? 0,
+            icon: Server,
+            color: 'text-purple-500',
+          },
+          {
+            label: 'Commandes',
+            value: business.ordersCount ?? 0,
+            icon: ShoppingCart,
+            color: 'text-emerald-500',
+          },
           { label: 'Avis', value: business.reviewsCount ?? 0, icon: Star, color: 'text-amber-500' },
-          { label: 'Score', value: business.afriScore ?? '-', icon: TrendingUp, color: 'text-brand' },
+          {
+            label: 'Score',
+            value: business.afriScore ?? '-',
+            icon: TrendingUp,
+            color: 'text-brand',
+          },
         ].map((stat) => (
           <Card key={stat.label} padding="md">
             <div className="flex items-center gap-3">
@@ -185,7 +225,9 @@ export default function AdminBusinessDetailPage() {
               ].map((item) => (
                 <div key={item.label} className="flex justify-between text-sm">
                   <span className="text-gray-500">{item.label}</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{item.value || '-'}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {item.value || '-'}
+                  </span>
                 </div>
               ))}
             </div>
@@ -202,7 +244,9 @@ export default function AdminBusinessDetailPage() {
                     <Activity className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-gray-900 dark:text-gray-100">{act.description}</p>
-                      <p className="text-xs text-gray-400">{act.date ? new Date(act.date).toLocaleString('fr-FR') : ''}</p>
+                      <p className="text-xs text-gray-400">
+                        {act.date ? new Date(act.date).toLocaleString('fr-FR') : ''}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -224,12 +268,21 @@ export default function AdminBusinessDetailPage() {
             {business.products?.length > 0 ? (
               <div className="space-y-2">
                 {business.products.map((p: any) => (
-                  <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+                  >
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.name}</p>
-                      <p className="text-xs text-gray-400">{p.price ? `${Number(p.price).toLocaleString()} FCFA` : '-'}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {p.name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {p.price ? `${Number(p.price).toLocaleString()} FCFA` : '-'}
+                      </p>
                     </div>
-                    <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700">{p.status}</span>
+                    <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700">
+                      {p.status}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -245,12 +298,21 @@ export default function AdminBusinessDetailPage() {
             {business.services?.length > 0 ? (
               <div className="space-y-2">
                 {business.services.map((s: any) => (
-                  <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+                  >
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.name}</p>
-                      <p className="text-xs text-gray-400">{s.price ? `${Number(s.price).toLocaleString()} FCFA` : '-'}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {s.name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {s.price ? `${Number(s.price).toLocaleString()} FCFA` : '-'}
+                      </p>
                     </div>
-                    <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700">{s.status}</span>
+                    <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700">
+                      {s.status}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -311,7 +373,10 @@ export default function AdminBusinessDetailPage() {
             {business.scoreHistory?.length > 0 ? (
               <div className="space-y-2">
                 {business.scoreHistory.map((h: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+                  >
                     <span className="text-sm text-gray-500">
                       {h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '-'}
                     </span>
@@ -335,19 +400,30 @@ export default function AdminBusinessDetailPage() {
           {business.documents?.length > 0 ? (
             <div className="space-y-2">
               {business.documents.map((doc: any) => (
-                <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+                >
                   <div className="flex items-center gap-3">
                     <FileText className="h-4 w-4 text-gray-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{doc.name || doc.type}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {doc.name || doc.type}
+                      </p>
                       <p className="text-xs text-gray-400">{doc.status}</p>
                     </div>
                   </div>
-                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                    doc.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                    doc.status === 'PENDING' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                    'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                  }`}>{doc.status}</span>
+                  <span
+                    className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                      doc.status === 'APPROVED'
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : doc.status === 'PENDING'
+                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                          : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}
+                  >
+                    {doc.status}
+                  </span>
                 </div>
               ))}
             </div>
@@ -376,18 +452,29 @@ export default function AdminBusinessDetailPage() {
                 </thead>
                 <tbody>
                   {business.payments.map((p: any) => (
-                    <tr key={p.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+                    <tr
+                      key={p.id}
+                      className="border-b border-gray-100 dark:border-gray-800 last:border-0"
+                    >
                       <td className="py-2.5 text-gray-900 dark:text-gray-100">
                         {p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '-'}
                       </td>
-                      <td className="py-2.5 font-medium">{p.amount ? `${Number(p.amount).toLocaleString()} FCFA` : '-'}</td>
+                      <td className="py-2.5 font-medium">
+                        {p.amount ? `${Number(p.amount).toLocaleString()} FCFA` : '-'}
+                      </td>
                       <td className="py-2.5 text-gray-500">{p.method || '-'}</td>
                       <td className="py-2.5">
-                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                          p.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700' :
-                          p.status === 'PENDING' ? 'bg-amber-50 text-amber-700' :
-                          'bg-red-50 text-red-700'
-                        }`}>{p.status}</span>
+                        <span
+                          className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                            p.status === 'COMPLETED'
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : p.status === 'PENDING'
+                                ? 'bg-amber-50 text-amber-700'
+                                : 'bg-red-50 text-red-700'
+                          }`}
+                        >
+                          {p.status}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -411,12 +498,20 @@ export default function AdminBusinessDetailPage() {
               {business.disputes.map((d: any) => (
                 <div key={d.id} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{d.subject || 'Litige'}</p>
-                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                      d.status === 'OPEN' ? 'bg-red-50 text-red-700' :
-                      d.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-700' :
-                      'bg-amber-50 text-amber-700'
-                    }`}>{d.status}</span>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {d.subject || 'Litige'}
+                    </p>
+                    <span
+                      className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                        d.status === 'OPEN'
+                          ? 'bg-red-50 text-red-700'
+                          : d.status === 'RESOLVED'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-700'
+                      }`}
+                    >
+                      {d.status}
+                    </span>
                   </div>
                   <p className="text-xs text-gray-500">{d.description}</p>
                 </div>

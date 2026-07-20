@@ -19,7 +19,9 @@ export function EmptyState({ icon, title, description, action, className }: Empt
         {icon || <Inbox className="h-8 w-8" />}
       </div>
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1.5">{title}</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm mb-6 leading-relaxed">{description}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm mb-6 leading-relaxed">
+        {description}
+      </p>
       {action && <div className="[&>a]:inline-block">{action}</div>}
     </div>
   );

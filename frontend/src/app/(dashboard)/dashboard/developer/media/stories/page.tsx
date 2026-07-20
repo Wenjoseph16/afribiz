@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Camera, X, Image as ImageIcon, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { useCreateStory } from '@/hooks/features/useStories';
 import { useDeveloperModules } from '@/features/developerHooks';
@@ -78,7 +79,11 @@ export default function DeveloperStoriesPage() {
       />
 
       {showCreator && (
-        <Card padding="lg" variant="elevated" className="border-2 border-dashed border-brand-300/50">
+        <Card
+          padding="lg"
+          variant="elevated"
+          className="border-2 border-dashed border-brand-300/50"
+        >
           <div className="flex flex-col sm:flex-row gap-6">
             <div onClick={() => fileRef.current?.click()} className="cursor-pointer">
               <div className="aspect-[9/16] w-40 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center hover:border-brand-400 transition-colors">
@@ -93,24 +98,42 @@ export default function DeveloperStoriesPage() {
                   </div>
                 )}
               </div>
-              <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,video/*"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
             </div>
 
             <div className="flex-1 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Légende</label>
-                <textarea value={caption} onChange={(e) => setCaption(e.target.value)} rows={3} className="w-full px-4 py-3 text-sm rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30" placeholder="Présentez votre module..." />
+                <textarea
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 text-sm rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                  placeholder="Présentez votre module..."
+                />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Module lié (optionnel)</label>
-                <select value={selectedModuleId} onChange={(e) => setSelectedModuleId(e.target.value)} className="w-full px-4 py-2.5 text-sm rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30">
-                  <option value="">Sélectionner un module</option>
-                  {modules.map((m: any) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                  Module lié (optionnel)
+                </label>
+                <Select
+                  value={selectedModuleId}
+                  onChange={(e) => setSelectedModuleId(e.target.value)}
+                  placeholder="Sélectionner un module"
+                  options={modules.map((m: any) => ({ value: m.id, label: m.name }))}
+                />
               </div>
-              <button onClick={handlePublish} disabled={!fileRef2.current} className="px-6 py-2.5 bg-gradient-to-r from-brand-500 to-emerald-500 text-white rounded-xl text-sm font-semibold disabled:opacity-40 hover:shadow-lg transition-all">
+              <button
+                onClick={handlePublish}
+                disabled={!fileRef2.current}
+                className="px-6 py-2.5 bg-gradient-to-r from-brand-500 to-emerald-500 text-white rounded-xl text-sm font-semibold disabled:opacity-40 hover:shadow-lg transition-all"
+              >
                 Publier la story
               </button>
             </div>
@@ -122,7 +145,9 @@ export default function DeveloperStoriesPage() {
         <div className="text-center py-12 text-gray-400">
           <Camera className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p className="text-sm">Vos stories apparaîtront ici</p>
-          <p className="text-xs mt-1">Les stories sont visibles pendant 24h sur votre Developer TV</p>
+          <p className="text-xs mt-1">
+            Les stories sont visibles pendant 24h sur votre Developer TV
+          </p>
         </div>
       </Card>
     </div>

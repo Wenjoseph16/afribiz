@@ -13,7 +13,13 @@ interface PhoneInputProps {
   defaultDial?: string;
 }
 
-export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, error, disabled, defaultDial }) => {
+export const PhoneInput: React.FC<PhoneInputProps> = ({
+  value = '',
+  onChange,
+  error,
+  disabled,
+  defaultDial,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -23,7 +29,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, er
 
   // Use defaultDial when provided (from LocationSelect), fallback to +228
   const effectiveDial = dialOverride || defaultDial || '+228';
-  const currentDial = value ? `+${value.replace(/^\+/, '').match(/^\d{1,4}/)?.[0] || ''}` : effectiveDial;
+  const currentDial = value
+    ? `+${value.replace(/^\+/, '').match(/^\d{1,4}/)?.[0] || ''}`
+    : effectiveDial;
   const selectedCountry = getCountryByDial(currentDial) || sortedCountryCodes[0];
 
   useEffect(() => {
@@ -55,21 +63,27 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, er
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectCountry = useCallback((country: CountryCode) => {
-    setDialOverride(country.dial);
-    const fullNumber = `${country.dial}${phoneNumber}`;
-    onChange?.(fullNumber);
-    setIsOpen(false);
-    setSearch('');
-  }, [phoneNumber, onChange]);
+  const selectCountry = useCallback(
+    (country: CountryCode) => {
+      setDialOverride(country.dial);
+      const fullNumber = `${country.dial}${phoneNumber}`;
+      onChange?.(fullNumber);
+      setIsOpen(false);
+      setSearch('');
+    },
+    [phoneNumber, onChange]
+  );
 
-  const handlePhoneChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, '');
-    setPhoneNumber(raw);
-    const dial = selectedCountry?.dial || '+228';
-    const fullNumber = raw ? `${dial}${raw}` : '';
-    onChange?.(fullNumber);
-  }, [selectedCountry, onChange]);
+  const handlePhoneChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value.replace(/\D/g, '');
+      setPhoneNumber(raw);
+      const dial = selectedCountry?.dial || '+228';
+      const fullNumber = raw ? `${dial}${raw}` : '';
+      onChange?.(fullNumber);
+    },
+    [selectedCountry, onChange]
+  );
 
   const filtered = search
     ? sortedCountryCodes.filter(
@@ -108,7 +122,12 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, er
             <span className="text-base leading-none">{selectedCountry?.flag}</span>
             <span className="hidden sm:inline">{selectedCountry?.dial}</span>
             <span className="sm:hidden">{selectedCountry?.dial}</span>
-            <ChevronDown className={clsx('w-3.5 h-3.5 text-gray-400 transition-transform', isOpen && 'rotate-180')} />
+            <ChevronDown
+              className={clsx(
+                'w-3.5 h-3.5 text-gray-400 transition-transform',
+                isOpen && 'rotate-180'
+              )}
+            />
           </button>
 
           {isOpen && (
@@ -140,7 +159,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, er
 
               <div className="max-h-56 sm:max-h-64 overflow-y-auto overscroll-contain">
                 {filtered.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-sm text-gray-400">Aucun pays trouvé</div>
+                  <div className="px-4 py-8 text-center text-sm text-gray-400">
+                    Aucun pays trouvé
+                  </div>
                 ) : (
                   filtered.map((country) => (
                     <button
@@ -150,7 +171,8 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value = '', onChange, er
                       className={clsx(
                         'w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left',
                         'hover:bg-emerald-50 active:bg-emerald-100',
-                        selectedCountry?.code === country.code && 'bg-emerald-50 font-medium text-emerald-800'
+                        selectedCountry?.code === country.code &&
+                          'bg-emerald-50 font-medium text-emerald-800'
                       )}
                     >
                       <span className="text-lg leading-none">{country.flag}</span>

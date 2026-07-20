@@ -1,21 +1,42 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
-  Tag, ArrowUpCircle, Clock, RotateCcw, AlertTriangle,
-  FileText, Package, Plus, Code, CheckCircle, XCircle,
-  Save, Link, Download, Upload, Hash, Repeat,
+  Tag,
+  ArrowUpCircle,
+  Clock,
+  RotateCcw,
+  AlertTriangle,
+  FileText,
+  Package,
+  Plus,
+  Code,
+  CheckCircle,
+  XCircle,
+  Save,
+  Link,
+  Download,
+  Upload,
+  Hash,
+  Repeat,
+  FileArchive,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
-import { useDeveloperModules, useGetModuleVersions, useCreateModuleVersion } from '@/features/developerHooks';
+import {
+  useDeveloperModules,
+  useGetModuleVersions,
+  useCreateModuleVersion,
+  useUploadModuleVersionFile,
+} from '@/features/developerHooks';
 import type { DeveloperModule, DeveloperModuleVersion } from '@/types/developer';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -38,14 +59,25 @@ export default function DeveloperVersionsPage() {
     checksum: '',
     minAppVersion: '',
   });
+  const [versionFile, setVersionFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: modules, isLoading: modLoading, error: modError } = useDeveloperModules('PUBLISHED');
-  const { data: versions, isLoading: verLoading, error: verError, refetch: refetchVersions } = useGetModuleVersions(selectedModuleId);
+  const {
+    data: modules,
+    isLoading: modLoading,
+    error: modError,
+  } = useDeveloperModules('PUBLISHED');
+  const {
+    data: versions,
+    isLoading: verLoading,
+    error: verError,
+    refetch: refetchVersions,
+  } = useGetModuleVersions(selectedModuleId);
   const createVersion = useCreateModuleVersion();
 
   const moduleList = useMemo(() => {
     if (!modules) return [];
-    return Array.isArray(modules) ? modules : (modules.modules || modules.data || []);
+    return Array.isArray(modules) ? modules : modules.modules || modules.data || [];
   }, [modules]);
 
   const selectedModule = useMemo(() => {
@@ -54,7 +86,7 @@ export default function DeveloperVersionsPage() {
 
   const versionList = useMemo(() => {
     if (!versions) return [];
-    return Array.isArray(versions) ? versions : (versions.versions || versions.data || []);
+    return Array.isArray(versions) ? versions : versions.versions || versions.data || [];
   }, [versions]);
 
   const updateField = (field: string, value: any) => {
@@ -63,11 +95,21 @@ export default function DeveloperVersionsPage() {
 
   const resetForm = () => {
     setForm({
-      version: '', releaseNotes: '', changelog: '', isBreaking: false,
-      documentationUrl: '', downloadUrl: '', fileSize: '', checksum: '', minAppVersion: '',
+      version: '',
+      releaseNotes: '',
+      changelog: '',
+      isBreaking: false,
+      documentationUrl: '',
+      downloadUrl: '',
+      fileSize: '',
+      checksum: '',
+      minAppVersion: '',
     });
+    setVersionFile(null);
     setShowForm(false);
   };
+
+  const uploadFile = useUploadModuleVersionFile();
 
   const handleCreateVersion = async () => {
     if (!selectedModuleId || !form.version.trim()) return;
@@ -78,15 +120,25 @@ export default function DeveloperVersionsPage() {
         changelog: form.changelog.trim() || undefined,
         isBreaking: form.isBreaking,
         documentationUrl: form.documentationUrl.trim() || undefined,
-        downloadUrl: form.downloadUrl.trim() || undefined,
-        fileSize: form.fileSize ? Number(form.fileSize) : undefined,
-        checksum: form.checksum.trim() || undefined,
         minAppVersion: form.minAppVersion.trim() || undefined,
       };
-      await createVersion.mutateAsync({ moduleId: selectedModuleId, data: payload });
+      const result: any = await createVersion.mutateAsync({
+        moduleId: selectedModuleId,
+        data: payload,
+      });
+      const createdVersion = result?.data || result?.version || result;
+      const versionId = createdVersion?.id;
+
+      // Upload file if selected
+      if (versionFile && versionId) {
+        await uploadFile.mutateAsync({ moduleId: selectedModuleId, versionId, file: versionFile });
+      }
+
       resetForm();
       refetchVersions();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const formatDate = (date: string) =>
@@ -107,23 +159,30 @@ export default function DeveloperVersionsPage() {
       <PageHeader
         title="Versions & Mises à jour"
         description="Gérez les versions, releases et mises à jour de vos modules"
-        breadcrumbs={[{ label: 'Développeur', href: '/dashboard/developer' }, { label: 'Versions' }]}
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Versions' },
+        ]}
       />
 
       {/* Module selector + actions bar */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="w-full sm:w-80">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Sélectionner un module</label>
-          <select
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            Sélectionner un module
+          </label>
+          <Select
             value={selectedModuleId}
-            onChange={(e) => { setSelectedModuleId(e.target.value); setShowForm(false); }}
-            className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring"
-          >
-            <option value="">Choisir un module publié</option>
-            {moduleList.map((m: DeveloperModule) => (
-              <option key={m.id} value={m.id}>{m.name} (v{m.version || '1.0.0'})</option>
-            ))}
-          </select>
+            onChange={(e) => {
+              setSelectedModuleId(e.target.value);
+              setShowForm(false);
+            }}
+            placeholder="Choisir un module publié"
+            options={moduleList.map((m: DeveloperModule) => ({
+              value: m.id,
+              label: `${m.name} (v${m.version || '1.0.0'})`,
+            }))}
+          />
         </div>
 
         {selectedModuleId && (
@@ -152,11 +211,7 @@ export default function DeveloperVersionsPage() {
                 Liste
               </button>
             </div>
-            <Button
-              variant="gradient"
-              size="sm"
-              onClick={() => setShowForm(!showForm)}
-            >
+            <Button variant="gradient" size="sm" onClick={() => setShowForm(!showForm)}>
               <Plus className="h-4 w-4" />
               Nouvelle version
             </Button>
@@ -248,12 +303,16 @@ export default function DeveloperVersionsPage() {
                           form.isBreaking ? 'bg-red-500' : 'bg-gray-200 dark:bg-gray-700'
                         )}
                       >
-                        <span className={cn(
-                          'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
-                          form.isBreaking ? 'translate-x-[18px]' : 'translate-x-0.5'
-                        )} />
+                        <span
+                          className={cn(
+                            'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200',
+                            form.isBreaking ? 'translate-x-[18px]' : 'translate-x-0.5'
+                          )}
+                        />
                       </button>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Breaking change</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        Breaking change
+                      </span>
                     </label>
                     {form.isBreaking && (
                       <span className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
@@ -263,7 +322,58 @@ export default function DeveloperVersionsPage() {
                     )}
                   </div>
 
-                  {/* Additional metadata */}
+                  {/* File upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      Fichier du module
+                    </label>
+                    <div
+                      className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {versionFile ? (
+                        <div className="flex items-center justify-center gap-3">
+                          <FileArchive className="h-8 w-8 text-indigo-500" />
+                          <div className="text-left">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {versionFile.name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {(versionFile.size / 1024 / 1024).toFixed(2)} Mo
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVersionFile(null);
+                            }}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                          >
+                            <XCircle className="h-5 w-5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <Upload className="h-8 w-8 text-gray-400" />
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Cliquez pour choisir un fichier (zip, tar.gz)
+                          </p>
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".zip,.tar.gz,.tgz,.tar"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setVersionFile(file);
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <Input
                       label="URL de documentation"
@@ -271,25 +381,6 @@ export default function DeveloperVersionsPage() {
                       onChange={(e) => updateField('documentationUrl', e.target.value)}
                       icon={<FileText className="h-4 w-4" />}
                       placeholder="https://docs.example.com/v2"
-                    />
-                    <Input
-                      label="URL de téléchargement"
-                      value={form.downloadUrl}
-                      onChange={(e) => updateField('downloadUrl', e.target.value)}
-                      icon={<Download className="h-4 w-4" />}
-                      placeholder="https://cdn.example.com/module-v2.zip"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <Input
-                      label="Taille du fichier (octets)"
-                      value={form.fileSize}
-                      onChange={(e) => updateField('fileSize', e.target.value)}
-                      icon={<Upload className="h-4 w-4" />}
-                      type="number"
-                      min={0}
-                      placeholder="1048576"
                     />
                     <Input
                       label="Checksum (SHA-256)"
@@ -344,17 +435,24 @@ export default function DeveloperVersionsPage() {
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     Historique — {selectedModule?.name}
                   </h3>
-                  <Badge variant="default" size="sm">{versionList.length} version{versionList.length > 1 ? 's' : ''}</Badge>
+                  <Badge variant="default" size="sm">
+                    {versionList.length} version{versionList.length > 1 ? 's' : ''}
+                  </Badge>
                 </div>
                 <div className="space-y-2">
                   {versionList.map((v: DeveloperModuleVersion, idx: number) => {
                     const isCurrent = idx === 0;
                     return (
-                      <div key={v.id} className="relative pl-6 pb-3 border-l-2 border-gray-200 dark:border-gray-700 last:border-transparent group">
-                        <div className={cn(
-                          'absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900',
-                          isCurrent ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
-                        )} />
+                      <div
+                        key={v.id}
+                        className="relative pl-6 pb-3 border-l-2 border-gray-200 dark:border-gray-700 last:border-transparent group"
+                      >
+                        <div
+                          className={cn(
+                            'absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900',
+                            isCurrent ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                          )}
+                        />
                         <div className="flex items-start justify-between">
                           <div>
                             <div className="flex items-center gap-2">
@@ -362,45 +460,79 @@ export default function DeveloperVersionsPage() {
                                 v{v.version}
                               </h4>
                               {isCurrent && (
-                                <Badge variant="success" size="xs">Actuelle</Badge>
+                                <Badge variant="success" size="xs">
+                                  Actuelle
+                                </Badge>
                               )}
                               {v.isBreaking && (
-                                <Badge variant="danger" size="xs">Breaking</Badge>
+                                <Badge variant="danger" size="xs">
+                                  Breaking
+                                </Badge>
                               )}
                             </div>
                             {v.releaseNotes && (
-                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{v.releaseNotes}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                                {v.releaseNotes}
+                              </p>
                             )}
                             {v.changelog && (
                               <details className="mt-1">
-                                <summary className="text-xs text-brand cursor-pointer hover:underline">Voir le changelog</summary>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-wrap">{v.changelog}</p>
+                                <summary className="text-xs text-brand cursor-pointer hover:underline">
+                                  Voir le changelog
+                                </summary>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-wrap">
+                                  {v.changelog}
+                                </p>
                               </details>
                             )}
 
                             {/* Version metadata */}
-                            {(v.documentationUrl || v.downloadUrl || v.fileSize || v.checksum || v.minAppVersion) && (
+                            {(v.documentationUrl ||
+                              v.downloadUrl ||
+                              v.fileSize ||
+                              v.checksum ||
+                              v.minAppVersion) && (
                               <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-gray-400">
                                 {v.documentationUrl && (
-                                  <a href={v.documentationUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-brand">
+                                  <a
+                                    href={v.documentationUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 hover:text-brand"
+                                  >
                                     <FileText className="h-3 w-3" /> Docs
                                   </a>
                                 )}
                                 {v.downloadUrl && (
-                                  <a href={v.downloadUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-brand">
+                                  <a
+                                    href={v.downloadUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 hover:text-brand"
+                                  >
                                     <Download className="h-3 w-3" /> Télécharger
                                   </a>
                                 )}
                                 {v.fileSize && (
-                                  <span className="inline-flex items-center gap-1"><Upload className="h-3 w-3" />{formatFileSize(v.fileSize)}</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <Upload className="h-3 w-3" />
+                                    {formatFileSize(v.fileSize)}
+                                  </span>
                                 )}
                                 {v.checksum && (
-                                  <span className="inline-flex items-center gap-1" title={v.checksum}>
-                                    <Hash className="h-3 w-3" />{v.checksum.substring(0, 12)}...
+                                  <span
+                                    className="inline-flex items-center gap-1"
+                                    title={v.checksum}
+                                  >
+                                    <Hash className="h-3 w-3" />
+                                    {v.checksum.substring(0, 12)}...
                                   </span>
                                 )}
                                 {v.minAppVersion && (
-                                  <span className="inline-flex items-center gap-1"><Code className="h-3 w-3" />App ≥ v{v.minAppVersion}</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <Code className="h-3 w-3" />
+                                    App ≥ v{v.minAppVersion}
+                                  </span>
                                 )}
                               </div>
                             )}
@@ -409,17 +541,23 @@ export default function DeveloperVersionsPage() {
                               <Clock className="h-3 w-3" />
                               {v.publishedAt ? formatDate(v.publishedAt) : formatDate(v.createdAt)}
                               {v.status && v.status !== 'ACTIVE' && (
-                                <span className={cn(
-                                  'ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full',
-                                  STATUS_BADGE[v.status] || 'bg-gray-100 text-gray-500'
-                                )}>
+                                <span
+                                  className={cn(
+                                    'ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full',
+                                    STATUS_BADGE[v.status] || 'bg-gray-100 text-gray-500'
+                                  )}
+                                >
                                   {v.status === 'DEPRECATED' ? 'Dépréciée' : v.status}
                                 </span>
                               )}
                             </p>
                           </div>
                           {!isCurrent && (
-                            <Button variant="ghost" size="xs" className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
                               <RotateCcw className="h-3.5 w-3.5" />
                               Rollback
                             </Button>
@@ -445,11 +583,18 @@ export default function DeveloperVersionsPage() {
                             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                               v{ver.version}
                             </h3>
-                            <span className={cn(
-                              'text-[11px] font-medium px-2 py-0.5 rounded-full',
-                              STATUS_BADGE[ver.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                            )}>
-                              {ver.status === 'ACTIVE' ? 'Active' : ver.status === 'DEPRECATED' ? 'Dépréciée' : ver.status}
+                            <span
+                              className={cn(
+                                'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                                STATUS_BADGE[ver.status] ||
+                                  'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                              )}
+                            >
+                              {ver.status === 'ACTIVE'
+                                ? 'Active'
+                                : ver.status === 'DEPRECATED'
+                                  ? 'Dépréciée'
+                                  : ver.status}
                             </span>
                             {ver.isBreaking && (
                               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 flex items-center gap-1">
@@ -460,7 +605,11 @@ export default function DeveloperVersionsPage() {
                           <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
                             <Clock className="h-3 w-3" />
                             {ver.publishedAt
-                              ? new Date(ver.publishedAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })
+                              ? new Date(ver.publishedAt).toLocaleDateString('fr-FR', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })
                               : 'Non publiée'}
                           </p>
                         </div>
@@ -472,7 +621,9 @@ export default function DeveloperVersionsPage() {
                         <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
                           <FileText className="h-3 w-3" /> Notes de version
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{ver.releaseNotes}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                          {ver.releaseNotes}
+                        </p>
                       </div>
                     )}
 
@@ -481,18 +632,30 @@ export default function DeveloperVersionsPage() {
                         <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
                           <FileText className="h-3 w-3" /> Changelog
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{ver.changelog}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                          {ver.changelog}
+                        </p>
                       </div>
                     )}
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
                       {ver.documentationUrl && (
-                        <a href={ver.documentationUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-brand transition-colors">
+                        <a
+                          href={ver.documentationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 hover:text-brand transition-colors"
+                        >
                           <Link className="h-3 w-3" /> Documentation
                         </a>
                       )}
                       {ver.downloadUrl && (
-                        <a href={ver.downloadUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-brand transition-colors">
+                        <a
+                          href={ver.downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 hover:text-brand transition-colors"
+                        >
                           <Download className="h-3 w-3" /> Télécharger
                         </a>
                       )}
@@ -521,39 +684,62 @@ export default function DeveloperVersionsPage() {
           {/* Sidebar */}
           <div className="space-y-4">
             <Card padding="lg">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Informations</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                Informations
+              </h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Module</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{selectedModule?.name || '-'}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedModule?.name || '-'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Version actuelle</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">v{selectedModule?.version || '1.0.0'}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    v{selectedModule?.version || '1.0.0'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Total versions</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{versionList.length}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {versionList.length}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Installations</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{selectedModule?.totalInstalls || 0}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedModule?.totalInstalls || 0}
+                  </span>
                 </div>
               </div>
             </Card>
 
             <Card padding="lg">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Actions rapides</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                Actions rapides
+              </h3>
               <div className="space-y-2">
                 <Button fullWidth variant="secondary" size="sm" onClick={() => setShowForm(true)}>
                   <ArrowUpCircle className="h-4 w-4" />
                   Nouvelle version
                 </Button>
-                <Button fullWidth variant="secondary" size="sm" disabled title="Fonctionnalité à venir">
+                <Button
+                  fullWidth
+                  variant="secondary"
+                  size="sm"
+                  disabled
+                  title="Fonctionnalité à venir"
+                >
                   <RotateCcw className="h-4 w-4" />
                   Rollback
                 </Button>
-                <Button fullWidth variant="secondary" size="sm" onClick={() => setViewMode(viewMode === 'timeline' ? 'list' : 'timeline')}>
+                <Button
+                  fullWidth
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setViewMode(viewMode === 'timeline' ? 'list' : 'timeline')}
+                >
                   <Repeat className="h-4 w-4" />
                   Vue {viewMode === 'timeline' ? 'liste' : 'chronologie'}
                 </Button>

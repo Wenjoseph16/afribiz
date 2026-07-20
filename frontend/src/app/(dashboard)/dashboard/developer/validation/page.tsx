@@ -12,11 +12,39 @@ import { cn } from '@/lib/utils';
 import { useDeveloperProfile } from '@/features/developerHooks';
 import type { DeveloperVerificationStatus } from '@/types/developer';
 
-const STATUS_CONFIG: Record<DeveloperVerificationStatus, { label: string; icon: typeof Shield; variant: 'brand' | 'success' | 'warning' | 'danger'; description: string }> = {
-  PENDING: { label: 'En attente', icon: Clock, variant: 'warning', description: 'Vos documents sont en cours de vérification par notre équipe.' },
-  SUBMITTED: { label: 'Soumis', icon: Clock, variant: 'warning', description: 'Votre demande a été soumise. Nous vous répondrons sous 48h.' },
-  VERIFIED: { label: 'Vérifié', icon: CheckCircle2, variant: 'success', description: 'Votre compte développeur est vérifié. Vous pouvez publier des modules.' },
-  REJECTED: { label: 'Rejeté', icon: XCircle, variant: 'danger', description: 'Votre demande de vérification a été rejetée.' },
+const STATUS_CONFIG: Record<
+  DeveloperVerificationStatus,
+  {
+    label: string;
+    icon: typeof Shield;
+    variant: 'brand' | 'success' | 'warning' | 'danger';
+    description: string;
+  }
+> = {
+  PENDING: {
+    label: 'En attente',
+    icon: Clock,
+    variant: 'warning',
+    description: 'Vos documents sont en cours de vérification par notre équipe.',
+  },
+  SUBMITTED: {
+    label: 'Soumis',
+    icon: Clock,
+    variant: 'warning',
+    description: 'Votre demande a été soumise. Nous vous répondrons sous 48h.',
+  },
+  VERIFIED: {
+    label: 'Vérifié',
+    icon: CheckCircle2,
+    variant: 'success',
+    description: 'Votre compte développeur est vérifié. Vous pouvez publier des modules.',
+  },
+  REJECTED: {
+    label: 'Rejeté',
+    icon: XCircle,
+    variant: 'danger',
+    description: 'Votre demande de vérification a été rejetée.',
+  },
 };
 
 export default function ValidationPage() {
@@ -43,16 +71,23 @@ export default function ValidationPage() {
 
       <Card padding="lg">
         <div className="flex flex-col items-center text-center py-8">
-          <div className={cn(
-            'w-20 h-20 rounded-2xl flex items-center justify-center mb-5',
-            status === 'VERIFIED' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500' :
-            status === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 text-red-500' :
-            status === 'SUBMITTED' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500' :
-            'bg-amber-50 dark:bg-amber-900/30 text-amber-500'
-          )}>
+          <div
+            className={cn(
+              'w-20 h-20 rounded-2xl flex items-center justify-center mb-5',
+              status === 'VERIFIED'
+                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500'
+                : status === 'REJECTED'
+                  ? 'bg-red-50 dark:bg-red-900/30 text-red-500'
+                  : status === 'SUBMITTED'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-500'
+                    : 'bg-amber-50 dark:bg-amber-900/30 text-amber-500'
+            )}
+          >
             <StatusIcon className="h-10 w-10" />
           </div>
-          <Badge variant={config.variant} size="lg">{config.label}</Badge>
+          <Badge variant={config.variant} size="lg">
+            {config.label}
+          </Badge>
           <p className="text-gray-500 dark:text-gray-400 mt-4 max-w-md">{config.description}</p>
 
           {status === 'PENDING' && !profile?.onboardingCompleted && (
@@ -72,7 +107,10 @@ export default function ValidationPage() {
                 <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="text-left text-sm text-amber-700 dark:text-amber-300">
                   <p className="font-medium">Aucune vérification soumise</p>
-                  <p className="mt-1">Vous devez soumettre vos documents de vérification depuis la section vérification de votre profil.</p>
+                  <p className="mt-1">
+                    Vous devez soumettre vos documents de vérification depuis la section
+                    vérification de votre profil.
+                  </p>
                 </div>
               </div>
               <Link href="/dashboard/developer/profile">
@@ -114,7 +152,9 @@ export default function ValidationPage() {
       <div className="grid sm:grid-cols-3 gap-4">
         <Card padding="md">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand"><Shield className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand">
+              <Shield className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Niveau</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">Développeur</p>
@@ -123,7 +163,9 @@ export default function ValidationPage() {
         </Card>
         <Card padding="md">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600"><Shield className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600">
+              <Shield className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Statut</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{config.label}</p>
@@ -132,10 +174,14 @@ export default function ValidationPage() {
         </Card>
         <Card padding="md">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600"><CheckCircle2 className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Modules publiés</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{profile?.publishedModules || 0}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {profile?.publishedModules || 0}
+              </p>
             </div>
           </div>
         </Card>

@@ -2,10 +2,24 @@
 
 import { useState } from 'react';
 import {
-  ShoppingBag, Building2, Package, Server, Calendar, MapPin, Code2,
-  Shield, Star, Eye, X, ChevronLeft, ChevronRight, Sparkles, Trash2,
+  ShoppingBag,
+  Building2,
+  Package,
+  Server,
+  Calendar,
+  MapPin,
+  Code2,
+  Shield,
+  Star,
+  Eye,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
@@ -15,13 +29,24 @@ import { useAuthStore } from '@/stores/authStore';
 
 type MarketplaceTab = 'featured' | 'products' | 'services' | 'events' | 'rentals' | 'modules';
 
+interface AdminMarketplaceResponse {
+  items: Record<string, unknown>[];
+  totalPages: number;
+}
+
 function useAdminMarketplaceItems(type: string, params?: any) {
-  return useQuery({
+  return useQuery<AdminMarketplaceResponse>({
     queryKey: ['admin', 'marketplace', type, params],
     queryFn: async () => {
-      const res = await apiClient.get(`/admin/marketplace/${type}`, { params });
-      return res.data.data;
+      try {
+        const res = await apiClient.get(`/admin/marketplace/${type}`, { params });
+        return res.data.data as AdminMarketplaceResponse;
+      } catch (error) {
+        console.warn('Erreur chargement marketplace:', error);
+        return { items: [], totalPages: 1 } as AdminMarketplaceResponse;
+      }
     },
+    retry: false,
   });
 }
 
@@ -42,6 +67,11 @@ export default function AdminMarketplacePage() {
 
   const [activeTab, setActiveTab] = useState<MarketplaceTab>('featured');
   const [page, setPage] = useState(1);
+  const [actionTarget, setActionTarget] = useState<{
+    id: string;
+    action: string;
+    name: string;
+  } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const limit = 20;
 
@@ -58,25 +88,11 @@ export default function AdminMarketplacePage() {
   const { data: itemsData, isLoading } = useAdminMarketplaceItems(tabToApi[activeTab], params);
   const actionMutation = useAdminMarketplaceAction();
 
-  const items = Array.isArray(itemsData) ? itemsData : itemsData?.items ?? [];
+  const items = Array.isArray(itemsData) ? itemsData : (itemsData?.items ?? []);
   const totalPages = itemsData?.totalPages ?? 1;
 
   const handleAction = async (id: string, action: string, itemName: string) => {
-    const actionLabels: Record<string, string> = {
-      feature: 'mettre en avant',
-      unfeature: 'retirer des avant-première',
-    };
-    const confirmed = window.confirm(
-      `Êtes-vous sûr de vouloir ${actionLabels[action] || action} « ${itemName} » ?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await actionMutation.mutateAsync({ id, action, type: tabToApi[activeTab] });
-      setToast({ message: `Élément ${actionLabels[action] || action} avec succès`, type: 'success' });
-    } catch {
-      setToast({ message: `Erreur lors de l'action « ${actionLabels[action] || action} »`, type: 'error' });
-    }
+    setActionTarget({ id, action, name: itemName });
   };
 
   const tabs = [
@@ -106,13 +122,17 @@ export default function AdminMarketplacePage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -133,7 +153,10 @@ export default function AdminMarketplacePage() {
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setPage(1); }}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setPage(1);
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
                   ? 'border-brand text-brand'
@@ -166,7 +189,10 @@ export default function AdminMarketplacePage() {
               </thead>
               <tbody>
                 {items.map((item: any) => (
-                  <tr key={item.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={item.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-sm font-bold text-brand shrink-0">
@@ -178,19 +204,31 @@ export default function AdminMarketplacePage() {
                       </div>
                     </td>
                     <td className="p-4 text-gray-500">
-                      {item.business?.name || item.developer?.name || item.businessId || item.developerId || '-'}
+                      {item.business?.name ||
+                        item.developer?.name ||
+                        item.businessId ||
+                        item.developerId ||
+                        '-'}
                     </td>
                     <td className="p-4 font-medium text-gray-900 dark:text-gray-100">
-                      {item.price ? `${Number(item.price).toLocaleString()} FCFA` : item.amount ? `${Number(item.amount).toLocaleString()} FCFA` : '-'}
+                      {item.price
+                        ? `${Number(item.price).toLocaleString()} FCFA`
+                        : item.amount
+                          ? `${Number(item.amount).toLocaleString()} FCFA`
+                          : '-'}
                     </td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                        item.status === 'ACTIVE' || item.status === 'PUBLISHED'
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : item.status === 'PENDING' || item.status === 'PENDING_REVIEW'
-                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                          : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                      }`}>{item.status}</span>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          item.status === 'ACTIVE' || item.status === 'PUBLISHED'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : item.status === 'PENDING' || item.status === 'PENDING_REVIEW'
+                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        {item.status}
+                      </span>
                     </td>
                     <td className="p-4">
                       {item.featured ? (
@@ -271,6 +309,39 @@ export default function AdminMarketplacePage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        open={!!actionTarget}
+        onClose={() => setActionTarget(null)}
+        onConfirm={async () => {
+          if (!actionTarget) return;
+          const actionLabels: Record<string, string> = {
+            feature: 'mettre en avant',
+            unfeature: 'retirer des avant-première',
+          };
+          try {
+            await actionMutation.mutateAsync({
+              id: actionTarget.id,
+              action: actionTarget.action,
+              type: tabToApi[activeTab],
+            });
+            setToast({
+              message: `Élément ${actionLabels[actionTarget.action]} avec succès`,
+              type: 'success',
+            });
+          } catch {
+            setToast({
+              message: `Erreur lors de l'action ${actionLabels[actionTarget.action]}`,
+              type: 'error',
+            });
+          }
+          setActionTarget(null);
+        }}
+        title="Confirmer l'action"
+        description={`Êtes-vous sûr de vouloir effectuer cette action sur « ${actionTarget?.name} » ?`}
+        confirmLabel="Confirmer"
+        variant="warning"
+      />
     </div>
   );
 }

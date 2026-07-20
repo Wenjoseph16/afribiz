@@ -6,9 +6,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Star, Download, Calendar, User, Package, Tag, Shield,
-  ChevronLeft, Clock, CheckCircle, AlertCircle, ShoppingCart,
-  Sparkles, Eye, Code, Loader as LoaderIcon,
+  Star,
+  Download,
+  Calendar,
+  User,
+  Package,
+  Tag,
+  Shield,
+  ChevronLeft,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  ShoppingCart,
+  Sparkles,
+  Eye,
+  Code,
+  Loader as LoaderIcon,
 } from 'lucide-react';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -22,7 +35,9 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
           <Star
             key={star}
             size={16}
-            className={star <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+            className={
+              star <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+            }
           />
         ))}
       </div>
@@ -31,7 +46,15 @@ function StarRating({ rating, count }: { rating: number; count: number }) {
   );
 }
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
+function StatCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+}) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
       <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
@@ -45,7 +68,15 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
   );
 }
 
-function PricingSection({ module: mod, onInstall, installing }: { module: any; onInstall: () => void; installing: boolean }) {
+function PricingSection({
+  module: mod,
+  onInstall,
+  installing,
+}: {
+  module: any;
+  onInstall: () => void;
+  installing: boolean;
+}) {
   const isFree = mod.pricingType === 'FREE' || mod.isFree;
   const price = Number(mod.price) || 0;
 
@@ -75,9 +106,13 @@ function PricingSection({ module: mod, onInstall, installing }: { module: any; o
         {installing ? 'Installation...' : 'Installer le module'}
       </button>
 
-      <button className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors text-sm">
+      <button
+        onClick={() => mod.demoUrl && window.open(mod.demoUrl, '_blank')}
+        disabled={!mod.demoUrl}
+        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+      >
         <Eye size={16} />
-        Voir la démo
+        {mod.demoUrl ? 'Voir la démo' : 'Démo non disponible'}
       </button>
 
       {mod.features && mod.features.length > 0 && (
@@ -85,7 +120,7 @@ function PricingSection({ module: mod, onInstall, installing }: { module: any; o
           <h4 className="text-sm font-semibold text-gray-900 mb-3">Fonctionnalités</h4>
           <div className="space-y-2">
             {mod.features.slice(0, 8).map((f: string, i: number) => (
-              <div key={i} className="flex items-start gap-2">
+              <div key={`feature-${f.slice(0, 20)}-${i}`} className="flex items-start gap-2">
                 <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" />
                 <span className="text-xs text-gray-600">{f}</span>
               </div>
@@ -102,24 +137,60 @@ function PricingSection({ module: mod, onInstall, installing }: { module: any; o
 
 function InfoSection({ module: mod }: { module: any }) {
   const dev = mod.developer;
-  const devName = dev?.companyName || (dev?.user ? `${dev.user.firstName} ${dev.user.lastName}` : 'Développeur');
+  const devName =
+    dev?.companyName || (dev?.user ? `${dev.user.firstName} ${dev.user.lastName}` : 'Développeur');
 
   const infos = [
-    { icon: <User size={16} className="text-indigo-600" />, label: 'Développeur', value: devName, bg: 'bg-indigo-50' },
-    { icon: <Tag size={16} className="text-amber-600" />, label: 'Catégorie', value: mod.category || '-', bg: 'bg-amber-50' },
-    { icon: <Package size={16} className="text-blue-600" />, label: 'Version', value: `v${mod.version}`, bg: 'bg-blue-50' },
-    { icon: <Download size={16} className="text-purple-600" />, label: 'Installations', value: (mod.totalInstalls || 0).toLocaleString(), bg: 'bg-purple-50' },
-    { icon: <Calendar size={16} className="text-cyan-600" />, label: 'Publié le', value: mod.publishedAt ? new Date(mod.publishedAt).toLocaleDateString('fr-FR') : '-', bg: 'bg-cyan-50' },
-    { icon: <Clock size={16} className="text-gray-600" />, label: 'Dernière mise à jour', value: mod.updatedAt ? new Date(mod.updatedAt).toLocaleDateString('fr-FR') : '-', bg: 'bg-gray-50' },
+    {
+      icon: <User size={16} className="text-indigo-600" />,
+      label: 'Développeur',
+      value: devName,
+      bg: 'bg-indigo-50',
+    },
+    {
+      icon: <Tag size={16} className="text-amber-600" />,
+      label: 'Catégorie',
+      value: mod.category || '-',
+      bg: 'bg-amber-50',
+    },
+    {
+      icon: <Package size={16} className="text-blue-600" />,
+      label: 'Version',
+      value: `v${mod.version}`,
+      bg: 'bg-blue-50',
+    },
+    {
+      icon: <Download size={16} className="text-purple-600" />,
+      label: 'Installations',
+      value: (mod.totalInstalls || 0).toLocaleString(),
+      bg: 'bg-purple-50',
+    },
+    {
+      icon: <Calendar size={16} className="text-cyan-600" />,
+      label: 'Publié le',
+      value: mod.publishedAt ? new Date(mod.publishedAt).toLocaleDateString('fr-FR') : '-',
+      bg: 'bg-cyan-50',
+    },
+    {
+      icon: <Clock size={16} className="text-gray-600" />,
+      label: 'Dernière mise à jour',
+      value: mod.updatedAt ? new Date(mod.updatedAt).toLocaleDateString('fr-FR') : '-',
+      bg: 'bg-gray-50',
+    },
   ];
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations</h3>
       <div className="space-y-3">
-        {infos.map((info, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', info.bg)}>
+        {infos.map((info) => (
+          <div key={info.label} className="flex items-center gap-3">
+            <div
+              className={cn(
+                'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
+                info.bg
+              )}
+            >
               {info.icon}
             </div>
             <div>
@@ -140,18 +211,23 @@ export default function ModuleDetailPage() {
   const { isAuthenticated } = useAuthStore();
   const queryClient = useQueryClient();
   const [installError, setInstallError] = useState('');
+  const [installSuccess, setInstallSuccess] = useState('');
 
   const installMutation = useMutation({
     mutationFn: async (moduleId: string) => {
       const res = await apiClient.post(`/developer/marketplace/modules/${moduleId}/install`);
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setInstallError('');
+      setInstallSuccess(data?.message || 'Module installé avec succès !');
+      setTimeout(() => setInstallSuccess(''), 4000);
       queryClient.invalidateQueries({ queryKey: ['marketplace-module', slug] });
     },
     onError: (err: any) => {
-      setInstallError(err?.response?.data?.error || err?.message || 'Erreur lors de l\'installation');
+      setInstallError(
+        err?.response?.data?.error || err?.message || "Erreur lors de l'installation"
+      );
     },
   });
 
@@ -163,7 +239,11 @@ export default function ModuleDetailPage() {
     if (mod?.id) installMutation.mutate(mod.id);
   };
 
-  const { data: module, isLoading, error } = useQuery({
+  const {
+    data: module,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['marketplace-module', slug],
     queryFn: async () => {
       if (!slug) throw new Error('Slug manquant');
@@ -205,7 +285,9 @@ export default function ModuleDetailPage() {
             <AlertCircle size={28} className="text-red-500" />
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Module introuvable</h2>
-          <p className="text-gray-500 mb-6">Ce module n&apos;existe pas ou a été retiré du marketplace.</p>
+          <p className="text-gray-500 mb-6">
+            Ce module n&apos;existe pas ou a été retiré du marketplace.
+          </p>
           <Link
             href="/marketplace"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
@@ -219,20 +301,51 @@ export default function ModuleDetailPage() {
   }
 
   const dev = mod.developer;
-  const devName = dev?.companyName || (dev?.user ? `${dev.user.firstName} ${dev.user.lastName}` : 'Développeur');
+  const devName =
+    dev?.companyName || (dev?.user ? `${dev.user.firstName} ${dev.user.lastName}` : 'Développeur');
+  const price = Number(mod.price) || 0;
+
+  const moduleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: mod.name,
+    description: mod.description || mod.shortDescription,
+    image: mod.logo,
+    applicationCategory: mod.category || 'BusinessApplication',
+    offers: {
+      '@type': 'Offer',
+      price: price,
+      priceCurrency: 'XOF',
+    },
+    aggregateRating: mod.rating
+      ? {
+          '@type': 'AggregateRating',
+          ratingValue: mod.rating,
+          reviewCount: mod.reviewCount || 0,
+        }
+      : undefined,
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(moduleJsonLd) }}
+      />
       {/* Hero Header */}
       <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-32">
-          <Link
-            href="/marketplace"
-            className="inline-flex items-center gap-1.5 text-white/80 hover:text-white transition-colors mb-6 text-sm font-medium"
-          >
-            <ChevronLeft size={16} />
-            Retour au marketplace
-          </Link>
+          <nav className="flex items-center gap-2 text-sm text-white/70 mb-6">
+            <Link href="/marketplace" className="hover:text-white transition-colors">
+              Marketplace
+            </Link>
+            <span>/</span>
+            <Link href="/marketplace/modules" className="hover:text-white transition-colors">
+              Modules
+            </Link>
+            <span>/</span>
+            <span className="text-white font-medium truncate max-w-[200px]">{mod.name}</span>
+          </nav>
 
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div className="flex-1 min-w-0">
@@ -275,14 +388,22 @@ export default function ModuleDetailPage() {
                 </div>
               </div>
               {mod.description && (
-                <p className="mt-4 text-white/70 text-sm max-w-2xl line-clamp-2">{mod.description}</p>
+                <p className="mt-4 text-white/70 text-sm max-w-2xl line-clamp-2">
+                  {mod.description}
+                </p>
               )}
             </div>
 
             {mod.logo && (
               <div className="flex-shrink-0">
-                  <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 p-1.5 shadow-lg relative">
-                    <Image src={mod.logo ?? ''} alt={mod.name} fill className="rounded-xl object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 p-1.5 shadow-lg relative">
+                  <Image
+                    src={mod.logo ?? ''}
+                    alt={mod.name}
+                    fill
+                    className="rounded-xl object-cover"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
                 </div>
               </div>
             )}
@@ -297,9 +418,21 @@ export default function ModuleDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <StatCard icon={<Download className="h-4 w-4 text-indigo-600" />} label="Installations" value={(mod.totalInstalls || 0).toLocaleString()} />
-              <StatCard icon={<Star className="h-4 w-4 text-amber-500 fill-amber-500" />} label="Note moyenne" value={(mod.rating || 0).toFixed(1)} />
-              <StatCard icon={<ShoppingCart className="h-4 w-4 text-emerald-600" />} label="Ventes" value={(mod.totalSales || 0).toLocaleString()} />
+              <StatCard
+                icon={<Download className="h-4 w-4 text-indigo-600" />}
+                label="Installations"
+                value={(mod.totalInstalls || 0).toLocaleString()}
+              />
+              <StatCard
+                icon={<Star className="h-4 w-4 text-amber-500 fill-amber-500" />}
+                label="Note moyenne"
+                value={(mod.rating || 0).toFixed(1)}
+              />
+              <StatCard
+                icon={<ShoppingCart className="h-4 w-4 text-emerald-600" />}
+                label="Ventes"
+                value={(mod.totalSales || 0).toLocaleString()}
+              />
             </div>
 
             {/* Full Description */}
@@ -307,7 +440,9 @@ export default function ModuleDetailPage() {
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Description détaillée</h2>
                 <div className="prose prose-gray max-w-none text-gray-600">
-                  <p className="text-base leading-relaxed whitespace-pre-line">{mod.fullDescription}</p>
+                  <p className="text-base leading-relaxed whitespace-pre-line">
+                    {mod.fullDescription}
+                  </p>
                 </div>
               </div>
             )}
@@ -318,7 +453,10 @@ export default function ModuleDetailPage() {
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Fonctionnalités</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {mod.features.map((f: string, i: number) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div
+                      key={`feature-full-${f.slice(0, 20)}-${i}`}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
                       <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                         <CheckCircle size={14} className="text-emerald-600" />
                       </div>
@@ -335,14 +473,16 @@ export default function ModuleDetailPage() {
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Captures d&apos;écran</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {mod.images.map((img: string, i: number) => (
-                    <div key={i} className="aspect-video rounded-xl overflow-hidden bg-gray-100 border border-gray-200 relative group">
+                    <div
+                      key={`screenshot-${img}-${i}`}
+                      className="aspect-video rounded-xl overflow-hidden bg-gray-100 border border-gray-200 relative group"
+                    >
                       <Image
                         src={img ?? ''}
                         alt={`${mod.name} screenshot ${i + 1}`}
                         fill
                         className="object-cover hover:scale-105 transition-transform duration-300"
                         sizes="(max-width: 768px) 100vw, 33vw"
-                        unoptimized
                       />
                     </div>
                   ))}
@@ -353,7 +493,9 @@ export default function ModuleDetailPage() {
             {/* Setup Guide */}
             {mod.setupGuide && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Guide d&apos;installation</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  Guide d&apos;installation
+                </h2>
                 <div className="prose prose-gray max-w-none text-gray-600">
                   <p className="text-sm leading-relaxed whitespace-pre-line">{mod.setupGuide}</p>
                 </div>
@@ -374,7 +516,16 @@ export default function ModuleDetailPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <PricingSection module={mod} onInstall={handleInstall} installing={installMutation.isPending} />
+            <PricingSection
+              module={mod}
+              onInstall={handleInstall}
+              installing={installMutation.isPending}
+            />
+            {installSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">
+                {installSuccess}
+              </div>
+            )}
             {installError && (
               <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
                 {installError}

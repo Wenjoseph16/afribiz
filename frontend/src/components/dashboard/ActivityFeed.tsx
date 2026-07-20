@@ -45,9 +45,7 @@ export function ActivityFeed({ activities, className }: ActivityFeedProps) {
                 />
               )}
               <div className="relative flex items-start gap-4">
-                <div className={cn('p-2 rounded-lg', activity.color)}>
-                  {activity.icon}
-                </div>
+                <div className={cn('p-2 rounded-lg', activity.color)}>{activity.icon}</div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-gray-900">{activity.title}</div>
                   <p className="text-sm text-gray-500">{activity.description}</p>

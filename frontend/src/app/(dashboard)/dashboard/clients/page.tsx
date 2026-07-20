@@ -3,14 +3,33 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  Users, Search, Star, ThumbsUp, Filter,
-  ChevronRight, Phone, MapPin, Calendar,
-  ShoppingBag, Award, TrendingUp, Sparkles, DollarSign,
-  Tag, Layers, Plus, X, MoreHorizontal, ExternalLink, MessageCircle,
+  Users,
+  Search,
+  Star,
+  ThumbsUp,
+  Filter,
+  ChevronRight,
+  Phone,
+  MapPin,
+  Calendar,
+  ShoppingBag,
+  Award,
+  TrendingUp,
+  Sparkles,
+  DollarSign,
+  Tag,
+  Layers,
+  Plus,
+  X,
+  MoreHorizontal,
+  ExternalLink,
+  MessageCircle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { PageHeader } from '@/components/dashboard/PageHeader';
+import { CopilotTips } from '@/components/copilot/CopilotTips';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -38,7 +57,12 @@ export default function ClientsPage() {
   const [newTagColor, setNewTagColor] = useState('#6366f1');
 
   const { data: stats, isLoading: statsLoading } = useCrmDashboardStats();
-  const { data: clientsData, isLoading, error, refetch } = useCrmClients({
+  const {
+    data: clientsData,
+    isLoading,
+    error,
+    refetch,
+  } = useCrmClients({
     search: search || undefined,
     tagId: selectedTagId || undefined,
     segmentId: selectedSegmentId || undefined,
@@ -57,10 +81,34 @@ export default function ClientsPage() {
   const total = clientsData?.total || 0;
 
   const statCards = [
-    { icon: <Users className="h-5 w-5" />, iconBg: 'bg-blue-50 dark:bg-blue-900/30', iconColor: 'text-blue-600', label: 'Total clients', value: stats?.totalClients ?? 0 },
-    { icon: <Star className="h-5 w-5" />, iconBg: 'bg-amber-50 dark:bg-amber-900/30', iconColor: 'text-amber-600', label: 'Nouveaux (30j)', value: stats?.newClients30d ?? 0 },
-    { icon: <ShoppingBag className="h-5 w-5" />, iconBg: 'bg-purple-50 dark:bg-purple-900/30', iconColor: 'text-purple-600', label: 'Actifs (30j)', value: stats?.activeClients ?? 0 },
-    { icon: <ThumbsUp className="h-5 w-5" />, iconBg: 'bg-emerald-50 dark:bg-emerald-900/30', iconColor: 'text-emerald-600', label: 'Rétention', value: `${stats?.retentionRate ?? 0}%` },
+    {
+      icon: <Users className="h-5 w-5" />,
+      iconBg: 'bg-blue-50 dark:bg-blue-900/30',
+      iconColor: 'text-blue-600',
+      label: 'Total clients',
+      value: stats?.totalClients ?? 0,
+    },
+    {
+      icon: <Star className="h-5 w-5" />,
+      iconBg: 'bg-amber-50 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600',
+      label: 'Nouveaux (30j)',
+      value: stats?.newClients30d ?? 0,
+    },
+    {
+      icon: <ShoppingBag className="h-5 w-5" />,
+      iconBg: 'bg-purple-50 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600',
+      label: 'Actifs (30j)',
+      value: stats?.activeClients ?? 0,
+    },
+    {
+      icon: <ThumbsUp className="h-5 w-5" />,
+      iconBg: 'bg-emerald-50 dark:bg-emerald-900/30',
+      iconColor: 'text-emerald-600',
+      label: 'Rétention',
+      value: `${stats?.retentionRate ?? 0}%`,
+    },
   ];
 
   const handleCreateTag = async () => {
@@ -102,6 +150,8 @@ export default function ClientsPage() {
         }
       />
 
+      <CopilotTips moduleKey="CRM" />
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
@@ -118,8 +168,12 @@ export default function ClientsPage() {
                 <Award className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{stats.activeClients} clients actifs</p>
-                <p className="text-xs text-gray-500 mt-0.5">Ont commandé dans les 30 derniers jours</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {stats.activeClients} clients actifs
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Ont commandé dans les 30 derniers jours
+                </p>
               </div>
             </div>
           )}
@@ -129,7 +183,9 @@ export default function ClientsPage() {
                 <TrendingUp className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">+{stats.newClients30d} nouveaux (30j)</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  +{stats.newClients30d} nouveaux (30j)
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">{stats.clientsToday} aujourd'hui</p>
               </div>
             </div>
@@ -140,8 +196,12 @@ export default function ClientsPage() {
                 <Sparkles className="h-4 w-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{stats.topClients.length} top clients</p>
-                <p className="text-xs text-gray-500 mt-0.5">{stats.totalSegments} segments • {stats.totalTags} tags</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {stats.topClients.length} top clients
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {stats.totalSegments} segments • {stats.totalTags} tags
+                </p>
               </div>
             </div>
           )}
@@ -151,7 +211,9 @@ export default function ClientsPage() {
                 <DollarSign className="h-4 w-4 text-red-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{stats.clientsWithDebt} clients à risque</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {stats.clientsWithDebt} clients à risque
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">Impayés ou en retard</p>
               </div>
             </div>
@@ -173,35 +235,40 @@ export default function ClientsPage() {
             />
           </div>
           <div className="flex gap-2">
-            <select
+            <Select
               value={selectedTagId}
               onChange={(e) => setSelectedTagId(e.target.value)}
-              className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand/20"
-            >
-              <option value="">Tous les tags</option>
-              {tags?.map((t: any) => (
-                <option key={t.id} value={t.id}>{t.name} ({t._count.clients})</option>
-              ))}
-            </select>
-            <select
+              options={[
+                { value: '', label: 'Tous les tags' },
+                ...(tags?.map((t: any) => ({
+                  value: t.id,
+                  label: `${t.name} (${t._count.clients})`,
+                })) || []),
+              ]}
+              className="min-w-[160px]"
+            />
+            <Select
               value={selectedSegmentId}
               onChange={(e) => setSelectedSegmentId(e.target.value)}
-              className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand/20"
-            >
-              <option value="">Tous les segments</option>
-              {segments?.map((s: any) => (
-                <option key={s.id} value={s.id}>{s.name} ({s._count.clients})</option>
-              ))}
-            </select>
-            <select
+              options={[
+                { value: '', label: 'Tous les segments' },
+                ...(segments?.map((s: any) => ({
+                  value: s.id,
+                  label: `${s.name} (${s._count.clients})`,
+                })) || []),
+              ]}
+              className="min-w-[160px]"
+            />
+            <Select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand/20"
-            >
-              <option value="spent">Plus dépensé</option>
-              <option value="orders">Plus de commandes</option>
-              <option value="recent">Plus récents</option>
-            </select>
+              options={[
+                { value: 'spent', label: 'Plus dépensé' },
+                { value: 'orders', label: 'Plus de commandes' },
+                { value: 'recent', label: 'Plus récents' },
+              ]}
+              className="min-w-[140px]"
+            />
           </div>
         </div>
       </div>
@@ -219,7 +286,9 @@ export default function ClientsPage() {
             />
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-gray-500 mb-2">{total} client{total > 1 ? 's' : ''}</p>
+              <p className="text-sm text-gray-500 mb-2">
+                {total} client{total > 1 ? 's' : ''}
+              </p>
               {clients.map((client: any) => (
                 <div
                   key={client.id}
@@ -232,7 +301,8 @@ export default function ClientsPage() {
                   )}
                 >
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand to-emerald-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                    {`${client.firstName?.charAt(0) || ''}${client.lastName?.charAt(0) || ''}`.toUpperCase() || '?'}
+                    {`${client.firstName?.charAt(0) || ''}${client.lastName?.charAt(0) || ''}`.toUpperCase() ||
+                      '?'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
@@ -253,7 +323,9 @@ export default function ClientsPage() {
                           </span>
                         ))}
                         {client.tags.length > 3 && (
-                          <span className="text-[10px] text-gray-400">+{client.tags.length - 3}</span>
+                          <span className="text-[10px] text-gray-400">
+                            +{client.tags.length - 3}
+                          </span>
                         )}
                       </div>
                     )}
@@ -278,7 +350,8 @@ export default function ClientsPage() {
               <Card>
                 <div className="text-center mb-4">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand to-emerald-500 flex items-center justify-center text-white font-bold text-2xl mx-auto mb-3">
-                    {`${selectedClient.firstName?.charAt(0) || ''}${selectedClient.lastName?.charAt(0) || ''}`.toUpperCase() || '?'}
+                    {`${selectedClient.firstName?.charAt(0) || ''}${selectedClient.lastName?.charAt(0) || ''}`.toUpperCase() ||
+                      '?'}
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {selectedClient.firstName} {selectedClient.lastName}
@@ -297,7 +370,8 @@ export default function ClientsPage() {
                     </div>
                   )}
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Calendar className="h-3.5 w-3.5" /> Client depuis {new Date(selectedClient.createdAt).toLocaleDateString('fr-FR')}
+                    <Calendar className="h-3.5 w-3.5" /> Client depuis{' '}
+                    {new Date(selectedClient.createdAt).toLocaleDateString('fr-FR')}
                   </div>
                 </div>
               </Card>
@@ -305,40 +379,44 @@ export default function ClientsPage() {
               {/* Tags */}
               <Card title="Tags">
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                  {selectedClient.tags?.length > 0 ? selectedClient.tags.map((t: any) => (
-                    <span
-                      key={t.id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                      style={{ backgroundColor: t.color + '20', color: t.color }}
-                    >
-                      {t.name}
-                      <button
-                        onClick={() => handleRemoveTag(selectedClient.clientId, t.id)}
-                        className="hover:opacity-70"
+                  {selectedClient.tags?.length > 0 ? (
+                    selectedClient.tags.map((t: any) => (
+                      <span
+                        key={t.id}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: t.color + '20', color: t.color }}
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  )) : (
+                        {t.name}
+                        <button
+                          onClick={() => handleRemoveTag(selectedClient.clientId, t.id)}
+                          className="hover:opacity-70"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))
+                  ) : (
                     <p className="text-xs text-gray-400">Aucun tag</p>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <select
+                  <Select
                     onChange={(e) => {
                       if (e.target.value) {
                         handleAssignTag(selectedClient.clientId, e.target.value);
-                        e.target.value = '';
                       }
                     }}
                     value=""
-                    className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs focus:outline-none"
-                  >
-                    <option value="">+ Ajouter un tag</option>
-                    {tags?.filter((t: any) => !selectedClient.tags?.some((ct: any) => ct.id === t.id)).map((t: any) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: '', label: '+ Ajouter un tag' },
+                      ...(tags
+                        ?.filter(
+                          (t: any) => !selectedClient.tags?.some((ct: any) => ct.id === t.id)
+                        )
+                        .map((t: any) => ({ value: t.id, label: t.name })) || []),
+                    ]}
+                    className="flex-1"
+                  />
                   <button
                     onClick={() => setShowNewTag(!showNewTag)}
                     className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -375,15 +453,17 @@ export default function ClientsPage() {
               {/* Segments */}
               <Card title="Segments">
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                  {selectedClient.segments?.length > 0 ? selectedClient.segments.map((s: any) => (
-                    <span
-                      key={s.id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                      style={{ backgroundColor: s.color + '20', color: s.color }}
-                    >
-                      {s.name}
-                    </span>
-                  )) : (
+                  {selectedClient.segments?.length > 0 ? (
+                    selectedClient.segments.map((s: any) => (
+                      <span
+                        key={s.id}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                        style={{ backgroundColor: s.color + '20', color: s.color }}
+                      >
+                        {s.name}
+                      </span>
+                    ))
+                  ) : (
                     <p className="text-xs text-gray-400">Aucun segment</p>
                   )}
                 </div>
@@ -393,17 +473,27 @@ export default function ClientsPage() {
               <Card title="Statistiques">
                 <div className="space-y-2">
                   <div className="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Total commandes</span>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedClient.totalOrders}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Total commandes
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {selectedClient.totalOrders}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Total dépensé</span>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{Number(selectedClient.totalSpent || 0).toLocaleString()} FCFA</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {Number(selectedClient.totalSpent || 0).toLocaleString()} FCFA
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Dernière commande</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Dernière commande
+                    </span>
                     <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {selectedClient.lastOrderAt ? new Date(selectedClient.lastOrderAt).toLocaleDateString('fr-FR') : 'Jamais'}
+                      {selectedClient.lastOrderAt
+                        ? new Date(selectedClient.lastOrderAt).toLocaleDateString('fr-FR')
+                        : 'Jamais'}
                     </span>
                   </div>
                 </div>
@@ -426,7 +516,9 @@ export default function ClientsPage() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/30">
                   <div className="flex items-center gap-2">
                     <Award className="h-5 w-5 text-amber-600" />
-                    <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">Top client</span>
+                    <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                      Top client
+                    </span>
                   </div>
                 </div>
               )}

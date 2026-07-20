@@ -1,12 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { BUSINESS_CATEGORIES, BUSINESS_TYPE_LABELS, BUSINESS_TYPE_ICONS, TOGO_CITIES } from '@/constants/business';
+import { useState, useCallback } from 'react';
+import {
+  BUSINESS_CATEGORIES,
+  BUSINESS_TYPE_LABELS,
+  BUSINESS_TYPE_ICONS,
+} from '@/constants/business';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { LocationSelect } from '@/components/auth/LocationSelect';
+import { apiClient } from '@/services/apiClient';
 import Image from 'next/image';
-import { ImagePlus, X } from 'lucide-react';
+import { ImagePlus, X, Loader2 } from 'lucide-react';
 import type { OnboardingData } from '@/types/business';
+
+const LANGUAGES = [
+  { value: 'fr', label: 'Français' },
+  { value: 'en', label: 'Anglais' },
+  { value: 'bilingual', label: 'Français & Anglais' },
+];
 
 interface Props {
   data: OnboardingData;
@@ -14,6 +26,25 @@ interface Props {
 }
 
 export function StepIdentity({ data, onChange }: Props) {
+  const [uploading, setUploading] = useState<{ logo?: boolean; coverImage?: boolean }>({});
+
+  const uploadFile = useCallback(
+    async (file: File, field: 'logo' | 'coverImage') => {
+      setUploading((prev) => ({ ...prev, [field]: true }));
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await apiClient.post('/upload/media', formData);
+        onChange({ [field]: res.data.data.url });
+      } catch {
+        // silent
+      } finally {
+        setUploading((prev) => ({ ...prev, [field]: false }));
+      }
+    },
+    [onChange]
+  );
+
   return (
     <div className="space-y-8">
       {/* Logo & Cover Image */}
@@ -21,55 +52,91 @@ export function StepIdentity({ data, onChange }: Props) {
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Image de marque</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Logo</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+              Logo
+            </label>
             <div className="relative w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand/50 transition-colors flex items-center justify-center bg-gray-50 dark:bg-gray-800 overflow-hidden group cursor-pointer">
               {data.logo ? (
                 <>
-                  <Image src={data.logo ?? ''} alt="Logo" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
-                  <button type="button" onClick={() => onChange({ logo: '' })}
-                    className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Image
+                    src={data.logo ?? ''}
+                    alt="Logo"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onChange({ logo: '' })}
+                    className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </>
               ) : (
                 <label className="flex flex-col items-center gap-1 cursor-pointer p-4">
-                  <ImagePlus className="h-6 w-6 text-gray-400" />
+                  {uploading.logo ? (
+                    <Loader2 className="h-6 w-6 text-brand animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-6 w-6 text-gray-400" />
+                  )}
                   <span className="text-[10px] text-gray-400 text-center">Ajouter un logo</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (ev) => onChange({ logo: ev.target?.result as string });
-                      reader.readAsDataURL(file);
-                    }
-                  }} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading.logo}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadFile(file, 'logo');
+                    }}
+                  />
                 </label>
               )}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Bannière / Image de couverture</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+              Bannière / Image de couverture
+            </label>
             <div className="relative w-full h-28 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand/50 transition-colors flex items-center justify-center bg-gray-50 dark:bg-gray-800 overflow-hidden group cursor-pointer">
               {data.coverImage ? (
                 <>
-                  <Image src={data.coverImage ?? ''} alt="Bannière" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
-                  <button type="button" onClick={() => onChange({ coverImage: '' })}
-                    className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Image
+                    src={data.coverImage ?? ''}
+                    alt="Bannière"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onChange({ coverImage: '' })}
+                    className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </>
               ) : (
                 <label className="flex flex-col items-center gap-1 cursor-pointer p-4">
-                  <ImagePlus className="h-6 w-6 text-gray-400" />
-                  <span className="text-[10px] text-gray-400 text-center">Ajouter une bannière</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (ev) => onChange({ coverImage: ev.target?.result as string });
-                      reader.readAsDataURL(file);
-                    }
-                  }} />
+                  {uploading.coverImage ? (
+                    <Loader2 className="h-6 w-6 text-brand animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-6 w-6 text-gray-400" />
+                  )}
+                  <span className="text-[10px] text-gray-400 text-center">
+                    Ajouter une bannière
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploading.coverImage}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadFile(file, 'coverImage');
+                    }}
+                  />
                 </label>
               )}
             </div>
@@ -84,19 +151,19 @@ export function StepIdentity({ data, onChange }: Props) {
             label="Nom du business *"
             placeholder="Ex: Chez Alice Resto"
             value={data.name}
-            onChange={e => onChange({ name: e.target.value })}
+            onChange={(e) => onChange({ name: e.target.value })}
           />
         </div>
         <div className="sm:col-span-2">
           <label className="block text-sm font-medium mb-2">Catégorie *</label>
           <div className="max-h-64 overflow-y-auto space-y-1">
-            {BUSINESS_CATEGORIES.map(cat => (
+            {BUSINESS_CATEGORIES.map((cat) => (
               <div key={cat.label}>
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2 pt-3 pb-1">
                   {cat.label}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                  {cat.types.map(type => {
+                  {cat.types.map((type) => {
                     const Icon = BUSINESS_TYPE_ICONS[type];
                     const selected = data.type === type;
                     return (
@@ -136,65 +203,68 @@ export function StepIdentity({ data, onChange }: Props) {
           maxLength={150}
           placeholder="Décrivez votre activité en quelques mots..."
           value={data.shortDescription}
-          onChange={e => onChange({ shortDescription: e.target.value })}
+          onChange={(e) => onChange({ shortDescription: e.target.value })}
         />
       </div>
 
-      {/* Contact */}
+      {/* Location (Pays → Région → Ville → Quartier) + Phone */}
+      <LocationSelect
+        country={data.country}
+        region={data.region || ''}
+        city={data.city}
+        neighborhood={data.neighborhood || ''}
+        onCountryChange={(v) => {
+          const prefix = '+228';
+          onChange({
+            country: v,
+            region: '',
+            city: '',
+            phone: data.phone ? data.phone.replace(/^\+\d{1,4}/, prefix) : prefix,
+            whatsapp: data.whatsapp ? data.whatsapp.replace(/^\+\d{1,4}/, prefix) : prefix,
+          });
+        }}
+        onRegionChange={(v) => onChange({ region: v, city: '' })}
+        onCityChange={(v) => onChange({ city: v })}
+        onNeighborhoodChange={(v) => onChange({ neighborhood: v })}
+        onCountryCodeChange={(code) => {
+          const prefix = `+${code}`;
+          onChange({
+            phone: data.phone ? data.phone.replace(/^\+\d{1,4}/, prefix) : prefix,
+            whatsapp: data.whatsapp ? data.whatsapp.replace(/^\+\d{1,4}/, prefix) : prefix,
+          });
+        }}
+        showFields="all"
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label="Téléphone *"
           placeholder="+228 XX XX XX XX"
           value={data.phone}
-          onChange={e => onChange({ phone: e.target.value })}
+          onChange={(e) => onChange({ phone: e.target.value })}
         />
         <Input
           label="WhatsApp"
           placeholder="+228 XX XX XX XX"
           value={data.whatsapp || ''}
-          onChange={e => onChange({ whatsapp: e.target.value || undefined })}
-        />
-      </div>
-
-      {/* Address */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Input
-          label="Pays"
-          value="Togo"
-          disabled
-        />
-        <div>
-          <label className="block text-sm font-medium mb-2">Ville *</label>
-          <select
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-            value={data.city}
-            onChange={e => onChange({ city: e.target.value })}
-          >
-            <option value="">Sélectionnez une ville</option>
-            {TOGO_CITIES.map(city => (
-              <option key={city} value={city}>{city}</option>
-            ))}
-          </select>
-        </div>
-        <Input
-          label="Adresse *"
-          placeholder="Rue, quartier..."
-          value={data.address}
-          onChange={e => onChange({ address: e.target.value })}
+          onChange={(e) => onChange({ whatsapp: e.target.value || undefined })}
         />
       </div>
 
       {/* GPS */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Localisation GPS (optionnel)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Localisation GPS (optionnel)
+          </label>
           <button
             type="button"
             onClick={() => {
               if ('geolocation' in navigator) {
                 navigator.geolocation.getCurrentPosition(
-                  (pos) => onChange({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-                  () => {} // Silently fail — user can enter manually
+                  (pos) =>
+                    onChange({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                  () => {}
                 );
               }
             }}
@@ -210,7 +280,7 @@ export function StepIdentity({ data, onChange }: Props) {
             step="any"
             placeholder="6.1319"
             value={data.latitude?.toString() || ''}
-            onChange={e => onChange({ latitude: parseFloat(e.target.value) || undefined })}
+            onChange={(e) => onChange({ latitude: parseFloat(e.target.value) || undefined })}
           />
           <Input
             label="Longitude"
@@ -218,20 +288,38 @@ export function StepIdentity({ data, onChange }: Props) {
             step="any"
             placeholder="1.2228"
             value={data.longitude?.toString() || ''}
-            onChange={e => onChange({ longitude: parseFloat(e.target.value) || undefined })}
+            onChange={(e) => onChange({ longitude: parseFloat(e.target.value) || undefined })}
           />
         </div>
       </div>
 
       {/* Professional Info */}
       <Card className="space-y-4 !p-5 !bg-gray-50 dark:!bg-gray-800 !border-dashed dark:!border-gray-600">
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Informations professionnelles (optionnel)</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Informations professionnelles (optionnel)
+          </p>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500 dark:text-gray-400">Langue d'activité</label>
+            <select
+              className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+              value={data.language || 'fr'}
+              onChange={(e) => onChange({ language: e.target.value })}
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.value} value={l.value}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Nom du gérant"
             placeholder="Nom du responsable"
             value={data.managerName || ''}
-            onChange={e => onChange({ managerName: e.target.value || undefined })}
+            onChange={(e) => onChange({ managerName: e.target.value || undefined })}
           />
           <Input
             label="Années d'expérience"
@@ -239,7 +327,7 @@ export function StepIdentity({ data, onChange }: Props) {
             min={0}
             placeholder="5"
             value={data.experience?.toString() || ''}
-            onChange={e => onChange({ experience: parseInt(e.target.value) || undefined })}
+            onChange={(e) => onChange({ experience: parseInt(e.target.value) || undefined })}
           />
         </div>
         <div>
@@ -249,7 +337,7 @@ export function StepIdentity({ data, onChange }: Props) {
             rows={2}
             placeholder="Parlez-nous du gérant..."
             value={data.managerBio || ''}
-            onChange={e => onChange({ managerBio: e.target.value || undefined })}
+            onChange={(e) => onChange({ managerBio: e.target.value || undefined })}
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -257,26 +345,69 @@ export function StepIdentity({ data, onChange }: Props) {
             label="Compétences (séparées par des virgules)"
             placeholder="Gestion, Marketing,..."
             value={(data.skills || []).join(', ')}
-            onChange={e => onChange({ skills: e.target.value ? e.target.value.split(',').map(s => s.trim()) : [] })}
+            onChange={(e) =>
+              onChange({
+                skills: e.target.value ? e.target.value.split(',').map((s) => s.trim()) : [],
+              })
+            }
           />
           <Input
             label="Certifications"
             placeholder="Certificat 1, Certificat 2,..."
             value={(data.certifications || []).join(', ')}
-            onChange={e => onChange({ certifications: e.target.value ? e.target.value.split(',').map(s => s.trim()) : [] })}
+            onChange={(e) =>
+              onChange({
+                certifications: e.target.value
+                  ? e.target.value.split(',').map((s) => s.trim())
+                  : [],
+              })
+            }
           />
         </div>
       </Card>
 
       {/* Online Presence */}
       <Card className="space-y-4 !p-5 !bg-gray-50 dark:!bg-gray-800 !border-dashed dark:!border-gray-600">
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Présence en ligne (optionnel)</p>
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          Présence en ligne (optionnel)
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Site web" placeholder="https://..." value={data.website || ''} onChange={e => onChange({ website: e.target.value || undefined })} />
-          <Input label="Facebook" placeholder="URL Facebook" value={data.facebook || ''} onChange={e => onChange({ facebook: e.target.value || undefined })} />
-          <Input label="Instagram" placeholder="URL Instagram" value={data.instagram || ''} onChange={e => onChange({ instagram: e.target.value || undefined })} />
-          <Input label="TikTok" placeholder="URL TikTok" value={data.tiktok || ''} onChange={e => onChange({ tiktok: e.target.value || undefined })} />
-          <Input label="LinkedIn" placeholder="URL LinkedIn" value={data.linkedin || ''} onChange={e => onChange({ linkedin: e.target.value || undefined })} />
+          <Input
+            label="Site web"
+            placeholder="https://..."
+            value={data.website || ''}
+            onChange={(e) => onChange({ website: e.target.value || undefined })}
+          />
+          <Input
+            label="Facebook"
+            placeholder="URL Facebook"
+            value={data.facebook || ''}
+            onChange={(e) => onChange({ facebook: e.target.value || undefined })}
+          />
+          <Input
+            label="Instagram"
+            placeholder="URL Instagram"
+            value={data.instagram || ''}
+            onChange={(e) => onChange({ instagram: e.target.value || undefined })}
+          />
+          <Input
+            label="TikTok"
+            placeholder="URL TikTok"
+            value={data.tiktok || ''}
+            onChange={(e) => onChange({ tiktok: e.target.value || undefined })}
+          />
+          <Input
+            label="YouTube"
+            placeholder="URL YouTube"
+            value={data.youtube || ''}
+            onChange={(e) => onChange({ youtube: e.target.value || undefined })}
+          />
+          <Input
+            label="LinkedIn"
+            placeholder="URL LinkedIn"
+            value={data.linkedin || ''}
+            onChange={(e) => onChange({ linkedin: e.target.value || undefined })}
+          />
         </div>
       </Card>
     </div>

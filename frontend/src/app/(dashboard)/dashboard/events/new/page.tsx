@@ -33,9 +33,20 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const EVENT_TYPES = [
-  'CONCERT', 'PARTY', 'CONFERENCE', 'WORKSHOP', 'FESTIVAL',
-  'TOURNAMENT', 'NETWORKING', 'WEBINAR', 'EXHIBITION',
-  'PRIVATE', 'VIP', 'LAUNCH', 'PROMOTION', 'OTHER',
+  'CONCERT',
+  'PARTY',
+  'CONFERENCE',
+  'WORKSHOP',
+  'FESTIVAL',
+  'TOURNAMENT',
+  'NETWORKING',
+  'WEBINAR',
+  'EXHIBITION',
+  'PRIVATE',
+  'VIP',
+  'LAUNCH',
+  'PROMOTION',
+  'OTHER',
 ] as const;
 
 const TICKET_TYPES = ['FREE', 'STANDARD', 'PREMIUM', 'VIP', 'TABLE'] as const;
@@ -43,9 +54,16 @@ const TICKET_TYPES = ['FREE', 'STANDARD', 'PREMIUM', 'VIP', 'TABLE'] as const;
 const LOCATION_TYPES = ['PHYSICAL', 'ONLINE', 'HYBRID'] as const;
 
 const TIMEZONES = [
-  'Africa/Abidjan', 'Africa/Dakar', 'Africa/Lagos', 'Africa/Accra',
-  'Africa/Nairobi', 'Africa/Casablanca', 'Africa/Johannesburg',
-  'Africa/Cairo', 'Africa/Algiers', 'Africa/Tunis',
+  'Africa/Abidjan',
+  'Africa/Dakar',
+  'Africa/Lagos',
+  'Africa/Accra',
+  'Africa/Nairobi',
+  'Africa/Casablanca',
+  'Africa/Johannesburg',
+  'Africa/Cairo',
+  'Africa/Algiers',
+  'Africa/Tunis',
 ];
 
 const PARTNER_TYPES = [
@@ -108,8 +126,7 @@ export default function NewEventPage() {
     conditions: false,
   });
 
-  const toggle = (key: string) =>
-    setOpenSections((s) => ({ ...s, [key]: !s[key] }));
+  const toggle = (key: string) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
 
   // Section 1
   const [title, setTitle] = useState('');
@@ -156,13 +173,10 @@ export default function NewEventPage() {
       },
     ]);
 
-  const removeTicket = (id: string) =>
-    setTickets((prev) => prev.filter((t) => t.id !== id));
+  const removeTicket = (id: string) => setTickets((prev) => prev.filter((t) => t.id !== id));
 
   const updateTicket = (id: string, field: keyof TicketForm, value: string) =>
-    setTickets((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, [field]: value } : t))
-    );
+    setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, [field]: value } : t)));
 
   // Section 6
   const [reservationRequired, setReservationRequired] = useState(false);
@@ -191,13 +205,10 @@ export default function NewEventPage() {
       },
     ]);
 
-  const removePartner = (id: string) =>
-    setPartners((prev) => prev.filter((p) => p.id !== id));
+  const removePartner = (id: string) => setPartners((prev) => prev.filter((p) => p.id !== id));
 
   const updatePartner = (id: string, field: keyof PartnerForm, value: string) =>
-    setPartners((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    );
+    setPartners((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
 
   // Section 9
   const [rules, setRules] = useState('');
@@ -209,7 +220,7 @@ export default function NewEventPage() {
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      const payload: Record<string, any> = {
+      const payload = {
         title,
         type: eventType,
         shortDescription: shortDescription || undefined,
@@ -219,9 +230,7 @@ export default function NewEventPage() {
         startDate: startDate
           ? new Date(`${startDate}T${startTime || '00:00'}`).toISOString()
           : new Date().toISOString(),
-        endDate: endDate
-          ? new Date(`${endDate}T${endTime || '23:59'}`).toISOString()
-          : undefined,
+        endDate: endDate ? new Date(`${endDate}T${endTime || '23:59'}`).toISOString() : undefined,
         startTime: startTime || undefined,
         endTime: endTime || undefined,
         timezone,
@@ -255,11 +264,12 @@ export default function NewEventPage() {
             price: t.type === 'FREE' ? 0 : t.price ? parseFloat(t.price) : undefined,
             quantity: t.quantity ? parseInt(t.quantity, 10) : 0,
             benefits: t.benefits
-              ? t.benefits.split(',').map((b) => b.trim()).filter(Boolean)
+              ? t.benefits
+                  .split(',')
+                  .map((b) => b.trim())
+                  .filter(Boolean)
               : [],
-            saleEndAt: t.saleEndAt
-              ? new Date(t.saleEndAt).toISOString()
-              : undefined,
+            saleEndAt: t.saleEndAt ? new Date(t.saleEndAt).toISOString() : undefined,
           })),
 
         partners: partners
@@ -275,16 +285,42 @@ export default function NewEventPage() {
       try {
         await createEvent.mutateAsync(payload);
         router.push('/dashboard/events');
-      } catch (e) { notifyError(e, 'Erreur', "Impossible de créer l'événement"); }
+      } catch (e) {
+        notifyError(e, 'Erreur', "Impossible de créer l'événement");
+      }
     },
     [
-      title, eventType, shortDescription, description, coverImage,
-      startDate, startTime, endDate, endTime, timezone,
-      locationType, address, city, country, latitude, longitude, onlineLink,
-      capacity, minCapacity,
-      organizerName, organizerContact, organizerWhatsapp, organizerEmail,
-      rules, refundPolicy, minAge, accessConditions,
-      tickets, partners, createEvent, router,
+      title,
+      eventType,
+      shortDescription,
+      description,
+      coverImage,
+      startDate,
+      startTime,
+      endDate,
+      endTime,
+      timezone,
+      locationType,
+      address,
+      city,
+      country,
+      latitude,
+      longitude,
+      onlineLink,
+      capacity,
+      minCapacity,
+      organizerName,
+      organizerContact,
+      organizerWhatsapp,
+      organizerEmail,
+      rules,
+      refundPolicy,
+      minAge,
+      accessConditions,
+      tickets,
+      partners,
+      createEvent,
+      router,
     ]
   );
 
@@ -329,10 +365,7 @@ export default function NewEventPage() {
       <PageHeader
         title="Nouvel événement"
         description="Créez un événement et gérez la billetterie"
-        breadcrumbs={[
-          { label: 'Événements', href: '/dashboard/events' },
-          { label: 'Nouveau' },
-        ]}
+        breadcrumbs={[{ label: 'Événements', href: '/dashboard/events' }, { label: 'Nouveau' }]}
         actions={
           <Link href="/dashboard/events">
             <Button variant="outline" size="sm">
@@ -423,7 +456,6 @@ export default function NewEventPage() {
                         width={800}
                         height={192}
                         className="max-h-48 mx-auto rounded-lg object-contain"
-                        unoptimized
                       />
                       <button
                         type="button"
@@ -542,11 +574,7 @@ export default function NewEventPage() {
                 >
                   {LOCATION_TYPES.map((lt) => (
                     <option key={lt} value={lt}>
-                      {lt === 'PHYSICAL'
-                        ? 'Physique'
-                        : lt === 'ONLINE'
-                          ? 'En ligne'
-                          : 'Hybride'}
+                      {lt === 'PHYSICAL' ? 'Physique' : lt === 'ONLINE' ? 'En ligne' : 'Hybride'}
                     </option>
                   ))}
                 </select>
@@ -756,9 +784,7 @@ export default function NewEventPage() {
                           placeholder="Accès VIP, Boisson offerte"
                           className={inputCls}
                         />
-                        <p className="mt-1 text-xs text-gray-400">
-                          Séparés par des virgules
-                        </p>
+                        <p className="mt-1 text-xs text-gray-400">Séparés par des virgules</p>
                       </div>
                       <div>
                         <label className={labelCls}>Date expiration vente</label>
@@ -771,8 +797,7 @@ export default function NewEventPage() {
                       </div>
                     </div>
                     <div className="mt-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Sous-total :{' '}
-                      {subTotal.toLocaleString('fr-FR')} FCFA
+                      Sous-total : {subTotal.toLocaleString('fr-FR')} FCFA
                     </div>
                   </div>
                 );
@@ -790,12 +815,18 @@ export default function NewEventPage() {
           <SectionHeader icon={ClipboardCheck} title="Réservations" sectionKey="reservations" />
           {openSections.reservations && (
             <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 pt-4">
-              {([
-                [reservationRequired, setReservationRequired, 'Réservation obligatoire'],
-                [manualValidation, setManualValidation, 'Validation manuelle des inscriptions'],
-                [waitlistEnabled, setWaitlistEnabled, 'Activer la liste d\'attente'],
-                [autoNotification, setAutoNotification, 'Notification automatique aux participants'],
-              ] as const).map(([checked, setter, label]) => (
+              {(
+                [
+                  [reservationRequired, setReservationRequired, 'Réservation obligatoire'],
+                  [manualValidation, setManualValidation, 'Validation manuelle des inscriptions'],
+                  [waitlistEnabled, setWaitlistEnabled, "Activer la liste d'attente"],
+                  [
+                    autoNotification,
+                    setAutoNotification,
+                    'Notification automatique aux participants',
+                  ],
+                ] as const
+              ).map(([checked, setter, label]) => (
                 <label
                   key={label}
                   className="flex cursor-pointer items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300"

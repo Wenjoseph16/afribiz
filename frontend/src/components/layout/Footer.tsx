@@ -1,29 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  Mail, Phone, MapPin,
-  Globe, Camera, MessageCircle, Share2, Play,
-  Send, ArrowRight, Heart,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  Camera,
+  MessageCircle,
+  Share2,
+  Play,
+  Send,
+  ArrowRight,
+  Heart,
 } from 'lucide-react';
-
-const quickLinks = [
-  { label: 'Accueil', href: '/' },
-  { label: 'Marketplace', href: '/marketplace' },
-  { label: 'Media', href: '/media' },
-  { label: 'Développeurs', href: '/developers' },
-  { label: 'Tarifs', href: '/pricing' },
-  { label: 'À propos', href: '/about' },
-  { label: 'Contact', href: '/contact' },
-];
-
-const legalLinks = [
-  { label: 'Politique de confidentialité', href: '/privacy' },
-  { label: "Conditions d'utilisation", href: '/terms' },
-  { label: 'Mentions légales', href: '/legal' },
-  { label: 'Paramètres des cookies', href: '/cookies' },
-];
 
 const socialLinks = [
   { icon: Globe, href: 'https://facebook.com/afribiz', label: 'Facebook' },
@@ -33,17 +24,43 @@ const socialLinks = [
   { icon: Play, href: 'https://youtube.com/@afribiz', label: 'YouTube' },
 ];
 
-const modules = [
-  { label: 'E-Commerce', href: '/pricing' },
-  { label: 'Réservations', href: '/pricing' },
-  { label: 'Facturation', href: '/pricing' },
-  { label: 'Marketing & SMS', href: '/pricing' },
-  { label: 'Location', href: '/pricing' },
-  { label: 'Événements', href: '/pricing' },
-];
-
 export function Footer() {
   const [email, setEmail] = useState('');
+
+  const quickLinks = useMemo(
+    () => [
+      { label: 'Accueil', href: '/' },
+      { label: 'Marketplace', href: '/marketplace' },
+      { label: 'Média', href: '/media' },
+      { label: 'Développeurs', href: '/developers' },
+      { label: 'Tarifs', href: '/pricing' },
+      { label: 'À propos', href: '/about' },
+      { label: 'Contact', href: '/contact' },
+    ],
+    []
+  );
+
+  const legalLinks = useMemo(
+    () => [
+      { label: 'Confidentialité', href: '/privacy' },
+      { label: "Conditions d'utilisation", href: '/terms' },
+      { label: 'Mentions légales', href: '/legal' },
+      { label: 'Cookies', href: '/cookies' },
+    ],
+    []
+  );
+
+  const modules = useMemo(
+    () => [
+      { label: 'E-commerce', href: '/pricing' },
+      { label: 'Réservations', href: '/pricing' },
+      { label: 'Facturation', href: '/pricing' },
+      { label: 'Marketing SMS', href: '/pricing' },
+      { label: 'Location', href: '/pricing' },
+      { label: 'Événements', href: '/pricing' },
+    ],
+    []
+  );
   const [subscribed, setSubscribed] = useState(false);
 
   const handleNewsletter = (e: React.FormEvent) => {
@@ -62,11 +79,9 @@ export function Footer() {
         <div className="max-w-7xl mx-auto px-4 py-10">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-1">
-                Restez informé
-              </h3>
+              <h3 className="text-lg font-semibold text-white mb-1">Newsletter</h3>
               <p className="text-sm text-gray-400">
-                Recevez les dernières actualités, astuces et mises à jour d&apos;AfriBiz.
+                Recevez nos dernières actualités et offres exclusives.
               </p>
             </div>
             <form onSubmit={handleNewsletter} className="flex gap-2">
@@ -77,6 +92,7 @@ export function Footer() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Votre adresse email"
+                  aria-label="Adresse email newsletter"
                   required
                   className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all"
                 />
@@ -85,9 +101,11 @@ export function Footer() {
                 type="submit"
                 className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-brand to-emerald-400 text-white rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-brand/20 transition-all duration-200 shrink-0"
               >
-                {subscribed ? 'Inscrit !' : (
+                {subscribed ? (
+                  'Merci !'
+                ) : (
                   <>
-                    S&apos;inscrire
+                    S'abonner
                     <Send className="h-4 w-4" />
                   </>
                 )}
@@ -106,8 +124,8 @@ export function Footer() {
               <span className="font-bold text-lg text-white">AfriBiz</span>
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed mb-4">
-              La plateforme SaaS tout-en-un pour les entrepreneurs africains.
-              Vendez, gérez et développez votre business depuis chez vous.
+              La plateforme tout-en-un pour les entrepreneurs africains. Gérez votre entreprise,
+              vendez en ligne et développez votre activité.
             </p>
             <div className="flex items-center gap-3">
               {socialLinks.map((social) => {
@@ -224,7 +242,7 @@ export function Footer() {
             &copy; {new Date().getFullYear()} AfriBiz. Tous droits réservés.
           </p>
           <p className="text-xs text-gray-600 flex items-center gap-1">
-            Fait avec <Heart className="h-3 w-3 text-red-500 fill-red-500" /> pour l&apos;Afrique
+            Fait avec <Heart className="h-3 w-3 text-red-500 fill-red-500" /> pour l'Afrique
           </p>
         </div>
       </div>

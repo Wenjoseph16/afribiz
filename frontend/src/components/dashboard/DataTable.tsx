@@ -75,7 +75,12 @@ export function DataTable<T>({
   };
 
   return (
-    <div className={cn('bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-soft', className)}>
+    <div
+      className={cn(
+        'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-soft',
+        className
+      )}
+    >
       {searchable && (
         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
           <div className="relative">
@@ -106,7 +111,8 @@ export function DataTable<T>({
                     key={col.key}
                     className={cn(
                       'px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider',
-                      col.sortable && 'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none',
+                      col.sortable &&
+                        'cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 select-none',
                       col.className
                     )}
                     onClick={() => col.sortable && handleSort(col.key)}
@@ -126,13 +132,21 @@ export function DataTable<T>({
                   onClick={() => onRowClick?.(item)}
                   className={cn(
                     'transition-colors',
-                    index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-800/50',
+                    index % 2 === 0
+                      ? 'bg-white dark:bg-gray-800'
+                      : 'bg-gray-50/50 dark:bg-gray-800/50',
                     'hover:bg-gray-100 dark:hover:bg-gray-700',
                     onRowClick && 'cursor-pointer'
                   )}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={cn('px-4 py-3 text-sm text-gray-700 dark:text-gray-300', col.className)}>
+                    <td
+                      key={col.key}
+                      className={cn(
+                        'px-4 py-3 text-sm text-gray-700 dark:text-gray-300',
+                        col.className
+                      )}
+                    >
                       {col.render ? col.render(item) : (item as any)[col.key]}
                     </td>
                   ))}

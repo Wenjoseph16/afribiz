@@ -4,19 +4,27 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  Zap, MapPin, Navigation, Clock, ShoppingBag, Percent,
-  Sparkles, Filter, SlidersHorizontal, ChevronRight,
-  Star, Users, Store, RefreshCw
+  Zap,
+  MapPin,
+  Navigation,
+  Clock,
+  ShoppingBag,
+  Percent,
+  Sparkles,
+  Filter,
+  SlidersHorizontal,
+  ChevronRight,
+  Star,
+  Users,
+  Store,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { FlashOfferCard } from '@/components/offers/FlashOfferCard';
-import {
-  useActiveOffers,
-  useClaimOffer,
-  useNearbyBusinesses,
-} from '@/hooks/features/useOffers';
+import { useActiveOffers, useClaimOffer, useNearbyBusinesses } from '@/hooks/features/useOffers';
 
 export default function OffresPage() {
   const [view, setView] = useState<'offers' | 'nearby'>('offers');
@@ -50,7 +58,7 @@ export default function OffresPage() {
     setClaimedOfferId(id);
     claimOffer.mutate(id, {
       onSuccess: () => {
-        setClaimedIds(prev => new Set(prev).add(id));
+        setClaimedIds((prev) => new Set(prev).add(id));
         setClaimedOfferId(null);
       },
       onError: () => setClaimedOfferId(null),
@@ -75,7 +83,7 @@ export default function OffresPage() {
         // Default to Abidjan
         setUserLocation({ lat: 5.36, lng: -4.01 });
       },
-      { enableHighAccuracy: false, timeout: 10000 },
+      { enableHighAccuracy: false, timeout: 10000 }
     );
   };
 
@@ -84,21 +92,18 @@ export default function OffresPage() {
   }, []);
 
   // Updates
-  const activeOffers = offers.filter(o => new Date(o.endAt).getTime() > Date.now());
-  const featuredOffers = offers.filter(o => o.isFeatured);
+  const activeOffers = offers.filter((o) => new Date(o.endAt).getTime() > Date.now());
+  const featuredOffers = offers.filter((o) => o.isFeatured);
 
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Offres Flash
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Promotions limitées près de chez vous
-          </p>
-        </div>
+        <PageHeader
+          title="Offres Flash"
+          description="Promotions limitées près de chez vous"
+          breadcrumbs={[{ label: 'Offres Flash' }]}
+        />
         <div className="flex gap-2">
           <button
             onClick={() => setView('offers')}
@@ -138,7 +143,9 @@ export default function OffresPage() {
         <div className="flex items-center gap-2 text-sm text-amber-600">
           <MapPin className="w-4 h-4" />
           {locationError}
-          <button onClick={getLocation} className="text-brand-500 hover:underline ml-1">Réessayer</button>
+          <button onClick={getLocation} className="text-brand-500 hover:underline ml-1">
+            Réessayer
+          </button>
         </div>
       )}
       {userLocation && (
@@ -146,7 +153,10 @@ export default function OffresPage() {
           <MapPin className="w-3 h-3 text-brand-500" />
           Localisé · {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
           <span className="mx-1">·</span>
-          <button onClick={getLocation} className="text-brand-500 hover:underline flex items-center gap-0.5">
+          <button
+            onClick={getLocation}
+            className="text-brand-500 hover:underline flex items-center gap-0.5"
+          >
             <RefreshCw className="w-3 h-3" /> Rafraîchir
           </button>
         </div>
@@ -183,7 +193,9 @@ export default function OffresPage() {
                 <Zap className="w-4 h-4 text-brand-500" />
                 Toutes les offres
                 {activeOffers.length > 0 && (
-                  <Badge variant="brand" size="sm">{activeOffers.length} actives</Badge>
+                  <Badge variant="brand" size="sm">
+                    {activeOffers.length} actives
+                  </Badge>
                 )}
               </h2>
             </div>
@@ -191,7 +203,10 @@ export default function OffresPage() {
             {offersLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse">
+                  <div
+                    key={i}
+                    className="rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse"
+                  >
                     <div className="aspect-[16/9] bg-gray-200 dark:bg-gray-700" />
                     <div className="p-4 space-y-2">
                       <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
@@ -204,9 +219,12 @@ export default function OffresPage() {
               <Card className="text-center py-12">
                 <div className="flex flex-col items-center gap-3">
                   <Zap className="w-12 h-12 text-gray-300 dark:text-gray-600" />
-                  <p className="text-gray-500 dark:text-gray-400">Aucune offre flash en ce moment</p>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Aucune offre flash en ce moment
+                  </p>
                   <p className="text-sm text-gray-400 dark:text-gray-500 max-w-md">
-                    Les commerces à proximité publient ici leurs offres à durée limitée. Activez votre position pour voir celles près de chez vous.
+                    Les commerces à proximité publient ici leurs offres à durée limitée. Activez
+                    votre position pour voir celles près de chez vous.
                   </p>
                 </div>
               </Card>
@@ -275,22 +293,32 @@ export default function OffresPage() {
               <Store className="w-4 h-4 text-brand-500" />
               Commerces à proximité
               {nearbyBusinesses.length > 0 && (
-                <Badge variant="brand" size="sm">{nearbyBusinesses.length}</Badge>
+                <Badge variant="brand" size="sm">
+                  {nearbyBusinesses.length}
+                </Badge>
               )}
             </h2>
 
             {nearbyLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-20 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  <div
+                    key={i}
+                    className="h-20 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+                  />
                 ))}
               </div>
             ) : nearbyBusinesses.length === 0 ? (
               <Card className="text-center py-8">
                 <div className="flex flex-col items-center gap-3">
                   <Navigation className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Aucun commerce trouvé dans ce rayon</p>
-                  <button onClick={() => setRadius(prev => Math.min(prev * 2, 100))} className="text-brand-500 text-sm hover:underline">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    Aucun commerce trouvé dans ce rayon
+                  </p>
+                  <button
+                    onClick={() => setRadius((prev) => Math.min(prev * 2, 100))}
+                    className="text-brand-500 text-sm hover:underline"
+                  >
                     Élargir le rayon à {Math.min(radius * 2, 100)} km
                   </button>
                 </div>
@@ -306,7 +334,13 @@ export default function OffresPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 flex-shrink-0">
                         {biz.logo ? (
-                          <Image src={biz.logo} alt={biz.name} width={48} height={48} className="object-cover w-full h-full" />
+                          <Image
+                            src={biz.logo}
+                            alt={biz.name}
+                            width={48}
+                            height={48}
+                            className="object-cover w-full h-full"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-400">
                             {biz.name?.charAt(0)}
@@ -326,7 +360,9 @@ export default function OffresPage() {
                           )}
                         </div>
                         {biz.shortDescription && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{biz.shortDescription}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                            {biz.shortDescription}
+                          </p>
                         )}
                         <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400">
                           <span className="flex items-center gap-0.5">

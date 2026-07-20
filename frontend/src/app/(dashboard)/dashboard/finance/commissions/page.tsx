@@ -4,11 +4,18 @@ import { useState } from 'react';
 import { Percent, ArrowUpRight, ArrowDownLeft, TrendingUp, Wallet } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
+import { StatsCard } from '@/components/dashboard/StatsCard';
+import { cn } from '@/lib/utils';
+import ModuleCharts from '@/components/dashboard/ModuleCharts';
+import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 
 function formatCFA(amount: number) {
-  return new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(amount) + ' FCFA';
+  return (
+    new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(amount) +
+    ' FCFA'
+  );
 }
 
 export default function BusinessCommissionsPage() {
@@ -27,7 +34,7 @@ export default function BusinessCommissionsPage() {
   const { data: logs } = useQuery({
     queryKey: ['business', 'financial-logs', 'MANUAL_ADJUSTMENT'],
     queryFn: async () => {
-      const res = await apiClient.get('/payments/logs?action=MANUAL_ADJUSTMENT&limit=50');
+      const res = await apiClient.get('/business/finance/logs?action=MANUAL_ADJUSTMENT&limit=50');
       return res.data.data?.logs || [];
     },
     enabled: !!user,
@@ -50,7 +57,7 @@ export default function BusinessCommissionsPage() {
             { value: '30d', label: '30j' },
             { value: '90d', label: '90j' },
             { value: '1y', label: '1 an' },
-          ].map(p => (
+          ].map((p) => (
             <button
               key={p.value}
               onClick={() => setPeriod(p.value)}
@@ -66,52 +73,62 @@ export default function BusinessCommissionsPage() {
         </div>
       </div>
 
+      {/* Charts */}
+      {(stats?.totalRevenue || 0) > 0 &&
+        (() => {
+          const total = Number(stats?.totalRevenue || 0);
+          const commissions = Number(stats?.totalCommissions || 0);
+          const net = Number(stats?.netRevenue || 0);
+          const chartData: ModuleChartData = {
+            distribution: [
+              { name: 'Net perçu', value: Math.round(net / 1000), color: '#10b981' },
+              { name: 'Commissions', value: Math.round(commissions / 1000), color: '#f59e0b' },
+            ].filter((d) => d.value > 0),
+            daily: [
+              { label: 'Revenu', value: Math.round(total / 1000) },
+              { label: 'Commission', value: Math.round(commissions / 1000) },
+              { label: 'Net', value: Math.round(net / 1000) },
+            ],
+          };
+          return (
+            <ModuleCharts
+              data={chartData}
+              title="ANALYTICS REVENUS"
+              distributionLabel="Répartition"
+              dailyLabel="Montants (x1000 FCFA)"
+              variant="services"
+            />
+          );
+        })()}
+
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
-              <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Revenu total</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{formatCFA(stats?.totalRevenue || 0)}</p>
-            </div>
-          </div>
-          <div className="h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-400 rounded-full" style={{ width: '100%' }} />
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/30">
-              <Percent className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Commissions AfriBiz</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{formatCFA(stats?.totalCommissions || 0)}</p>
-            </div>
-          </div>
-          <div className="h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${Math.min((stats?.commissionRate || 0) * 100, 100)}%` }} />
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/30">
-              <Wallet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Net perçu</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{formatCFA(stats?.netRevenue || 0)}</p>
-            </div>
-          </div>
-          <div className="h-1 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-400 rounded-full" style={{ width: '100%' }} />
-          </div>
-        </Card>
+        <StatsCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          iconBg="bg-emerald-50"
+          iconColor="text-emerald-600"
+          label="Revenu total"
+          value={formatCFA(stats?.totalRevenue || 0)}
+        />
+        <StatsCard
+          icon={<Percent className="h-5 w-5" />}
+          iconBg="bg-amber-50"
+          iconColor="text-amber-600"
+          label="Commissions AfriBiz"
+          value={formatCFA(stats?.totalCommissions || 0)}
+          trend={
+            stats?.commissionRate
+              ? { value: `${(stats.commissionRate * 100).toFixed(1)}% du CA`, positive: false }
+              : undefined
+          }
+        />
+        <StatsCard
+          icon={<Wallet className="h-5 w-5" />}
+          iconBg="bg-blue-50"
+          iconColor="text-blue-600"
+          label="Net perçu"
+          value={formatCFA(stats?.netRevenue || 0)}
+        />
       </div>
 
       {/* Commission breakdown */}
@@ -136,7 +153,10 @@ export default function BusinessCommissionsPage() {
                   const isCommission = meta?.commissionType != null;
                   const isDeducted = Number(log.amount) < 0;
                   return (
-                    <tr key={log.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
+                    <tr
+                      key={log.id}
+                      className="border-b border-gray-100 dark:border-gray-700 last:border-0"
+                    >
                       <td className="py-3 text-gray-500">
                         {new Date(log.createdAt).toLocaleDateString('fr-FR')}
                       </td>
@@ -154,11 +174,17 @@ export default function BusinessCommissionsPage() {
                           </span>
                         )}
                       </td>
-                      <td className={`py-3 text-right font-medium ${
-                        isDeducted ? 'text-red-500' : 'text-emerald-500'
-                      }`}>
+                      <td
+                        className={`py-3 text-right font-medium ${
+                          isDeducted ? 'text-red-500' : 'text-emerald-500'
+                        }`}
+                      >
                         <span className="flex items-center justify-end gap-1">
-                          {isDeducted ? <ArrowDownLeft className="h-3 w-3" /> : <ArrowUpRight className="h-3 w-3" />}
+                          {isDeducted ? (
+                            <ArrowDownLeft className="h-3 w-3" />
+                          ) : (
+                            <ArrowUpRight className="h-3 w-3" />
+                          )}
                           {formatCFA(Math.abs(Number(log.amount || 0)))}
                         </span>
                       </td>

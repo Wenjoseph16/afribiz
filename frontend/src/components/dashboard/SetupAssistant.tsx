@@ -4,9 +4,26 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
-  CheckCircle2, Circle, AlertCircle, ArrowRight, Upload, Image,
-  Phone, MapPin, Clock, CreditCard, Truck, Calendar, ShoppingBag,
-  Hand, Users, Globe, MessageCircle, Star, ChevronDown, Sparkles,
+  CheckCircle2,
+  Circle,
+  AlertCircle,
+  ArrowRight,
+  Upload,
+  Image,
+  Phone,
+  MapPin,
+  Clock,
+  CreditCard,
+  Truck,
+  Calendar,
+  ShoppingBag,
+  Hand,
+  Users,
+  Globe,
+  MessageCircle,
+  Star,
+  ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { Business } from '@/types/business';
@@ -31,21 +48,92 @@ export function SetupAssistant({ completionScore, business }: Props) {
   const tasks: Task[] = useMemo(() => {
     if (!business) return [];
     return [
-      { id: 'logo', label: 'Ajouter un logo', href: '/dashboard/public-page', icon: Image, done: !!business.logo, section: 'Identité' },
-      { id: 'cover', label: 'Ajouter une couverture', href: '/dashboard/public-page', icon: Image, done: !!business.coverImage, section: 'Identité' },
-      { id: 'desc', label: 'Rédiger une description', href: '/dashboard/public-page', icon: Globe, done: !!business.description, section: 'Identité' },
-      { id: 'phone', label: 'Ajouter un téléphone', href: '/dashboard/public-page', icon: Phone, done: !!business.phone, section: 'Contact' },
-      { id: 'address', label: 'Configurer l\'adresse', href: '/dashboard/public-page', icon: MapPin, done: !!business.address, section: 'Contact' },
-      { id: 'hours', label: 'Configurer les horaires', href: '/dashboard/public-page', icon: Clock, done: (business.hours?.length || 0) > 0, section: 'Contact' },
-      { id: 'whatsapp', label: 'Ajouter WhatsApp', href: '/dashboard/public-page', icon: MessageCircle, done: !!business.whatsapp, section: 'Contact' },
-      { id: 'modules', label: 'Activer des modules', href: '/dashboard/marketplace', icon: Sparkles, done: (business.modules?.length || 0) > 0, section: 'Configuration' },
-      { id: 'payments', label: 'Configurer les paiements', href: '/dashboard/settings', icon: CreditCard, done: false, section: 'Configuration' },
-      { id: 'delivery', label: 'Configurer les livraisons', href: '/dashboard/deliveries', icon: Truck, done: (business as any)?.deliveryZones?.length > 0, section: 'Configuration' },
+      {
+        id: 'logo',
+        label: 'Ajouter un logo',
+        href: '/dashboard/public-page',
+        icon: Image,
+        done: !!business.logo,
+        section: 'Identité',
+      },
+      {
+        id: 'cover',
+        label: 'Ajouter une couverture',
+        href: '/dashboard/public-page',
+        icon: Image,
+        done: !!business.coverImage,
+        section: 'Identité',
+      },
+      {
+        id: 'desc',
+        label: 'Rédiger une description',
+        href: '/dashboard/public-page',
+        icon: Globe,
+        done: !!business.description,
+        section: 'Identité',
+      },
+      {
+        id: 'phone',
+        label: 'Ajouter un téléphone',
+        href: '/dashboard/public-page',
+        icon: Phone,
+        done: !!business.phone,
+        section: 'Contact',
+      },
+      {
+        id: 'address',
+        label: "Configurer l'adresse",
+        href: '/dashboard/public-page',
+        icon: MapPin,
+        done: !!business.address,
+        section: 'Contact',
+      },
+      {
+        id: 'hours',
+        label: 'Configurer les horaires',
+        href: '/dashboard/public-page',
+        icon: Clock,
+        done: (business.hours?.length || 0) > 0,
+        section: 'Contact',
+      },
+      {
+        id: 'whatsapp',
+        label: 'Ajouter WhatsApp',
+        href: '/dashboard/public-page',
+        icon: MessageCircle,
+        done: !!business.whatsapp,
+        section: 'Contact',
+      },
+      {
+        id: 'modules',
+        label: 'Activer des modules',
+        href: '/dashboard/marketplace',
+        icon: Sparkles,
+        done: (business.modules?.length || 0) > 0,
+        section: 'Configuration',
+      },
+      {
+        id: 'payments',
+        label: 'Configurer les paiements',
+        href: '/dashboard/settings',
+        icon: CreditCard,
+        done: false,
+        section: 'Configuration',
+      },
+      {
+        id: 'delivery',
+        label: 'Configurer les livraisons',
+        href: '/dashboard/deliveries',
+        icon: Truck,
+        done: (business as any)?.deliveryZones?.length > 0,
+        section: 'Configuration',
+      },
     ];
   }, [business]);
 
   const completedTasks = tasks.filter((t) => t.done).length;
-  const score = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : completionScore;
+  const score =
+    tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : completionScore;
 
   if (score >= 100) return null;
 
@@ -68,9 +156,22 @@ export function SetupAssistant({ completionScore, business }: Props) {
               )}
             </div>
             <svg className="absolute -top-1 -right-1 w-5 h-5" viewBox="0 0 20 20">
-              <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-200 dark:text-emerald-700" />
               <circle
-                cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2"
+                cx="10"
+                cy="10"
+                r="8"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-emerald-200 dark:text-emerald-700"
+              />
+              <circle
+                cx="10"
+                cy="10"
+                r="8"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
                 strokeDasharray={`${2 * Math.PI * 8}`}
                 strokeDashoffset={`${2 * Math.PI * 8 * (1 - score / 100)}`}
                 className="text-emerald-600 origin-center -rotate-90"
@@ -87,7 +188,9 @@ export function SetupAssistant({ completionScore, business }: Props) {
             </p>
           </div>
         </div>
-        <ChevronDown className={cn('h-5 w-5 text-gray-400 transition-transform', expanded && 'rotate-180')} />
+        <ChevronDown
+          className={cn('h-5 w-5 text-gray-400 transition-transform', expanded && 'rotate-180')}
+        />
       </button>
 
       {expanded && (

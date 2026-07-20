@@ -46,7 +46,10 @@ function LocationCell({ item }: { item: ComparisonItem }) {
   return (
     <div className="flex items-center gap-1 justify-center">
       <MapPin className="h-3.5 w-3.5 text-gray-400" />
-      <span>{item.city || '\u2014'}{item.country ? `, ${item.country}` : ''}</span>
+      <span>
+        {item.city || '\u2014'}
+        {item.country ? `, ${item.country}` : ''}
+      </span>
     </div>
   );
 }
@@ -92,17 +95,26 @@ function ModulesCell({ item }: { item: ComparisonItem }) {
   return (
     <div className="flex flex-wrap gap-1 justify-center">
       {(item.modules || []).slice(0, 3).map((m) => (
-        <span key={m} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+        <span
+          key={m}
+          className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+        >
           {m}
         </span>
       ))}
-      {(!item.modules || item.modules.length === 0) && <span className="text-xs text-gray-400">{'\u2014'}</span>}
+      {(!item.modules || item.modules.length === 0) && (
+        <span className="text-xs text-gray-400">{'\u2014'}</span>
+      )}
     </div>
   );
 }
 
 function DescriptionCell({ item }: { item: ComparisonItem }) {
-  return <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 text-center">{item.description || '\u2014'}</p>;
+  return (
+    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 text-center">
+      {item.description || '\u2014'}
+    </p>
+  );
 }
 
 interface FieldDef {
@@ -140,7 +152,11 @@ export default function ComparisonPanel({ items, onRemove, onClear }: Comparison
             onClick={() => setExpanded(!expanded)}
             className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
-            {expanded ? <ChevronUp className="h-4 w-4 text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-500" />}
+            {expanded ? (
+              <ChevronUp className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+            )}
           </button>
         </div>
         <button
@@ -165,7 +181,13 @@ export default function ComparisonPanel({ items, onRemove, onClear }: Comparison
                       <div className="relative">
                         <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/30 flex items-center justify-center text-lg font-bold text-brand overflow-hidden">
                           {item.logo || item.image ? (
-                            <Image src={(item.logo || item.image) ?? ''} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                            <Image
+                              src={(item.logo || item.image) ?? ''}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 100vw, 33vw"
+                            />
                           ) : (
                             item.name[0]
                           )}
@@ -207,14 +229,17 @@ export default function ComparisonPanel({ items, onRemove, onClear }: Comparison
                   key={field.key}
                   className={cn(
                     'border-b border-gray-50 dark:border-gray-800/50',
-                    idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                    idx % 2 === 0
+                      ? 'bg-white dark:bg-gray-900'
+                      : 'bg-gray-50/50 dark:bg-gray-800/20'
                   )}
                 >
                   <td className="px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400">
                     {field.label}
                   </td>
                   {items.map((item) => {
-                    const isBest = field.key === 'rating' && item.rating === bestRating && bestRating > 0;
+                    const isBest =
+                      field.key === 'rating' && item.rating === bestRating && bestRating > 0;
                     return (
                       <td key={item.id} className="px-4 py-3">
                         <div className={cn(isBest && 'text-emerald-600 dark:text-emerald-400')}>

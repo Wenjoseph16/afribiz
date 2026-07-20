@@ -2,10 +2,20 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Wallet, Banknote, ArrowUpRight, CheckCircle2, XCircle,
-  Clock, AlertCircle, Plus, Send, CreditCard, Building2,
+  Wallet,
+  Banknote,
+  ArrowUpRight,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertCircle,
+  Plus,
+  Send,
+  CreditCard,
+  Building2,
   Loader2,
 } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -24,10 +34,22 @@ const PAYOUT_METHODS = [
 ];
 
 const STATUS_BADGE: Record<PayoutStatus, { label: string; className: string }> = {
-  PENDING: { label: 'En attente', className: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  PROCESSING: { label: 'En cours', className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  COMPLETED: { label: 'Complété', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  FAILED: { label: 'Échoué', className: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  PENDING: {
+    label: 'En attente',
+    className: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  PROCESSING: {
+    label: 'En cours',
+    className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  COMPLETED: {
+    label: 'Complété',
+    className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  FAILED: {
+    label: 'Échoué',
+    className: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
 };
 
 export default function DeveloperPayoutsPage() {
@@ -39,7 +61,7 @@ export default function DeveloperPayoutsPage() {
 
   const payoutList = useMemo(() => {
     if (!payouts) return [];
-    return Array.isArray(payouts) ? payouts : (payouts.payouts || payouts.data || []);
+    return Array.isArray(payouts) ? payouts : payouts.payouts || payouts.data || [];
   }, [payouts]);
 
   const summary = useMemo(() => {
@@ -59,7 +81,9 @@ export default function DeveloperPayoutsPage() {
       await requestPayout.mutateAsync({ amount: Number(amount), method });
       setAmount('');
       setShowForm(false);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   if (error) return <ErrorState message={error.message} onRetry={() => refetch()} />;
@@ -98,8 +122,13 @@ export default function DeveloperPayoutsPage() {
         <Card>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Nouvelle demande de retrait</h3>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Nouvelle demande de retrait
+              </h3>
+              <button
+                onClick={() => setShowForm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <XCircle className="h-5 w-5" />
               </button>
             </div>
@@ -116,15 +145,11 @@ export default function DeveloperPayoutsPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Méthode de retrait
               </label>
-              <select
+              <Select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring"
-              >
-                {PAYOUT_METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
+                options={PAYOUT_METHODS.map((m) => ({ value: m.value, label: m.label }))}
+              />
             </div>
             <Button
               variant="gradient"
@@ -161,14 +186,21 @@ export default function DeveloperPayoutsPage() {
         ) : (
           <div className="space-y-2">
             {(payoutList as DeveloperPayout[]).map((p) => (
-              <div key={p.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+              <div
+                key={p.id}
+                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+              >
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    'p-2 rounded-lg',
-                    p.status === 'COMPLETED' ? 'bg-emerald-50 dark:bg-emerald-900/30' :
-                    p.status === 'FAILED' ? 'bg-red-50 dark:bg-red-900/30' :
-                    'bg-amber-50 dark:bg-amber-900/30'
-                  )}>
+                  <div
+                    className={cn(
+                      'p-2 rounded-lg',
+                      p.status === 'COMPLETED'
+                        ? 'bg-emerald-50 dark:bg-emerald-900/30'
+                        : p.status === 'FAILED'
+                          ? 'bg-red-50 dark:bg-red-900/30'
+                          : 'bg-amber-50 dark:bg-amber-900/30'
+                    )}
+                  >
                     {p.status === 'COMPLETED' ? (
                       <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                     ) : p.status === 'FAILED' ? (
@@ -182,15 +214,19 @@ export default function DeveloperPayoutsPage() {
                       {p.netAmount.toLocaleString()} FCFA
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {p.method === 'BANK_TRANSFER' ? 'Virement bancaire' : 'Mobile Money'} · {new Date(p.createdAt).toLocaleDateString('fr-FR')}
+                      {p.method === 'BANK_TRANSFER' ? 'Virement bancaire' : 'Mobile Money'} ·{' '}
+                      {new Date(p.createdAt).toLocaleDateString('fr-FR')}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className={cn(
-                    'text-xs font-medium px-2 py-0.5 rounded-full',
-                    STATUS_BADGE[p.status as PayoutStatus]?.className || 'bg-gray-50 text-gray-600'
-                  )}>
+                  <span
+                    className={cn(
+                      'text-xs font-medium px-2 py-0.5 rounded-full',
+                      STATUS_BADGE[p.status as PayoutStatus]?.className ||
+                        'bg-gray-50 text-gray-600'
+                    )}
+                  >
                     {STATUS_BADGE[p.status as PayoutStatus]?.label || p.status}
                   </span>
                   {p.reference && (

@@ -4,8 +4,15 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import {
-  FileText, Download, Users, Building2, Code2,
-  TrendingUp, Megaphone, Store, Database,
+  FileText,
+  Download,
+  Users,
+  Building2,
+  Code2,
+  TrendingUp,
+  Megaphone,
+  Store,
+  Database,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -14,8 +21,15 @@ import { EmptyState } from '@/components/dashboard/EmptyState';
 import { useAuthStore } from '@/stores/authStore';
 
 type ReportTab =
-  | 'financial' | 'activity' | 'growth' | 'users'
-  | 'business' | 'developers' | 'advertising' | 'marketplace' | 'datahub';
+  | 'financial'
+  | 'activity'
+  | 'growth'
+  | 'users'
+  | 'business'
+  | 'developers'
+  | 'advertising'
+  | 'marketplace'
+  | 'datahub';
 
 export default function AdminFinancialReportsPage() {
   const { user } = useAuthStore();
@@ -86,7 +100,9 @@ export default function AdminFinancialReportsPage() {
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {r.revenue?.subscriptions ? `${Number(r.revenue.subscriptions).toLocaleString()} FCFA` : '-'}
+                    {r.revenue?.subscriptions
+                      ? `${Number(r.revenue.subscriptions).toLocaleString()} FCFA`
+                      : '-'}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">Abonnements</p>
                 </div>
@@ -98,7 +114,9 @@ export default function AdminFinancialReportsPage() {
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {r.revenue?.marketplace ? `${Number(r.revenue.marketplace).toLocaleString()} FCFA` : '-'}
+                    {r.revenue?.marketplace
+                      ? `${Number(r.revenue.marketplace).toLocaleString()} FCFA`
+                      : '-'}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">Marketplace</p>
                 </div>
@@ -110,21 +128,29 @@ export default function AdminFinancialReportsPage() {
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.transactions?.volume ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.transactions?.volume ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Volume transactions</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {r.transactions?.fees ? `${Number(r.transactions.fees).toLocaleString()} FCFA` : '-'}
+                    {r.transactions?.fees
+                      ? `${Number(r.transactions.fees).toLocaleString()} FCFA`
+                      : '-'}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">Frais collectés</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.transactions?.count ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.transactions?.count ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Nombre de transactions</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.paymentMethods ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.paymentMethods ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Par méthode de paiement</p>
                 </div>
               </div>
@@ -135,27 +161,39 @@ export default function AdminFinancialReportsPage() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.activity?.activeUsers ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.activity?.activeUsers ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Utilisateurs actifs</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.activity?.sessions ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.activity?.sessions ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Sessions</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.activity?.pageViews ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.activity?.pageViews ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Pages vues</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.activity?.apiCalls ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.activity?.apiCalls ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Appels API</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.activity?.AvgSessionDuration ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.activity?.AvgSessionDuration ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Durée moyenne session</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.activity?.bounceRate ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.activity?.bounceRate ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Taux de rebond</p>
             </Card>
           </div>
@@ -169,19 +207,27 @@ export default function AdminFinancialReportsPage() {
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.growth?.users?.daily ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.growth?.users?.daily ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Quotidienne</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.growth?.users?.weekly ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.growth?.users?.weekly ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Hebdomadaire</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.growth?.users?.monthly ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.growth?.users?.monthly ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Mensuelle</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.growth?.users?.yearly ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.growth?.users?.yearly ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Annuelle</p>
                 </div>
               </div>
@@ -192,19 +238,27 @@ export default function AdminFinancialReportsPage() {
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.growth?.business?.daily ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.growth?.business?.daily ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Quotidienne</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.growth?.business?.weekly ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.growth?.business?.weekly ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Hebdomadaire</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.growth?.business?.monthly ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.growth?.business?.monthly ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Mensuelle</p>
                 </div>
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.growth?.business?.yearly ?? '-'}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {r.growth?.business?.yearly ?? '-'}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Annuelle</p>
                 </div>
               </div>
@@ -215,27 +269,39 @@ export default function AdminFinancialReportsPage() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.users?.total ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.users?.total ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Total utilisateurs</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.users?.business ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.users?.business ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Comptes business</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.users?.developer ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.users?.developer ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Développeurs</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.users?.verified ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.users?.verified ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Vérifiés</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.users?.byCountry ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.users?.byCountry ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Par pays</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.users?.byRole ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.users?.byRole ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Par rôle</p>
             </Card>
           </div>
@@ -244,27 +310,39 @@ export default function AdminFinancialReportsPage() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.business?.total ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.business?.total ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Total business</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.business?.byType ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.business?.byType ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Par type</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.business?.byCountry ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.business?.byCountry ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Par pays</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.business?.bySector ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.business?.bySector ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Par secteur</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.business?.active ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.business?.active ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Actifs</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.business?.premium ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.business?.premium ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Premium</p>
             </Card>
           </div>
@@ -273,28 +351,40 @@ export default function AdminFinancialReportsPage() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.developers?.total ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.developers?.total ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Total développeurs</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.developers?.verified ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.developers?.verified ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Vérifiés</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.developers?.pending ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.developers?.pending ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">En attente</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.developers?.modules ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.developers?.modules ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Modules publiés</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.developers?.installations ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.developers?.installations ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Installations</p>
             </Card>
             <Card>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {r.developers?.revenue ? `${Number(r.developers.revenue).toLocaleString()} FCFA` : '-'}
+                {r.developers?.revenue
+                  ? `${Number(r.developers.revenue).toLocaleString()} FCFA`
+                  : '-'}
               </p>
               <p className="text-xs text-gray-500 mt-1">Revenus développeurs</p>
             </Card>
@@ -304,15 +394,21 @@ export default function AdminFinancialReportsPage() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.ads?.campaigns ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.ads?.campaigns ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Campagnes</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.ads?.impressions?.toLocaleString() ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.ads?.impressions?.toLocaleString() ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Impressions</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.ads?.clicks?.toLocaleString() ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.ads?.clicks?.toLocaleString() ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Clics</p>
             </Card>
             <Card>
@@ -322,7 +418,9 @@ export default function AdminFinancialReportsPage() {
               <p className="text-xs text-gray-500 mt-1">CTR</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.ads?.conversions ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.ads?.conversions ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Conversions</p>
             </Card>
             <Card>
@@ -337,30 +435,42 @@ export default function AdminFinancialReportsPage() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.marketplace?.products ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.marketplace?.products ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Produits</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.marketplace?.services ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.marketplace?.services ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Services</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.marketplace?.orders ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.marketplace?.orders ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Commandes</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.marketplace?.bookings ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.marketplace?.bookings ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Réservations</p>
             </Card>
             <Card>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {r.marketplace?.volume ? `${Number(r.marketplace.volume).toLocaleString()} FCFA` : '-'}
+                {r.marketplace?.volume
+                  ? `${Number(r.marketplace.volume).toLocaleString()} FCFA`
+                  : '-'}
               </p>
               <p className="text-xs text-gray-500 mt-1">Volume transactions</p>
             </Card>
             <Card>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {r.marketplace?.revenue ? `${Number(r.marketplace.revenue).toLocaleString()} FCFA` : '-'}
+                {r.marketplace?.revenue
+                  ? `${Number(r.marketplace.revenue).toLocaleString()} FCFA`
+                  : '-'}
               </p>
               <p className="text-xs text-gray-500 mt-1">Revenus marketplace</p>
             </Card>
@@ -370,19 +480,27 @@ export default function AdminFinancialReportsPage() {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.datahub?.partners ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.datahub?.partners ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Partenaires</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.datahub?.reports ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.datahub?.reports ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Rapports générés</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.datahub?.accessLogs ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.datahub?.accessLogs ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Logs d&apos;accès</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.datahub?.activeConsents ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.datahub?.activeConsents ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Consentements actifs</p>
             </Card>
             <Card>
@@ -392,7 +510,9 @@ export default function AdminFinancialReportsPage() {
               <p className="text-xs text-gray-500 mt-1">Revenus Data Hub</p>
             </Card>
             <Card>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{r.datahub?.apiCalls ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {r.datahub?.apiCalls ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">Appels API</p>
             </Card>
           </div>
@@ -462,11 +582,7 @@ export default function AdminFinancialReportsPage() {
         })}
       </div>
 
-      {isLoading ? (
-        <Loader className="py-12" />
-      ) : (
-        renderReportContent()
-      )}
+      {isLoading ? <Loader className="py-12" /> : renderReportContent()}
     </div>
   );
 }

@@ -29,6 +29,52 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// ============== PUSH NOTIFICATIONS ==============
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  try {
+    const data = event.data.json();
+    const title = data.title || 'AfriBiz';
+    const options = {
+      body: data.body || '',
+      icon: data.icon || '/icon-192.png',
+      badge: data.badge || '/badge-72.png',
+      data: data.data || {},
+      vibrate: [200, 100, 200],
+      tag: data.tag || 'default',
+      requireInteraction: data.requireInteraction || false,
+      actions: data.actions || [],
+    };
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch {
+    // Fallback for plain text payload
+    event.waitUntil(
+      self.registration.showNotification('AfriBiz', { body: event.data.text() })
+    );
+  }
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || '/';
+  const urlToOpen = new URL(target, self.location.origin).href;
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Focus existing tab if found
+      for (const client of windowClients) {
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise open new tab
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+
 // Fetch: stratégie Network First avec fallback cache
 self.addEventListener('fetch', (event) => {
   // Ne pas intercepter les API calls ou les requêtes non-GET

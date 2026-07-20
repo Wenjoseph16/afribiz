@@ -4,8 +4,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import {
-  CreditCard, Search, XCircle, RotateCcw, DollarSign,
-  Users, Code, Puzzle, Database,
+  CreditCard,
+  Search,
+  XCircle,
+  RotateCcw,
+  DollarSign,
+  Users,
+  Code,
+  Puzzle,
+  Database,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -43,13 +50,24 @@ const statusColor: Record<string, string> = {
   TRIAL: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
 };
 
-function useAdminSubscriptions(params?: { type?: string; page?: number; limit?: number; search?: string }) {
+function useAdminSubscriptions(params?: {
+  type?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+}) {
   return useQuery({
     queryKey: ['admin', 'subscriptions', params],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/subscriptions', { params });
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetAllSubscriptions(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement abonnements:', error);
+        return { subscriptions: [], total: 0 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -57,16 +75,22 @@ function useAdminSubscriptionStats() {
   return useQuery({
     queryKey: ['admin', 'subscriptions', 'stats'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/subscriptions/stats');
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetSubscriptionStats();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement stats abonnements:', error);
+        return { active: 0, expired: 0, cancelled: 0, revenue: 0 };
+      }
     },
+    retry: false,
   });
 }
 
 function useCancelSubscription() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.post(`/admin/subscriptions/${id}/cancel`),
+    mutationFn: (id: string) => apiClient.adminCancelSubscription(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'subscriptions'] });
     },
@@ -76,7 +100,7 @@ function useCancelSubscription() {
 function useRenewSubscription() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.post(`/admin/subscriptions/${id}/renew`),
+    mutationFn: (id: string) => apiClient.adminRenewSubscription(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'subscriptions'] });
     },
@@ -110,7 +134,7 @@ export default function AdminSubscriptionsPage() {
 
   const subscriptions = Array.isArray(subsData)
     ? subsData
-    : subsData?.subscriptions ?? subsData?.data ?? [];
+    : (subsData?.subscriptions ?? subsData?.data ?? []);
   const total = subsData?.total ?? subsData?.count ?? subscriptions?.length ?? 0;
   const totalPages = Math.ceil(total / limit) || 1;
 
@@ -157,7 +181,9 @@ export default function AdminSubscriptionsPage() {
               <CreditCard className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats?.active ?? '-'}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats?.active ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Actives</p>
             </div>
           </div>
@@ -168,7 +194,9 @@ export default function AdminSubscriptionsPage() {
               <RotateCcw className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats?.expired ?? '-'}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats?.expired ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Expirées</p>
             </div>
           </div>
@@ -179,7 +207,9 @@ export default function AdminSubscriptionsPage() {
               <XCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats?.cancelled ?? '-'}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats?.cancelled ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Résiliées</p>
             </div>
           </div>
@@ -206,7 +236,10 @@ export default function AdminSubscriptionsPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setPage(1); }}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setPage(1);
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
                   ? 'border-brand text-brand'
@@ -228,7 +261,10 @@ export default function AdminSubscriptionsPage() {
             type="text"
             placeholder="Rechercher un abonné..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
           />
         </div>
@@ -259,10 +295,16 @@ export default function AdminSubscriptionsPage() {
             </thead>
             <tbody>
               {subscriptions.map((sub: any) => (
-                <tr key={sub.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                <tr
+                  key={sub.id}
+                  className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                >
                   <td className="p-3">
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
-                      {sub.subscriber?.name || sub.user?.name || sub.subscriberId?.slice(0, 8) || '-'}
+                      {sub.subscriber?.name ||
+                        sub.user?.name ||
+                        sub.subscriberId?.slice(0, 8) ||
+                        '-'}
                     </p>
                     {sub.subscriber?.email && (
                       <p className="text-[11px] text-gray-400">{sub.subscriber.email}</p>
@@ -283,7 +325,9 @@ export default function AdminSubscriptionsPage() {
                     {sub.endDate ? new Date(sub.endDate).toLocaleDateString('fr-FR') : '-'}
                   </td>
                   <td className="p-3">
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusColor[sub.status] || ''}`}>
+                    <span
+                      className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusColor[sub.status] || ''}`}
+                    >
                       {statusLabel[sub.status] || sub.status}
                     </span>
                   </td>

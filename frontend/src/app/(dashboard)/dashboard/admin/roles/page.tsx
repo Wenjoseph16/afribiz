@@ -2,12 +2,23 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Shield, Plus, Settings, Users, UserCog, Trash2, Check,
-  X, Search, Save, ChevronRight,
+  Shield,
+  Plus,
+  Settings,
+  Users,
+  UserCog,
+  Trash2,
+  Check,
+  X,
+  Search,
+  Save,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
@@ -17,9 +28,16 @@ import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
 
 const RESOURCES = [
-  'users', 'businesses', 'modules', 'ads',
-  'finance', 'settings', 'media', 'reports',
-  'subscriptions', 'support',
+  'users',
+  'businesses',
+  'modules',
+  'ads',
+  'finance',
+  'settings',
+  'media',
+  'reports',
+  'subscriptions',
+  'support',
 ];
 
 const RESOURCE_LABELS: Record<string, string> = {
@@ -35,7 +53,18 @@ const RESOURCE_LABELS: Record<string, string> = {
   support: 'Support',
 };
 
-const ACTIONS = ['READ', 'CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'SUSPEND', 'BAN', 'EXPORT', 'CONFIGURE'];
+const ACTIONS = [
+  'READ',
+  'CREATE',
+  'UPDATE',
+  'DELETE',
+  'APPROVE',
+  'REJECT',
+  'SUSPEND',
+  'BAN',
+  'EXPORT',
+  'CONFIGURE',
+];
 
 const ACTION_LABELS: Record<string, string> = {
   READ: 'Lecture',
@@ -51,16 +80,63 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const MOCK_ROLES = [
-  { id: '1', name: 'Super Admin', description: 'Accès complet à toutes les fonctionnalités', isSystem: true, userCount: 2 },
-  { id: '2', name: 'Finance', description: 'Gestion financière et transactions', isSystem: true, userCount: 3 },
-  { id: '3', name: 'Support', description: 'Support client et gestion des tickets', isSystem: true, userCount: 5 },
-  { id: '4', name: 'Modération', description: 'Modération des contenus et signalements', isSystem: true, userCount: 4 },
-  { id: '5', name: 'Marketing', description: 'Campagnes marketing et publicités', isSystem: false, userCount: 2 },
-  { id: '6', name: 'Product', description: 'Gestion des produits et fonctionnalités', isSystem: false, userCount: 1 },
+  {
+    id: '1',
+    name: 'Super Admin',
+    description: 'Accès complet à toutes les fonctionnalités',
+    isSystem: true,
+    userCount: 2,
+  },
+  {
+    id: '2',
+    name: 'Finance',
+    description: 'Gestion financière et transactions',
+    isSystem: true,
+    userCount: 3,
+  },
+  {
+    id: '3',
+    name: 'Support',
+    description: 'Support client et gestion des tickets',
+    isSystem: true,
+    userCount: 5,
+  },
+  {
+    id: '4',
+    name: 'Modération',
+    description: 'Modération des contenus et signalements',
+    isSystem: true,
+    userCount: 4,
+  },
+  {
+    id: '5',
+    name: 'Marketing',
+    description: 'Campagnes marketing et publicités',
+    isSystem: false,
+    userCount: 2,
+  },
+  {
+    id: '6',
+    name: 'Product',
+    description: 'Gestion des produits et fonctionnalités',
+    isSystem: false,
+    userCount: 1,
+  },
 ];
 
 const MOCK_PERMISSIONS: Record<string, string[]> = {
-  '1': ['READ', 'CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'SUSPEND', 'BAN', 'EXPORT', 'CONFIGURE'],
+  '1': [
+    'READ',
+    'CREATE',
+    'UPDATE',
+    'DELETE',
+    'APPROVE',
+    'REJECT',
+    'SUSPEND',
+    'BAN',
+    'EXPORT',
+    'CONFIGURE',
+  ],
   '2': ['READ', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT'],
   '3': ['READ', 'UPDATE', 'APPROVE', 'REJECT', 'SUSPEND'],
   '4': ['READ', 'UPDATE', 'APPROVE', 'REJECT', 'SUSPEND', 'BAN'],
@@ -69,12 +145,78 @@ const MOCK_PERMISSIONS: Record<string, string[]> = {
 };
 
 const MOCK_PERMISSION_GRID: Record<string, Record<string, boolean>> = {
-  '1': { READ: true, CREATE: true, UPDATE: true, DELETE: true, APPROVE: true, REJECT: true, SUSPEND: true, BAN: true, EXPORT: true, CONFIGURE: true },
-  '2': { READ: true, CREATE: true, UPDATE: true, DELETE: true, APPROVE: false, REJECT: false, SUSPEND: false, BAN: false, EXPORT: true, CONFIGURE: false },
-  '3': { READ: true, CREATE: false, UPDATE: true, DELETE: false, APPROVE: true, REJECT: true, SUSPEND: true, BAN: false, EXPORT: false, CONFIGURE: false },
-  '4': { READ: true, CREATE: false, UPDATE: true, DELETE: false, APPROVE: true, REJECT: true, SUSPEND: true, BAN: true, EXPORT: false, CONFIGURE: false },
-  '5': { READ: true, CREATE: true, UPDATE: true, DELETE: true, APPROVE: false, REJECT: false, SUSPEND: false, BAN: false, EXPORT: true, CONFIGURE: false },
-  '6': { READ: true, CREATE: true, UPDATE: true, DELETE: true, APPROVE: false, REJECT: false, SUSPEND: false, BAN: false, EXPORT: false, CONFIGURE: false },
+  '1': {
+    READ: true,
+    CREATE: true,
+    UPDATE: true,
+    DELETE: true,
+    APPROVE: true,
+    REJECT: true,
+    SUSPEND: true,
+    BAN: true,
+    EXPORT: true,
+    CONFIGURE: true,
+  },
+  '2': {
+    READ: true,
+    CREATE: true,
+    UPDATE: true,
+    DELETE: true,
+    APPROVE: false,
+    REJECT: false,
+    SUSPEND: false,
+    BAN: false,
+    EXPORT: true,
+    CONFIGURE: false,
+  },
+  '3': {
+    READ: true,
+    CREATE: false,
+    UPDATE: true,
+    DELETE: false,
+    APPROVE: true,
+    REJECT: true,
+    SUSPEND: true,
+    BAN: false,
+    EXPORT: false,
+    CONFIGURE: false,
+  },
+  '4': {
+    READ: true,
+    CREATE: false,
+    UPDATE: true,
+    DELETE: false,
+    APPROVE: true,
+    REJECT: true,
+    SUSPEND: true,
+    BAN: true,
+    EXPORT: false,
+    CONFIGURE: false,
+  },
+  '5': {
+    READ: true,
+    CREATE: true,
+    UPDATE: true,
+    DELETE: true,
+    APPROVE: false,
+    REJECT: false,
+    SUSPEND: false,
+    BAN: false,
+    EXPORT: true,
+    CONFIGURE: false,
+  },
+  '6': {
+    READ: true,
+    CREATE: true,
+    UPDATE: true,
+    DELETE: true,
+    APPROVE: false,
+    REJECT: false,
+    SUSPEND: false,
+    BAN: false,
+    EXPORT: false,
+    CONFIGURE: false,
+  },
 };
 
 const MOCK_USERS: Record<string, any[]> = {
@@ -87,9 +229,7 @@ const MOCK_USERS: Record<string, any[]> = {
     { id: 'u4', name: 'Moussa Koné', email: 'moussa@afribiz.com', roles: ['ADMIN'] },
     { id: 'u5', name: 'Aminata Traoré', email: 'amina@afribiz.com', roles: ['ADMIN'] },
   ],
-  '3': [
-    { id: 'u6', name: 'Ousmane Sissoko', email: 'ousmane@afribiz.com', roles: ['ADMIN'] },
-  ],
+  '3': [{ id: 'u6', name: 'Ousmane Sissoko', email: 'ousmane@afribiz.com', roles: ['ADMIN'] }],
 };
 
 function useRoles() {
@@ -97,7 +237,7 @@ function useRoles() {
     queryKey: ['admin', 'roles'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('/admin/roles');
+        const res = await apiClient.adminGetRoles();
         return res.data.data;
       } catch {
         return MOCK_ROLES;
@@ -111,7 +251,7 @@ function useAdminUsers() {
     queryKey: ['admin', 'users', 'admins'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('/admin/users/admins');
+        const res = await apiClient.adminGetUsersAdmins();
         return res.data.data;
       } catch {
         return Object.values(MOCK_USERS).flat();
@@ -125,6 +265,9 @@ export default function AdminRolesPage() {
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>('1');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [unassignTarget, setUnassignTarget] = useState<{ userId: string; userName: string } | null>(
+    null
+  );
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [newRole, setNewRole] = useState({ name: '', description: '' });
@@ -148,7 +291,7 @@ export default function AdminRolesPage() {
   const assignedUsers = selectedRoleId ? MOCK_USERS[selectedRoleId] || [] : [];
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post('/admin/roles', data),
+    mutationFn: (data: any) => apiClient.adminCreateRole(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
       setShowCreateModal(false);
@@ -160,19 +303,19 @@ export default function AdminRolesPage() {
 
   const assignMutation = useMutation({
     mutationFn: ({ roleId, userId }: { roleId: string; userId: string }) =>
-      apiClient.post('/admin/roles/assign', { roleId, userId }),
+      apiClient.adminAssignRole({ roleId, userId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
       setShowAssignModal(false);
       setAssignUserId('');
       setToast({ message: 'Utilisateur assigné au rôle', type: 'success' });
     },
-    onError: () => setToast({ message: 'Erreur lors de l\'assignation', type: 'error' }),
+    onError: () => setToast({ message: "Erreur lors de l'assignation", type: 'error' }),
   });
 
   const unassignMutation = useMutation({
     mutationFn: ({ roleId, userId }: { roleId: string; userId: string }) =>
-      apiClient.post('/admin/roles/unassign', { roleId, userId }),
+      apiClient.adminUnassignRole({ roleId, userId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
       setToast({ message: 'Utilisateur retiré du rôle', type: 'success' });
@@ -196,9 +339,11 @@ export default function AdminRolesPage() {
       };
       return updated;
     });
-    apiClient.put(`/admin/roles/${selectedRoleId}`, { permissions: { [resource]: newActions } }).catch((err) => {
-      console.error('Failed to update permissions:', err);
-    });
+    apiClient
+      .put(`/admin/roles/${selectedRoleId}`, { permissions: { [resource]: newActions } })
+      .catch((err) => {
+        console.error('Failed to update permissions:', err);
+      });
   };
 
   const handleAssign = () => {
@@ -208,20 +353,23 @@ export default function AdminRolesPage() {
 
   const handleUnassign = (userId: string, userName: string) => {
     if (!selectedRoleId) return;
-    if (!window.confirm(`Retirer « ${userName} » de ce rôle ?`)) return;
-    unassignMutation.mutate({ roleId: selectedRoleId, userId });
+    setUnassignTarget({ userId, userName });
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -260,21 +408,31 @@ export default function AdminRolesPage() {
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Shield className={`h-4 w-4 ${selectedRoleId === role.id ? 'text-white' : 'text-gray-400'}`} />
+                      <Shield
+                        className={`h-4 w-4 ${selectedRoleId === role.id ? 'text-white' : 'text-gray-400'}`}
+                      />
                       <div>
                         <span className="font-semibold">{role.name}</span>
                         {role.isSystem && (
-                          <Badge variant={selectedRoleId === role.id ? 'brand' : 'default'} size="xs" className="ml-2">
+                          <Badge
+                            variant={selectedRoleId === role.id ? 'brand' : 'default'}
+                            size="xs"
+                            className="ml-2"
+                          >
                             Système
                           </Badge>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs ${selectedRoleId === role.id ? 'text-white/70' : 'text-gray-400'}`}>
+                      <span
+                        className={`text-xs ${selectedRoleId === role.id ? 'text-white/70' : 'text-gray-400'}`}
+                      >
                         {role.userCount || 0} membre{(role.userCount || 0) > 1 ? 's' : ''}
                       </span>
-                      <ChevronRight className={`h-3.5 w-3.5 ${selectedRoleId === role.id ? 'text-white/70' : 'text-gray-300'}`} />
+                      <ChevronRight
+                        className={`h-3.5 w-3.5 ${selectedRoleId === role.id ? 'text-white/70' : 'text-gray-300'}`}
+                      />
                     </div>
                   </button>
                 ))}
@@ -291,10 +449,18 @@ export default function AdminRolesPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{selectedRole.name}</h3>
-                        {selectedRole.isSystem && <Badge variant="brand" size="xs">Système</Badge>}
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                          {selectedRole.name}
+                        </h3>
+                        {selectedRole.isSystem && (
+                          <Badge variant="brand" size="xs">
+                            Système
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{selectedRole.description || 'Aucune description'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {selectedRole.description || 'Aucune description'}
+                      </p>
                     </div>
                     <Button variant="secondary" size="sm" onClick={() => setShowAssignModal(true)}>
                       <Plus className="h-4 w-4" />
@@ -311,7 +477,10 @@ export default function AdminRolesPage() {
                         <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                           <th className="pb-2 pr-4 font-medium">Ressource</th>
                           {ACTIONS.map((action) => (
-                            <th key={action} className="pb-2 px-2 font-medium text-center whitespace-nowrap">
+                            <th
+                              key={action}
+                              className="pb-2 px-2 font-medium text-center whitespace-nowrap"
+                            >
                               {ACTION_LABELS[action]}
                             </th>
                           ))}
@@ -319,12 +488,17 @@ export default function AdminRolesPage() {
                       </thead>
                       <tbody>
                         {RESOURCES.map((resource) => (
-                          <tr key={resource} className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+                          <tr
+                            key={resource}
+                            className="border-b border-gray-100 dark:border-gray-800 last:border-0"
+                          >
                             <td className="py-2.5 pr-4 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                               {RESOURCE_LABELS[resource]}
                             </td>
                             {ACTIONS.map((action) => {
-                              const checked = !!(rolePermissions[resource] as any)?.[action as string];
+                              const checked = !!(rolePermissions[resource] as any)?.[
+                                action as string
+                              ];
                               return (
                                 <td key={action} className="py-2.5 px-2 text-center">
                                   <button
@@ -336,7 +510,11 @@ export default function AdminRolesPage() {
                                         : 'bg-gray-100 dark:bg-gray-700 text-gray-300 dark:text-gray-600'
                                     } ${selectedRole?.isSystem ? 'cursor-not-allowed opacity-50' : 'hover:opacity-80 cursor-pointer'}`}
                                   >
-                                    {checked ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                                    {checked ? (
+                                      <Check className="h-3.5 w-3.5" />
+                                    ) : (
+                                      <X className="h-3.5 w-3.5" />
+                                    )}
                                   </button>
                                 </td>
                               );
@@ -379,12 +557,15 @@ export default function AdminRolesPage() {
                               {u.name?.[0]?.toUpperCase() || 'U'}
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{u.name}</p>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                {u.name}
+                              </p>
                               <p className="text-xs text-gray-500">{u.email}</p>
                             </div>
                           </div>
                           <Button
-                            variant="ghost" size="xs"
+                            variant="ghost"
+                            size="xs"
                             onClick={() => handleUnassign(u.id, u.name)}
                             isLoading={unassignMutation.isPending}
                           >
@@ -429,7 +610,9 @@ export default function AdminRolesPage() {
             onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Description
+            </label>
             <textarea
               placeholder="Description du rôle..."
               value={newRole.description}
@@ -439,7 +622,9 @@ export default function AdminRolesPage() {
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>Annuler</Button>
+            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+              Annuler
+            </Button>
             <Button
               onClick={() => createMutation.mutate(newRole)}
               isLoading={createMutation.isPending}
@@ -455,26 +640,33 @@ export default function AdminRolesPage() {
       {/* Assign User Modal */}
       <Modal
         open={showAssignModal}
-        onClose={() => { setShowAssignModal(false); setAssignUserId(''); }}
+        onClose={() => {
+          setShowAssignModal(false);
+          setAssignUserId('');
+        }}
         title="Assigner un utilisateur"
         description={`Ajouter un utilisateur au rôle « ${selectedRole?.name || ''} »`}
         size="sm"
       >
         <div className="space-y-4">
-          <select
+          <Select
             value={assignUserId}
             onChange={(e) => setAssignUserId(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          >
-            <option value="">Sélectionnez un utilisateur</option>
-            {allUsers
+            placeholder="Sélectionnez un utilisateur"
+            options={allUsers
               .filter((u: any) => !assignedUsers.find((au: any) => au.id === u.id))
-              .map((u: any) => (
-                <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-              ))}
-          </select>
+              .map((u: any) => ({ value: u.id, label: `${u.name} (${u.email})` }))}
+          />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => { setShowAssignModal(false); setAssignUserId(''); }}>Annuler</Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowAssignModal(false);
+                setAssignUserId('');
+              }}
+            >
+              Annuler
+            </Button>
             <Button
               onClick={handleAssign}
               isLoading={assignMutation.isPending}
@@ -486,6 +678,23 @@ export default function AdminRolesPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmationModal
+        open={!!unassignTarget}
+        onClose={() => setUnassignTarget(null)}
+        onConfirm={async () => {
+          if (!unassignTarget || !selectedRoleId) return;
+          await unassignMutation.mutateAsync({
+            roleId: selectedRoleId,
+            userId: unassignTarget.userId,
+          });
+          setUnassignTarget(null);
+        }}
+        title="Retirer l'utilisateur"
+        description={`Êtes-vous sûr de vouloir retirer « ${unassignTarget?.userName} » de ce rôle ?`}
+        confirmLabel="Retirer"
+        variant="warning"
+      />
     </div>
   );
 }

@@ -24,38 +24,53 @@ const sizeMap = {
   full: 'max-w-[95vw] max-h-[95vh]',
 };
 
-export function Modal({ open, onClose, title, description, children, size = 'md', className, showCloseButton = true, closeOnOverlay = true }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  size = 'md',
+  className,
+  showCloseButton = true,
+  closeOnOverlay = true,
+}: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const titleId = title ? `modal-title-${title.replace(/\s+/g, '-').toLowerCase()}` : undefined;
-  const descriptionId = description ? `modal-desc-${description.replace(/\s+/g, '-').toLowerCase()}` : undefined;
+  const descriptionId = description
+    ? `modal-desc-${description.replace(/\s+/g, '-').toLowerCase()}`
+    : undefined;
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose();
-      return;
-    }
-    if (e.key === 'Tab' && dialogRef.current) {
-      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last?.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first?.focus();
+          }
         }
       }
-    }
-  }, [onClose]);
+    },
+    [onClose]
+  );
 
   useEffect(() => {
     if (open) {
@@ -71,7 +86,9 @@ export function Modal({ open, onClose, title, description, children, size = 'md'
       document.body.style.overflow = '';
       previousFocusRef.current?.focus();
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [open]);
 
   useEffect(() => {
@@ -106,8 +123,16 @@ export function Modal({ open, onClose, title, description, children, size = 'md'
         {(title || showCloseButton) && (
           <div className="flex items-start justify-between p-6 pb-4 border-b border-gray-100 dark:border-gray-700/50">
             <div>
-              {title && <h2 id={titleId} className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>}
-              {description && <p id={descriptionId} className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>}
+              {title && (
+                <h2 id={titleId} className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {title}
+                </h2>
+              )}
+              {description && (
+                <p id={descriptionId} className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {description}
+                </p>
+              )}
             </div>
             {showCloseButton && (
               <button

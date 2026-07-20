@@ -3,10 +3,7 @@
 import { useMemo } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import {
-  Package, Shield, Key, Settings, FileCheck, Layers,
-  ChevronLeft,
-} from 'lucide-react';
+import { Package, Shield, Key, Settings, FileCheck, Layers, ChevronLeft } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';

@@ -10,17 +10,28 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { useAuthStore } from '@/stores/authStore';
 import {
-  DollarSign, CreditCard, Shield, AlertTriangle, Banknote,
-  TrendingUp, Users, Clock, CheckCircle,
-  Wallet, Receipt, Activity, PieChart,
-  AlertCircle, UserX,
+  DollarSign,
+  CreditCard,
+  Shield,
+  AlertTriangle,
+  Banknote,
+  TrendingUp,
+  Users,
+  Clock,
+  CheckCircle,
+  Wallet,
+  Receipt,
+  Activity,
+  PieChart,
+  AlertCircle,
+  UserX,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type FinanceTab = 'overview' | 'transactions' | 'escrows' | 'fraud' | 'debts';
 
 const tabs: { id: FinanceTab; label: string; icon: any }[] = [
-  { id: 'overview', label: 'Vue d\'ensemble', icon: PieChart },
+  { id: 'overview', label: "Vue d'ensemble", icon: PieChart },
   { id: 'transactions', label: 'Transactions', icon: Receipt },
   { id: 'escrows', label: 'Escrows', icon: Shield },
   { id: 'fraud', label: 'Alertes fraude', icon: AlertTriangle },
@@ -31,19 +42,42 @@ function useAdminFinanceOverview() {
   return useQuery({
     queryKey: ['admin', 'finance', 'overview'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/finance/overview');
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetFinanceOverview();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement finance overview:', error);
+        return {
+          revenue: { total30d: 0, fees30d: 0 },
+          transactions: { total: 0, pending: 0 },
+          escrows: { active: 0, totalHeld: 0, disputes: 0 },
+          debts: { active: 0, totalOwed: 0, overdue: 0 },
+          risks: { highRisk: 0, blacklisted: 0 },
+        };
+      }
     },
+    retry: false,
   });
 }
 
-function useAdminTransactions(params?: { page?: number; limit?: number; status?: string; provider?: string }) {
+function useAdminTransactions(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  provider?: string;
+}) {
   return useQuery({
     queryKey: ['admin', 'finance', 'transactions', params],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/finance/transactions', { params });
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetFinanceTransactions(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement transactions:', error);
+        return { transactions: [], totalPages: 1, page: 1 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -51,9 +85,15 @@ function useAdminEscrows(params?: { page?: number; limit?: number; status?: stri
   return useQuery({
     queryKey: ['admin', 'finance', 'escrows', params],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/finance/escrows', { params });
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetFinanceEscrows(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement escrows:', error);
+        return { escrows: [], totalPages: 1, page: 1 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -61,9 +101,15 @@ function useAdminFraudAlerts() {
   return useQuery({
     queryKey: ['admin', 'finance', 'fraud'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/finance/fraud-alerts');
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetFinanceFraudAlerts();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement alertes fraude:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -71,9 +117,15 @@ function useAdminDebtRecovery() {
   return useQuery({
     queryKey: ['admin', 'finance', 'debts'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/finance/debt-recovery');
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetFinanceDebtRecovery();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement recouvrement:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -86,8 +138,16 @@ export default function AdminFinancePage() {
   const [escrowStatus, setEscrowStatus] = useState('');
 
   const { data: overview, isLoading: overviewLoading } = useAdminFinanceOverview();
-  const { data: txData, isLoading: txLoading } = useAdminTransactions({ page: txPage, limit: 15, status: txStatus || undefined });
-  const { data: escrowData, isLoading: escrowLoading } = useAdminEscrows({ page: escrowPage, limit: 15, status: escrowStatus || undefined });
+  const { data: txData, isLoading: txLoading } = useAdminTransactions({
+    page: txPage,
+    limit: 15,
+    status: txStatus || undefined,
+  });
+  const { data: escrowData, isLoading: escrowLoading } = useAdminEscrows({
+    page: escrowPage,
+    limit: 15,
+    status: escrowStatus || undefined,
+  });
   const { data: fraudData, isLoading: fraudLoading } = useAdminFraudAlerts();
   const { data: debtData, isLoading: debtLoading } = useAdminDebtRecovery();
 
@@ -113,14 +173,15 @@ export default function AdminFinancePage() {
   };
 
   const formatAmount = (val: number) => `${Number(val).toLocaleString()} FCFA`;
-  const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('fr-FR') : '-';
+  const formatDate = (d: string) => (d ? new Date(d).toLocaleDateString('fr-FR') : '-');
 
-  const escrowStatusColors: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
-    HELD: 'warning',
-    RELEASED: 'success',
-    DISPUTED: 'danger',
-    REFUNDED: 'info',
-  };
+  const escrowStatusColors: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> =
+    {
+      HELD: 'warning',
+      RELEASED: 'success',
+      DISPUTED: 'danger',
+      REFUNDED: 'info',
+    };
 
   const txStatusColors: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
     SUCCESS: 'success',
@@ -165,9 +226,15 @@ export default function AdminFinancePage() {
       </div>
 
       {/* TAB: OVERVIEW */}
-      {activeTab === 'overview' && (
-        overviewLoading ? <Loader className="py-12" /> : !overview ? (
-          <EmptyState icon={<PieChart className="h-8 w-8" />} title="Aucune donnée" description="Impossible de charger les statistiques financières." />
+      {activeTab === 'overview' &&
+        (overviewLoading ? (
+          <Loader className="py-12" />
+        ) : !overview ? (
+          <EmptyState
+            icon={<PieChart className="h-8 w-8" />}
+            title="Aucune donnée"
+            description="Impossible de charger les statistiques financières."
+          />
         ) : (
           <div className="space-y-6">
             {/* Revenue & Transactions */}
@@ -178,7 +245,9 @@ export default function AdminFinancePage() {
                     <DollarSign className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatAmount(overview.revenue?.total30d || 0)}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {formatAmount(overview.revenue?.total30d || 0)}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Revenu (30j)</p>
                   </div>
                 </div>
@@ -189,7 +258,9 @@ export default function AdminFinancePage() {
                     <Wallet className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatAmount(overview.revenue?.fees30d || 0)}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {formatAmount(overview.revenue?.fees30d || 0)}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Commission (30j)</p>
                   </div>
                 </div>
@@ -200,7 +271,9 @@ export default function AdminFinancePage() {
                     <Receipt className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview.transactions?.total || 0}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {overview.transactions?.total || 0}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Transactions total</p>
                   </div>
                 </div>
@@ -211,7 +284,9 @@ export default function AdminFinancePage() {
                     <Clock className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview.transactions?.pending || 0}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {overview.transactions?.pending || 0}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">En attente</p>
                   </div>
                 </div>
@@ -226,9 +301,13 @@ export default function AdminFinancePage() {
                     <Shield className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview.escrows?.active || 0}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {overview.escrows?.active || 0}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Escrows actifs</p>
-                    <p className="text-xs text-amber-600 dark:text-amber-400">{formatAmount(overview.escrows?.totalHeld || 0)}</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      {formatAmount(overview.escrows?.totalHeld || 0)}
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -238,7 +317,9 @@ export default function AdminFinancePage() {
                     <AlertCircle className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview.escrows?.disputes || 0}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {overview.escrows?.disputes || 0}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Litiges escrow</p>
                   </div>
                 </div>
@@ -249,9 +330,13 @@ export default function AdminFinancePage() {
                     <Banknote className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview.debts?.active || 0}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {overview.debts?.active || 0}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Dettes actives</p>
-                    <p className="text-xs text-orange-600 dark:text-orange-400">{formatAmount(overview.debts?.totalOwed || 0)}</p>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                      {formatAmount(overview.debts?.totalOwed || 0)}
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -261,7 +346,9 @@ export default function AdminFinancePage() {
                     <AlertTriangle className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview.debts?.overdue || 0}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {overview.debts?.overdue || 0}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Dettes impayées</p>
                   </div>
                 </div>
@@ -276,24 +363,29 @@ export default function AdminFinancePage() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
-                  <p className="text-lg font-bold text-red-700 dark:text-red-400">{overview.risks?.highRisk || 0}</p>
+                  <p className="text-lg font-bold text-red-700 dark:text-red-400">
+                    {overview.risks?.highRisk || 0}
+                  </p>
                   <p className="text-xs text-red-600 dark:text-red-300">Risque élevé / critique</p>
                 </div>
                 <div className="p-3 rounded-xl bg-gray-100 dark:bg-gray-700">
-                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{overview.risks?.blacklisted || 0}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    {overview.risks?.blacklisted || 0}
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Clients blacklistés</p>
                 </div>
                 <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50">
                   <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                    {overview.escrows?.active > 0 || overview.debts?.active > 0 ? '⚠️ Actif' : '✅ OK'}
+                    {overview.escrows?.active > 0 || overview.debts?.active > 0
+                      ? '⚠️ Actif'
+                      : '✅ OK'}
                   </p>
                   <p className="text-xs text-emerald-600 dark:text-emerald-300">État général</p>
                 </div>
               </div>
             </Card>
           </div>
-        )
-      )}
+        ))}
 
       {/* TAB: TRANSACTIONS */}
       {activeTab === 'transactions' && (
@@ -302,7 +394,10 @@ export default function AdminFinancePage() {
             {['', 'SUCCESS', 'PENDING', 'FAILED', 'REFUNDED'].map((s) => (
               <button
                 key={s}
-                onClick={() => { setTxStatus(s); setTxPage(1); }}
+                onClick={() => {
+                  setTxStatus(s);
+                  setTxPage(1);
+                }}
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
                   txStatus === s
@@ -310,13 +405,27 @@ export default function AdminFinancePage() {
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                 )}
               >
-                {s ? (s === 'SUCCESS' ? 'Succès' : s === 'PENDING' ? 'En attente' : s === 'FAILED' ? 'Échec' : 'Remboursé') : 'Tous'}
+                {s
+                  ? s === 'SUCCESS'
+                    ? 'Succès'
+                    : s === 'PENDING'
+                      ? 'En attente'
+                      : s === 'FAILED'
+                        ? 'Échec'
+                        : 'Remboursé'
+                  : 'Tous'}
               </button>
             ))}
           </div>
 
-          {txLoading ? <Loader className="py-12" /> : !txData?.transactions?.length ? (
-            <EmptyState icon={<Receipt className="h-8 w-8" />} title="Aucune transaction" description="Aucune transaction trouvée." />
+          {txLoading ? (
+            <Loader className="py-12" />
+          ) : !txData?.transactions?.length ? (
+            <EmptyState
+              icon={<Receipt className="h-8 w-8" />}
+              title="Aucune transaction"
+              description="Aucune transaction trouvée."
+            />
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <table className="w-full text-sm">
@@ -333,14 +442,37 @@ export default function AdminFinancePage() {
                 </thead>
                 <tbody>
                   {txData.transactions.map((tx: any) => (
-                    <tr key={tx.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                      <td className="p-3 text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatDate(tx.createdAt)}</td>
-                      <td className="p-3 text-gray-900 dark:text-gray-100">{tx.businessName || '-'}</td>
-                      <td className="p-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatAmount(tx.amount)}</td>
-                      <td className="p-3"><Badge variant="default" size="xs">{tx.provider || '-'}</Badge></td>
-                      <td className="p-3 text-gray-600 dark:text-gray-400">{formatAmount(tx.fee || 0)}</td>
-                      <td className="p-3"><Badge variant={txStatusColors[tx.status] || 'default'} size="xs">{tx.status}</Badge></td>
-                      <td className="p-3"><span className="text-xs font-mono text-gray-500">{tx.providerRef?.slice(0, 12) || '-'}</span></td>
+                    <tr
+                      key={tx.id}
+                      className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                    >
+                      <td className="p-3 text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        {formatDate(tx.createdAt)}
+                      </td>
+                      <td className="p-3 text-gray-900 dark:text-gray-100">
+                        {tx.businessName || '-'}
+                      </td>
+                      <td className="p-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        {formatAmount(tx.amount)}
+                      </td>
+                      <td className="p-3">
+                        <Badge variant="default" size="xs">
+                          {tx.provider || '-'}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-gray-600 dark:text-gray-400">
+                        {formatAmount(tx.fee || 0)}
+                      </td>
+                      <td className="p-3">
+                        <Badge variant={txStatusColors[tx.status] || 'default'} size="xs">
+                          {tx.status}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-xs font-mono text-gray-500">
+                          {tx.providerRef?.slice(0, 12) || '-'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -350,10 +482,26 @@ export default function AdminFinancePage() {
 
           {txData && txData.totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">Page {txData.page} sur {txData.totalPages}</p>
+              <p className="text-sm text-gray-500">
+                Page {txData.page} sur {txData.totalPages}
+              </p>
               <div className="flex gap-2">
-                <Button variant="secondary" size="sm" disabled={txPage <= 1} onClick={() => setTxPage(p => Math.max(1, p - 1))}>Précédent</Button>
-                <Button variant="secondary" size="sm" disabled={txPage >= (txData.totalPages || 1)} onClick={() => setTxPage(p => p + 1)}>Suivant</Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={txPage <= 1}
+                  onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                >
+                  Précédent
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={txPage >= (txData.totalPages || 1)}
+                  onClick={() => setTxPage((p) => p + 1)}
+                >
+                  Suivant
+                </Button>
               </div>
             </div>
           )}
@@ -367,7 +515,10 @@ export default function AdminFinancePage() {
             {['', 'HELD', 'RELEASED', 'DISPUTED', 'REFUNDED'].map((s) => (
               <button
                 key={s}
-                onClick={() => { setEscrowStatus(s); setEscrowPage(1); }}
+                onClick={() => {
+                  setEscrowStatus(s);
+                  setEscrowPage(1);
+                }}
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
                   escrowStatus === s
@@ -380,8 +531,14 @@ export default function AdminFinancePage() {
             ))}
           </div>
 
-          {escrowLoading ? <Loader className="py-12" /> : !escrowData?.escrows?.length ? (
-            <EmptyState icon={<Shield className="h-8 w-8" />} title="Aucun escrow" description="Aucun escrow trouvé." />
+          {escrowLoading ? (
+            <Loader className="py-12" />
+          ) : !escrowData?.escrows?.length ? (
+            <EmptyState
+              icon={<Shield className="h-8 w-8" />}
+              title="Aucun escrow"
+              description="Aucun escrow trouvé."
+            />
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <table className="w-full text-sm">
@@ -397,13 +554,36 @@ export default function AdminFinancePage() {
                 </thead>
                 <tbody>
                   {escrowData.escrows.map((e: any) => (
-                    <tr key={e.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                      <td className="p-3 text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatDate(e.createdAt)}</td>
-                      <td className="p-3 text-gray-900 dark:text-gray-100">{e.businessName || '-'}</td>
-                      <td className="p-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatAmount(e.amount)}</td>
-                      <td className="p-3"><Badge variant={escrowStatusColors[e.status] || 'default'} size="xs">{e.status}</Badge></td>
-                      <td className="p-3">{e.disputeReason ? <span className="text-xs text-red-600">{e.disputeReason.slice(0, 30)}</span> : '-'}</td>
-                      <td className="p-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{e.releasedAt ? formatDate(e.releasedAt) : '-'}</td>
+                    <tr
+                      key={e.id}
+                      className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                    >
+                      <td className="p-3 text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        {formatDate(e.createdAt)}
+                      </td>
+                      <td className="p-3 text-gray-900 dark:text-gray-100">
+                        {e.businessName || '-'}
+                      </td>
+                      <td className="p-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        {formatAmount(e.amount)}
+                      </td>
+                      <td className="p-3">
+                        <Badge variant={escrowStatusColors[e.status] || 'default'} size="xs">
+                          {e.status}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        {e.disputeReason ? (
+                          <span className="text-xs text-red-600">
+                            {e.disputeReason.slice(0, 30)}
+                          </span>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td className="p-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                        {e.releasedAt ? formatDate(e.releasedAt) : '-'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -413,10 +593,26 @@ export default function AdminFinancePage() {
 
           {escrowData && escrowData.totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">Page {escrowData.page} sur {escrowData.totalPages}</p>
+              <p className="text-sm text-gray-500">
+                Page {escrowData.page} sur {escrowData.totalPages}
+              </p>
               <div className="flex gap-2">
-                <Button variant="secondary" size="sm" disabled={escrowPage <= 1} onClick={() => setEscrowPage(p => Math.max(1, p - 1))}>Précédent</Button>
-                <Button variant="secondary" size="sm" disabled={escrowPage >= (escrowData.totalPages || 1)} onClick={() => setEscrowPage(p => p + 1)}>Suivant</Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={escrowPage <= 1}
+                  onClick={() => setEscrowPage((p) => Math.max(1, p - 1))}
+                >
+                  Précédent
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={escrowPage >= (escrowData.totalPages || 1)}
+                  onClick={() => setEscrowPage((p) => p + 1)}
+                >
+                  Suivant
+                </Button>
               </div>
             </div>
           )}
@@ -424,18 +620,39 @@ export default function AdminFinancePage() {
       )}
 
       {/* TAB: FRAUD ALERTS */}
-      {activeTab === 'fraud' && (
-        fraudLoading ? <Loader className="py-12" /> : !fraudData?.alerts?.length ? (
-          <EmptyState icon={<Shield className="h-8 w-8" />} title="Aucune alerte" description="Aucune alerte de fraude détectée." />
+      {activeTab === 'fraud' &&
+        (fraudLoading ? (
+          <Loader className="py-12" />
+        ) : !fraudData?.alerts?.length ? (
+          <EmptyState
+            icon={<Shield className="h-8 w-8" />}
+            title="Aucune alerte"
+            description="Aucune alerte de fraude détectée."
+          />
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-gray-500">{fraudData.total} alerte{fraudData.total !== 1 ? 's' : ''} détectée{fraudData.total !== 1 ? 's' : ''}</p>
+            <p className="text-sm text-gray-500">
+              {fraudData.total} alerte{fraudData.total !== 1 ? 's' : ''} détectée
+              {fraudData.total !== 1 ? 's' : ''}
+            </p>
             {fraudData.alerts.map((alert: any, i: number) => {
               const SevIcon = severityIcons[alert.severity] || AlertTriangle;
               return (
-                <div key={i} className="p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-shadow">
+                <div
+                  key={i}
+                  className="p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-shadow"
+                >
                   <div className="flex items-start gap-3">
-                    <div className={cn('p-2 rounded-lg', alert.severity === 'HIGH' ? 'bg-red-50 text-red-600' : alert.severity === 'MEDIUM' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600')}>
+                    <div
+                      className={cn(
+                        'p-2 rounded-lg',
+                        alert.severity === 'HIGH'
+                          ? 'bg-red-50 text-red-600'
+                          : alert.severity === 'MEDIUM'
+                            ? 'bg-amber-50 text-amber-600'
+                            : 'bg-blue-50 text-blue-600'
+                      )}
+                    >
                       <SevIcon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -443,35 +660,59 @@ export default function AdminFinancePage() {
                         <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 capitalize">
                           {alert.type?.replace(/_/g, ' ')}
                         </span>
-                        <Badge variant={alert.severity === 'HIGH' ? 'danger' : alert.severity === 'MEDIUM' ? 'warning' : 'info'} size="xs">
+                        <Badge
+                          variant={
+                            alert.severity === 'HIGH'
+                              ? 'danger'
+                              : alert.severity === 'MEDIUM'
+                                ? 'warning'
+                                : 'info'
+                          }
+                          size="xs"
+                        >
                           {alert.severity}
                         </Badge>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400">{alert.reason}</p>
                       {alert.client && (
-                        <p className="text-xs text-gray-500 mt-0.5">{alert.client.firstName} {alert.client.lastName} · {alert.client.email}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {alert.client.firstName} {alert.client.lastName} · {alert.client.email}
+                        </p>
                       )}
-                      {alert.amount && <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5">{formatAmount(alert.amount)}</p>}
+                      {alert.amount && (
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5">
+                          {formatAmount(alert.amount)}
+                        </p>
+                      )}
                     </div>
-                    <span className="text-[10px] text-gray-400 shrink-0">{formatDate(alert.createdAt)}</span>
+                    <span className="text-[10px] text-gray-400 shrink-0">
+                      {formatDate(alert.createdAt)}
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
-        )
-      )}
+        ))}
 
       {/* TAB: DEBT RECOVERY */}
-      {activeTab === 'debts' && (
-        debtLoading ? <Loader className="py-12" /> : !debtData ? (
-          <EmptyState icon={<TrendingUp className="h-8 w-8" />} title="Aucune donnée" description="Impossible de charger les statistiques de recouvrement." />
+      {activeTab === 'debts' &&
+        (debtLoading ? (
+          <Loader className="py-12" />
+        ) : !debtData ? (
+          <EmptyState
+            icon={<TrendingUp className="h-8 w-8" />}
+            title="Aucune donnée"
+            description="Impossible de charger les statistiques de recouvrement."
+          />
         ) : (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card padding="md">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total dettes</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{debtData.totalDebts || 0}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {debtData.totalDebts || 0}
+                </p>
               </Card>
               <Card padding="md">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Dettes soldées</p>
@@ -479,11 +720,15 @@ export default function AdminFinancePage() {
               </Card>
               <Card padding="md">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Montant total dû</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatAmount(debtData.totalDebtAmount || 0)}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {formatAmount(debtData.totalDebtAmount || 0)}
+                </p>
               </Card>
               <Card padding="md">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Montant recouvré</p>
-                <p className="text-2xl font-bold text-brand">{formatAmount(debtData.recoveredAmount || 0)}</p>
+                <p className="text-2xl font-bold text-brand">
+                  {formatAmount(debtData.recoveredAmount || 0)}
+                </p>
               </Card>
             </div>
 
@@ -494,10 +739,12 @@ export default function AdminFinancePage() {
                   <Activity className="h-4 w-4" />
                   Taux de recouvrement
                 </h3>
-                <span className={cn(
-                  'text-lg font-bold',
-                  (debtData.recoveryRate || 0) >= 50 ? 'text-emerald-600' : 'text-amber-600'
-                )}>
+                <span
+                  className={cn(
+                    'text-lg font-bold',
+                    (debtData.recoveryRate || 0) >= 50 ? 'text-emerald-600' : 'text-amber-600'
+                  )}
+                >
                   {debtData.recoveryRate || 0}%
                 </span>
               </div>
@@ -517,20 +764,26 @@ export default function AdminFinancePage() {
               <Card padding="md" title="Top débiteurs" titleIcon={<UserX className="h-4 w-4" />}>
                 <div className="space-y-2">
                   {debtData.topDebtors.map((d: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                    >
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-gray-400 w-5">{i + 1}</span>
-                        <span className="text-sm text-gray-900 dark:text-gray-100">{d.buyerId?.slice(0, 12)}</span>
+                        <span className="text-sm text-gray-900 dark:text-gray-100">
+                          {d.buyerId?.slice(0, 12)}
+                        </span>
                       </div>
-                      <span className="text-sm font-semibold text-red-600">{formatAmount(d._sum?.remainingAmount || 0)}</span>
+                      <span className="text-sm font-semibold text-red-600">
+                        {formatAmount(d._sum?.remainingAmount || 0)}
+                      </span>
                     </div>
                   ))}
                 </div>
               </Card>
             )}
           </div>
-        )
-      )}
+        ))}
     </div>
   );
 }

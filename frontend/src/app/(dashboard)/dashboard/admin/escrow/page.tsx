@@ -4,8 +4,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import {
-  Shield, CheckCircle, RotateCcw, Scale, Search, DollarSign,
-  Lock, Unlock, Gavel,
+  Shield,
+  CheckCircle,
+  RotateCcw,
+  Scale,
+  Search,
+  DollarSign,
+  Lock,
+  Unlock,
+  Gavel,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -35,7 +42,7 @@ function useAdminEscrows(params?: { status?: string; page?: number; limit?: numb
   return useQuery({
     queryKey: ['admin', 'escrow', params],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/escrow', { params });
+      const res = await apiClient.adminGetEscrowList(params);
       return res.data.data;
     },
   });
@@ -45,7 +52,7 @@ function useAdminEscrowStats() {
   return useQuery({
     queryKey: ['admin', 'escrow', 'stats'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/escrow/stats');
+      const res = await apiClient.adminGetEscrowStats2();
       return res.data.data;
     },
   });
@@ -54,7 +61,7 @@ function useAdminEscrowStats() {
 function useReleaseEscrow() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.post(`/admin/escrow/${id}/release`),
+    mutationFn: (id: string) => apiClient.adminReleaseEscrow2(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'escrow'] });
     },
@@ -64,7 +71,7 @@ function useReleaseEscrow() {
 function useRefundEscrow() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.post(`/admin/escrow/${id}/refund`),
+    mutationFn: (id: string) => apiClient.adminRefundEscrow2(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'escrow'] });
     },
@@ -75,7 +82,7 @@ function useArbitrateEscrow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, decision }: { id: string; decision: 'release' | 'refund' }) =>
-      apiClient.post(`/admin/escrow/${id}/arbitrate`, { decision }),
+      apiClient.adminArbitrateEscrow(id, decision),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'escrow'] });
     },
@@ -108,7 +115,7 @@ export default function AdminEscrowPage() {
 
   const escrows = Array.isArray(escrowData)
     ? escrowData
-    : escrowData?.escrows ?? escrowData?.data ?? [];
+    : (escrowData?.escrows ?? escrowData?.data ?? []);
   const total = escrowData?.total ?? escrowData?.count ?? escrows?.length ?? 0;
   const totalPages = Math.ceil(total / limit) || 1;
 
@@ -155,7 +162,9 @@ export default function AdminEscrowPage() {
               <Unlock className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats?.active ?? '-'}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats?.active ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Actifs</p>
             </div>
           </div>
@@ -166,7 +175,9 @@ export default function AdminEscrowPage() {
               <CheckCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats?.completed ?? '-'}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats?.completed ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Terminés</p>
             </div>
           </div>
@@ -177,7 +188,9 @@ export default function AdminEscrowPage() {
               <Gavel className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats?.disputed ?? '-'}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats?.disputed ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Litigieux</p>
             </div>
           </div>
@@ -188,7 +201,9 @@ export default function AdminEscrowPage() {
               <RotateCcw className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats?.refunded ?? '-'}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats?.refunded ?? '-'}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Remboursés</p>
             </div>
           </div>
@@ -213,7 +228,10 @@ export default function AdminEscrowPage() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setPage(1); }}
+            onClick={() => {
+              setActiveTab(tab.id);
+              setPage(1);
+            }}
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
               activeTab === tab.id
                 ? 'border-brand text-brand'
@@ -250,7 +268,10 @@ export default function AdminEscrowPage() {
             </thead>
             <tbody>
               {escrows.map((escrow: any) => (
-                <tr key={escrow.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                <tr
+                  key={escrow.id}
+                  className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                >
                   <td className="p-3 text-gray-900 dark:text-gray-100 whitespace-nowrap">
                     {escrow.createdAt ? new Date(escrow.createdAt).toLocaleString('fr-FR') : '-'}
                   </td>
@@ -272,7 +293,9 @@ export default function AdminEscrowPage() {
                     {escrow.amount ? `${Number(escrow.amount).toLocaleString()} FCFA` : '-'}
                   </td>
                   <td className="p-3">
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusColor[escrow.status] || ''}`}>
+                    <span
+                      className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusColor[escrow.status] || ''}`}
+                    >
                       {statusLabel[escrow.status] || escrow.status}
                     </span>
                   </td>
@@ -305,7 +328,9 @@ export default function AdminEscrowPage() {
                           <Button
                             variant="primary"
                             size="xs"
-                            onClick={() => arbitrateMutation.mutate({ id: escrow.id, decision: 'release' })}
+                            onClick={() =>
+                              arbitrateMutation.mutate({ id: escrow.id, decision: 'release' })
+                            }
                             isLoading={arbitrateMutation.isPending}
                           >
                             <Unlock className="h-3 w-3" />
@@ -314,7 +339,9 @@ export default function AdminEscrowPage() {
                           <Button
                             variant="secondary"
                             size="xs"
-                            onClick={() => arbitrateMutation.mutate({ id: escrow.id, decision: 'refund' })}
+                            onClick={() =>
+                              arbitrateMutation.mutate({ id: escrow.id, decision: 'refund' })
+                            }
                             isLoading={arbitrateMutation.isPending}
                           >
                             <RotateCcw className="h-3 w-3" />

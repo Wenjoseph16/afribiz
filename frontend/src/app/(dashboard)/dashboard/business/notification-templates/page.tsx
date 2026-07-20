@@ -3,14 +3,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
-import { useMyBusiness } from '@/features/hooks';
+import { useMyBusiness } from '@/features/hooks/business';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useToast } from '@/components/ui/ToastProvider';
-import {
-  Save, ToggleLeft, ToggleRight, Trash2, MessageSquare,
-} from 'lucide-react';
+import { Save, ToggleLeft, ToggleRight, Trash2, MessageSquare } from 'lucide-react';
 
 const TYPE_LABELS: Record<string, string> = {
   ORDER_PLACED: 'Commande passée',
@@ -86,9 +84,7 @@ function TemplateEditor({
               <MessageSquare className="h-4 w-4" />
             </button>
             <div>
-              <h4 className="text-sm font-semibold text-foreground">
-                {TYPE_LABELS[type] || type}
-              </h4>
+              <h4 className="text-sm font-semibold text-foreground">{TYPE_LABELS[type] || type}</h4>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {TYPE_DESCRIPTIONS[type] || ''}
               </p>
@@ -151,7 +147,8 @@ function TemplateEditor({
               className="w-full px-3 py-2 text-sm bg-muted border border-border rounded-xl focus:bg-card focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all placeholder:text-muted-foreground resize-none"
             />
             <p className="text-[11px] text-muted-foreground mt-1">
-              Variables disponibles : {'{businessName}'}, {'{orderId}'}, {'{amount}'}, {'{clientName}'}
+              Variables disponibles : {'{businessName}'}, {'{orderId}'}, {'{amount}'},{' '}
+              {'{clientName}'}
             </p>
           </div>
           <div className="flex justify-end">
@@ -172,7 +169,12 @@ function TemplateEditor({
 }
 
 export default function NotificationTemplatesPage() {
-  const { data: business, isLoading: bizLoading, error: bizError, refetch: bizRefetch } = useMyBusiness();
+  const {
+    data: business,
+    isLoading: bizLoading,
+    error: bizError,
+    refetch: bizRefetch,
+  } = useMyBusiness();
   const { notify } = useToast();
   const queryClient = useQueryClient();
 
@@ -202,7 +204,15 @@ export default function NotificationTemplatesPage() {
   const availableTypes = Array.isArray(availableTypesData) ? availableTypesData : [];
 
   const saveMutation = useMutation({
-    mutationFn: async ({ type, customTitle, customDescription }: { type: string; customTitle: string; customDescription: string }) => {
+    mutationFn: async ({
+      type,
+      customTitle,
+      customDescription,
+    }: {
+      type: string;
+      customTitle: string;
+      customDescription: string;
+    }) => {
       const res = await apiClient.post(`/notifications/templates/business/${bizId}`, {
         type,
         customTitle,
@@ -215,7 +225,11 @@ export default function NotificationTemplatesPage() {
       notify({ title: 'Template enregistré', variant: 'success' });
     },
     onError: () => {
-      notify({ title: 'Erreur', description: 'Impossible d\'enregistrer le template', variant: 'error' });
+      notify({
+        title: 'Erreur',
+        description: "Impossible d'enregistrer le template",
+        variant: 'error',
+      });
     },
   });
 
@@ -244,7 +258,11 @@ export default function NotificationTemplatesPage() {
       notify({ title: 'Template supprimé', variant: 'success' });
     },
     onError: () => {
-      notify({ title: 'Erreur', description: 'Impossible de supprimer le template', variant: 'error' });
+      notify({
+        title: 'Erreur',
+        description: 'Impossible de supprimer le template',
+        variant: 'error',
+      });
     },
   });
 
@@ -284,7 +302,10 @@ export default function NotificationTemplatesPage() {
         </p>
       </div>
 
-      <Card padding="md" className="bg-gradient-to-r from-brand/5 to-brand/10 dark:from-brand/10 dark:to-brand/5 border-brand/20">
+      <Card
+        padding="md"
+        className="bg-gradient-to-r from-brand/5 to-brand/10 dark:from-brand/10 dark:to-brand/5 border-brand/20"
+      >
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-lg bg-brand/10 text-brand">
             <MessageSquare className="h-5 w-5" />
@@ -292,10 +313,22 @@ export default function NotificationTemplatesPage() {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Variables disponibles</h3>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Utilisez <code className="px-1 py-0.5 bg-muted rounded text-brand text-[11px]">{'{businessName}'}</code>,
-              <code className="px-1 py-0.5 bg-muted rounded text-brand text-[11px]">{'{orderId}'}</code>,
-              <code className="px-1 py-0.5 bg-muted rounded text-brand text-[11px]">{'{amount}'}</code> et
-              <code className="px-1 py-0.5 bg-muted rounded text-brand text-[11px]">{'{clientName}'}</code>
+              Utilisez{' '}
+              <code className="px-1 py-0.5 bg-muted rounded text-brand text-[11px]">
+                {'{businessName}'}
+              </code>
+              ,
+              <code className="px-1 py-0.5 bg-muted rounded text-brand text-[11px]">
+                {'{orderId}'}
+              </code>
+              ,
+              <code className="px-1 py-0.5 bg-muted rounded text-brand text-[11px]">
+                {'{amount}'}
+              </code>{' '}
+              et
+              <code className="px-1 py-0.5 bg-muted rounded text-brand text-[11px]">
+                {'{clientName}'}
+              </code>
               dans vos messages pour les personnaliser automatiquement.
             </p>
           </div>

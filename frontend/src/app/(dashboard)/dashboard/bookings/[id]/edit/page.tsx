@@ -71,12 +71,14 @@ export default function EditBookingPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const startDateTime = form.date && form.startTime
-      ? new Date(`${form.date}T${form.startTime}`).toISOString()
-      : undefined;
-    const endDateTime = form.date && form.endTime
-      ? new Date(`${form.date}T${form.endTime}`).toISOString()
-      : undefined;
+    const startDateTime =
+      form.date && form.startTime
+        ? new Date(`${form.date}T${form.startTime}`).toISOString()
+        : undefined;
+    const endDateTime =
+      form.date && form.endTime
+        ? new Date(`${form.date}T${form.endTime}`).toISOString()
+        : undefined;
 
     updateMutation.mutate({
       clientName: form.clientName || undefined,
@@ -112,7 +114,10 @@ export default function EditBookingPage() {
         description={booking.bookingNumber || `#${booking.id?.slice(0, 8)}`}
         breadcrumbs={[
           { label: 'Réservations', href: '/dashboard/bookings' },
-          { label: booking.bookingNumber || `#${booking.id?.slice(0, 8)}`, href: `/dashboard/bookings/${id}` },
+          {
+            label: booking.bookingNumber || `#${booking.id?.slice(0, 8)}`,
+            href: `/dashboard/bookings/${id}`,
+          },
           { label: 'Modifier' },
         ]}
         actions={
@@ -131,7 +136,9 @@ export default function EditBookingPage() {
           <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Informations</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Client</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Client
+              </label>
               <input
                 type="text"
                 value={form.clientName}
@@ -141,7 +148,9 @@ export default function EditBookingPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Statut</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Statut
+              </label>
               <select
                 value={form.status}
                 onChange={(e) => handleChange('status', e.target.value)}
@@ -155,7 +164,9 @@ export default function EditBookingPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Notes
+              </label>
               <textarea
                 value={form.notes}
                 onChange={(e) => handleChange('notes', e.target.value)}
@@ -174,7 +185,9 @@ export default function EditBookingPage() {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Date
+              </label>
               <input
                 type="date"
                 value={form.date}
@@ -183,7 +196,9 @@ export default function EditBookingPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Début</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Début
+              </label>
               <input
                 type="time"
                 value={form.startTime}
@@ -192,7 +207,9 @@ export default function EditBookingPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Fin</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Fin
+              </label>
               <input
                 type="time"
                 value={form.endTime}
@@ -207,7 +224,9 @@ export default function EditBookingPage() {
           <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Montant</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Montant total (FCFA)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Montant total (FCFA)
+              </label>
               <input
                 type="number"
                 value={form.totalAmount}
@@ -219,7 +238,9 @@ export default function EditBookingPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Montant payé (FCFA)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Montant payé (FCFA)
+              </label>
               <input
                 type="number"
                 value={form.paidAmount}

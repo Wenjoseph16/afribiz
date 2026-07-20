@@ -4,8 +4,17 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import {
-  BarChart3, Users, Building2, Code2, Puzzle,
-  Megaphone, CreditCard, Shield, Store, Database, TrendingUp,
+  BarChart3,
+  Users,
+  Building2,
+  Code2,
+  Puzzle,
+  Megaphone,
+  CreditCard,
+  Shield,
+  Store,
+  Database,
+  TrendingUp,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -22,8 +31,9 @@ export default function AdminStatisticsPage() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin', 'statistics', dateFrom, dateTo],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/statistics', {
-        params: { from: dateFrom || undefined, to: dateTo || undefined },
+      const res = await apiClient.adminGetStatistics({
+        from: dateFrom || undefined,
+        to: dateTo || undefined,
       });
       return res.data.data;
     },
@@ -55,7 +65,7 @@ export default function AdminStatisticsPage() {
       bg: 'bg-brand-50 dark:bg-brand-900/30',
       items: [
         { label: 'Total', value: s.users?.total ?? '-' },
-        { label: 'Nouveaux (aujourd\'hui)', value: s.users?.newToday ?? '-' },
+        { label: "Nouveaux (aujourd'hui)", value: s.users?.newToday ?? '-' },
         { label: 'Nouveaux (cette semaine)', value: s.users?.newWeek ?? '-' },
         { label: 'Nouveaux (ce mois)', value: s.users?.newMonth ?? '-' },
         { label: 'Actifs', value: s.users?.active ?? '-' },
@@ -112,7 +122,10 @@ export default function AdminStatisticsPage() {
         { label: 'Impressions', value: s.ads?.impressions?.toLocaleString() ?? '-' },
         { label: 'Clics', value: s.ads?.clicks?.toLocaleString() ?? '-' },
         { label: 'Conversions', value: s.ads?.conversions ?? '-' },
-        { label: 'Revenus', value: s.ads?.revenue ? `${Number(s.ads.revenue).toLocaleString()} FCFA` : '-' },
+        {
+          label: 'Revenus',
+          value: s.ads?.revenue ? `${Number(s.ads.revenue).toLocaleString()} FCFA` : '-',
+        },
       ],
     },
     {
@@ -122,9 +135,20 @@ export default function AdminStatisticsPage() {
       color: 'text-blue-600',
       bg: 'bg-blue-50 dark:bg-blue-900/30',
       items: [
-        { label: 'Volume', value: s.payments?.volume ? `${Number(s.payments.volume).toLocaleString()} FCFA` : '-' },
-        { label: 'Taux de succès', value: s.payments?.successRate ? `${s.payments.successRate}%` : '-' },
-        { label: 'Montant moyen', value: s.payments?.avgAmount ? `${Number(s.payments.avgAmount).toLocaleString()} FCFA` : '-' },
+        {
+          label: 'Volume',
+          value: s.payments?.volume ? `${Number(s.payments.volume).toLocaleString()} FCFA` : '-',
+        },
+        {
+          label: 'Taux de succès',
+          value: s.payments?.successRate ? `${s.payments.successRate}%` : '-',
+        },
+        {
+          label: 'Montant moyen',
+          value: s.payments?.avgAmount
+            ? `${Number(s.payments.avgAmount).toLocaleString()} FCFA`
+            : '-',
+        },
         { label: 'Par méthode', value: s.payments?.byMethod ?? '-' },
       ],
     },
@@ -162,8 +186,11 @@ export default function AdminStatisticsPage() {
       items: [
         { label: 'Partenaires', value: s.datahub?.partners ?? '-' },
         { label: 'Rapports', value: s.datahub?.reports ?? '-' },
-        { label: 'Logs d\'accès', value: s.datahub?.accessLogs ?? '-' },
-        { label: 'Revenus', value: s.datahub?.revenue ? `${Number(s.datahub.revenue).toLocaleString()} FCFA` : '-' },
+        { label: "Logs d'accès", value: s.datahub?.accessLogs ?? '-' },
+        {
+          label: 'Revenus',
+          value: s.datahub?.revenue ? `${Number(s.datahub.revenue).toLocaleString()} FCFA` : '-',
+        },
       ],
     },
     {
@@ -233,8 +260,12 @@ export default function AdminStatisticsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   {section.items.map((item) => (
                     <div key={item.label} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{item.value}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.label}</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        {item.value}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {item.label}
+                      </p>
                     </div>
                   ))}
                 </div>

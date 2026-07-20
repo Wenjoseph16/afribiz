@@ -9,9 +9,12 @@ interface CartIconProps {
   linkClassName?: string;
 }
 
-export function CartIcon({ className = '', linkClassName = 'relative p-2.5 rounded-xl hover:bg-muted text-muted-foreground transition-colors' }: CartIconProps) {
+export function CartIcon({
+  className = '',
+  linkClassName = 'relative p-2.5 rounded-xl hover:bg-muted text-muted-foreground transition-colors',
+}: CartIconProps) {
   const { data: cartData, isLoading } = useCart();
-  
+
   const cartItems = (cartData as { items?: Array<{ quantity: number }> })?.items || [];
   const itemCount = cartItems.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
 

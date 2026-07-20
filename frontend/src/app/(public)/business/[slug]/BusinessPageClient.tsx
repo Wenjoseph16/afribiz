@@ -2,6 +2,11 @@
 
 import { BusinessPage } from '@/components/business-public/BusinessPage';
 
-export function BusinessPageClient({ slug }: { slug: string }) {
-  return <BusinessPage slug={slug} />;
+interface BusinessPageClientProps {
+  slug: string;
+  initialData?: unknown;
+}
+
+export function BusinessPageClient({ slug, initialData }: BusinessPageClientProps) {
+  return <BusinessPage slug={slug} initialData={initialData} />;
 }

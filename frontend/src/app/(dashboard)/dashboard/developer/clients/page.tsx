@@ -3,8 +3,18 @@
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import {
-  Building2, Package, Download, Search, Users, Filter,
-  CheckCircle, Clock, Eye, MapPin, Globe, Activity,
+  Building2,
+  Package,
+  Download,
+  Search,
+  Users,
+  Filter,
+  CheckCircle,
+  Clock,
+  Eye,
+  MapPin,
+  Globe,
+  Activity,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -32,22 +42,27 @@ export default function DeveloperClientsPage() {
 
   const installations = useMemo(() => {
     if (!installationsData) return [];
-    return Array.isArray(installationsData) ? installationsData : (installationsData.installations || installationsData.data || []);
+    return Array.isArray(installationsData)
+      ? installationsData
+      : installationsData.installations || installationsData.data || [];
   }, [installationsData]);
 
   const clients = useMemo(() => {
-    const clientMap = new Map<string, {
-      id: string;
-      name: string;
-      slug: string;
-      logo: string | null;
-      country?: string;
-      city?: string;
-      modules: string[];
-      installDate: string;
-      lastActive: string;
-      status: string;
-    }>();
+    const clientMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        slug: string;
+        logo: string | null;
+        country?: string;
+        city?: string;
+        modules: string[];
+        installDate: string;
+        lastActive: string;
+        status: string;
+      }
+    >();
 
     (installations as DeveloperModuleInstallation[]).forEach((inst) => {
       if (!inst.business?.id) return;
@@ -72,7 +87,8 @@ export default function DeveloperClientsPage() {
       if (date && date < client.installDate) client.installDate = date;
       if (date && date > client.lastActive) client.lastActive = date;
       if (inst.status === 'UNINSTALLED') client.status = 'UNINSTALLED';
-      else if (inst.status === 'DISABLED' && client.status !== 'UNINSTALLED') client.status = 'DISABLED';
+      else if (inst.status === 'DISABLED' && client.status !== 'UNINSTALLED')
+        client.status = 'DISABLED';
     });
 
     return Array.from(clientMap.values());
@@ -83,19 +99,25 @@ export default function DeveloperClientsPage() {
     if (statusFilter) list = list.filter((c) => c.status === statusFilter);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list.filter((c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.modules.some((m) => m.toLowerCase().includes(q))
+      list = list.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) || c.modules.some((m) => m.toLowerCase().includes(q))
       );
     }
     return list;
   }, [clients, statusFilter, searchQuery]);
 
-  const stats = useMemo(() => ({
-    total: clients.length,
-    active: clients.filter((c) => c.status === 'ACTIVE').length,
-    totalInstallations: installations.reduce((s: number, i: DeveloperModuleInstallation) => s + 1, 0),
-  }), [clients, installations]);
+  const stats = useMemo(
+    () => ({
+      total: clients.length,
+      active: clients.filter((c) => c.status === 'ACTIVE').length,
+      totalInstallations: installations.reduce(
+        (s: number, i: DeveloperModuleInstallation) => s + 1,
+        0
+      ),
+    }),
+    [clients, installations]
+  );
 
   if (error) return <ErrorState message={error.message} onRetry={() => refetch()} />;
   if (isLoading) return <Loader size="lg" label="Chargement des clients..." />;
@@ -131,7 +153,9 @@ export default function DeveloperClientsPage() {
           <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center mb-3">
             <Download className="h-5 w-5 text-purple-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalInstallations}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {stats.totalInstallations}
+          </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Installations totales</p>
         </Card>
       </div>
@@ -163,7 +187,13 @@ export default function DeveloperClientsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={<Users className="h-12 w-12" />} title="Aucun client trouvé" description={searchQuery ? 'Essayez une autre recherche.' : 'Aucun client pour le moment.'} />
+        <EmptyState
+          icon={<Users className="h-12 w-12" />}
+          title="Aucun client trouvé"
+          description={
+            searchQuery ? 'Essayez une autre recherche.' : 'Aucun client pour le moment.'
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((client) => (
@@ -171,28 +201,53 @@ export default function DeveloperClientsPage() {
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-50 to-purple-50 dark:from-brand-900/30 dark:to-purple-900/30 border border-gray-200 dark:border-gray-700 flex items-center justify-center shrink-0">
                   {client.logo ? (
-                    <Image src={client.logo ?? ''} alt="" fill className="rounded-xl object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                    <Image
+                      src={client.logo ?? ''}
+                      alt=""
+                      fill
+                      className="rounded-xl object-cover"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
                   ) : (
                     <Building2 className="h-5 w-5 text-brand" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{client.name}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    {client.name}
+                  </h3>
                 </div>
-                <Badge variant={client.status === 'ACTIVE' ? 'success' : client.status === 'DISABLED' ? 'warning' : 'danger'} size="xs">
-                  {client.status === 'ACTIVE' ? 'Actif' : client.status === 'DISABLED' ? 'Désactivé' : 'Désinstallé'}
+                <Badge
+                  variant={
+                    client.status === 'ACTIVE'
+                      ? 'success'
+                      : client.status === 'DISABLED'
+                        ? 'warning'
+                        : 'danger'
+                  }
+                  size="xs"
+                >
+                  {client.status === 'ACTIVE'
+                    ? 'Actif'
+                    : client.status === 'DISABLED'
+                      ? 'Désactivé'
+                      : 'Désinstallé'}
                 </Badge>
               </div>
 
               <div className="space-y-1.5 mb-3">
                 <div className="text-xs">
                   <span className="text-gray-500 dark:text-gray-400">Modules installés : </span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{client.modules.join(', ')}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {client.modules.join(', ')}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500 dark:text-gray-400">Installé le</span>
                   <span className="text-gray-700 dark:text-gray-300">
-                    {client.installDate ? new Date(client.installDate).toLocaleDateString('fr-FR') : '—'}
+                    {client.installDate
+                      ? new Date(client.installDate).toLocaleDateString('fr-FR')
+                      : '—'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
@@ -200,7 +255,9 @@ export default function DeveloperClientsPage() {
                   <div className="flex items-center gap-1">
                     <Activity className="h-3 w-3 text-emerald-500" />
                     <span className="text-gray-700 dark:text-gray-300">
-                      {client.lastActive ? new Date(client.lastActive).toLocaleDateString('fr-FR') : '—'}
+                      {client.lastActive
+                        ? new Date(client.lastActive).toLocaleDateString('fr-FR')
+                        : '—'}
                     </span>
                   </div>
                 </div>

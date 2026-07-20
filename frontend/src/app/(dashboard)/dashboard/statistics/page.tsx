@@ -3,9 +3,15 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  BarChart3, Eye, ShoppingBag,
-  Wallet, Users, Download, CalendarDays,
-  Activity, Globe,
+  BarChart3,
+  Eye,
+  ShoppingBag,
+  Wallet,
+  Users,
+  Download,
+  CalendarDays,
+  Activity,
+  Globe,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -27,14 +33,19 @@ const PERIODS = [
 export default function StatisticsPage() {
   const [period, setPeriod] = useState('30d');
 
-  const { data: statsData, isLoading, error, refetch } = useQuery({
+  const {
+    data: statsData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['businessStats', period],
     queryFn: () => apiClient.getBusinessStats(),
   });
 
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
-  const stats = (statsData as any)?.data?.data;
+  const stats = (statsData as { data?: { data?: Record<string, number> } })?.data?.data;
 
   const periodLabels: Record<string, string> = {
     '7d': 'cette semaine',
@@ -44,10 +55,38 @@ export default function StatisticsPage() {
   };
 
   const summaryCards = [
-    { icon: <Eye className="h-5 w-5" />, iconBg: 'bg-blue-50 dark:bg-blue-900/30', iconColor: 'text-blue-600', label: 'Visites', value: stats?.visitors ?? 0, trend: { value: '+12%', positive: true } },
-    { icon: <Users className="h-5 w-5" />, iconBg: 'bg-emerald-50 dark:bg-emerald-900/30', iconColor: 'text-emerald-600', label: 'Conversions', value: stats?.conversions ?? 0, trend: { value: `${stats?.conversionRate || 0}%`, positive: true } },
-    { icon: <ShoppingBag className="h-5 w-5" />, iconBg: 'bg-purple-50 dark:bg-purple-900/30', iconColor: 'text-purple-600', label: 'Ventes', value: stats?.orders ?? 0, trend: { value: '+5%', positive: true } },
-    { icon: <Wallet className="h-5 w-5" />, iconBg: 'bg-teal-50 dark:bg-teal-900/30', iconColor: 'text-teal-600', label: 'Revenu', value: stats?.revenue ? `${Number(stats.revenue).toLocaleString()} FCFA` : '0 FCFA', trend: { value: '+8%', positive: true } },
+    {
+      icon: <Eye className="h-5 w-5" />,
+      iconBg: 'bg-blue-50 dark:bg-blue-900/30',
+      iconColor: 'text-blue-600',
+      label: 'Visites',
+      value: stats?.visitors ?? 0,
+      trend: { value: '+12%', positive: true },
+    },
+    {
+      icon: <Users className="h-5 w-5" />,
+      iconBg: 'bg-emerald-50 dark:bg-emerald-900/30',
+      iconColor: 'text-emerald-600',
+      label: 'Conversions',
+      value: stats?.conversions ?? 0,
+      trend: { value: `${stats?.conversionRate || 0}%`, positive: true },
+    },
+    {
+      icon: <ShoppingBag className="h-5 w-5" />,
+      iconBg: 'bg-purple-50 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600',
+      label: 'Ventes',
+      value: stats?.orders ?? 0,
+      trend: { value: '+5%', positive: true },
+    },
+    {
+      icon: <Wallet className="h-5 w-5" />,
+      iconBg: 'bg-teal-50 dark:bg-teal-900/30',
+      iconColor: 'text-teal-600',
+      label: 'Revenu',
+      value: stats?.revenue ? `${Number(stats.revenue).toLocaleString()} FCFA` : '0 FCFA',
+      trend: { value: '+8%', positive: true },
+    },
   ];
 
   return (
@@ -93,8 +132,12 @@ export default function StatisticsPage() {
               <div className="h-64 flex items-center justify-center">
                 <div className="text-center">
                   <BarChart3 className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Graphique d&apos;évolution du revenu</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">Connectez un service d&apos;analytics pour voir vos données</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    Graphique d&apos;évolution du revenu
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
+                    Connectez un service d&apos;analytics pour voir vos données
+                  </p>
                 </div>
               </div>
             </Card>
@@ -103,8 +146,12 @@ export default function StatisticsPage() {
               <div className="h-64 flex items-center justify-center">
                 <div className="text-center">
                   <Activity className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Graphique des visites et conversions</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">Les données apparaîtront après les premières visites</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    Graphique des visites et conversions
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">
+                    Les données apparaîtront après les premières visites
+                  </p>
                 </div>
               </div>
             </Card>

@@ -3,9 +3,23 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import {
-  Building2, Globe, Code2, ExternalLink, MapPin, Phone, Mail,
-  Save, X, User, Briefcase, Star, Package, Shield, Check,
-  Camera, Clock,
+  Building2,
+  Globe,
+  Code2,
+  ExternalLink,
+  MapPin,
+  Phone,
+  Mail,
+  Save,
+  X,
+  User,
+  Briefcase,
+  Star,
+  Package,
+  Shield,
+  Check,
+  Camera,
+  Clock,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -24,10 +38,21 @@ export default function DeveloperProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
-    companyName: '', bio: '', website: '', github: '', linkedin: '',
-    portfolio: '', country: '', city: '', phone: '', professionalEmail: '',
-    whatsapp: '', address: '', experience: '',
-    specialties: [] as string[], technologies: [] as string[],
+    companyName: '',
+    bio: '',
+    website: '',
+    github: '',
+    linkedin: '',
+    portfolio: '',
+    country: '',
+    city: '',
+    phone: '',
+    professionalEmail: '',
+    whatsapp: '',
+    address: '',
+    experience: '',
+    specialties: [] as string[],
+    technologies: [] as string[],
   });
   const [specInput, setSpecInput] = useState('');
   const [techInput, setTechInput] = useState('');
@@ -70,7 +95,10 @@ export default function DeveloperProfilePage() {
   };
 
   const removeTag = (key: 'specialties' | 'technologies', value: string) =>
-    updateField(key, form[key].filter((x) => x !== value));
+    updateField(
+      key,
+      form[key].filter((x) => x !== value)
+    );
 
   const handleAvatarUpload = (file: File) => {
     setAvatarUploading(true);
@@ -105,11 +133,17 @@ export default function DeveloperProfilePage() {
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const verifVariant = profile?.verificationStatus === 'VERIFIED' ? 'success'
-    : profile?.verificationStatus === 'REJECTED' ? 'danger' : 'warning';
+  const verifVariant =
+    profile?.verificationStatus === 'VERIFIED'
+      ? 'success'
+      : profile?.verificationStatus === 'REJECTED'
+        ? 'danger'
+        : 'warning';
 
   if (isLoading) return <Loader size="lg" label="Chargement du profil..." />;
   if (isError) {
@@ -118,7 +152,11 @@ export default function DeveloperProfilePage() {
         icon={<User className="h-12 w-12" />}
         title="Profil non trouvé"
         description="Activez votre rôle développeur pour accéder à cette page."
-        action={<Link href="/dashboard/developer/onboarding"><Button variant="gradient">Devenir développeur</Button></Link>}
+        action={
+          <Link href="/dashboard/developer/onboarding">
+            <Button variant="gradient">Devenir développeur</Button>
+          </Link>
+        }
       />
     );
   }
@@ -134,8 +172,20 @@ export default function DeveloperProfilePage() {
           { label: 'Profil' },
         ]}
         actions={
-          <Button onClick={handleSave} isLoading={updateProfile.isPending} variant={saved ? 'primary' : 'gradient'}>
-            {saved ? <><Check className="h-4 w-4" /> Enregistré</> : <><Save className="h-4 w-4" /> Enregistrer</>}
+          <Button
+            onClick={handleSave}
+            isLoading={updateProfile.isPending}
+            variant={saved ? 'primary' : 'gradient'}
+          >
+            {saved ? (
+              <>
+                <Check className="h-4 w-4" /> Enregistré
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" /> Enregistrer
+              </>
+            )}
           </Button>
         }
       />
@@ -144,41 +194,61 @@ export default function DeveloperProfilePage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600"><Star className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600">
+              <Star className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Note</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{(profile?.rating || 0).toFixed(1)}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {(profile?.rating || 0).toFixed(1)}
+              </p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand"><Package className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand">
+              <Package className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Modules</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{(profile as any)?.stats?.totalModules || 0}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {(profile as any)?.stats?.totalModules || 0}
+              </p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600"><Shield className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
+              <Shield className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Vérification</p>
               <Badge variant={verifVariant} size="sm">
-                {profile?.verificationStatus === 'VERIFIED' ? 'Vérifié' :
-                 profile?.verificationStatus === 'REJECTED' ? 'Rejeté' : 'En attente'}
+                {profile?.verificationStatus === 'VERIFIED'
+                  ? 'Vérifié'
+                  : profile?.verificationStatus === 'REJECTED'
+                    ? 'Rejeté'
+                    : 'En attente'}
               </Badge>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600"><Clock className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600">
+              <Clock className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Membre depuis</p>
               <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : '-'}
+                {profile?.createdAt
+                  ? new Date(profile.createdAt).toLocaleDateString('fr-FR', {
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : '-'}
               </p>
             </div>
           </div>
@@ -191,11 +261,13 @@ export default function DeveloperProfilePage() {
           {/* Avatar */}
           <div className="flex flex-col items-center gap-3 shrink-0">
             <div className="relative">
-              <div className={cn(
-                'w-24 h-24 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700',
-                'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800',
-                'flex items-center justify-center'
-              )}>
+              <div
+                className={cn(
+                  'w-24 h-24 rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700',
+                  'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800',
+                  'flex items-center justify-center'
+                )}
+              >
                 {avatarPreview || profile?.photo || profile?.companyLogo ? (
                   <Image
                     src={avatarPreview || profile?.photo || profile?.companyLogo || ''}
@@ -203,7 +275,6 @@ export default function DeveloperProfilePage() {
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 33vw"
-                    unoptimized
                   />
                 ) : (
                   <User className="h-10 w-10 text-gray-400" />
@@ -215,7 +286,22 @@ export default function DeveloperProfilePage() {
                 className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shadow-md hover:bg-brand-700 transition-colors disabled:opacity-50"
               >
                 {avatarUploading ? (
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
                 ) : (
                   <Camera className="h-4 w-4" />
                 )}
@@ -257,7 +343,9 @@ export default function DeveloperProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Bio / Présentation</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Bio / Présentation
+              </label>
               <textarea
                 value={form.bio}
                 onChange={(e) => updateField('bio', e.target.value)}
@@ -332,15 +420,27 @@ export default function DeveloperProfilePage() {
 
         <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Spécialités</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Spécialités
+            </label>
             <div className="flex flex-wrap gap-2 mb-2">
               {form.specialties.length === 0 && (
-                <span className="text-xs text-gray-400 italic px-1">Ajoutez vos domaines d'expertise</span>
+                <span className="text-xs text-gray-400 italic px-1">
+                  Ajoutez vos domaines d'expertise
+                </span>
               )}
               {form.specialties.map((s) => (
-                <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand text-sm font-medium">
+                <span
+                  key={s}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand text-sm font-medium"
+                >
                   {s}
-                  <button onClick={() => removeTag('specialties', s)} className="hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+                  <button
+                    onClick={() => removeTag('specialties', s)}
+                    className="hover:text-red-500 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </span>
               ))}
             </div>
@@ -349,23 +449,47 @@ export default function DeveloperProfilePage() {
                 value={specInput}
                 onChange={(e) => setSpecInput(e.target.value)}
                 placeholder="Ex: E-commerce, Paiement..."
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag('specialties', specInput); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTag('specialties', specInput);
+                  }
+                }}
                 className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring text-sm"
               />
-              <Button variant="secondary" onClick={() => addTag('specialties', specInput)} type="button" size="sm">Ajouter</Button>
+              <Button
+                variant="secondary"
+                onClick={() => addTag('specialties', specInput)}
+                type="button"
+                size="sm"
+              >
+                Ajouter
+              </Button>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Technologies</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Technologies
+            </label>
             <div className="flex flex-wrap gap-2 mb-2">
               {form.technologies.length === 0 && (
-                <span className="text-xs text-gray-400 italic px-1">Ajoutez vos technologies préférées</span>
+                <span className="text-xs text-gray-400 italic px-1">
+                  Ajoutez vos technologies préférées
+                </span>
               )}
               {form.technologies.map((t) => (
-                <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 text-sm font-medium">
+                <span
+                  key={t}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 text-sm font-medium"
+                >
                   {t}
-                  <button onClick={() => removeTag('technologies', t)} className="hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+                  <button
+                    onClick={() => removeTag('technologies', t)}
+                    className="hover:text-red-500 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </span>
               ))}
             </div>
@@ -374,10 +498,22 @@ export default function DeveloperProfilePage() {
                 value={techInput}
                 onChange={(e) => setTechInput(e.target.value)}
                 placeholder="Ex: React, Node.js..."
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag('technologies', techInput); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTag('technologies', techInput);
+                  }
+                }}
                 className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring text-sm"
               />
-              <Button variant="secondary" onClick={() => addTag('technologies', techInput)} type="button" size="sm">Ajouter</Button>
+              <Button
+                variant="secondary"
+                onClick={() => addTag('technologies', techInput)}
+                type="button"
+                size="sm"
+              >
+                Ajouter
+              </Button>
             </div>
           </div>
         </div>
@@ -425,11 +561,7 @@ export default function DeveloperProfilePage() {
         <Button variant="ghost" onClick={() => refetch()} disabled={updateProfile.isPending}>
           Réinitialiser
         </Button>
-        <Button
-          onClick={handleSave}
-          variant="gradient"
-          isLoading={updateProfile.isPending}
-        >
+        <Button onClick={handleSave} variant="gradient" isLoading={updateProfile.isPending}>
           <Save className="h-4 w-4" />
           Enregistrer les modifications
         </Button>

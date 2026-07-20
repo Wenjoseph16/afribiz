@@ -5,6 +5,7 @@ export const storyKeys = {
   all: ['stories'] as const,
   active: ['stories', 'active'] as const,
   business: (id: string) => ['stories', 'business', id] as const,
+  highlights: (businessId: string) => ['stories', 'highlights', businessId] as const,
   feed: (params?: any) => ['feed', params] as const,
 };
 
@@ -24,7 +25,7 @@ export function useActiveStories() {
   return useQuery({
     queryKey: storyKeys.active,
     queryFn: async () => {
-      const res = await apiClient.get('/stories');
+      const res = await apiClient.getActiveStories();
       return (res.data.data || []) as StoryGroup[];
     },
     refetchInterval: 30000,
@@ -35,7 +36,7 @@ export function useBusinessStories(businessId: string) {
   return useQuery({
     queryKey: storyKeys.business(businessId),
     queryFn: async () => {
-      const res = await apiClient.get('/stories/business/' + businessId);
+      const res = await apiClient.getBusinessStories(businessId);
       return res.data.data || [];
     },
     enabled: !!businessId,
@@ -45,7 +46,7 @@ export function useBusinessStories(businessId: string) {
 export function useCreateStory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => apiClient.post('/stories', data),
+    mutationFn: (data: any) => apiClient.createStory(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: storyKeys.active });
     },
@@ -54,21 +55,76 @@ export function useCreateStory() {
 
 export function useViewStory() {
   return useMutation({
-    mutationFn: (storyId: string) => apiClient.post('/stories/' + storyId + '/view'),
+    mutationFn: (storyId: string) => apiClient.viewStory(storyId),
   });
 }
 
 export function useClickStory() {
   return useMutation({
-    mutationFn: (storyId: string) => apiClient.post('/stories/' + storyId + '/click'),
+    mutationFn: (storyId: string) => apiClient.clickStory(storyId),
   });
 }
 
 export function useDeleteStory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.delete('/stories/' + id),
+    mutationFn: (id: string) => apiClient.deleteStory(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: storyKeys.active }),
+  });
+}
+
+export function useUpdateStory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiClient.updateStory(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: storyKeys.active });
+      qc.invalidateQueries({ queryKey: storyKeys.all });
+    },
+  });
+}
+
+export function useAddSticker() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ storyId, sticker }: { storyId: string; sticker: any }) =>
+      apiClient.addSticker(storyId, sticker),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: storyKeys.active });
+    },
+  });
+}
+
+export function useRemoveSticker() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ storyId, stickerId }: { storyId: string; stickerId: string }) =>
+      apiClient.removeSticker(storyId, stickerId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: storyKeys.active });
+    },
+  });
+}
+
+export function useGetHighlights(businessId: string) {
+  return useQuery({
+    queryKey: storyKeys.highlights(businessId),
+    queryFn: async () => {
+      const res = await apiClient.getHighlights(businessId);
+      return res.data.data || [];
+    },
+    enabled: !!businessId,
+  });
+}
+
+export function useToggleHighlight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ storyId, isHighlight }: { storyId: string; isHighlight: boolean }) =>
+      apiClient.toggleHighlight(storyId, isHighlight),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: storyKeys.active });
+    },
   });
 }
 
@@ -76,7 +132,7 @@ export function useFeedItems(params?: { types?: string; page?: number; limit?: n
   return useQuery({
     queryKey: storyKeys.feed(params),
     queryFn: async () => {
-      const res = await apiClient.get('/feed', { params });
+      const res = await apiClient.getFeedItems(params);
       return res.data.data as {
         items: any[];
         total: number;
@@ -91,7 +147,7 @@ export function useFeedItems(params?: { types?: string; page?: number; limit?: n
 export function useCreateFeedItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => apiClient.post('/feed', data),
+    mutationFn: (data: any) => apiClient.createFeedItem(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: storyKeys.feed() }),
   });
 }
@@ -99,7 +155,7 @@ export function useCreateFeedItem() {
 export function useDeleteFeedItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.delete('/feed/' + id),
+    mutationFn: (id: string) => apiClient.deleteFeedItem(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: storyKeys.feed() }),
   });
 }

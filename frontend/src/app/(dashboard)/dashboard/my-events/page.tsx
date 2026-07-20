@@ -3,8 +3,16 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  CalendarDays, MapPin, Clock, Users, Download, Share2,
-  Search, QrCode, ChevronRight, CheckCircle2,
+  CalendarDays,
+  MapPin,
+  Clock,
+  Users,
+  Download,
+  Share2,
+  Search,
+  QrCode,
+  ChevronRight,
+  CheckCircle2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -16,7 +24,10 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { useBookings } from '@/features/hooks';
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default' }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default' }
+> = {
   CONFIRMED: { label: 'Confirmé', variant: 'success' },
   PENDING: { label: 'En attente', variant: 'warning' },
   COMPLETED: { label: 'Terminé', variant: 'default' },
@@ -39,40 +50,61 @@ export default function MyEventsPage() {
   const { data: bookingsData, isLoading, error, refetch } = useBookings({ limit: 100 });
 
   const allBookings = Array.isArray(bookingsData?.bookings || bookingsData)
-    ? (bookingsData?.bookings || bookingsData) as any[]
+    ? ((bookingsData?.bookings || bookingsData) as any[])
     : [];
 
   // Filter only event-type bookings
-  const allEvents = useMemo(() =>
-    allBookings.filter((b: any) =>
-      b.type === 'EVENT' || b.type === 'TRAINING' || b.type === 'CONFERENCE' || b.type === 'WORKSHOP'
-    ),
+  const allEvents = useMemo(
+    () =>
+      allBookings.filter(
+        (b: any) =>
+          b.type === 'EVENT' ||
+          b.type === 'TRAINING' ||
+          b.type === 'CONFERENCE' ||
+          b.type === 'WORKSHOP'
+      ),
     [allBookings]
   );
 
   const now = new Date();
 
-  const stats = useMemo(() => ({
-    total: allEvents.length,
-    upcoming: allEvents.filter((e: any) => new Date(e.startDate || e.date) > now).length,
-    completed: allEvents.filter((e: any) => new Date(e.endDate || e.startDate || e.date) < now).length,
-    cancelled: allEvents.filter((e: any) => e.status === 'CANCELLED').length,
-    totalSpent: allEvents.reduce((sum: number, e: any) => sum + Number(e.price || e.totalAmount || 0), 0),
-  }), [allEvents, now]);
+  const stats = useMemo(
+    () => ({
+      total: allEvents.length,
+      upcoming: allEvents.filter((e: any) => new Date(e.startDate || e.date) > now).length,
+      completed: allEvents.filter((e: any) => new Date(e.endDate || e.startDate || e.date) < now)
+        .length,
+      cancelled: allEvents.filter((e: any) => e.status === 'CANCELLED').length,
+      totalSpent: allEvents.reduce(
+        (sum: number, e: any) => sum + Number(e.price || e.totalAmount || 0),
+        0
+      ),
+    }),
+    [allEvents, now]
+  );
 
   const filtered = useMemo(() => {
     let f = [...allEvents];
     switch (activeTab) {
-      case 'upcoming': f = f.filter((e: any) => new Date(e.startDate || e.date) > now && e.status !== 'CANCELLED'); break;
-      case 'completed': f = f.filter((e: any) => new Date(e.endDate || e.startDate || e.date) < now || e.status === 'COMPLETED'); break;
-      case 'cancelled': f = f.filter((e: any) => e.status === 'CANCELLED'); break;
+      case 'upcoming':
+        f = f.filter((e: any) => new Date(e.startDate || e.date) > now && e.status !== 'CANCELLED');
+        break;
+      case 'completed':
+        f = f.filter(
+          (e: any) => new Date(e.endDate || e.startDate || e.date) < now || e.status === 'COMPLETED'
+        );
+        break;
+      case 'cancelled':
+        f = f.filter((e: any) => e.status === 'CANCELLED');
+        break;
     }
     if (search) {
       const q = search.toLowerCase();
-      f = f.filter((e: any) =>
-        e.title?.toLowerCase().includes(q) ||
-        e.businessName?.toLowerCase().includes(q) ||
-        e.location?.toLowerCase().includes(q)
+      f = f.filter(
+        (e: any) =>
+          e.title?.toLowerCase().includes(q) ||
+          e.businessName?.toLowerCase().includes(q) ||
+          e.location?.toLowerCase().includes(q)
       );
     }
     return f;
@@ -120,7 +152,9 @@ export default function MyEventsPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Passés</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.completed}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.completed}
+              </p>
             </div>
           </div>
         </Card>
@@ -132,7 +166,10 @@ export default function MyEventsPage() {
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Participants</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                {allEvents.reduce((sum: number, e: any) => sum + (e.participants || e.guests || 1), 0)}
+                {allEvents.reduce(
+                  (sum: number, e: any) => sum + (e.participants || e.guests || 1),
+                  0
+                )}
               </p>
             </div>
           </div>
@@ -189,13 +226,19 @@ export default function MyEventsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((event: any) => {
-            const statusInfo = STATUS_CONFIG[event.status] || { label: event.status, variant: 'default' as const };
+            const statusInfo = STATUS_CONFIG[event.status] || {
+              label: event.status,
+              variant: 'default' as const,
+            };
             const eventDate = new Date(event.startDate || event.date);
             const isPast = new Date(event.endDate || event.startDate || event.date) < now;
             const isToday = eventDate.toDateString() === now.toDateString();
 
             return (
-              <Card key={event.id} className="p-5 hover:shadow-md transition-all duration-200 group">
+              <Card
+                key={event.id}
+                className="p-5 hover:shadow-md transition-all duration-200 group"
+              >
                 <div className="flex items-start gap-4">
                   {/* Date badge */}
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-50 to-emerald-50 dark:from-brand-900/20 dark:to-emerald-900/20 flex flex-col items-center justify-center shrink-0 border border-brand-100 dark:border-brand-800/30">
@@ -248,12 +291,18 @@ export default function MyEventsPage() {
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-3.5 w-3.5" />
                         {eventDate.toLocaleDateString('fr-FR', {
-                          weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
                         })}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" />
-                        {eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        {eventDate.toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </span>
                       {event.location && (
                         <span className="flex items-center gap-1">
@@ -272,26 +321,49 @@ export default function MyEventsPage() {
                     {/* Actions */}
                     {!isPast && event.status !== 'CANCELLED' && (
                       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                        <Button variant="secondary" size="xs"
+                        <Button
+                          variant="secondary"
+                          size="xs"
                           onClick={() => {
                             const url = window.location.origin + '/dashboard/my-events/' + event.id;
-                            if (navigator.share) { navigator.share({ title: event.title, url }); }
-                            else { navigator.clipboard.writeText(url); alert('Lien copié !'); }
-                          }}>
+                            if (navigator.share) {
+                              navigator.share({ title: event.title, url });
+                            } else {
+                              navigator.clipboard.writeText(url);
+                              alert('Lien copié !');
+                            }
+                          }}
+                        >
                           <QrCode className="h-3 w-3 mr-1" />
                           QR Code
                         </Button>
-                        <Button variant="ghost" size="xs"
-                          onClick={() => alert('Votre billet est disponible dans votre boîte email.')}>
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() =>
+                            alert('Votre billet est disponible dans votre boîte email.')
+                          }
+                        >
                           <Download className="h-3 w-3 mr-1" />
                           Billet
                         </Button>
-                        <Button variant="ghost" size="xs"
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           onClick={() => {
                             const url = window.location.origin + '/dashboard/my-events/' + event.id;
-                            if (navigator.share) { navigator.share({ title: event.title, text: 'Rejoignez-moi à cet événement !', url }); }
-                            else { navigator.clipboard.writeText(url); alert('Lien copié dans le presse-papiers !'); }
-                          }}>
+                            if (navigator.share) {
+                              navigator.share({
+                                title: event.title,
+                                text: 'Rejoignez-moi à cet événement !',
+                                url,
+                              });
+                            } else {
+                              navigator.clipboard.writeText(url);
+                              alert('Lien copié dans le presse-papiers !');
+                            }
+                          }}
+                        >
                           <Share2 className="h-3 w-3 mr-1" />
                           Partager
                         </Button>

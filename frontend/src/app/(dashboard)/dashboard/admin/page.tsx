@@ -2,14 +2,32 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  Users, Building2, Briefcase, Code2, Package, ShoppingBag, Server, ShoppingCart,
-  Wallet, ShieldCheck, TrendingUp, DollarSign, Newspaper, BarChart3,
-  Scale, Headphones, Megaphone, Activity,
+  Users,
+  Building2,
+  Briefcase,
+  Code2,
+  Package,
+  ShoppingBag,
+  Server,
+  ShoppingCart,
+  Wallet,
+  ShieldCheck,
+  TrendingUp,
+  DollarSign,
+  Newspaper,
+  BarChart3,
+  Scale,
+  Headphones,
+  Megaphone,
+  Activity,
+  ArrowLeft,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
+import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/services/apiClient';
 
@@ -17,10 +35,38 @@ function useAdminDashboardStats() {
   return useQuery({
     queryKey: ['admin', 'dashboard', 'stats'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/dashboard/stats');
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetDashboardStats();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement stats dashboard admin:', error);
+        return {
+          totalUsers: 0,
+          totalClients: 0,
+          totalBusiness: 0,
+          totalDevelopers: 0,
+          modules: 0,
+          products: 0,
+          services: 0,
+          orders: 0,
+          totalTransactions: 0,
+          escrow: 0,
+          platformRevenue: 0,
+          adRevenue: 0,
+          marketplaceRevenue: 0,
+          dataHubRevenue: 0,
+          openDisputes: 0,
+          supportTickets: 0,
+          activeAds: 0,
+          growthRate: 0,
+          dailyGrowth: 0,
+          monthlyGrowth: 0,
+          yearlyGrowth: 0,
+        };
+      }
     },
     refetchInterval: 30000,
+    retry: false,
   });
 }
 
@@ -41,26 +87,29 @@ export default function AdminDashboardPage() {
 
   const isAdmin = user?.roles?.includes('ADMIN');
 
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
-
   if (!isAdmin) {
     return (
-      <div className="space-y-6 animate-fade-in">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-          Administration AfriBiz
-        </h1>
-        <Card padding="lg">
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <ShieldCheck className="h-10 w-10 text-gray-300 dark:text-gray-600" />
-            <p className="text-lg font-medium text-gray-900 dark:text-gray-100">Accès réservé</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Vous devez être administrateur pour accéder à cette page.
-            </p>
+      <div className="flex min-h-[60vh] items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
+            <ShieldCheck className="h-8 w-8 text-gray-400" />
           </div>
-        </Card>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Accès réservé</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Vous devez être administrateur pour accéder à cette page.
+          </p>
+          <Link href="/dashboard">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Retour au tableau de bord
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
+
+  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
   if (isLoading) {
     return (

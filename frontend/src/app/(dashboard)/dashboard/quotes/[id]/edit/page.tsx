@@ -66,35 +66,40 @@ export default function EditQuotePage() {
         quantity: Number(item.quantity || 1),
         unitPrice: Number(item.unitPrice || 0),
       }));
-      setItems(quoteItems.length > 0 ? quoteItems : [{ id: generateId(), description: '', quantity: 1, unitPrice: 0 }]);
+      setItems(
+        quoteItems.length > 0
+          ? quoteItems
+          : [{ id: generateId(), description: '', quantity: 1, unitPrice: 0 }]
+      );
       setInitialized(true);
     }
   }, [quote, initialized]);
 
-  const updateItem = useCallback((itemId: string, field: keyof LineItem, value: string | number) => {
-    setItems(prev =>
-      prev.map(item =>
-        item.id === itemId ? { ...item, [field]: value } : item
-      )
-    );
-  }, []);
+  const updateItem = useCallback(
+    (itemId: string, field: keyof LineItem, value: string | number) => {
+      setItems((prev) =>
+        prev.map((item) => (item.id === itemId ? { ...item, [field]: value } : item))
+      );
+    },
+    []
+  );
 
   const addItem = useCallback(() => {
-    setItems(prev => [...prev, { id: generateId(), description: '', quantity: 1, unitPrice: 0 }]);
+    setItems((prev) => [...prev, { id: generateId(), description: '', quantity: 1, unitPrice: 0 }]);
   }, []);
 
   const removeItem = useCallback((itemId: string) => {
-    setItems(prev => prev.filter(item => item.id !== itemId));
+    setItems((prev) => prev.filter((item) => item.id !== itemId));
   }, []);
 
-  const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   const totalAmount = subtotal + taxAmount - discountAmount;
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = 'Le titre est requis';
     if (!clientName.trim()) errs.clientName = 'Le nom du client est requis';
-    if (items.length === 0 || items.every(i => !i.description.trim())) {
+    if (items.length === 0 || items.every((i) => !i.description.trim())) {
       errs.items = 'Ajoutez au moins un article';
     }
     setErrors(errs);
@@ -147,7 +152,8 @@ export default function EditQuotePage() {
     );
   }
 
-  const fieldClass = 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100';
+  const fieldClass =
+    'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100';
   const labelClass = 'text-gray-700 dark:text-gray-300';
 
   return (
@@ -164,11 +170,13 @@ export default function EditQuotePage() {
           <div className="flex items-center gap-3">
             <Link href={`/dashboard/quotes/${id}`}>
               <Button type="button" variant="secondary">
-                <ArrowLeft className="h-4 w-4 mr-1.5" />Annuler
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
+                Annuler
               </Button>
             </Link>
             <Button type="submit" isLoading={updateQuote.isPending}>
-              <Save className="h-4 w-4 mr-1.5" />Enregistrer
+              <Save className="h-4 w-4 mr-1.5" />
+              Enregistrer
             </Button>
           </div>
         }
@@ -177,7 +185,9 @@ export default function EditQuotePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Détails du devis</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Détails du devis
+            </h3>
             <div className="space-y-4">
               <Input
                 label="Titre"
@@ -188,7 +198,9 @@ export default function EditQuotePage() {
                 className={fieldClass}
               />
               <div>
-                <label className={`block text-sm font-medium ${labelClass} mb-1.5`}>Description</label>
+                <label className={`block text-sm font-medium ${labelClass} mb-1.5`}>
+                  Description
+                </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -204,15 +216,17 @@ export default function EditQuotePage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Articles</h3>
               <Button type="button" variant="secondary" size="sm" onClick={addItem}>
-                <Plus className="h-4 w-4 mr-1.5" />Ajouter
+                <Plus className="h-4 w-4 mr-1.5" />
+                Ajouter
               </Button>
             </div>
-            {errors.items && (
-              <p className="text-sm text-red-500 mb-3">{errors.items}</p>
-            )}
+            {errors.items && <p className="text-sm text-red-500 mb-3">{errors.items}</p>}
             <div className="space-y-3">
               {items.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30">
+                <div
+                  key={item.id}
+                  className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30"
+                >
                   <div className="flex-1 min-w-0">
                     <input
                       type="text"
@@ -227,7 +241,9 @@ export default function EditQuotePage() {
                       type="number"
                       placeholder="Qté"
                       value={item.quantity || ''}
-                      onChange={(e) => updateItem(item.id, 'quantity', Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        updateItem(item.id, 'quantity', Math.max(0, Number(e.target.value)))
+                      }
                       min={0}
                       className={`w-full px-3 py-2 rounded-lg border ${fieldClass} text-sm text-center focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none`}
                     />
@@ -237,7 +253,9 @@ export default function EditQuotePage() {
                       type="number"
                       placeholder="P.U."
                       value={item.unitPrice || ''}
-                      onChange={(e) => updateItem(item.id, 'unitPrice', Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        updateItem(item.id, 'unitPrice', Math.max(0, Number(e.target.value)))
+                      }
                       min={0}
                       className={`w-full px-3 py-2 rounded-lg border ${fieldClass} text-sm text-right focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none`}
                     />
@@ -290,10 +308,14 @@ export default function EditQuotePage() {
           </Card>
 
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Paramètres</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Paramètres
+            </h3>
             <div className="space-y-4">
               <div>
-                <label className={`block text-sm font-medium ${labelClass} mb-1.5`}>Valable jusqu'au</label>
+                <label className={`block text-sm font-medium ${labelClass} mb-1.5`}>
+                  Valable jusqu'au
+                </label>
                 <input
                   type="date"
                   value={validUntil}
@@ -326,7 +348,9 @@ export default function EditQuotePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">Sous-total</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{subtotal.toLocaleString()} FCFA</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  {subtotal.toLocaleString()} FCFA
+                </span>
               </div>
               <Input
                 label="Taxe"
@@ -344,15 +368,21 @@ export default function EditQuotePage() {
               />
               <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-semibold text-gray-900 dark:text-gray-100">Total</span>
-                  <span className="text-lg font-bold text-brand">{totalAmount.toLocaleString()} FCFA</span>
+                  <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    Total
+                  </span>
+                  <span className="text-lg font-bold text-brand">
+                    {totalAmount.toLocaleString()} FCFA
+                  </span>
                 </div>
               </div>
             </div>
           </Card>
 
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Informations supplémentaires</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Informations supplémentaires
+            </h3>
             <div className="space-y-4">
               <div>
                 <label className={`block text-sm font-medium ${labelClass} mb-1.5`}>Notes</label>
@@ -365,7 +395,9 @@ export default function EditQuotePage() {
                 />
               </div>
               <div>
-                <label className={`block text-sm font-medium ${labelClass} mb-1.5`}>Conditions générales</label>
+                <label className={`block text-sm font-medium ${labelClass} mb-1.5`}>
+                  Conditions générales
+                </label>
                 <textarea
                   value={terms}
                   onChange={(e) => setTerms(e.target.value)}

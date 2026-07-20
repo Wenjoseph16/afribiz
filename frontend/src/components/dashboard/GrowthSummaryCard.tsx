@@ -3,8 +3,14 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import {
-  TrendingUp, TrendingDown, DollarSign, ShoppingBag, Users,
-  MessageCircle, Star, Clock,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  ShoppingBag,
+  Users,
+  MessageCircle,
+  Star,
+  Clock,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
@@ -27,7 +33,9 @@ interface GrowthSummaryProps {
 export default function GrowthSummaryCard({ stats, businessName }: GrowthSummaryProps) {
   const revenueChange = useMemo(() => {
     if (stats.revenueYesterday === 0) return stats.revenueToday > 0 ? 100 : 0;
-    return Math.round(((stats.revenueToday - stats.revenueYesterday) / stats.revenueYesterday) * 100);
+    return Math.round(
+      ((stats.revenueToday - stats.revenueYesterday) / stats.revenueYesterday) * 100
+    );
   }, [stats.revenueToday, stats.revenueYesterday]);
 
   const totalPending = stats.ordersPending + stats.newMessages + stats.unreadReviews;
@@ -39,7 +47,13 @@ export default function GrowthSummaryCard({ stats, businessName }: GrowthSummary
       icon: DollarSign,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-      trend: revenueChange !== 0 ? { value: `${revenueChange > 0 ? '+' : ''}${revenueChange}%`, positive: revenueChange > 0 } : undefined,
+      trend:
+        revenueChange !== 0
+          ? {
+              value: `${revenueChange > 0 ? '+' : ''}${revenueChange}%`,
+              positive: revenueChange > 0,
+            }
+          : undefined,
     },
     {
       label: 'Commandes en cours',
@@ -92,19 +106,30 @@ export default function GrowthSummaryCard({ stats, businessName }: GrowthSummary
           </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
             {stats.revenueToday.toLocaleString()} FCFA
-            <span className={cn('text-sm font-medium ml-2',
-              revenueChange > 0 ? 'text-emerald-600' : revenueChange < 0 ? 'text-red-500' : 'text-gray-400'
-            )}>
+            <span
+              className={cn(
+                'text-sm font-medium ml-2',
+                revenueChange > 0
+                  ? 'text-emerald-600'
+                  : revenueChange < 0
+                    ? 'text-red-500'
+                    : 'text-gray-400'
+              )}
+            >
               {revenueChange > 0 && <TrendingUp className="inline h-3.5 w-3.5 mr-0.5" />}
               {revenueChange < 0 && <TrendingDown className="inline h-3.5 w-3.5 mr-0.5" />}
-              {revenueChange !== 0 ? `${revenueChange > 0 ? '+' : ''}${revenueChange}% vs hier` : '—'}
+              {revenueChange !== 0
+                ? `${revenueChange > 0 ? '+' : ''}${revenueChange}% vs hier`
+                : '—'}
             </span>
           </p>
         </div>
         {totalPending > 0 && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-700/50">
             <Clock className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">{totalPending} action{totalPending > 1 ? 's' : ''} en attente</span>
+            <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+              {totalPending} action{totalPending > 1 ? 's' : ''} en attente
+            </span>
           </div>
         )}
       </div>
@@ -114,20 +139,39 @@ export default function GrowthSummaryCard({ stats, businessName }: GrowthSummary
         {items.map((item) => {
           const Icon = item.icon;
           const content = (
-            <div className={cn('p-3 rounded-xl transition-colors', item.bg, item.link && 'hover:opacity-80 cursor-pointer')}>
+            <div
+              className={cn(
+                'p-3 rounded-xl transition-colors',
+                item.bg,
+                item.link && 'hover:opacity-80 cursor-pointer'
+              )}
+            >
               <div className="flex items-center gap-2">
                 <Icon className={cn('h-4 w-4', item.color)} />
-                <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase">{item.label}</span>
+                <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  {item.label}
+                </span>
               </div>
               <p className={cn('text-lg font-bold mt-1', item.color)}>{item.value}</p>
               {item.trend && (
-                <p className={cn('text-[10px] font-medium mt-0.5', item.trend.positive ? 'text-emerald-600' : 'text-red-500')}>
+                <p
+                  className={cn(
+                    'text-[10px] font-medium mt-0.5',
+                    item.trend.positive ? 'text-emerald-600' : 'text-red-500'
+                  )}
+                >
                   {item.trend.value}
                 </p>
               )}
             </div>
           );
-          return item.link ? <Link key={item.label} href={item.link}>{content}</Link> : <div key={item.label}>{content}</div>;
+          return item.link ? (
+            <Link key={item.label} href={item.link}>
+              {content}
+            </Link>
+          ) : (
+            <div key={item.label}>{content}</div>
+          );
         })}
       </div>
     </div>

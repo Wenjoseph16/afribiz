@@ -2,10 +2,21 @@
 
 import { useState } from 'react';
 import {
-  Beaker, Play, CheckCircle2, XCircle, Clock, Code, Database,
-  Globe, Webhook, Activity, RefreshCw, Terminal,
+  Beaker,
+  Play,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Code,
+  Database,
+  Globe,
+  Webhook,
+  Activity,
+  RefreshCw,
+  Terminal,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -14,7 +25,12 @@ import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { useDeveloperModules } from '@/features/developerHooks';
-import { useSimulationEnvironments, useTestEndpoint, useSimulationEndpoints, useSimulationMockData } from '@/features/simulationHooks';
+import {
+  useSimulationEnvironments,
+  useTestEndpoint,
+  useSimulationEndpoints,
+  useSimulationMockData,
+} from '@/features/simulationHooks';
 
 const METHOD_COLORS: Record<string, string> = {
   GET: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30',
@@ -53,15 +69,21 @@ export default function SimulationPage() {
     let body: any = undefined;
     try {
       body = requestBody ? JSON.parse(requestBody) : undefined;
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
     try {
-      const res = await testMutation.mutateAsync({
+      const res: any = await testMutation.mutateAsync({
         moduleSlug: selectedModule,
         data: { endpoint: selectedEndpoint, method: selectedMethod, body },
       });
       setTestResult(res.data.data);
     } catch (err: any) {
-      setTestResult({ statusCode: 500, response: { success: false, error: err.message }, latency: 0 });
+      setTestResult({
+        statusCode: 500,
+        response: { success: false, error: err.message },
+        latency: 0,
+      });
     }
   };
 
@@ -102,64 +124,69 @@ export default function SimulationPage() {
         <>
           <Card className="p-5 space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Tester un endpoint</h3>
-              <Badge variant="purple" size="sm">Environnement sandbox</Badge>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Tester un endpoint
+              </h3>
+              <Badge variant="purple" size="sm">
+                Environnement sandbox
+              </Badge>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Module</label>
-                <select
+                <Select
                   value={selectedModule}
                   onChange={(e) => setSelectedModule(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent dark:text-gray-100 focus:ring-2 focus:ring-indigo/20 focus:border-indigo outline-none"
-                >
-                  <option value="">Sélectionner un module</option>
-                  {(modules || []).map((m: any) => (
-                    <option key={m.id} value={m.slug}>{m.name}</option>
-                  ))}
-                </select>
+                  placeholder="Sélectionner un module"
+                  options={(modules || []).map((m: any) => ({ value: m.slug, label: m.name }))}
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Endpoint</label>
-                <select
+                <Select
                   value={selectedEndpoint}
                   onChange={(e) => setSelectedEndpoint(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent dark:text-gray-100 focus:ring-2 focus:ring-indigo/20 focus:border-indigo outline-none"
-                >
-                  <option value="">Sélectionner un endpoint</option>
-                  {(endpoints || []).map((ep: any) => (
-                    <option key={ep.path} value={ep.path}>{ep.method} {ep.path}</option>
-                  ))}
-                </select>
+                  placeholder="Sélectionner un endpoint"
+                  options={(endpoints || []).map((ep: any) => ({
+                    value: ep.path,
+                    label: `${ep.method} ${ep.path}`,
+                  }))}
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Méthode HTTP</label>
-                <select
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                  Méthode HTTP
+                </label>
+                <Select
                   value={selectedMethod}
                   onChange={(e) => setSelectedMethod(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent dark:text-gray-100 focus:ring-2 focus:ring-indigo/20 focus:border-indigo outline-none"
-                >
-                  {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+                  options={['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => ({
+                    value: m,
+                    label: m,
+                  }))}
+                />
               </div>
             </div>
 
-            {selectedEndpoint && (selectedMethod === 'POST' || selectedMethod === 'PUT' || selectedMethod === 'PATCH') && (
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Corps de la requête (JSON)</label>
-                <textarea
-                  value={requestBody}
-                  onChange={(e) => setRequestBody(e.target.value)}
-                  rows={5}
-                  className="w-full px-3 py-2 text-xs font-mono border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo/20 focus:border-indigo outline-none"
-                />
-              </div>
-            )}
+            {selectedEndpoint &&
+              (selectedMethod === 'POST' ||
+                selectedMethod === 'PUT' ||
+                selectedMethod === 'PATCH') && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Corps de la requête (JSON)
+                  </label>
+                  <textarea
+                    value={requestBody}
+                    onChange={(e) => setRequestBody(e.target.value)}
+                    rows={5}
+                    className="w-full px-3 py-2 text-xs font-mono border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo/20 focus:border-indigo outline-none"
+                  />
+                </div>
+              )}
 
             <Button
               variant="primary"
@@ -209,30 +236,52 @@ export default function SimulationPage() {
           {(endpoints || []).map((ep: any) => (
             <Card key={ep.path} className="p-5">
               <div className="flex items-start gap-4">
-                <span className={cn('px-2.5 py-1 rounded-lg text-xs font-bold font-mono', METHOD_COLORS[ep.method] || METHOD_COLORS.GET)}>
+                <span
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-xs font-bold font-mono',
+                    METHOD_COLORS[ep.method] || METHOD_COLORS.GET
+                  )}
+                >
                   {ep.method}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <code className="text-sm font-mono text-gray-900 dark:text-gray-100">{ep.path}</code>
+                  <code className="text-sm font-mono text-gray-900 dark:text-gray-100">
+                    {ep.path}
+                  </code>
                   <p className="text-xs text-gray-500 mt-1">{ep.description}</p>
                   {ep.params && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {Object.entries(ep.params).map(([key, val]) => (
-                        <span key={key} className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 rounded">
+                        <span
+                          key={key}
+                          className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 rounded"
+                        >
                           {key}: {val as string}
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
-                <Button size="xs" variant="ghost" onClick={() => { setSelectedEndpoint(ep.path); setSelectedMethod(ep.method); setActiveTab('sandbox'); }}>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  onClick={() => {
+                    setSelectedEndpoint(ep.path);
+                    setSelectedMethod(ep.method);
+                    setActiveTab('sandbox');
+                  }}
+                >
                   Tester
                 </Button>
               </div>
             </Card>
           ))}
           {(!endpoints || endpoints.length === 0) && (
-            <EmptyState icon={<Code className="h-12 w-12" />} title="Aucun endpoint" description="Créez d'abord un module pour voir les endpoints disponibles" />
+            <EmptyState
+              icon={<Code className="h-12 w-12" />}
+              title="Aucun endpoint"
+              description="Créez d'abord un module pour voir les endpoints disponibles"
+            />
           )}
         </div>
       )}
@@ -240,16 +289,12 @@ export default function SimulationPage() {
       {activeTab === 'mock' && (
         <div className="space-y-4">
           <div className="flex gap-2">
-            <select
+            <Select
               value={selectedModule}
               onChange={(e) => setSelectedModule(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent dark:text-gray-100 focus:ring-2 focus:ring-indigo/20 focus:border-indigo outline-none"
-            >
-              <option value="">Sélectionner un module</option>
-              {(modules || []).map((m: any) => (
-                <option key={m.id} value={m.slug}>{m.name}</option>
-              ))}
-            </select>
+              placeholder="Sélectionner un module"
+              options={(modules || []).map((m: any) => ({ value: m.slug, label: m.name }))}
+            />
             <div className="flex gap-1">
               {MOCK_DATA_TYPES.map((dt) => (
                 <button
@@ -277,13 +322,22 @@ export default function SimulationPage() {
                 </pre>
               </div>
               <div className="mt-3 text-xs text-gray-500">
-                {mockData.length} entrée{mockData.length > 1 ? 's' : ''} générée{mockData.length > 1 ? 's' : ''}
+                {mockData.length} entrée{mockData.length > 1 ? 's' : ''} générée
+                {mockData.length > 1 ? 's' : ''}
               </div>
             </Card>
           ) : selectedModule ? (
-            <EmptyState icon={<Database className="h-12 w-12" />} title="Aucune donnée" description="Sélectionnez un type de données pour voir les données fictives" />
+            <EmptyState
+              icon={<Database className="h-12 w-12" />}
+              title="Aucune donnée"
+              description="Sélectionnez un type de données pour voir les données fictives"
+            />
           ) : (
-            <EmptyState icon={<Database className="h-12 w-12" />} title="Sélectionnez un module" description="Choisissez un module pour voir les données de test" />
+            <EmptyState
+              icon={<Database className="h-12 w-12" />}
+              title="Sélectionnez un module"
+              description="Choisissez un module pour voir les données de test"
+            />
           )}
         </div>
       )}

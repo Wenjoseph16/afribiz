@@ -26,7 +26,9 @@ describe('adsHooks', () => {
   describe('useMyAdCampaigns', () => {
     it('devrait retourner les campagnes', async () => {
       const mockCampaigns = [{ id: '1', name: 'Campagne Test', status: 'ACTIVE' }];
-      (apiClient.getMyAdCampaigns as jest.Mock).mockResolvedValue({ data: { data: mockCampaigns } });
+      (apiClient.getMyAdCampaigns as jest.Mock).mockResolvedValue({
+        data: { data: mockCampaigns },
+      });
 
       const { result } = renderHook(() => useMyAdCampaigns(), { wrapper });
 
@@ -34,7 +36,7 @@ describe('adsHooks', () => {
       expect(result.current.data).toEqual(mockCampaigns);
     });
 
-    it('devrait retourner un tableau vide en cas d\'erreur', async () => {
+    it("devrait retourner un tableau vide en cas d'erreur", async () => {
       (apiClient.getMyAdCampaigns as jest.Mock).mockRejectedValue(new Error('Erreur API'));
 
       const { result } = renderHook(() => useMyAdCampaigns(), { wrapper });

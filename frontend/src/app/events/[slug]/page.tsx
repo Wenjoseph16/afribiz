@@ -6,8 +6,15 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Calendar, MapPin, Clock, Users, Ticket, ArrowRight,
-  ChevronLeft, AlertCircle, CalendarDays,
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
+  Ticket,
+  ArrowRight,
+  ChevronLeft,
+  AlertCircle,
+  CalendarDays,
 } from 'lucide-react';
 import AdSlot from '@/components/ads/AdSlot';
 import { apiClient } from '@/services/apiClient';
@@ -32,7 +39,9 @@ function CountdownTimer({ targetDate }: { targetDate: Date }) {
   return (
     <div className="flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 px-2.5 py-1 rounded-full">
       <Clock size={12} />
-      <span>{d}j {h}h {m}m {s}s</span>
+      <span>
+        {d}j {h}h {m}m {s}s
+      </span>
     </div>
   );
 }
@@ -53,7 +62,13 @@ function EventCard({ event, slug }: { event: any; slug: string }) {
     >
       <div className="aspect-video bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 flex items-center justify-center relative">
         {event.image ? (
-          <Image src={event.image ?? ''} alt={event.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+          <Image
+            src={event.image ?? ''}
+            alt={event.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 33vw"
+          />
         ) : (
           <CalendarDays className="h-12 w-12 text-indigo-300 dark:text-indigo-500/50" />
         )}
@@ -73,10 +88,18 @@ function EventCard({ event, slug }: { event: any; slug: string }) {
 
         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
           <Calendar size={14} className="shrink-0" />
-          <span>{startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+          <span>
+            {startDate.toLocaleDateString('fr-FR', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
           <span>à</span>
           <Clock size={14} className="shrink-0" />
-          <span>{startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>
+            {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
         </div>
 
         {event.location && (
@@ -91,7 +114,9 @@ function EventCard({ event, slug }: { event: any; slug: string }) {
             {hasTickets ? (
               <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">
                 <Ticket size={12} />
-                {ticketInfo?.price > 0 ? `${Number(ticketInfo.price).toLocaleString()} FCFA` : 'Gratuit'}
+                {ticketInfo?.price > 0
+                  ? `${Number(ticketInfo.price).toLocaleString()} FCFA`
+                  : 'Gratuit'}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-xs text-gray-400">
@@ -100,13 +125,24 @@ function EventCard({ event, slug }: { event: any; slug: string }) {
               </span>
             )}
           </div>
-          <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', {
-            'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400': isUpcoming || event.status === 'PUBLISHED',
-            'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400': event.status === 'ONGOING',
-            'text-gray-500 bg-gray-100 dark:bg-gray-700': isPast || event.status === 'COMPLETED',
-            'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400': event.status === 'CANCELLED',
-          })}>
-            {event.status === 'CANCELLED' ? 'Annulé' : isPast ? 'Terminé' : event.status === 'ONGOING' ? 'En cours' : 'À venir'}
+          <span
+            className={cn('text-xs font-medium px-2 py-0.5 rounded-full', {
+              'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400':
+                isUpcoming || event.status === 'PUBLISHED',
+              'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400':
+                event.status === 'ONGOING',
+              'text-gray-500 bg-gray-100 dark:bg-gray-700': isPast || event.status === 'COMPLETED',
+              'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400':
+                event.status === 'CANCELLED',
+            })}
+          >
+            {event.status === 'CANCELLED'
+              ? 'Annulé'
+              : isPast
+                ? 'Terminé'
+                : event.status === 'ONGOING'
+                  ? 'En cours'
+                  : 'À venir'}
           </span>
         </div>
       </div>
@@ -131,16 +167,17 @@ export default function BusinessEventsPage() {
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
 
   const businessName = data?.businessName || data?.business?.name || slug?.replace(/-/g, ' ') || '';
-  const events: any[] = Array.isArray(data) ? data : (data?.events || data?.data || []);
+  const events: any[] = Array.isArray(data) ? data : data?.events || data?.data || [];
 
   const filtered = useMemo(() => {
     const now = new Date();
     let f = [...events];
     if (filter === 'upcoming') f = f.filter((e: any) => new Date(e.startDate) > now);
-    if (filter === 'past') f = f.filter((e: any) => {
-      const end = e.endDate ? new Date(e.endDate) : new Date(e.startDate);
-      return end < now;
-    });
+    if (filter === 'past')
+      f = f.filter((e: any) => {
+        const end = e.endDate ? new Date(e.endDate) : new Date(e.startDate);
+        return end < now;
+      });
     return f;
   }, [events, filter]);
 
@@ -169,8 +206,12 @@ export default function BusinessEventsPage() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
             <AlertCircle size={28} className="text-red-500" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Événements indisponibles</h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">Impossible de charger les événements pour le moment.</p>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Événements indisponibles
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            Impossible de charger les événements pour le moment.
+          </p>
           <Link
             href="/"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
@@ -204,14 +245,15 @@ export default function BusinessEventsPage() {
                 {businessName ? `Événements - ${businessName}` : 'Événements'}
               </h1>
               <p className="text-white/70 text-sm mt-1">
-                {events.length} événement{events.length !== 1 ? 's' : ''} publié{events.length !== 1 ? 's' : ''}
+                {events.length} événement{events.length !== 1 ? 's' : ''} publié
+                {events.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Content */}        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10 pb-16">
+      {/* Content */}{' '}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-10 pb-16">
         {/* Sponsored Ad */}
         <div className="mb-8">
           <AdSlot page="EVENT_PAGE" position="TOP_BANNER" />
@@ -239,13 +281,15 @@ export default function BusinessEventsPage() {
         {filtered.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-12 text-center shadow-sm">
             <CalendarDays className="h-16 w-16 text-gray-200 dark:text-gray-700 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Aucun événement</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Aucun événement
+            </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
               {filter === 'upcoming'
-                ? "Aucun événement à venir pour le moment. Revenez bientôt !"
+                ? 'Aucun événement à venir pour le moment. Revenez bientôt !'
                 : filter === 'past'
-                ? "Aucun événement passé."
-                : "Aucun événement n'a été publié pour le moment."}
+                  ? 'Aucun événement passé.'
+                  : "Aucun événement n'a été publié pour le moment."}
             </p>
           </div>
         ) : (

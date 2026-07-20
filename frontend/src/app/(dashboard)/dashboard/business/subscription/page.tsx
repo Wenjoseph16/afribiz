@@ -2,8 +2,14 @@
 
 import { useState } from 'react';
 import {
-  CreditCard, CheckCircle, Clock, AlertTriangle,
-  ArrowLeft, Sparkles, XCircle, XOctagon,
+  CreditCard,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  ArrowLeft,
+  Sparkles,
+  XCircle,
+  XOctagon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
 import { cn } from '@/lib/utils';
 
@@ -53,7 +60,10 @@ export default function BusinessSubscriptionPage() {
       try {
         const res = await apiClient.get('/subscriptions/my-subscription');
         return res.data.data || null;
-      } catch { return null; }
+      } catch (e) {
+        console.error('Erreur chargement abonnement:', e);
+        return null;
+      }
     },
   });
 
@@ -68,8 +78,11 @@ export default function BusinessSubscriptionPage() {
       setToast({ message: 'Abonnement souscrit avec succès !', type: 'success' });
       setSelectedPlan(null);
     },
-    onError: (err: any) => {
-      setToast({ message: err?.response?.data?.error || 'Erreur lors de la souscription', type: 'error' });
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        'Erreur lors de la souscription';
+      setToast({ message: msg, type: 'error' });
     },
   });
 
@@ -81,11 +94,17 @@ export default function BusinessSubscriptionPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['subscriptions'] });
-      setToast({ message: 'Abonnement résilié avec succès. Vous repassez en mode gratuit (pay-as-you-go).', type: 'success' });
+      setToast({
+        message: 'Abonnement résilié avec succès. Vous repassez en mode gratuit (pay-as-you-go).',
+        type: 'success',
+      });
       setShowCancelConfirm(false);
     },
-    onError: (err: any) => {
-      setToast({ message: err?.response?.data?.error || 'Erreur lors de la résiliation', type: 'error' });
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        'Erreur lors de la résiliation';
+      setToast({ message: msg, type: 'error' });
     },
   });
 
@@ -100,114 +119,165 @@ export default function BusinessSubscriptionPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Toast notification */}
       {toast && (
-        <div className={cn(
-          'fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-slide-down',
-          toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
-        )}>
-          {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+        <div
+          className={cn(
+            'fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-slide-down',
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-red-50 text-red-800 border border-red-200'
+          )}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle className="h-4 w-4" />
+          ) : (
+            <AlertTriangle className="h-4 w-4" />
+          )}
           {toast.message}
-          <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100">✕</button>
+          <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100">
+            ✕
+          </button>
         </div>
       )}
 
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard/business" className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-          <ArrowLeft className="h-5 w-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Mon abonnement</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gérez votre abonnement AfriBiz</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Mon abonnement"
+        description="Gérez votre abonnement AfriBiz"
+        breadcrumbs={[{ label: 'Business', href: '/dashboard/business' }, { label: 'Abonnement' }]}
+      />
 
       {/* Current Plan */}
-      <Card padding="lg" className={cn(
-        'bg-gradient-to-br',
-        hasActiveSub ? 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/50' : 'from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900'
-      )}>          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className={cn('p-3 rounded-xl shrink-0', hasActiveSub ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-brand-50 dark:bg-brand-900/20')}>
-                <CreditCard className={cn('h-6 w-6', hasActiveSub ? 'text-emerald-600' : 'text-brand')} />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-                  {currentSub?.plan?.name || 'Plan Gratuit'}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {hasActiveSub ? 'Abonnement actif' : 'Aucun abonnement actif — facturé à l\'usage (1% par transaction)'}
-                </p>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  {hasActiveSub ? (
-                    <Badge variant="success" size="sm">Actif</Badge>
-                  ) : (
-                    <Badge variant="default" size="sm">Pay-as-you-go</Badge>
-                  )}
-                  {currentSub?.endDate && (
-                    <span className="text-xs text-gray-400">
-                      Prochaine échéance : {new Date(currentSub.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </span>
-                  )}
-                  {currentSub?.autoRenew && (
-                    <span className="text-xs text-emerald-600 font-medium">Renouvellement automatique</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {currentSub?.plan?.price ? `${Number(currentSub.plan.price).toLocaleString()} FCFA` : '0 FCFA'}
-              </p>
-              <p className="text-xs text-gray-500">/ mois</p>
-              {hasActiveSub && (
-                <button
-                  onClick={() => setShowCancelConfirm(true)}
-                  className="mt-2 text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition-colors flex items-center gap-1"
-                >
-                  <XOctagon className="h-3 w-3" />
-                  Résilier l\'abonnement
-                </button>
+      <Card
+        padding="lg"
+        className={cn(
+          'bg-gradient-to-br',
+          hasActiveSub
+            ? 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/50'
+            : 'from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900'
+        )}
+      >
+        {' '}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div
+              className={cn(
+                'p-3 rounded-xl shrink-0',
+                hasActiveSub
+                  ? 'bg-emerald-100 dark:bg-emerald-900/40'
+                  : 'bg-brand-50 dark:bg-brand-900/20'
               )}
+            >
+              <CreditCard
+                className={cn('h-6 w-6', hasActiveSub ? 'text-emerald-600' : 'text-brand')}
+              />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                {currentSub?.plan?.name || 'Plan Gratuit'}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {hasActiveSub
+                  ? 'Abonnement actif'
+                  : "Aucun abonnement actif — facturé à l'usage (1% par transaction)"}
+              </p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {hasActiveSub ? (
+                  <Badge variant="success" size="sm">
+                    Actif
+                  </Badge>
+                ) : (
+                  <Badge variant="default" size="sm">
+                    Pay-as-you-go
+                  </Badge>
+                )}
+                {currentSub?.endDate && (
+                  <span className="text-xs text-gray-400">
+                    Prochaine échéance :{' '}
+                    {new Date(currentSub.endDate).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </span>
+                )}
+                {currentSub?.autoRenew && (
+                  <span className="text-xs text-emerald-600 font-medium">
+                    Renouvellement automatique
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-
-          {/* Cancel confirmation modal */}
-          {showCancelConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowCancelConfirm(false)}>
-              <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/30">
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Résilier l&apos;abonnement ?</h3>
+          <div className="text-right shrink-0">
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {currentSub?.plan?.price
+                ? `${Number(currentSub.plan.price).toLocaleString()} FCFA`
+                : '0 FCFA'}
+            </p>
+            <p className="text-xs text-gray-500">/ mois</p>
+            {hasActiveSub && (
+              <button
+                onClick={() => setShowCancelConfirm(true)}
+                className="mt-2 text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition-colors flex items-center gap-1"
+              >
+                <XOctagon className="h-3 w-3" />
+                Résilier l\'abonnement
+              </button>
+            )}
+          </div>
+        </div>
+        {/* Cancel confirmation modal */}
+        {showCancelConfirm && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowCancelConfirm(false)}
+          >
+            <div
+              className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/30">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Vous allez perdre l&apos;accès aux avantages de votre plan {currentSub?.plan?.name || 'actuel'}.
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                  Vous repasserez en mode <strong>Pay-as-you-go</strong> : 1% de commission sur chaque transaction, sans engagement.
-                </p>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setShowCancelConfirm(false)}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    Conserver mon abonnement
-                  </button>
-                  <button
-                    onClick={() => cancelMutation.mutate()}
-                    disabled={cancelMutation.isPending}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                  >
-                    {cancelMutation.isPending ? (
-                      <><span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" /> Résiliation...</>
-                    ) : (
-                      <><XCircle className="h-4 w-4" /> Oui, résilier</>
-                    )}
-                  </button>
-                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  Résilier l&apos;abonnement ?
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Vous allez perdre l&apos;accès aux avantages de votre plan{' '}
+                {currentSub?.plan?.name || 'actuel'}.
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                Vous repasserez en mode <strong>Pay-as-you-go</strong> : 1% de commission sur chaque
+                transaction, sans engagement.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Conserver mon abonnement
+                </button>
+                <button
+                  onClick={() => cancelMutation.mutate()}
+                  disabled={cancelMutation.isPending}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  {cancelMutation.isPending ? (
+                    <>
+                      <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />{' '}
+                      Résiliation...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="h-4 w-4" /> Oui, résilier
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
       </Card>
 
       {/* Plans disponibles */}
@@ -225,9 +295,11 @@ export default function BusinessSubscriptionPage() {
                   key={plan.id}
                   className={cn(
                     'relative rounded-2xl border-2 p-5 transition-all cursor-pointer',
-                    isSelected ? 'border-brand bg-brand-5 dark:bg-brand-900/10 shadow-lg shadow-brand-500/10' :
-                    plan.featured ? 'border-brand-300 dark:border-brand-700 bg-white dark:bg-gray-800' :
-                    'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300'
+                    isSelected
+                      ? 'border-brand bg-brand-5 dark:bg-brand-900/10 shadow-lg shadow-brand-500/10'
+                      : plan.featured
+                        ? 'border-brand-300 dark:border-brand-700 bg-white dark:bg-gray-800'
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300'
                   )}
                   onClick={() => !isCurrent && setSelectedPlan(plan.id)}
                 >
@@ -238,24 +310,35 @@ export default function BusinessSubscriptionPage() {
                     </div>
                   )}
                   <div className="text-center mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                      {plan.name}
+                    </h3>
                     {plan.description && (
                       <p className="text-xs text-gray-500 mt-1">{plan.description}</p>
                     )}
                     <div className="mt-2">
                       <span className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-                        {plan.price === 0 ? 'Gratuit' : `${Number(plan.price).toLocaleString()} FCFA`}
+                        {plan.price === 0
+                          ? 'Gratuit'
+                          : `${Number(plan.price).toLocaleString()} FCFA`}
                       </span>
                       <span className="text-sm text-gray-500">/mois</span>
                     </div>
-                    {plan.price === 0 && <p className="text-xs text-gray-400 mt-1">Paiement à l&apos;usage</p>}
+                    {plan.price === 0 && (
+                      <p className="text-xs text-gray-400 mt-1">Paiement à l&apos;usage</p>
+                    )}
                     {plan.trialDays && plan.trialDays > 0 && (
-                      <p className="text-xs text-indigo-600 mt-1">{plan.trialDays} jours d&apos;essai</p>
+                      <p className="text-xs text-indigo-600 mt-1">
+                        {plan.trialDays} jours d&apos;essai
+                      </p>
                     )}
                   </div>
                   <ul className="space-y-2 mt-4">
                     {plan.benefits.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
+                      >
                         <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                         <span>{f}</span>
                       </li>
@@ -293,7 +376,9 @@ export default function BusinessSubscriptionPage() {
       {/* Payment History */}
       <Card title="Historique de facturation">
         {currentSub?._count?.payments && currentSub._count.payments > 0 ? (
-          <p className="text-sm text-gray-500">{currentSub._count.payments} paiement(s) enregistré(s)</p>
+          <p className="text-sm text-gray-500">
+            {currentSub._count.payments} paiement(s) enregistré(s)
+          </p>
         ) : (
           <EmptyState
             icon={<Clock className="h-8 w-8" />}

@@ -4,8 +4,15 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import {
-  Bell, CheckCheck, Mail, UserPlus, CreditCard,
-  AlertTriangle, Flag, Bug, AlertCircle,
+  Bell,
+  CheckCheck,
+  Mail,
+  UserPlus,
+  CreditCard,
+  AlertTriangle,
+  Flag,
+  Bug,
+  AlertCircle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -53,12 +60,14 @@ export default function AdminNotificationsPage() {
 
   const typeFilter = activeTab === 'system' ? undefined : activeTab;
 
-  const { data: notifData, isLoading } = useQuery({
+  const {
+    data: notifData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['admin', 'notifications', activeTab, page],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/notifications', {
-        params: { type: typeFilter, page, limit },
-      });
+      const res = await apiClient.adminGetNotificationsList({ type: typeFilter, page, limit });
       return res.data.data;
     },
   });
@@ -67,11 +76,13 @@ export default function AdminNotificationsPage() {
     mutationFn: (id: string) => apiClient.markNotificationRead(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notifications', 'unread'] });
     },
   });
 
-  const notifications = Array.isArray(notifData) ? notifData : notifData?.notifications ?? notifData?.data ?? [];
-  const total = notifData?.total ?? notifData?.count ?? notifications.length;
+  const notifications = notifData?.notifications ?? [];
+  const total = notifData?.total ?? 0;
   const totalPages = Math.ceil(total / limit) || 1;
 
   if (!isAdmin) {
@@ -109,7 +120,10 @@ export default function AdminNotificationsPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setPage(1); }}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setPage(1);
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
                   ? 'border-brand text-brand'
@@ -124,7 +138,21 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Notifications list */}
-      {isLoading ? (
+      {error ? (
+        <div className="flex justify-center py-12">
+          <div className="text-center">
+            <AlertCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 mb-3">{error.message}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] })}
+            >
+              Réessayer
+            </Button>
+          </div>
+        </div>
+      ) : isLoading ? (
         <Loader className="py-12" />
       ) : notifications.length === 0 ? (
         <EmptyState
@@ -136,7 +164,8 @@ export default function AdminNotificationsPage() {
         <div className="space-y-3">
           {notifications.map((notif: any) => {
             const Icon = typeIcons[notif.type] || AlertCircle;
-            const colorClass = typeColors[notif.type] || 'text-gray-500 bg-gray-50 dark:bg-gray-800/50';
+            const colorClass =
+              typeColors[notif.type] || 'text-gray-500 bg-gray-50 dark:bg-gray-800/50';
             return (
               <Card key={notif.id} padding="sm">
                 <div className="flex items-start gap-3">
@@ -146,7 +175,9 @@ export default function AdminNotificationsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className={`text-sm font-semibold ${notif.read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                        <p
+                          className={`text-sm font-semibold ${notif.read ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
+                        >
                           {notif.title}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -155,7 +186,9 @@ export default function AdminNotificationsPage() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                          {notif.createdAt ? new Date(notif.createdAt).toLocaleString('fr-FR') : '-'}
+                          {notif.createdAt
+                            ? new Date(notif.createdAt).toLocaleString('fr-FR')
+                            : '-'}
                         </span>
                         {!notif.read && (
                           <Button
@@ -171,11 +204,16 @@ export default function AdminNotificationsPage() {
                     </div>
                     {notif.metadata && Object.keys(notif.metadata).length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {Object.entries(notif.metadata).slice(0, 3).map(([key, val]: any) => (
-                          <span key={key} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                            {key}: {String(val).slice(0, 30)}
-                          </span>
-                        ))}
+                        {Object.entries(notif.metadata)
+                          .slice(0, 3)
+                          .map(([key, val]: any) => (
+                            <span
+                              key={key}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                            >
+                              {key}: {String(val).slice(0, 30)}
+                            </span>
+                          ))}
                       </div>
                     )}
                   </div>

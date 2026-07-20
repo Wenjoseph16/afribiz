@@ -109,9 +109,17 @@ export default function NotificationAnalyticsPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      addToast('Export CSV réussi', 'success', `${(blob.size / 1024).toFixed(0)} Ko téléchargés`);
+      addToast({
+        title: 'Export CSV réussi',
+        variant: 'success',
+        description: `${(blob.size / 1024).toFixed(0)} Ko téléchargés`,
+      });
     } catch (err) {
-      addToast("Échec de l'export CSV", 'error', 'Vérifiez votre connexion');
+      addToast({
+        title: "Échec de l'export CSV",
+        variant: 'error',
+        description: 'Vérifiez votre connexion',
+      });
       console.error('CSV export failed', err);
     }
   }, [addToast]);
@@ -123,7 +131,7 @@ export default function NotificationAnalyticsPage() {
       const { jsPDF } = await import('jspdf');
       const element = chartRef.current;
       if (!element) {
-        addToast('Rien à exporter', 'error');
+        addToast({ title: 'Rien à exporter', variant: 'error' });
         return;
       }
       const canvas = await html2canvas(element, {
@@ -138,9 +146,17 @@ export default function NotificationAnalyticsPage() {
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       pdf.save('notification-analytics.pdf');
-      addToast('Export PDF réussi', 'success', 'Graphiques exportés en PDF');
+      addToast({
+        title: 'Export PDF réussi',
+        variant: 'success',
+        description: 'Graphiques exportés en PDF',
+      });
     } catch (err) {
-      addToast("Échec de l'export PDF", 'error', 'Erreur lors de la génération');
+      addToast({
+        title: "Échec de l'export PDF",
+        variant: 'error',
+        description: 'Erreur lors de la génération',
+      });
       console.error('PDF export failed', err);
     } finally {
       setIsExporting(false);
@@ -154,15 +170,19 @@ export default function NotificationAnalyticsPage() {
       const res = await apiClient.get('/notifications/analytics/check-failure-rate');
       const msg = res.data.data.message;
       setFailureMsg(msg);
-      addToast(
-        res.data.data.alertSent ? 'Alerte déclenchée' : 'Vérification OK',
-        res.data.data.alertSent ? 'error' : 'success',
-        msg
-      );
+      addToast({
+        title: res.data.data.alertSent ? 'Alerte déclenchée' : 'Vérification OK',
+        variant: res.data.data.alertSent ? 'error' : 'success',
+        description: msg,
+      });
       setTimeout(() => setFailureMsg(null), 7000);
     } catch {
       setFailureMsg('Erreur lors de la vérification');
-      addToast('Erreur', 'error', "Impossible de vérifier le taux d'échec");
+      addToast({
+        title: 'Erreur',
+        variant: 'error',
+        description: "Impossible de vérifier le taux d'échec",
+      });
       setTimeout(() => setFailureMsg(null), 5000);
     } finally {
       setFailureLoading(false);

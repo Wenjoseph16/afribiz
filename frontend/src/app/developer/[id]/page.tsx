@@ -2,16 +2,30 @@
 
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { apiClient } from '@/services/apiClient';
 import Image from 'next/image';
 import {
-  Star, MapPin, Globe, Code2, GitBranch, Briefcase, Code, Shield, ExternalLink,
-  Download, Eye, Mail, Phone, Award, Quote, ChevronRight, Package, Sparkles
+  Star,
+  MapPin,
+  Globe,
+  Code2,
+  GitBranch,
+  Briefcase,
+  Code,
+  Shield,
+  ExternalLink,
+  Download,
+  Eye,
+  Mail,
+  Phone,
+  Award,
+  Quote,
+  ChevronRight,
+  Package,
+  Sparkles,
 } from 'lucide-react';
 import { Loader } from '@/components/ui/Loader';
 import { cn } from '@/lib/utils';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 interface DeveloperPublic {
   _id: string;
@@ -77,7 +91,9 @@ function StarRating({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md
           key={star}
           className={cn(
             sizeClass,
-            star <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-300 text-gray-300'
+            star <= Math.round(rating)
+              ? 'fill-yellow-400 text-yellow-400'
+              : 'fill-gray-300 text-gray-300'
           )}
         />
       ))}
@@ -85,7 +101,15 @@ function StarRating({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md
   );
 }
 
-function StatCard({ label, value, icon: Icon }: { label: string; value: number | string; icon: React.ElementType }) {
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number | string;
+  icon: React.ElementType;
+}) {
   return (
     <div className="flex flex-col items-center gap-1.5 p-5">
       <Icon className="w-5 h-5 text-brand" />
@@ -97,7 +121,12 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number |
 
 function getInitials(name?: string) {
   if (!name) return 'D';
-  return name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
 }
 
 export default function DeveloperProfilePage() {
@@ -107,8 +136,8 @@ export default function DeveloperProfilePage() {
   const { data, isLoading, isError } = useQuery<DeveloperPublic>({
     queryKey: ['developer-public', id],
     queryFn: async () => {
-      const res = await axios.get(`${API}/developer/public/${id}`);
-      return res.data;
+      const res = await apiClient.get(`/developer/public/${id}`);
+      return res.data.data;
     },
     enabled: !!id,
   });
@@ -152,7 +181,6 @@ export default function DeveloperProfilePage() {
                   width={144}
                   height={144}
                   className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover ring-4 ring-white/30 shadow-xl"
-                  unoptimized
                 />
               ) : (
                 <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-white/20 backdrop-blur-sm ring-4 ring-white/30 shadow-xl flex items-center justify-center">
@@ -168,7 +196,6 @@ export default function DeveloperProfilePage() {
                   width={48}
                   height={48}
                   className="absolute -bottom-2 -right-2 w-12 h-12 rounded-xl border-2 border-white bg-white object-contain p-1 shadow-md"
-                  unoptimized
                 />
               )}
             </div>
@@ -184,10 +211,12 @@ export default function DeveloperProfilePage() {
                     Vérifié
                   </span>
                 )}
-                <span className={cn(
-                  'inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider',
-                  tierColors[data.tier] || tierColors.BRONZE
-                )}>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider',
+                    tierColors[data.tier] || tierColors.BRONZE
+                  )}
+                >
                   <Award className="w-3.5 h-3.5" />
                   {data.tier}
                 </span>
@@ -375,7 +404,6 @@ export default function DeveloperProfilePage() {
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, 33vw"
-                        unoptimized
                       />
                     </div>
                   )}
@@ -418,7 +446,9 @@ export default function DeveloperProfilePage() {
                     <StarRating rating={rev.rating} />
                   </div>
                   <h4 className="font-semibold text-gray-900 mb-1">{rev.title}</h4>
-                  <p className="text-sm text-gray-600 leading-relaxed mb-4">&ldquo;{rev.comment}&rdquo;</p>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                    &ldquo;{rev.comment}&rdquo;
+                  </p>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center">
                       {getInitials(rev.userName)}
@@ -438,7 +468,9 @@ export default function DeveloperProfilePage() {
           <div className="bg-white rounded-2xl shadow-card border border-gray-100 p-6 sm:p-8 max-w-2xl">
             <div className="grid sm:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom complet</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Nom complet
+                </label>
                 <input
                   type="text"
                   disabled

@@ -2,7 +2,14 @@
 
 import { useState } from 'react';
 import {
-  Code2, Shield, Search, DollarSign, TrendingUp, Download, ChevronLeft, ChevronRight,
+  Code2,
+  Shield,
+  Search,
+  DollarSign,
+  TrendingUp,
+  Download,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -51,8 +58,14 @@ export default function DeveloperCommissionsPage() {
   if (!isAdmin) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Commissions développeurs</h1>
-        <EmptyState icon={<Shield className="h-8 w-8" />} title="Accès réservé" description="Vous devez être administrateur." />
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+          Commissions développeurs
+        </h1>
+        <EmptyState
+          icon={<Shield className="h-8 w-8" />}
+          title="Accès réservé"
+          description="Vous devez être administrateur."
+        />
       </div>
     );
   }
@@ -79,7 +92,9 @@ export default function DeveloperCommissionsPage() {
                 <DollarSign className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Revenu total développeurs</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Revenu total développeurs
+                </p>
                 <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {formatCurrency(stats.totalDeveloperRevenue || 0)}
                 </p>
@@ -124,7 +139,10 @@ export default function DeveloperCommissionsPage() {
               type="text"
               placeholder="Rechercher un développeur..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
           </div>
@@ -132,7 +150,10 @@ export default function DeveloperCommissionsPage() {
             {PERIODS.map((p) => (
               <button
                 key={p.value}
-                onClick={() => { setPeriod(p.value); setPage(1); }}
+                onClick={() => {
+                  setPeriod(p.value);
+                  setPage(1);
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   period === p.value
                     ? 'bg-brand text-white'
@@ -170,13 +191,18 @@ export default function DeveloperCommissionsPage() {
             </thead>
             <tbody>
               {developers.map((dev: any) => (
-                <tr key={dev.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                <tr
+                  key={dev.id}
+                  className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                >
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-xs font-bold text-purple-600">
                         {dev.name?.[0]?.toUpperCase() || 'D'}
                       </div>
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{dev.name || 'N/A'}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {dev.name || 'N/A'}
+                      </span>
                     </div>
                   </td>
                   <td className="p-3 text-gray-500">{dev.moduleCount || 0}</td>
@@ -206,12 +232,24 @@ export default function DeveloperCommissionsPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Page {page} sur {totalPages}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Page {page} sur {totalPages}
+          </p>
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
               <ChevronLeft className="h-4 w-4" /> Précédent
             </Button>
-            <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
               Suivant <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

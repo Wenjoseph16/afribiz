@@ -63,86 +63,160 @@ export default function EditEmployeePage() {
         },
       });
       router.push('/dashboard/employees');
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const update = (field: string, value: string) => setForm((f: any) => ({ ...f, [field]: value }));
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
-      <PageHeader title="Modifier l'employé" description="Mettez à jour les informations du membre"
+      <PageHeader
+        title="Modifier l'employé"
+        description="Mettez à jour les informations du membre"
         breadcrumbs={[{ label: 'Employés', href: '/dashboard/employees' }, { label: 'Modifier' }]}
-        actions={<Link href={`/dashboard/employees/${id}`}><Button variant="outline" size="sm"><ArrowLeft className="h-4 w-4 mr-1.5" />Retour</Button></Link>}
+        actions={
+          <Link href={`/dashboard/employees/${id}`}>
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Retour
+            </Button>
+          </Link>
+        }
       />
       <Card padding="lg">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prénom *</label>
-              <input type="text" value={form.firstName || ''} onChange={e => update('firstName', e.target.value)} required
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Prénom *
+              </label>
+              <input
+                type="text"
+                value={form.firstName || ''}
+                onChange={(e) => update('firstName', e.target.value)}
+                required
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom *</label>
-              <input type="text" value={form.lastName || ''} onChange={e => update('lastName', e.target.value)} required
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nom *
+              </label>
+              <input
+                type="text"
+                value={form.lastName || ''}
+                onChange={(e) => update('lastName', e.target.value)}
+                required
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
-              <input type="email" value={form.email || ''} onChange={e => update('email', e.target.value)} required
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Email *
+              </label>
+              <input
+                type="email"
+                value={form.email || ''}
+                onChange={(e) => update('email', e.target.value)}
+                required
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Téléphone</label>
-              <input type="tel" value={form.phone || ''} onChange={e => update('phone', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Téléphone
+              </label>
+              <input
+                type="tel"
+                value={form.phone || ''}
+                onChange={(e) => update('phone', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rôle</label>
-              <select value={form.roleId || ''} onChange={e => update('roleId', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Rôle
+              </label>
+              <select
+                value={form.roleId || ''}
+                onChange={(e) => update('roleId', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              >
                 <option value="">Sélectionner un rôle</option>
                 {rolesList.map((role: { id: string; name: string }) => (
-                  <option key={role.id} value={role.id}>{role.name}</option>
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Poste</label>
-              <input type="text" value={form.position || ''} onChange={e => update('position', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Poste
+              </label>
+              <input
+                type="text"
+                value={form.position || ''}
+                onChange={(e) => update('position', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Département</label>
-              <input type="text" value={form.department || ''} onChange={e => update('department', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Département
+              </label>
+              <input
+                type="text"
+                value={form.department || ''}
+                onChange={(e) => update('department', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Salaire (FCFA)</label>
-              <input type="number" value={form.salary || ''} onChange={e => update('salary', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Salaire (FCFA)
+              </label>
+              <input
+                type="number"
+                value={form.salary || ''}
+                onChange={(e) => update('salary', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date d&apos;embauche</label>
-            <input type="date" value={form.hireDate || ''} onChange={e => update('hireDate', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Date d&apos;embauche
+            </label>
+            <input
+              type="date"
+              value={form.hireDate || ''}
+              onChange={(e) => update('hireDate', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <Link href={`/dashboard/employees/${id}`}><Button variant="outline" type="button">Annuler</Button></Link>
+            <Link href={`/dashboard/employees/${id}`}>
+              <Button variant="outline" type="button">
+                Annuler
+              </Button>
+            </Link>
             <Button type="submit" disabled={updateEmployee.isPending}>
-              <Save className="h-4 w-4 mr-1.5" />{updateEmployee.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              <Save className="h-4 w-4 mr-1.5" />
+              {updateEmployee.isPending ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>
         </form>

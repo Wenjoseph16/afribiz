@@ -2,10 +2,20 @@
 
 import { useState } from 'react';
 import {
-  Headphones, Ticket, Clock, CheckCircle, AlertCircle, Shield,
-  Eye, UserCheck, X, ChevronLeft, ChevronRight,
+  Headphones,
+  Ticket,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Shield,
+  Eye,
+  UserCheck,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
@@ -65,7 +75,7 @@ function useAdminTickets(params?: any) {
   return useQuery({
     queryKey: ['admin', 'support', 'tickets', params],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/support/tickets', { params });
+      const res = await apiClient.adminGetSupportTickets(params);
       return res.data.data;
     },
   });
@@ -75,7 +85,7 @@ function useAdminTicketStats() {
   return useQuery({
     queryKey: ['admin', 'support', 'stats'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/support/stats');
+      const res = await apiClient.adminGetSupportStats();
       return res.data.data;
     },
   });
@@ -85,7 +95,7 @@ function useAdminTicketAction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: string }) =>
-      apiClient.put(`/admin/support/tickets/${id}/${action}`),
+      apiClient.updateSupportTicketStatus(id, action),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'support'] });
     },
@@ -99,6 +109,11 @@ export default function AdminSupportPage() {
 
   const [activeTab, setActiveTab] = useState<SupportTab>('Tous');
   const [page, setPage] = useState(1);
+  const [actionTarget, setActionTarget] = useState<{
+    id: string;
+    action: string;
+    label: string;
+  } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const limit = 20;
 
@@ -111,18 +126,11 @@ export default function AdminSupportPage() {
 
   const tickets: SupportTicket[] = Array.isArray(ticketsData)
     ? ticketsData
-    : ticketsData?.tickets ?? [];
+    : (ticketsData?.tickets ?? []);
   const totalPages = ticketsData?.totalPages ?? 1;
 
   const handleAction = async (id: string, action: string, label: string) => {
-    const confirmed = window.confirm(`Confirmer l'action « ${label} » sur ce ticket ?`);
-    if (!confirmed) return;
-    try {
-      await actionMutation.mutateAsync({ id, action });
-      setToast({ message: `Ticket ${label.toLowerCase()} avec succès`, type: 'success' });
-    } catch {
-      setToast({ message: `Erreur lors de « ${label} »`, type: 'error' });
-    }
+    setActionTarget({ id, action, label });
   };
 
   if (!isAdmin) {
@@ -143,13 +151,17 @@ export default function AdminSupportPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -173,7 +185,9 @@ export default function AdminSupportPage() {
               <Ticket className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.total ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats?.total ?? '-'}
+              </p>
               <p className="text-xs text-gray-500">Total</p>
             </div>
           </div>
@@ -184,7 +198,9 @@ export default function AdminSupportPage() {
               <AlertCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.open ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats?.open ?? '-'}
+              </p>
               <p className="text-xs text-gray-500">Ouverts</p>
             </div>
           </div>
@@ -195,7 +211,9 @@ export default function AdminSupportPage() {
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.inProgress ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats?.inProgress ?? '-'}
+              </p>
               <p className="text-xs text-gray-500">En cours</p>
             </div>
           </div>
@@ -206,7 +224,9 @@ export default function AdminSupportPage() {
               <CheckCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.resolved ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats?.resolved ?? '-'}
+              </p>
               <p className="text-xs text-gray-500">Résolus</p>
             </div>
           </div>
@@ -217,7 +237,9 @@ export default function AdminSupportPage() {
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.avgTime ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats?.avgTime ?? '-'}
+              </p>
               <p className="text-xs text-gray-500">Temps moyen</p>
             </div>
           </div>
@@ -229,7 +251,10 @@ export default function AdminSupportPage() {
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setPage(1); }}
+            onClick={() => {
+              setActiveTab(tab.id);
+              setPage(1);
+            }}
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
               activeTab === tab.id
                 ? 'border-brand text-brand'
@@ -261,9 +286,14 @@ export default function AdminSupportPage() {
               </thead>
               <tbody>
                 {tickets.map((ticket) => (
-                  <tr key={ticket.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={ticket.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4 text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                      {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('fr-FR') : '-'}
+                      {ticket.createdAt
+                        ? new Date(ticket.createdAt).toLocaleDateString('fr-FR')
+                        : '-'}
                     </td>
                     <td className="p-4 font-medium text-gray-900 dark:text-gray-100 max-w-[200px] truncate">
                       {ticket.subject}
@@ -271,20 +301,22 @@ export default function AdminSupportPage() {
                     <td className="p-4 text-gray-500">
                       {ticket.developer?.name || ticket.developerName || '-'}
                     </td>
-                    <td className="p-4 text-gray-500">
-                      {ticket.module || '-'}
-                    </td>
+                    <td className="p-4 text-gray-500">{ticket.module || '-'}</td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                        PRIORITY_STYLES[ticket.priority] || 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          PRIORITY_STYLES[ticket.priority] || 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
                         {PRIORITY_LABELS[ticket.priority] || ticket.priority}
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                        STATUS_STYLES[ticket.status] || 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          STATUS_STYLES[ticket.status] || 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
                         {STATUS_LABELS[ticket.status] || ticket.status}
                       </span>
                     </td>
@@ -371,6 +403,28 @@ export default function AdminSupportPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        open={!!actionTarget}
+        onClose={() => setActionTarget(null)}
+        onConfirm={async () => {
+          if (!actionTarget) return;
+          try {
+            await actionMutation.mutateAsync({ id: actionTarget.id, action: actionTarget.action });
+            setToast({
+              message: `Ticket ${actionTarget.label.toLowerCase()} avec succès`,
+              type: 'success',
+            });
+          } catch {
+            setToast({ message: `Erreur lors de « ${actionTarget.label} »`, type: 'error' });
+          }
+          setActionTarget(null);
+        }}
+        title={`Confirmer l'action`}
+        description={`Confirmer l'action « ${actionTarget?.label} » sur ce ticket ?`}
+        confirmLabel="Confirmer"
+        variant="warning"
+      />
     </div>
   );
 }

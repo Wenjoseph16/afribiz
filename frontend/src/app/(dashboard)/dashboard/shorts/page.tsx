@@ -3,10 +3,17 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  Film, Plus, TrendingUp, Clock,
-  Sparkles, ArrowRight, Users, Heart,
-  MessageCircle, Play
+import {
+  Film,
+  Plus,
+  TrendingUp,
+  Clock,
+  Sparkles,
+  ArrowRight,
+  Users,
+  Heart,
+  MessageCircle,
+  Play,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
@@ -24,8 +31,11 @@ export default function ShortsPage() {
 
   // Extract unique businesses for the business picker
   const businesses = shorts.reduce((acc: any[], s: any) => {
-    if (s.business && !acc.find(b => b.id === s.business.id)) {
-      acc.push({ ...s.business, shortsCount: (acc.find(b => b.id === s.business.id)?.shortsCount || 0) + 1 });
+    if (s.business && !acc.find((b) => b.id === s.business.id)) {
+      acc.push({
+        ...s.business,
+        shortsCount: (acc.find((b) => b.id === s.business.id)?.shortsCount || 0) + 1,
+      });
     }
     return acc;
   }, []);
@@ -35,9 +45,7 @@ export default function ShortsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Shorts Business
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shorts Business</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Vidéos courtes de vos commerces préférés
           </p>
@@ -101,7 +109,13 @@ export default function ShortsPage() {
                 >
                   <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
                     {b.logo ? (
-                      <Image src={b.logo} alt="" width={20} height={20} className="object-cover w-full h-full" />
+                      <Image
+                        src={b.logo}
+                        alt=""
+                        width={20}
+                        height={20}
+                        className="object-cover w-full h-full"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-500">
                         {b.name?.charAt(0)}
@@ -128,7 +142,9 @@ export default function ShortsPage() {
                   <Film className="w-5 h-5 text-brand-600 dark:text-brand-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{shortsData?.total || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {shortsData?.total || 0}
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Shorts publiés</p>
                 </div>
               </div>
@@ -139,7 +155,9 @@ export default function ShortsPage() {
                   <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{businesses.length}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {businesses.length}
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Businesses actives</p>
                 </div>
               </div>
@@ -151,7 +169,10 @@ export default function ShortsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {shorts.reduce((sum: number, s: any) => sum + (s._count?.likes || s.likesCount || 0), 0)}
+                    {shorts.reduce(
+                      (sum: number, s: any) => sum + (s._count?.likes || s.likesCount || 0),
+                      0
+                    )}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Total likes</p>
                 </div>
@@ -163,7 +184,10 @@ export default function ShortsPage() {
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="aspect-[9/16] rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <div
+                  key={i}
+                  className="aspect-[9/16] rounded-2xl bg-gray-200 dark:bg-gray-700 animate-pulse"
+                />
               ))}
             </div>
           ) : shorts.length === 0 ? (
@@ -183,7 +207,7 @@ export default function ShortsPage() {
                   key={short.id}
                   href={'/dashboard/shorts' + (short.id ? '?id=' + short.id : '')}
                   className="group block"
-                  onClick={(e) => {
+                  onClick={(e: any) => {
                     e.preventDefault();
                     setView('feed');
                     setSelectedBusiness(short.business?.id);
@@ -217,7 +241,13 @@ export default function ShortsPage() {
                         <div className="flex items-center gap-1.5">
                           <div className="w-6 h-6 rounded-full overflow-hidden bg-white/20 flex-shrink-0">
                             {short.business.logo ? (
-                              <Image src={short.business.logo} alt="" width={24} height={24} className="object-cover w-full h-full" />
+                              <Image
+                                src={short.business.logo}
+                                alt=""
+                                width={24}
+                                height={24}
+                                className="object-cover w-full h-full"
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-white text-[10px] font-bold">
                                 {short.business.name?.charAt(0)}

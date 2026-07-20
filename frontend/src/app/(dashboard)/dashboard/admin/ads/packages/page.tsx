@@ -9,27 +9,34 @@ import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { useAuthStore } from '@/stores/authStore';
-import {
-  Package, Plus, DollarSign, Clock, CheckCircle, X, Tag, Layers,
-} from 'lucide-react';
+import { Package, Plus, DollarSign, Clock, CheckCircle, X, Tag, Layers } from 'lucide-react';
 
 export default function AdminPackagesPage() {
   const { user } = useAuthStore();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
-    name: '', slug: '', description: '', advertiserType: 'BUSINESS',
-    price: '', durationHours: '', currency: 'FCFA', isActive: true,
+    name: '',
+    slug: '',
+    description: '',
+    advertiserType: 'BUSINESS',
+    price: '',
+    durationHours: '',
+    currency: 'FCFA',
+    isActive: true,
     placementsInput: '',
   });
 
   const { data: packages, isLoading } = useAdminAdPackages();
   const createMutation = useAdminCreateAdPackage();
 
-  const pkgList = Array.isArray(packages) ? packages : (packages as any)?.packages ?? [];
+  const pkgList = Array.isArray(packages) ? packages : ((packages as any)?.packages ?? []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const placements = form.placementsInput.split(',').map((p) => p.trim()).filter(Boolean);
+    const placements = form.placementsInput
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
     createMutation.mutate(
       {
         name: form.name,
@@ -45,7 +52,17 @@ export default function AdminPackagesPage() {
       {
         onSuccess: () => {
           setShowForm(false);
-          setForm({ name: '', slug: '', description: '', advertiserType: 'BUSINESS', price: '', durationHours: '', currency: 'FCFA', isActive: true, placementsInput: '' });
+          setForm({
+            name: '',
+            slug: '',
+            description: '',
+            advertiserType: 'BUSINESS',
+            price: '',
+            durationHours: '',
+            currency: 'FCFA',
+            isActive: true,
+            placementsInput: '',
+          });
         },
       }
     );
@@ -57,7 +74,11 @@ export default function AdminPackagesPage() {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
           Packages publicitaires
         </h1>
-        <EmptyState icon={<Package className="h-8 w-8" />} title="Accès réservé" description="Vous devez être administrateur pour accéder à cette page." />
+        <EmptyState
+          icon={<Package className="h-8 w-8" />}
+          title="Accès réservé"
+          description="Vous devez être administrateur pour accéder à cette page."
+        />
       </div>
     );
   }
@@ -89,68 +110,129 @@ export default function AdminPackagesPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom</label>
-                <input type="text" required value={form.name} onChange={e => setForm(p => ({...p, name: e.target.value}))}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nom
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={form.name}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
-                  placeholder="Ex: Premium" />
+                  placeholder="Ex: Premium"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug</label>
-                <input type="text" required value={form.slug} onChange={e => setForm(p => ({...p, slug: e.target.value}))}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Slug
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={form.slug}
+                  onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
-                  placeholder="Ex: premium" />
+                  placeholder="Ex: premium"
+                />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                <textarea rows={2} value={form.description} onChange={e => setForm(p => ({...p, description: e.target.value}))}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.description}
+                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none resize-none"
-                  placeholder="Description du package..." />
+                  placeholder="Description du package..."
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type d'annonceur</label>
-                <select value={form.advertiserType} onChange={e => setForm(p => ({...p, advertiserType: e.target.value}))}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Type d'annonceur
+                </label>
+                <select
+                  value={form.advertiserType}
+                  onChange={(e) => setForm((p) => ({ ...p, advertiserType: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
+                >
                   <option value="BUSINESS">Business</option>
                   <option value="DEVELOPER">Développeur</option>
                   <option value="EXTERNAL">Externe</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Devise</label>
-                <select value={form.currency} onChange={e => setForm(p => ({...p, currency: e.target.value}))}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Devise
+                </label>
+                <select
+                  value={form.currency}
+                  onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
+                >
                   <option value="FCFA">FCFA</option>
                   <option value="EUR">EUR</option>
                   <option value="USD">USD</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prix</label>
-                <input type="number" required value={form.price} onChange={e => setForm(p => ({...p, price: e.target.value}))}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Prix
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={form.price}
+                  onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
-                  placeholder="50000" />
+                  placeholder="50000"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Durée (heures)</label>
-                <input type="number" required value={form.durationHours} onChange={e => setForm(p => ({...p, durationHours: e.target.value}))}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Durée (heures)
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={form.durationHours}
+                  onChange={(e) => setForm((p) => ({ ...p, durationHours: e.target.value }))}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
-                  placeholder="720" />
+                  placeholder="720"
+                />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Placements (séparés par des virgules)</label>
-                <input type="text" value={form.placementsInput} onChange={e => setForm(p => ({...p, placementsInput: e.target.value}))}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Placements (séparés par des virgules)
+                </label>
+                <input
+                  type="text"
+                  value={form.placementsInput}
+                  onChange={(e) => setForm((p) => ({ ...p, placementsInput: e.target.value }))}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
-                  placeholder="HERO_BANNER, TOP_BANNER, SIDEBAR" />
+                  placeholder="HERO_BANNER, TOP_BANNER, SIDEBAR"
+                />
               </div>
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="isActive" checked={form.isActive} onChange={e => setForm(p => ({...p, isActive: e.target.checked}))}
-                  className="rounded border-gray-300 text-brand focus:ring-brand" />
-                <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-gray-300">Actif</label>
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={form.isActive}
+                  onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+                  className="rounded border-gray-300 text-brand focus:ring-brand"
+                />
+                <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-gray-300">
+                  Actif
+                </label>
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>Annuler</Button>
-              <Button type="submit" isLoading={createMutation.isPending}>Créer le package</Button>
+              <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
+                Annuler
+              </Button>
+              <Button type="submit" isLoading={createMutation.isPending}>
+                Créer le package
+              </Button>
             </div>
           </form>
         </Card>
@@ -196,10 +278,13 @@ export default function AdminPackagesPage() {
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{pkg.name}</h3>
               <p className="text-2xl font-bold text-brand mt-1">
-                {Number(pkg.price).toLocaleString()} <span className="text-sm font-normal text-gray-500">{pkg.currency}</span>
+                {Number(pkg.price).toLocaleString()}{' '}
+                <span className="text-sm font-normal text-gray-500">{pkg.currency}</span>
               </p>
               {pkg.description && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{pkg.description}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">
+                  {pkg.description}
+                </p>
               )}
               <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 dark:text-gray-400">
                 <Clock className="h-3.5 w-3.5" />
@@ -215,7 +300,9 @@ export default function AdminPackagesPage() {
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {pkg.placements.map((pl: string) => (
-                      <Badge key={pl} variant="brand" size="xs">{pl}</Badge>
+                      <Badge key={pl} variant="brand" size="xs">
+                        {pl}
+                      </Badge>
                     ))}
                   </div>
                 </div>

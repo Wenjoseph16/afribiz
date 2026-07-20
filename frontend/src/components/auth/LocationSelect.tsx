@@ -240,12 +240,59 @@ export function LocationSelect({
   const countries = useMemo(() => {
     const raw = Country.getAllCountries();
     const africanCodes = new Set([
-      'TG', 'BJ', 'SN', 'CI', 'GH', 'NG', 'BF', 'ML', 'NE', 'GN',
-      'CM', 'CD', 'KE', 'ET', 'ZA', 'MA', 'DZ', 'TN', 'EG',
-      'AO', 'MZ', 'MG', 'RW', 'UG', 'TZ', 'ZM', 'ZW', 'MW',
-      'SL', 'LR', 'CF', 'GA', 'CG', 'GQ', 'TD', 'BI', 'SO', 'SS', 'SD',
-      'GM', 'GW', 'CV', 'ST', 'KM', 'SC', 'MU', 'MR', 'DJ', 'ER',
-      'LS', 'BW', 'NA', 'SZ',
+      'TG',
+      'BJ',
+      'SN',
+      'CI',
+      'GH',
+      'NG',
+      'BF',
+      'ML',
+      'NE',
+      'GN',
+      'CM',
+      'CD',
+      'KE',
+      'ET',
+      'ZA',
+      'MA',
+      'DZ',
+      'TN',
+      'EG',
+      'AO',
+      'MZ',
+      'MG',
+      'RW',
+      'UG',
+      'TZ',
+      'ZM',
+      'ZW',
+      'MW',
+      'SL',
+      'LR',
+      'CF',
+      'GA',
+      'CG',
+      'GQ',
+      'TD',
+      'BI',
+      'SO',
+      'SS',
+      'SD',
+      'GM',
+      'GW',
+      'CV',
+      'ST',
+      'KM',
+      'SC',
+      'MU',
+      'MR',
+      'DJ',
+      'ER',
+      'LS',
+      'BW',
+      'NA',
+      'SZ',
     ]);
     return raw
       .filter((c: any) => africanCodes.has(c.isoCode))
@@ -273,10 +320,7 @@ export function LocationSelect({
     }));
   }, [selectedCountry]);
 
-  const selectedState = useMemo(
-    () => states.find((s) => s.name === region),
-    [states, region]
-  );
+  const selectedState = useMemo(() => states.find((s) => s.name === region), [states, region]);
 
   // === CITIES (depend on region) ===
   const cities = useMemo(() => {
@@ -309,10 +353,7 @@ export function LocationSelect({
   );
 
   // Only Togo is selectable
-  const isCountryDisabled = useCallback(
-    (item: CountryItem) => item.isoCode !== 'TG',
-    []
-  );
+  const isCountryDisabled = useCallback((item: CountryItem) => item.isoCode !== 'TG', []);
 
   const renderCountryItem = useCallback(
     (item: CountryItem, isDisabled: boolean) => (

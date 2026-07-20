@@ -1,7 +1,15 @@
 'use client';
 
 import { Business } from '@/types/business';
-import { Phone, MessageCircle, ShoppingCart, Calendar, FileText, Package, Bookmark } from 'lucide-react';
+import {
+  Phone,
+  MessageCircle,
+  ShoppingCart,
+  Calendar,
+  FileText,
+  Package,
+  Bookmark,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
@@ -9,7 +17,13 @@ interface HeaderProps {
 }
 
 export function Header({ business }: HeaderProps) {
-  const actions: { label: string; icon: React.ReactNode; href?: string; onClick?: () => void; variant?: 'primary' | 'secondary' }[] = [];
+  const actions: {
+    label: string;
+    icon: React.ReactNode;
+    href?: string;
+    onClick?: () => void;
+    variant?: 'primary' | 'secondary';
+  }[] = [];
 
   if (business.phone) {
     actions.push({
@@ -43,7 +57,8 @@ export function Header({ business }: HeaderProps) {
     actions.push({
       label: 'Commander',
       icon: <ShoppingCart className="w-4 h-4" />,
-      onClick: () => document.getElementById('section-products')?.scrollIntoView({ behavior: 'smooth' }),
+      onClick: () =>
+        document.getElementById('section-products')?.scrollIntoView({ behavior: 'smooth' }),
     });
   }
 
@@ -51,7 +66,8 @@ export function Header({ business }: HeaderProps) {
     actions.push({
       label: 'Demander un devis',
       icon: <FileText className="w-4 h-4" />,
-      onClick: () => document.getElementById('section-services')?.scrollIntoView({ behavior: 'smooth' }),
+      onClick: () =>
+        document.getElementById('section-services')?.scrollIntoView({ behavior: 'smooth' }),
     });
   }
 
@@ -59,7 +75,8 @@ export function Header({ business }: HeaderProps) {
     actions.push({
       label: 'Louer',
       icon: <Package className="w-4 h-4" />,
-      onClick: () => document.getElementById('section-rentals')?.scrollIntoView({ behavior: 'smooth' }),
+      onClick: () =>
+        document.getElementById('section-rentals')?.scrollIntoView({ behavior: 'smooth' }),
     });
   }
 
@@ -67,20 +84,26 @@ export function Header({ business }: HeaderProps) {
     actions.push({
       label: "S'abonner",
       icon: <Bookmark className="w-4 h-4" />,
-      onClick: () => document.getElementById('section-services')?.scrollIntoView({ behavior: 'smooth' }),
+      onClick: () =>
+        document.getElementById('section-services')?.scrollIntoView({ behavior: 'smooth' }),
     });
   }
 
   if (actions.length === 0) return null;
 
   return (
-    <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-16 z-40">
+    <div
+      className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-16 z-40"
+      role="region"
+      aria-label="Actions rapides"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
           {actions.map((action, i) => (
             <a
               key={i}
               href={action.href}
+              aria-label={action.label}
               onClick={(e) => {
                 if (action.onClick) {
                   e.preventDefault();

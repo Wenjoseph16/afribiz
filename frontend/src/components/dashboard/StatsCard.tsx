@@ -15,7 +15,16 @@ interface StatsCardProps {
   onClick?: () => void;
 }
 
-export function StatsCard({ icon, iconColor, iconBg, label, value, trend, className, onClick }: StatsCardProps) {
+export function StatsCard({
+  icon,
+  iconColor,
+  iconBg,
+  label,
+  value,
+  trend,
+  className,
+  onClick,
+}: StatsCardProps) {
   return (
     <button
       onClick={onClick}
@@ -28,13 +37,15 @@ export function StatsCard({ icon, iconColor, iconBg, label, value, trend, classN
     >
       {/* Accent bar */}
       <div className="absolute top-0 left-4 right-4 h-0.5 bg-gradient-to-r from-brand/40 via-brand to-brand/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
+
       <div className="flex items-start justify-between">
-        <div className={cn(
-          'p-2.5 rounded-xl group-hover:scale-105 transition-transform duration-200',
-          iconBg || 'bg-brand-50 dark:bg-brand-900/30',
-          iconColor || 'text-brand dark:text-brand-400'
-        )}>
+        <div
+          className={cn(
+            'p-2.5 rounded-xl group-hover:scale-105 transition-transform duration-200',
+            iconBg || 'bg-brand-50 dark:bg-brand-900/30',
+            iconColor || 'text-brand dark:text-brand-400'
+          )}
+        >
           {icon}
         </div>
         {trend && (
@@ -46,12 +57,18 @@ export function StatsCard({ icon, iconColor, iconBg, label, value, trend, classN
                 : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
             )}
           >
-            {trend.positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {trend.positive ? (
+              <TrendingUp className="h-3 w-3" />
+            ) : (
+              <TrendingDown className="h-3 w-3" />
+            )}
             {trend.value}
           </span>
         )}
       </div>
-      <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mt-3 tracking-tight">{value}</p>
+      <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mt-3 tracking-tight">
+        {value}
+      </p>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
 
       {onClick && (

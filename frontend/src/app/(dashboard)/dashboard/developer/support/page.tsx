@@ -1,13 +1,26 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
-  MessageCircle, Plus, ChevronDown, ChevronUp, Clock,
-  AlertCircle, CheckCircle2, XCircle, Bug, Lightbulb,
-  HelpCircle, ArrowUpRight, Send, Filter, Reply,
+  MessageCircle,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  Bug,
+  Lightbulb,
+  HelpCircle,
+  ArrowUpRight,
+  Send,
+  Filter,
+  Reply,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
@@ -16,24 +29,59 @@ import { PageHeader } from '@/components/dashboard/PageHeader';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import {
-  useDeveloperTickets, useCreateDeveloperTicket, useReplyToTicket,
-  useUpdateTicketStatus, useDeveloperModules,
+  useDeveloperTickets,
+  useCreateDeveloperTicket,
+  useReplyToTicket,
+  useUpdateTicketStatus,
+  useDeveloperModules,
 } from '@/features/developerHooks';
-import type { DeveloperSupportTicket, TicketPriority, TicketStatus, TicketCategory } from '@/types/developer';
+import type {
+  DeveloperSupportTicket,
+  TicketPriority,
+  TicketStatus,
+  TicketCategory,
+} from '@/types/developer';
 
 const PRIORITY_STYLES: Record<TicketPriority, { label: string; className: string }> = {
-  LOW: { label: 'Basse', className: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-  NORMAL: { label: 'Normale', className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  HIGH: { label: 'Haute', className: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  CRITICAL: { label: 'Critique', className: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  LOW: {
+    label: 'Basse',
+    className: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  },
+  NORMAL: {
+    label: 'Normale',
+    className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  HIGH: {
+    label: 'Haute',
+    className: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  CRITICAL: {
+    label: 'Critique',
+    className: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
 };
 
 const STATUS_STYLES: Record<TicketStatus, { label: string; className: string }> = {
-  OPEN: { label: 'Ouvert', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  IN_PROGRESS: { label: 'En cours', className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  WAITING: { label: 'En attente', className: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  RESOLVED: { label: 'Résolu', className: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-  CLOSED: { label: 'Fermé', className: 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
+  OPEN: {
+    label: 'Ouvert',
+    className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  IN_PROGRESS: {
+    label: 'En cours',
+    className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  WAITING: {
+    label: 'En attente',
+    className: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  RESOLVED: {
+    label: 'Résolu',
+    className: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  },
+  CLOSED: {
+    label: 'Fermé',
+    className: 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+  },
 };
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -67,6 +115,8 @@ export default function DeveloperSupportPage() {
   const updateStatus = useUpdateTicketStatus();
 
   const [activeTab, setActiveTab] = useState<TicketStatus | 'ALL'>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [replyContent, setReplyContent] = useState<Record<string, string>>({});
@@ -80,19 +130,30 @@ export default function DeveloperSupportPage() {
 
   const ticketList = useMemo(() => {
     if (!tickets) return [];
-    const list = Array.isArray(tickets) ? tickets : (tickets.tickets || tickets.data || []);
+    const list = Array.isArray(tickets) ? tickets : tickets.tickets || tickets.data || [];
     if (activeTab === 'ALL') return list;
     return list.filter((t: DeveloperSupportTicket) => t.status === activeTab);
   }, [tickets, activeTab]);
 
+  const filteredTickets = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return (ticketList as DeveloperSupportTicket[]).slice(start, start + PAGE_SIZE);
+  }, [ticketList, currentPage]);
+
+  const totalPages = Math.max(1, Math.ceil(ticketList.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
   const moduleOptions = useMemo(() => {
     if (!modules) return [];
-    return Array.isArray(modules) ? modules : (modules.modules || modules.data || []);
+    return Array.isArray(modules) ? modules : modules.modules || modules.data || [];
   }, [modules]);
 
   const tabCounts = useMemo(() => {
     if (!tickets) return {};
-    const list = Array.isArray(tickets) ? tickets : (tickets.tickets || tickets.data || []);
+    const list = Array.isArray(tickets) ? tickets : tickets.tickets || tickets.data || [];
     const counts: Record<string, number> = { ALL: list.length };
     list.forEach((t: DeveloperSupportTicket) => {
       counts[t.status] = (counts[t.status] || 0) + 1;
@@ -111,9 +172,17 @@ export default function DeveloperSupportPage() {
       };
       if (newTicket.moduleId) payload.moduleId = newTicket.moduleId;
       await createTicket.mutateAsync(payload);
-      setNewTicket({ subject: '', description: '', priority: 'NORMAL', category: 'OTHER', moduleId: '' });
+      setNewTicket({
+        subject: '',
+        description: '',
+        priority: 'NORMAL',
+        category: 'OTHER',
+        moduleId: '',
+      });
       setShowNewTicket(false);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleReply = async (ticketId: string) => {
@@ -122,13 +191,17 @@ export default function DeveloperSupportPage() {
       if (!content?.trim()) return;
       await replyToTicket.mutateAsync({ ticketId, content });
       setReplyContent((prev) => ({ ...prev, [ticketId]: '' }));
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleStatusChange = async (ticketId: string, status: TicketStatus) => {
     try {
       await updateStatus.mutateAsync({ ticketId, status });
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   if (error) return <ErrorState message={error.message} onRetry={() => refetch()} />;
@@ -146,7 +219,14 @@ export default function DeveloperSupportPage() {
         ]}
         actions={
           <Button variant="gradient" onClick={() => setShowNewTicket(!showNewTicket)}>
-            {showNewTicket ? 'Annuler' : <><Plus className="h-4 w-4" />Nouveau ticket</>}
+            {showNewTicket ? (
+              'Annuler'
+            ) : (
+              <>
+                <Plus className="h-4 w-4" />
+                Nouveau ticket
+              </>
+            )}
           </Button>
         }
       />
@@ -161,15 +241,19 @@ export default function DeveloperSupportPage() {
               'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all',
               activeTab === tab.id
                 ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             )}
           >
             {tab.label}
             {(tabCounts[tab.id] ?? 0) > 0 && (
-              <span className={cn(
-                'text-xs px-1.5 py-0.5 rounded-full',
-                activeTab === tab.id ? 'bg-brand/10 text-brand' : 'bg-gray-200 dark:bg-gray-700 text-gray-500',
-              )}>
+              <span
+                className={cn(
+                  'text-xs px-1.5 py-0.5 rounded-full',
+                  activeTab === tab.id
+                    ? 'bg-brand/10 text-brand'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                )}
+              >
                 {tabCounts[tab.id]}
               </span>
             )}
@@ -180,7 +264,9 @@ export default function DeveloperSupportPage() {
       {/* New ticket form */}
       {showNewTicket && (
         <Card>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Créer un nouveau ticket</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Créer un nouveau ticket
+          </h3>
           <div className="space-y-4">
             <Input
               label="Sujet *"
@@ -202,41 +288,42 @@ export default function DeveloperSupportPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Priorité</label>
-                <select
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Priorité
+                </label>
+                <Select
                   value={newTicket.priority}
-                  onChange={(e) => setNewTicket((p) => ({ ...p, priority: e.target.value as TicketPriority }))}
-                  className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand focus:ring-brand/20"
-                >
-                  {PRIORITIES.map((pr) => (
-                    <option key={pr} value={pr}>{PRIORITY_STYLES[pr].label}</option>
-                  ))}
-                </select>
+                  onChange={(e) =>
+                    setNewTicket((p) => ({ ...p, priority: e.target.value as TicketPriority }))
+                  }
+                  options={PRIORITIES.map((pr) => ({
+                    value: pr,
+                    label: PRIORITY_STYLES[pr].label,
+                  }))}
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Catégorie</label>
-                <select
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Catégorie
+                </label>
+                <Select
                   value={newTicket.category}
-                  onChange={(e) => setNewTicket((p) => ({ ...p, category: e.target.value as TicketCategory }))}
-                  className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand focus:ring-brand/20"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                  ))}
-                </select>
+                  onChange={(e) =>
+                    setNewTicket((p) => ({ ...p, category: e.target.value as TicketCategory }))
+                  }
+                  options={CATEGORIES.map((cat) => ({ value: cat.value, label: cat.label }))}
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Module concerné</label>
-                <select
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Module concerné
+                </label>
+                <Select
                   value={newTicket.moduleId}
                   onChange={(e) => setNewTicket((p) => ({ ...p, moduleId: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand focus:ring-brand/20"
-                >
-                  <option value="">— Aucun —</option>
-                  {moduleOptions.map((mod: any) => (
-                    <option key={mod.id} value={mod.id}>{mod.name}</option>
-                  ))}
-                </select>
+                  placeholder="— Aucun —"
+                  options={moduleOptions.map((mod: any) => ({ value: mod.id, label: mod.name }))}
+                />
               </div>
             </div>
             <Button
@@ -268,47 +355,77 @@ export default function DeveloperSupportPage() {
           />
         ) : (
           <div className="space-y-2">
-            {(ticketList as DeveloperSupportTicket[]).map((ticket) => (
-              <div key={ticket.id} className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {(filteredTickets as DeveloperSupportTicket[]).map((ticket) => (
+              <div
+                key={ticket.id}
+                className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+              >
                 <button
                   onClick={() => setExpandedId(expandedId === ticket.id ? null : ticket.id)}
                   className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="shrink-0 text-gray-400">
-                      {CATEGORY_ICONS[ticket.category || 'OTHER'] || <MessageCircle className="h-4 w-4" />}
+                      {CATEGORY_ICONS[ticket.category || 'OTHER'] || (
+                        <MessageCircle className="h-4 w-4" />
+                      )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{ticket.subject}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {ticket.subject}
+                      </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {ticket.module?.name && `${ticket.module.name} · `}
                         {new Date(ticket.createdAt).toLocaleDateString('fr-FR')}
-                        {ticket.messages && ticket.messages.length > 0 && ` · ${ticket.messages.length} message${ticket.messages.length > 1 ? 's' : ''}`}
+                        {ticket.messages &&
+                          ticket.messages.length > 0 &&
+                          ` · ${ticket.messages.length} message${ticket.messages.length > 1 ? 's' : ''}`}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full', PRIORITY_STYLES[ticket.priority]?.className)}>
+                    <span
+                      className={cn(
+                        'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                        PRIORITY_STYLES[ticket.priority]?.className
+                      )}
+                    >
                       {PRIORITY_STYLES[ticket.priority]?.label}
                     </span>
-                    <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full', STATUS_STYLES[ticket.status]?.className)}>
+                    <span
+                      className={cn(
+                        'text-[11px] font-medium px-2 py-0.5 rounded-full',
+                        STATUS_STYLES[ticket.status]?.className
+                      )}
+                    >
                       {STATUS_STYLES[ticket.status]?.label}
                     </span>
-                    {expandedId === ticket.id ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+                    {expandedId === ticket.id ? (
+                      <ChevronUp className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    )}
                   </div>
                 </button>
 
                 {expandedId === ticket.id && (
                   <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700">
                     <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{ticket.description}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        {ticket.description}
+                      </p>
                     </div>
 
                     {ticket.messages && ticket.messages.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Messages</p>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          Messages
+                        </p>
                         {ticket.messages.map((msg) => (
-                          <div key={msg.id} className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                          <div
+                            key={msg.id}
+                            className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700"
+                          >
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
                                 {msg.sender?.firstName} {msg.sender?.lastName}
@@ -317,7 +434,9 @@ export default function DeveloperSupportPage() {
                                 {new Date(msg.createdAt).toLocaleDateString('fr-FR')}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">{msg.content}</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              {msg.content}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -327,7 +446,9 @@ export default function DeveloperSupportPage() {
                     <div className="mt-3 space-y-2">
                       <textarea
                         value={replyContent[ticket.id] || ''}
-                        onChange={(e) => setReplyContent((prev) => ({ ...prev, [ticket.id]: e.target.value }))}
+                        onChange={(e) =>
+                          setReplyContent((prev) => ({ ...prev, [ticket.id]: e.target.value }))
+                        }
                         rows={2}
                         className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-brand focus:ring-brand/20 resize-none"
                         placeholder="Écrivez votre réponse..."
@@ -373,6 +494,40 @@ export default function DeveloperSupportPage() {
           </div>
         )}
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Précédent
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={cn(
+                'px-3 py-1.5 text-sm rounded-lg transition-colors',
+                page === currentPage
+                  ? 'bg-brand text-white'
+                  : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              )}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
     </div>
   );
 }

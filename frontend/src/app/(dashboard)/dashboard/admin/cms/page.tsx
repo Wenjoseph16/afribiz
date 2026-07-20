@@ -2,9 +2,19 @@
 
 import { useState } from 'react';
 import {
-  FileText, Plus, Search, X, Pencil, Trash2, Send, LayoutGrid, FolderTree,
+  FileText,
+  Plus,
+  Search,
+  X,
+  Pencil,
+  Trash2,
+  Send,
+  LayoutGrid,
+  FolderTree,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Select } from '@/components/ui/Select';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -18,8 +28,16 @@ import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
 
 const PAGE_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'];
-const PAGE_STATUS_LABELS: Record<string, string> = { DRAFT: 'Brouillon', PUBLISHED: 'Publié', ARCHIVED: 'Archivé' };
-const PAGE_STATUS_VARIANTS: Record<string, 'warning' | 'success' | 'default'> = { DRAFT: 'warning', PUBLISHED: 'success', ARCHIVED: 'default' };
+const PAGE_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Brouillon',
+  PUBLISHED: 'Publié',
+  ARCHIVED: 'Archivé',
+};
+const PAGE_STATUS_VARIANTS: Record<string, 'warning' | 'success' | 'default'> = {
+  DRAFT: 'warning',
+  PUBLISHED: 'success',
+  ARCHIVED: 'default',
+};
 
 interface CMSPage {
   id: string;
@@ -51,7 +69,14 @@ interface PageForm {
   tags: string;
 }
 
-const defaultPageForm: PageForm = { title: '', slug: '', content: '', excerpt: '', categoryId: '', tags: '' };
+const defaultPageForm: PageForm = {
+  title: '',
+  slug: '',
+  content: '',
+  excerpt: '',
+  categoryId: '',
+  tags: '',
+};
 
 interface CategoryForm {
   name: string;
@@ -65,7 +90,7 @@ function usePages() {
   return useQuery({
     queryKey: ['admin', 'cms', 'pages'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/cms/pages');
+      const res = await apiClient.adminGetCMSPages();
       return res.data.data as CMSPage[];
     },
   });
@@ -75,7 +100,7 @@ function useCategories() {
   return useQuery({
     queryKey: ['admin', 'cms', 'categories'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/cms/categories');
+      const res = await apiClient.adminGetCMSCategories();
       return res.data.data as Category[];
     },
   });
@@ -93,45 +118,87 @@ export default function AdminCMSPage() {
 
   const [catModalOpen, setCatModalOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Category | null>(null);
+  const [deletePageTarget, setDeletePageTarget] = useState<CMSPage | null>(null);
+  const [deleteCatTarget, setDeleteCatTarget] = useState<Category | null>(null);
   const [catForm, setCatForm] = useState<CategoryForm>(defaultCategoryForm);
 
-  const { data: pages, isLoading: pagesLoading, error: pagesError, refetch: refetchPages } = usePages();
-  const { data: categories, isLoading: catsLoading, error: catsError, refetch: refetchCats } = useCategories();
+  const {
+    data: pages,
+    isLoading: pagesLoading,
+    error: pagesError,
+    refetch: refetchPages,
+  } = usePages();
+  const {
+    data: categories,
+    isLoading: catsLoading,
+    error: catsError,
+    refetch: refetchCats,
+  } = useCategories();
 
   const createPageMutation = useMutation({
-    mutationFn: (data: PageForm) => apiClient.post('/admin/cms/pages', { ...data, tags: data.tags.split(',').map((t) => t.trim()).filter(Boolean) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'cms', 'pages'] }); },
+    mutationFn: (data: PageForm) =>
+      apiClient.adminCreateCMSPage({
+        ...data,
+        tags: data.tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cms', 'pages'] });
+    },
   });
 
   const updatePageMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<PageForm> }) =>
-      apiClient.put(`/admin/cms/pages/${id}`, { ...data, tags: data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'cms', 'pages'] }); },
+      apiClient.adminUpdateCMSPage(id, {
+        ...data,
+        tags: data.tags
+          ? data.tags
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : undefined,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cms', 'pages'] });
+    },
   });
 
   const deletePageMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/admin/cms/pages/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'cms', 'pages'] }); },
+    mutationFn: (id: string) => apiClient.adminDeleteCMSPage(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cms', 'pages'] });
+    },
   });
 
   const publishPageMutation = useMutation({
-    mutationFn: (id: string) => apiClient.post(`/admin/cms/pages/${id}/publish`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'cms', 'pages'] }); },
+    mutationFn: (id: string) => apiClient.adminPublishCMSPage(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cms', 'pages'] });
+    },
   });
 
   const createCatMutation = useMutation({
-    mutationFn: (data: CategoryForm) => apiClient.post('/admin/cms/categories', data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'cms', 'categories'] }); },
+    mutationFn: (data: CategoryForm) => apiClient.adminCreateCMSCategory(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cms', 'categories'] });
+    },
   });
 
   const updateCatMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CategoryForm> }) => apiClient.put(`/admin/cms/categories/${id}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'cms', 'categories'] }); },
+    mutationFn: ({ id, data }: { id: string; data: Partial<CategoryForm> }) =>
+      apiClient.adminUpdateCMSCategory(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cms', 'categories'] });
+    },
   });
 
   const deleteCatMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/admin/cms/categories/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'cms', 'categories'] }); },
+    mutationFn: (id: string) => apiClient.adminDeleteCMSCategory(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cms', 'categories'] });
+    },
   });
 
   const openCreatePage = () => {
@@ -165,18 +232,12 @@ export default function AdminCMSPage() {
       }
       setPageModalOpen(false);
     } catch {
-      setToast({ message: 'Erreur lors de l\'enregistrement de la page', type: 'error' });
+      setToast({ message: "Erreur lors de l'enregistrement de la page", type: 'error' });
     }
   };
 
   const handleDeletePage = async (page: CMSPage) => {
-    if (!window.confirm(`Supprimer la page « ${page.title} » ?`)) return;
-    try {
-      await deletePageMutation.mutateAsync(page.id);
-      setToast({ message: 'Page supprimée avec succès', type: 'success' });
-    } catch {
-      setToast({ message: 'Erreur lors de la suppression', type: 'error' });
-    }
+    setDeletePageTarget(page);
   };
 
   const handlePublishPage = async (page: CMSPage) => {
@@ -212,18 +273,12 @@ export default function AdminCMSPage() {
       }
       setCatModalOpen(false);
     } catch {
-      setToast({ message: 'Erreur lors de l\'enregistrement de la catégorie', type: 'error' });
+      setToast({ message: "Erreur lors de l'enregistrement de la catégorie", type: 'error' });
     }
   };
 
   const handleDeleteCat = async (cat: Category) => {
-    if (!window.confirm(`Supprimer la catégorie « ${cat.name} » ?`)) return;
-    try {
-      await deleteCatMutation.mutateAsync(cat.id);
-      setToast({ message: 'Catégorie supprimée avec succès', type: 'success' });
-    } catch {
-      setToast({ message: 'Erreur lors de la suppression', type: 'error' });
-    }
+    setDeleteCatTarget(cat);
   };
 
   const pageList = Array.isArray(pages) ? (pages as CMSPage[]) : [];
@@ -239,13 +294,17 @@ export default function AdminCMSPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -307,12 +366,21 @@ export default function AdminCMSPage() {
                   </thead>
                   <tbody>
                     {filteredPages.map((page) => (
-                      <tr key={page.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">{page.title}</td>
-                        <td className="p-4">
-                          <code className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{page.slug}</code>
+                      <tr
+                        key={page.id}
+                        className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
+                          {page.title}
                         </td>
-                        <td className="p-4 text-gray-500 text-xs">{page.category?.name || catMap.get(page.categoryId)?.name || '-'}</td>
+                        <td className="p-4">
+                          <code className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            {page.slug}
+                          </code>
+                        </td>
+                        <td className="p-4 text-gray-500 text-xs">
+                          {page.category?.name || catMap.get(page.categoryId)?.name || '-'}
+                        </td>
                         <td className="p-4">
                           <Badge variant={PAGE_STATUS_VARIANTS[page.status]} size="xs">
                             {PAGE_STATUS_LABELS[page.status]}
@@ -333,7 +401,11 @@ export default function AdminCMSPage() {
                                 <Send className="h-3.5 w-3.5 text-brand" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="xs" onClick={() => handleDeletePage(page)}>
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => handleDeletePage(page)}
+                            >
                               <Trash2 className="h-3.5 w-3.5 text-red-400" />
                             </Button>
                           </div>
@@ -347,8 +419,19 @@ export default function AdminCMSPage() {
               <EmptyState
                 icon={<FileText className="h-8 w-8" />}
                 title="Aucune page"
-                description={search ? 'Aucune page ne correspond à la recherche.' : 'Créez votre première page CMS.'}
-                action={!search ? <Button size="sm" onClick={openCreatePage}><Plus className="h-4 w-4" />Créer une page</Button> : undefined}
+                description={
+                  search
+                    ? 'Aucune page ne correspond à la recherche.'
+                    : 'Créez votre première page CMS.'
+                }
+                action={
+                  !search ? (
+                    <Button size="sm" onClick={openCreatePage}>
+                      <Plus className="h-4 w-4" />
+                      Créer une page
+                    </Button>
+                  ) : undefined
+                }
               />
             )}
           </Card>
@@ -382,10 +465,17 @@ export default function AdminCMSPage() {
                   </thead>
                   <tbody>
                     {catList.map((cat) => (
-                      <tr key={cat.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">{cat.name}</td>
+                      <tr
+                        key={cat.id}
+                        className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
+                          {cat.name}
+                        </td>
                         <td className="p-4">
-                          <code className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{cat.slug}</code>
+                          <code className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            {cat.slug}
+                          </code>
                         </td>
                         <td className="p-4 text-gray-500">{cat.sortOrder}</td>
                         <td className="p-4">
@@ -408,7 +498,12 @@ export default function AdminCMSPage() {
                 icon={<FolderTree className="h-8 w-8" />}
                 title="Aucune catégorie"
                 description="Créez votre première catégorie CMS."
-                action={<Button size="sm" onClick={openCreateCat}><Plus className="h-4 w-4" />Créer une catégorie</Button>}
+                action={
+                  <Button size="sm" onClick={openCreateCat}>
+                    <Plus className="h-4 w-4" />
+                    Créer une catégorie
+                  </Button>
+                }
               />
             )}
           </Card>
@@ -461,16 +556,12 @@ export default function AdminCMSPage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Catégorie
             </label>
-            <select
+            <Select
               value={pageForm.categoryId}
               onChange={(e) => setPageForm({ ...pageForm, categoryId: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring"
-            >
-              <option value="">Aucune catégorie</option>
-              {catList.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              placeholder="Aucune catégorie"
+              options={catList.map((c) => ({ value: c.id, label: c.name }))}
+            />
           </div>
           <Input
             label="Tags (séparés par des virgules)"
@@ -482,7 +573,10 @@ export default function AdminCMSPage() {
             <Button variant="secondary" type="button" onClick={() => setPageModalOpen(false)}>
               Annuler
             </Button>
-            <Button type="submit" isLoading={createPageMutation.isPending || updatePageMutation.isPending}>
+            <Button
+              type="submit"
+              isLoading={createPageMutation.isPending || updatePageMutation.isPending}
+            >
               {editingPage ? 'Enregistrer' : 'Créer'}
             </Button>
           </div>
@@ -519,12 +613,53 @@ export default function AdminCMSPage() {
             <Button variant="secondary" type="button" onClick={() => setCatModalOpen(false)}>
               Annuler
             </Button>
-            <Button type="submit" isLoading={createCatMutation.isPending || updateCatMutation.isPending}>
+            <Button
+              type="submit"
+              isLoading={createCatMutation.isPending || updateCatMutation.isPending}
+            >
               {editingCat ? 'Enregistrer' : 'Créer'}
             </Button>
           </div>
         </form>
       </Modal>
+
+      <ConfirmationModal
+        open={!!deletePageTarget}
+        onClose={() => setDeletePageTarget(null)}
+        onConfirm={async () => {
+          if (!deletePageTarget) return;
+          try {
+            await deletePageMutation.mutateAsync(deletePageTarget.id);
+            setToast({ message: 'Page supprimée avec succès', type: 'success' });
+          } catch {
+            setToast({ message: 'Erreur lors de la suppression', type: 'error' });
+          }
+          setDeletePageTarget(null);
+        }}
+        title="Supprimer la page"
+        description={`Êtes-vous sûr de vouloir supprimer la page « ${deletePageTarget?.title} » ? Cette action est irréversible.`}
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
+
+      <ConfirmationModal
+        open={!!deleteCatTarget}
+        onClose={() => setDeleteCatTarget(null)}
+        onConfirm={async () => {
+          if (!deleteCatTarget) return;
+          try {
+            await deleteCatMutation.mutateAsync(deleteCatTarget.id);
+            setToast({ message: 'Catégorie supprimée avec succès', type: 'success' });
+          } catch {
+            setToast({ message: 'Erreur lors de la suppression', type: 'error' });
+          }
+          setDeleteCatTarget(null);
+        }}
+        title="Supprimer la catégorie"
+        description={`Êtes-vous sûr de vouloir supprimer la catégorie « ${deleteCatTarget?.name} » ? Cette action est irréversible.`}
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
     </div>
   );
 }

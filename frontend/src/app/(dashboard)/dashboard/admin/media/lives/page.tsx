@@ -2,8 +2,18 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Radio, Wifi, WifiOff, Calendar, Eye, Clock,
-  XCircle, Star, Search, Users,
+  Radio,
+  Wifi,
+  WifiOff,
+  Calendar,
+  Eye,
+  Clock,
+  XCircle,
+  Star,
+  Search,
+  Users,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -12,37 +22,31 @@ import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { PageHeader } from '@/components/dashboard/PageHeader';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { apiClient } from '@/services/apiClient';
+import { cn } from '@/lib/utils';
 
 const STATUS_STYLES: Record<string, string> = {
   LIVE: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  EN_DIRECT: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   SCHEDULED: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  PLANIFIÉ: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   ENDED: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  TERMINÉ: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  ANNULÉ: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   CANCELLED: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
 };
 
-const MOCK_LIVES = [
-  { id: '1', business: { name: 'Tech Solutions SARL' }, title: 'Lancement produit AfriBiz Pro', status: 'LIVE', viewers: 342, startTime: '2025-06-12T09:00:00Z', duration: null },
-  { id: '2', business: { name: 'Mode Africa' }, title: 'Défilé de mode été 2025', status: 'PLANIFIÉ', viewers: 0, startTime: '2025-06-15T14:00:00Z', duration: null },
-  { id: '3', business: { name: 'Coach Fitness Pro' }, title: 'Session live cardio', status: 'EN_DIRECT', viewers: 128, startTime: '2025-06-12T08:30:00Z', duration: null },
-  { id: '4', business: { name: 'Restaurant Le Déli' }, title: 'Atelier cuisine en direct', status: 'TERMINÉ', viewers: 560, startTime: '2025-06-10T10:00:00Z', duration: 5400 },
-  { id: '5', business: { name: 'Agence Digital Plus' }, title: 'Webinaire marketing', status: 'ANNULÉ', viewers: 0, startTime: '2025-06-08T15:00:00Z', duration: null },
-];
-
-function useLivesList() {
+function useLivesList(page: number, limit: number) {
   return useQuery({
-    queryKey: ['admin', 'lives'],
+    queryKey: ['admin', 'lives', page],
     queryFn: async () => {
-      try {
-        const res = await apiClient.get('/admin/lives');
-        return res.data.data;
-      } catch {
-        return MOCK_LIVES;
-      }
+      const res = await apiClient.get('/admin/lives');
+      const items = Array.isArray(res.data.data) ? res.data.data : (res.data.data?.items ?? []);
+      const start = (page - 1) * limit;
+      return {
+        items: items.slice(start, start + limit),
+        total: items.length,
+        page,
+        limit,
+        totalPages: Math.ceil(items.length / limit),
+      };
     },
   });
 }
@@ -50,269 +54,227 @@ function useLivesList() {
 export default function AdminLivesPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [page, setPage] = useState(1);
+  const limit = 15;
 
-  const { data: lives, isLoading } = useLivesList();
+  const { data, isLoading, error, refetch } = useLivesList(page, limit);
+  const lives = data?.items ?? [];
+  const totalPages = data?.totalPages ?? 1;
+
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       apiClient.put(`/admin/lives/${id}/status`, { status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'lives'] }); },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'lives'] }),
   });
-
-  const featureMutation = useMutation({
-    mutationFn: ({ id, featured }: { id: string; featured: boolean }) =>
-      apiClient.put(`/admin/lives/${id}`, { featured }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'lives'] }); },
-  });
-
-  const list = Array.isArray(lives) ? lives : [];
-
-  const stats = useMemo(() => {
-    const liveNow = list.filter(
-      (l: any) => l.status === 'LIVE' || l.status === 'EN_DIRECT'
-    ).length;
-    const scheduled = list.filter(
-      (l: any) => l.status === 'SCHEDULED' || l.status === 'PLANIFIÉ'
-    ).length;
-    const ended = list.filter(
-      (l: any) => l.status === 'ENDED' || l.status === 'TERMINÉ'
-    ).length;
-    const totalViewers = list.reduce(
-      (acc: number, l: any) => acc + (l.viewers || 0), 0
-    );
-    return { liveNow, scheduled, ended, totalViewers };
-  }, [list]);
 
   const filtered = useMemo(() => {
-    let result = list;
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (l: any) =>
-          l.title?.toLowerCase().includes(q) ||
-          l.business?.name?.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [list, search]);
+    if (!search) return lives;
+    const q = search.toLowerCase();
+    return lives.filter(
+      (l: any) => l.business?.name?.toLowerCase().includes(q) || l.title?.toLowerCase().includes(q)
+    );
+  }, [lives, search]);
 
-  const handleEndLive = async (id: string, title: string) => {
-    if (!window.confirm(`Terminer le live « ${title} » ?`)) return;
-    try {
-      await statusMutation.mutateAsync({ id, status: 'TERMINÉ' });
-      setToast({ message: 'Live terminé', type: 'success' });
-    } catch {
-      setToast({ message: 'Erreur lors de l\'action', type: 'error' });
-    }
-  };
+  const stats = useMemo(
+    () => ({
+      total: data?.total ?? 0,
+      liveNow: lives.filter((l: any) => l.status === 'LIVE').length,
+      totalViewers: lives.reduce((sum: number, l: any) => sum + (l.viewers || 0), 0),
+      totalDuration: lives.reduce((sum: number, l: any) => sum + (l.duration || 0), 0),
+    }),
+    [data, lives]
+  );
 
-  const handleCancel = async (id: string, title: string) => {
-    if (!window.confirm(`Annuler le live planifié « ${title} » ?`)) return;
-    try {
-      await statusMutation.mutateAsync({ id, status: 'ANNULÉ' });
-      setToast({ message: 'Live annulé', type: 'success' });
-    } catch {
-      setToast({ message: 'Erreur lors de l\'action', type: 'error' });
-    }
-  };
-
-  const handleFeature = async (id: string, featured: boolean) => {
-    try {
-      await featureMutation.mutateAsync({ id, featured });
-      setToast({ message: featured ? 'Live mis en avant' : 'Live retiré des avant', type: 'success' });
-    } catch {
-      setToast({ message: 'Erreur lors de l\'action', type: 'error' });
-    }
-  };
-
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return '-';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${h}h ${m}min`;
-  };
-
-  const statusLabel = (s: string) => {
-    if (s === 'LIVE' || s === 'EN_DIRECT') return 'En direct';
-    if (s === 'SCHEDULED' || s === 'PLANIFIÉ') return 'Planifié';
-    if (s === 'ENDED' || s === 'TERMINÉ') return 'Terminé';
-    if (s === 'CANCELLED' || s === 'ANNULÉ') return 'Annulé';
-    return s;
-  };
+  if (error) return <ErrorState message={(error as any).message} onRetry={refetch} />;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
-          {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
-        </div>
-      )}
-
       <PageHeader
-        title="Gestion des lives"
-        description="Surveillez et gérez les diffusions en direct"
+        title="Lives"
+        description="Gérez les lives des utilisateurs"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Admin', href: '/dashboard/admin' },
-          { label: 'Média' },
+          { label: 'Média', href: '/dashboard/admin/media' },
           { label: 'Lives' },
         ]}
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
-              <Wifi className="h-5 w-5" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          {
+            label: 'Total lives',
+            value: stats.total,
+            icon: Radio,
+            color: 'bg-brand-50 dark:bg-brand-900/30 text-brand',
+          },
+          {
+            label: 'En direct',
+            value: stats.liveNow,
+            icon: Wifi,
+            color: 'bg-red-50 dark:bg-red-900/30 text-red-600',
+          },
+          {
+            label: 'Spectateurs',
+            value: stats.totalViewers.toLocaleString(),
+            icon: Users,
+            color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600',
+          },
+          {
+            label: 'Durée totale',
+            value: `${Math.round(stats.totalDuration / 60)} min`,
+            icon: Clock,
+            color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600',
+          },
+        ].map((s) => (
+          <Card key={s.label} className="p-4">
+            <div className="flex items-center gap-3">
+              <div className={cn('p-2.5 rounded-lg', s.color)}>
+                <s.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{s.label}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{s.value}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">En direct</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.liveNow}</p>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-              <Calendar className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Planifiés</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.scheduled}</p>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
-              <WifiOff className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Terminés</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.ended}</p>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-brand">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Téléspectateurs</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.totalViewers.toLocaleString()}</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        ))}
       </div>
 
-      {/* Search */}
-      <Card padding="md">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher par titre ou entreprise..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          />
-        </div>
-      </Card>
+      <div className="relative max-w-xs">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Rechercher..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+        />
+      </div>
 
-      {/* Table */}
-      <Card padding="none">
-        {isLoading ? (
-          <Loader className="py-20" />
-        ) : filtered.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                  <th className="p-4 font-medium">Entreprise</th>
-                  <th className="p-4 font-medium">Titre</th>
-                  <th className="p-4 font-medium">Statut</th>
-                  <th className="p-4 font-medium">Spectateurs</th>
-                  <th className="p-4 font-medium">Début</th>
-                  <th className="p-4 font-medium">Durée</th>
-                  <th className="p-4 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((l: any) => (
-                  <tr key={l.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
-                      {l.business?.name || 'N/A'}
-                    </td>
-                    <td className="p-4 text-gray-500 max-w-[200px] truncate">{l.title}</td>
-                    <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_STYLES[l.status] || 'bg-gray-100 text-gray-600'}`}>
-                        {statusLabel(l.status)}
+      {isLoading ? (
+        <Loader className="py-20" />
+      ) : (
+        <Card padding="none">
+          {filtered.length > 0 ? (
+            <div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filtered.map((live: any) => (
+                  <div
+                    key={live.id}
+                    className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/30 flex items-center justify-center shrink-0">
+                        <Radio className="h-5 w-5 text-red-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {live.title || 'Live'}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {live.business?.name || '—'} ·{' '}
+                          {live.startTime
+                            ? new Date(live.startTime).toLocaleDateString('fr-FR')
+                            : '—'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-gray-500 shrink-0">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {live.viewers || 0}
                       </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-gray-500">
-                        <Eye className="h-3.5 w-3.5" />
-                        {l.viewers?.toLocaleString() || '0'}
-                      </div>
-                    </td>
-                    <td className="p-4 text-gray-500 text-xs">
-                      {l.startTime ? new Date(l.startTime).toLocaleString('fr-FR') : '-'}
-                    </td>
-                    <td className="p-4 text-gray-500 text-xs">
-                      {formatDuration(l.duration)}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5">
-                        {(l.status === 'LIVE' || l.status === 'EN_DIRECT') && (
-                          <Button
-                            variant="ghost" size="xs"
-                            onClick={() => handleEndLive(l.id, l.title)}
-                            isLoading={statusMutation.isPending}
-                          >
-                            <XCircle className="h-3.5 w-3.5 text-red-500" />
-                            Terminer
-                          </Button>
+                      <span
+                        className={cn(
+                          'px-2 py-0.5 rounded-full text-xs font-medium',
+                          STATUS_STYLES[live.status] || 'bg-gray-100 text-gray-600'
                         )}
-                        {(l.status === 'SCHEDULED' || l.status === 'PLANIFIÉ') && (
-                          <Button
-                            variant="ghost" size="xs"
-                            onClick={() => handleCancel(l.id, l.title)}
-                            isLoading={statusMutation.isPending}
-                          >
-                            <XCircle className="h-3.5 w-3.5 text-amber-500" />
-                            Annuler
-                          </Button>
-                        )}
+                      >
+                        {live.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 ml-3">
+                      {live.status === 'LIVE' && (
                         <Button
-                          variant="ghost" size="xs"
-                          onClick={() => handleFeature(l.id, !l.featured)}
-                          isLoading={featureMutation.isPending}
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => statusMutation.mutate({ id: live.id, status: 'ENDED' })}
+                          title="Terminer"
                         >
-                          <Star className={`h-3.5 w-3.5 ${l.featured ? 'text-purple-500' : 'text-gray-400'}`} />
-                          {l.featured ? 'Retirer' : 'Mettre en avant'}
+                          <XCircle className="h-3.5 w-3.5 text-gray-400" />
                         </Button>
-                      </div>
-                    </td>
-                  </tr>
+                      )}
+                      {live.status === 'SCHEDULED' && (
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => statusMutation.mutate({ id: live.id, status: 'LIVE' })}
+                          title="Démarrer"
+                        >
+                          <Wifi className="h-3.5 w-3.5 text-emerald-500" />
+                        </Button>
+                      )}
+                      {live.status === 'SCHEDULED' && (
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() =>
+                            statusMutation.mutate({ id: live.id, status: 'CANCELLED' })
+                          }
+                          title="Annuler"
+                        >
+                          <XCircle className="h-3.5 w-3.5 text-red-400" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState
-            icon={<Radio className="h-8 w-8" />}
-            title="Aucun live"
-            description={search ? 'Aucun live ne correspond à votre recherche.' : 'Aucune diffusion en direct pour le moment.'}
-          />
-        )}
-      </Card>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Précédent
+                  </button>
+                  {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={cn(
+                        'px-3 py-1.5 text-sm rounded-lg transition-colors',
+                        p === page
+                          ? 'bg-brand text-white'
+                          : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Suivant
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Radio className="h-10 w-10" />}
+              title="Aucun live"
+              description={search ? 'Essayez une autre recherche' : 'Aucun live disponible.'}
+            />
+          )}
+        </Card>
+      )}
     </div>
   );
 }

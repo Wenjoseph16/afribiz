@@ -3,6 +3,15 @@
  * Exits with non-zero code if required variables are missing
  */
 
+const fs = require('fs');
+const path = require('path');
+
+// Load .env file explicitly for validation script
+const envPath = path.resolve(__dirname, '../.env');
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+}
+
 const REQUIRED_VARS = [
   { name: 'NEXT_PUBLIC_API_URL', description: 'Backend API URL' },
 ];

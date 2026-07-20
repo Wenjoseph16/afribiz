@@ -16,7 +16,7 @@ export default function Loading() {
         <div className="flex items-center gap-1.5">
           {[0, 1, 2].map((i) => (
             <div
-              key={i}
+              key={`dot-${i}`}
               className="w-1.5 h-1.5 rounded-full bg-brand/40 dark:bg-brand/60 animate-bounce"
               style={{
                 animationDelay: `${i * 0.2}s`,

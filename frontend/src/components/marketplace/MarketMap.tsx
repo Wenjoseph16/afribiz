@@ -35,12 +35,20 @@ export interface MarketMapProps {
 }
 
 const lightTile = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const lightAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const lightAttribution =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const darkTile = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const darkAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>';
+const darkAttribution =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>';
 
-function MapBoundsUpdater({ businesses, center }: { businesses: MapBusiness[]; center?: [number, number] }) {
+function MapBoundsUpdater({
+  businesses,
+  center,
+}: {
+  businesses: MapBusiness[];
+  center?: [number, number];
+}) {
   const map = useMap();
 
   useEffect(() => {
@@ -70,7 +78,12 @@ const typeBadgeColors: Record<string, string> = {
   module: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
 };
 
-export default function MarketMap({ businesses, onBusinessClick, center, zoom = 12 }: MarketMapProps) {
+export default function MarketMap({
+  businesses,
+  onBusinessClick,
+  center,
+  zoom = 12,
+}: MarketMapProps) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -83,9 +96,9 @@ export default function MarketMap({ businesses, onBusinessClick, center, zoom = 
     return () => observer.disconnect();
   }, []);
 
-  const defaultCenter: [number, number] = center || (businesses.length > 0
-    ? [businesses[0].latitude, businesses[0].longitude]
-    : [6.1319, 1.2226]);
+  const defaultCenter: [number, number] =
+    center ||
+    (businesses.length > 0 ? [businesses[0].latitude, businesses[0].longitude] : [6.1319, 1.2226]);
 
   const centerExpr: LatLngExpression = defaultCenter;
 
@@ -108,7 +121,13 @@ export default function MarketMap({ businesses, onBusinessClick, center, zoom = 
               <div className="min-w-[180px]">
                 <div className="flex items-center gap-2 mb-1.5">
                   {biz.logo && (
-                    <Image src={biz.logo ?? ''} alt="" width={28} height={28} className="rounded-full object-cover" unoptimized />
+                    <Image
+                      src={biz.logo ?? ''}
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="rounded-full object-cover"
+                    />
                   )}
                   <span className="font-semibold text-sm text-gray-900">{biz.name}</span>
                 </div>
@@ -118,11 +137,11 @@ export default function MarketMap({ businesses, onBusinessClick, center, zoom = 
                     {biz.rating.toFixed(1)}
                   </div>
                 )}
-                {biz.city && (
-                  <p className="text-xs text-gray-500 mb-1.5">{biz.city}</p>
-                )}
+                {biz.city && <p className="text-xs text-gray-500 mb-1.5">{biz.city}</p>}
                 {biz.type && (
-                  <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${typeBadgeColors[biz.type] || 'bg-gray-100 text-gray-600'}`}>
+                  <span
+                    className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${typeBadgeColors[biz.type] || 'bg-gray-100 text-gray-600'}`}
+                  >
                     {biz.type}
                   </span>
                 )}

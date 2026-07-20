@@ -18,13 +18,21 @@ const sizeMap = {
   xl: 'h-12 w-12',
 };
 
-export function Loader({ size = 'md', variant = 'spinner', label, fullScreen, className }: LoaderProps) {
+export function Loader({
+  size = 'md',
+  variant = 'spinner',
+  label,
+  fullScreen,
+  className,
+}: LoaderProps) {
   if (fullScreen) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-50">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className={cn('animate-spin text-brand', sizeMap[size])} />
-          {label && <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">{label}</p>}
+          {label && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">{label}</p>
+          )}
         </div>
       </div>
     );

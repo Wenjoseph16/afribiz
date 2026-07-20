@@ -2,8 +2,15 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Flag, CheckCircle, XCircle, AlertTriangle, Search, Filter,
-  MessageSquare, FileText, Eye,
+  Flag,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Search,
+  Filter,
+  MessageSquare,
+  FileText,
+  Eye,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -49,11 +56,56 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const MOCK_REPORTS = [
-  { id: '1', reporter: { name: 'Jean Dupont' }, contentType: 'STORY', contentId: 'story-123', reason: 'Contenu inapproprié', description: 'Cette story contient des propos offensants.', createdAt: '2025-06-10T14:30:00Z', status: 'PENDING' },
-  { id: '2', reporter: { name: 'Marie Koné' }, contentType: 'SHORT', contentId: 'short-456', reason: 'Spam', description: 'Vidéo promotionnelle non autorisée.', createdAt: '2025-06-11T09:15:00Z', status: 'PENDING' },
-  { id: '3', reporter: { name: 'Paul Traoré' }, contentType: 'LIVE', contentId: 'live-789', reason: 'Discours haineux', description: 'Propos discriminatoires pendant le live.', createdAt: '2025-06-09T18:00:00Z', status: 'APPROVED' },
-  { id: '4', reporter: { name: 'Aminata Diallo' }, contentType: 'OFFER', contentId: 'offer-321', reason: 'Fausse offre', description: 'L\'offre ne correspond pas à la description.', createdAt: '2025-06-08T11:45:00Z', status: 'REJECTED' },
-  { id: '5', reporter: { name: 'Seydou Camara' }, contentType: 'AD', contentId: 'ad-654', reason: 'Publicité trompeuse', description: 'Les produits présentés ne sont pas authentiques.', createdAt: '2025-06-12T07:20:00Z', status: 'PENDING' },
+  {
+    id: '1',
+    reporter: { name: 'Jean Dupont' },
+    contentType: 'STORY',
+    contentId: 'story-123',
+    reason: 'Contenu inapproprié',
+    description: 'Cette story contient des propos offensants.',
+    createdAt: '2025-06-10T14:30:00Z',
+    status: 'PENDING',
+  },
+  {
+    id: '2',
+    reporter: { name: 'Marie Koné' },
+    contentType: 'SHORT',
+    contentId: 'short-456',
+    reason: 'Spam',
+    description: 'Vidéo promotionnelle non autorisée.',
+    createdAt: '2025-06-11T09:15:00Z',
+    status: 'PENDING',
+  },
+  {
+    id: '3',
+    reporter: { name: 'Paul Traoré' },
+    contentType: 'LIVE',
+    contentId: 'live-789',
+    reason: 'Discours haineux',
+    description: 'Propos discriminatoires pendant le live.',
+    createdAt: '2025-06-09T18:00:00Z',
+    status: 'APPROVED',
+  },
+  {
+    id: '4',
+    reporter: { name: 'Aminata Diallo' },
+    contentType: 'OFFER',
+    contentId: 'offer-321',
+    reason: 'Fausse offre',
+    description: "L'offre ne correspond pas à la description.",
+    createdAt: '2025-06-08T11:45:00Z',
+    status: 'REJECTED',
+  },
+  {
+    id: '5',
+    reporter: { name: 'Seydou Camara' },
+    contentType: 'AD',
+    contentId: 'ad-654',
+    reason: 'Publicité trompeuse',
+    description: 'Les produits présentés ne sont pas authentiques.',
+    createdAt: '2025-06-12T07:20:00Z',
+    status: 'PENDING',
+  },
 ];
 
 function useReports() {
@@ -122,7 +174,7 @@ export default function AdminReportsPage() {
       await approveMutation.mutateAsync(id);
       setToast({ message: 'Signalement approuvé', type: 'success' });
     } catch {
-      setToast({ message: 'Erreur lors de l\'approbation', type: 'error' });
+      setToast({ message: "Erreur lors de l'approbation", type: 'error' });
     }
   };
 
@@ -157,13 +209,17 @@ export default function AdminReportsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -199,7 +255,9 @@ export default function AdminReportsPage() {
           >
             <option value="">Tous les types</option>
             {CONTENT_TYPES.map((t) => (
-              <option key={t} value={t}>{CONTENT_TYPE_LABELS[t] || t}</option>
+              <option key={t} value={t}>
+                {CONTENT_TYPE_LABELS[t] || t}
+              </option>
             ))}
           </select>
 
@@ -210,7 +268,9 @@ export default function AdminReportsPage() {
           >
             <option value="">Tous les statuts</option>
             {REPORT_STATUSES.map((s) => (
-              <option key={s} value={s}>{STATUS_LABELS[s] || s}</option>
+              <option key={s} value={s}>
+                {STATUS_LABELS[s] || s}
+              </option>
             ))}
           </select>
 
@@ -243,12 +303,17 @@ export default function AdminReportsPage() {
               </thead>
               <tbody>
                 {filtered.map((r: any) => (
-                  <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={r.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
                       {r.reporter?.name || 'Anonyme'}
                     </td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${CONTENT_TYPE_COLORS[r.contentType] || 'bg-gray-100 text-gray-600'}`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${CONTENT_TYPE_COLORS[r.contentType] || 'bg-gray-100 text-gray-600'}`}
+                      >
                         {CONTENT_TYPE_LABELS[r.contentType] || r.contentType}
                       </span>
                     </td>
@@ -258,7 +323,9 @@ export default function AdminReportsPage() {
                       {r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '-'}
                     </td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_COLORS[r.status] || 'bg-gray-100 text-gray-600'}`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_COLORS[r.status] || 'bg-gray-100 text-gray-600'}`}
+                      >
                         {STATUS_LABELS[r.status] || r.status}
                       </span>
                     </td>
@@ -271,24 +338,19 @@ export default function AdminReportsPage() {
                         {r.status === 'PENDING' && (
                           <>
                             <Button
-                              variant="ghost" size="xs"
+                              variant="ghost"
+                              size="xs"
                               onClick={() => handleApprove(r.id)}
                               isLoading={approveMutation.isPending}
                             >
                               <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                               Approuver
                             </Button>
-                            <Button
-                              variant="ghost" size="xs"
-                              onClick={() => setShowRejectModal(r)}
-                            >
+                            <Button variant="ghost" size="xs" onClick={() => setShowRejectModal(r)}>
                               <XCircle className="h-3.5 w-3.5 text-red-500" />
                               Rejeter
                             </Button>
-                            <Button
-                              variant="ghost" size="xs"
-                              onClick={() => handleFlag(r.id)}
-                            >
+                            <Button variant="ghost" size="xs" onClick={() => handleFlag(r.id)}>
                               <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                               Flag
                             </Button>
@@ -305,59 +367,105 @@ export default function AdminReportsPage() {
           <EmptyState
             icon={<Flag className="h-8 w-8" />}
             title="Aucun signalement"
-            description={hasFilters ? 'Aucun signalement ne correspond aux filtres.' : 'Aucun signalement à modérer.'}
+            description={
+              hasFilters
+                ? 'Aucun signalement ne correspond aux filtres.'
+                : 'Aucun signalement à modérer.'
+            }
           />
         )}
       </Card>
 
       {/* Detail Modal */}
-      <Modal open={!!detailModal} onClose={() => setDetailModal(null)} title="Détails du signalement" size="md">
+      <Modal
+        open={!!detailModal}
+        onClose={() => setDetailModal(null)}
+        title="Détails du signalement"
+        size="md"
+      >
         {detailModal && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Signaleur</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{detailModal.reporter?.name || 'Anonyme'}</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Signaleur
+                </p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {detailModal.reporter?.name || 'Anonyme'}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Type</p>
-                <Badge variant={
-                  detailModal.contentType === 'STORY' ? 'purple' :
-                  detailModal.contentType === 'SHORT' ? 'info' :
-                  detailModal.contentType === 'LIVE' ? 'danger' :
-                  detailModal.contentType === 'OFFER' ? 'success' : 'warning'
-                } size="sm">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Type
+                </p>
+                <Badge
+                  variant={
+                    detailModal.contentType === 'STORY'
+                      ? 'purple'
+                      : detailModal.contentType === 'SHORT'
+                        ? 'info'
+                        : detailModal.contentType === 'LIVE'
+                          ? 'danger'
+                          : detailModal.contentType === 'OFFER'
+                            ? 'success'
+                            : 'warning'
+                  }
+                  size="sm"
+                >
                   {CONTENT_TYPE_LABELS[detailModal.contentType] || detailModal.contentType}
                 </Badge>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Contenu ID</p>
-                <p className="text-sm font-mono text-gray-900 dark:text-gray-100">{detailModal.contentId}</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Contenu ID
+                </p>
+                <p className="text-sm font-mono text-gray-900 dark:text-gray-100">
+                  {detailModal.contentId}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Date</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Date
+                </p>
                 <p className="text-sm text-gray-900 dark:text-gray-100">
-                  {detailModal.createdAt ? new Date(detailModal.createdAt).toLocaleString('fr-FR') : '-'}
+                  {detailModal.createdAt
+                    ? new Date(detailModal.createdAt).toLocaleString('fr-FR')
+                    : '-'}
                 </p>
               </div>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Raison</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                Raison
+              </p>
               <p className="text-sm text-gray-900 dark:text-gray-100">{detailModal.reason}</p>
             </div>
             {detailModal.description && (
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Description</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">{detailModal.description}</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                  Description
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+                  {detailModal.description}
+                </p>
               </div>
             )}
             <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Statut</p>
-              <Badge variant={
-                detailModal.status === 'PENDING' ? 'warning' :
-                detailModal.status === 'APPROVED' ? 'success' :
-                detailModal.status === 'REJECTED' ? 'danger' : 'default'
-              } size="sm">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                Statut
+              </p>
+              <Badge
+                variant={
+                  detailModal.status === 'PENDING'
+                    ? 'warning'
+                    : detailModal.status === 'APPROVED'
+                      ? 'success'
+                      : detailModal.status === 'REJECTED'
+                        ? 'danger'
+                        : 'default'
+                }
+                size="sm"
+              >
                 {STATUS_LABELS[detailModal.status] || detailModal.status}
               </Badge>
             </div>
@@ -367,7 +475,10 @@ export default function AdminReportsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => { setDetailModal(null); setShowRejectModal(detailModal); }}
+                  onClick={() => {
+                    setDetailModal(null);
+                    setShowRejectModal(detailModal);
+                  }}
                 >
                   <XCircle className="h-4 w-4" />
                   Rejeter
@@ -388,10 +499,21 @@ export default function AdminReportsPage() {
       </Modal>
 
       {/* Reject with reason Modal */}
-      <Modal open={!!showRejectModal} onClose={() => { setShowRejectModal(null); setRejectReason(''); }} title="Rejeter le signalement" description="Ajoutez un motif de rejet" size="sm">
+      <Modal
+        open={!!showRejectModal}
+        onClose={() => {
+          setShowRejectModal(null);
+          setRejectReason('');
+        }}
+        title="Rejeter le signalement"
+        description="Ajoutez un motif de rejet"
+        size="sm"
+      >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Motif du rejet</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Motif du rejet
+            </label>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
@@ -401,8 +523,23 @@ export default function AdminReportsPage() {
             />
           </div>
           <div className="flex justify-end gap-3">
-            <Button variant="secondary" size="sm" onClick={() => { setShowRejectModal(null); setRejectReason(''); }}>Annuler</Button>
-            <Button variant="danger" size="sm" onClick={handleReject} isLoading={rejectMutation.isPending} disabled={!rejectReason.trim()}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setShowRejectModal(null);
+                setRejectReason('');
+              }}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleReject}
+              isLoading={rejectMutation.isPending}
+              disabled={!rejectReason.trim()}
+            >
               <XCircle className="h-4 w-4" />
               Rejeter
             </Button>

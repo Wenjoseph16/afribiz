@@ -31,15 +31,18 @@ export default function NewDocumentPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({
-      title,
-      type,
-      description,
-      fileUrl,
-      ...(expiresAt ? { expiresAt: new Date(expiresAt).toISOString() } : {}),
-    }, {
-      onSuccess: () => router.push('/dashboard/documents'),
-    });
+    createMutation.mutate(
+      {
+        title,
+        type,
+        description,
+        fileUrl,
+        ...(expiresAt ? { expiresAt: new Date(expiresAt).toISOString() } : {}),
+      },
+      {
+        onSuccess: () => router.push('/dashboard/documents'),
+      }
+    );
   };
 
   return (
@@ -47,10 +50,7 @@ export default function NewDocumentPage() {
       <PageHeader
         title="Nouveau document"
         description="Ajoutez un document professionnel"
-        breadcrumbs={[
-          { label: 'Documents', href: '/dashboard/documents' },
-          { label: 'Nouveau' },
-        ]}
+        breadcrumbs={[{ label: 'Documents', href: '/dashboard/documents' }, { label: 'Nouveau' }]}
         actions={
           <Link href="/dashboard/documents">
             <Button variant="outline" size="sm">
@@ -86,7 +86,9 @@ export default function NewDocumentPage() {
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
             >
               {DOCUMENT_TYPES.map((t) => (
-                <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+                <option key={t} value={t}>
+                  {TYPE_LABELS[t]}
+                </option>
               ))}
             </select>
           </div>
@@ -120,7 +122,9 @@ export default function NewDocumentPage() {
                 <Upload className="h-4 w-4 text-brand" />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Entrez l'URL du fichier ou utilisez un service de stockage</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Entrez l'URL du fichier ou utilisez un service de stockage
+            </p>
           </div>
 
           <div>
@@ -137,7 +141,9 @@ export default function NewDocumentPage() {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
             <Link href="/dashboard/documents">
-              <Button variant="outline" type="button">Annuler</Button>
+              <Button variant="outline" type="button">
+                Annuler
+              </Button>
             </Link>
             <Button type="submit" disabled={createMutation.isPending}>
               <Upload className="h-4 w-4 mr-1.5" />

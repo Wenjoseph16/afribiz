@@ -3,8 +3,17 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Calendar, Clock, DollarSign, FileText, Shield,
-  AlertTriangle, CheckCircle2, ChevronRight, Loader2, MapPin,
+  ArrowLeft,
+  Calendar,
+  Clock,
+  DollarSign,
+  FileText,
+  Shield,
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  Loader2,
+  MapPin,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -20,8 +29,11 @@ import Image from 'next/image';
 import { useProlongRentalBooking } from '@/features/hooks';
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'En attente', CONFIRMED: 'Confirmée', IN_PROGRESS: 'En cours',
-  COMPLETED: 'Terminée', CANCELLED: 'Annulée',
+  PENDING: 'En attente',
+  CONFIRMED: 'Confirmée',
+  IN_PROGRESS: 'En cours',
+  COMPLETED: 'Terminée',
+  CANCELLED: 'Annulée',
 };
 
 export default function RentalDetailPage() {
@@ -31,7 +43,11 @@ export default function RentalDetailPage() {
   const [newEndDate, setNewEndDate] = useState('');
   const prolongMutation = useProlongRentalBooking();
 
-  const { data: booking, isLoading, error } = useQuery({
+  const {
+    data: booking,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['booking', params.id],
     queryFn: async () => {
       const res = await apiClient.getBooking(params.id as string);
@@ -45,12 +61,20 @@ export default function RentalDetailPage() {
 
   const startDate = new Date(booking.startDate);
   const endDate = booking.endDate ? new Date(booking.endDate) : null;
-  const duration = endDate ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
-  const canProlong = booking.status === 'PENDING' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS';
+  const duration = endDate
+    ? Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const canProlong =
+    booking.status === 'PENDING' ||
+    booking.status === 'CONFIRMED' ||
+    booking.status === 'IN_PROGRESS';
 
   return (
     <div className="space-y-6">
-      <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900">
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900"
+      >
         <ArrowLeft className="h-4 w-4" /> Retour
       </button>
 
@@ -84,7 +108,9 @@ export default function RentalDetailPage() {
                   </div>
                   <div>
                     <p className="text-gray-500">Durée</p>
-                    <p className="font-medium">{duration} jour{duration && duration > 1 ? 's' : ''}</p>
+                    <p className="font-medium">
+                      {duration} jour{duration && duration > 1 ? 's' : ''}
+                    </p>
                   </div>
                 </>
               )}
@@ -95,7 +121,9 @@ export default function RentalDetailPage() {
               {booking.depositAmount && (
                 <div>
                   <p className="text-gray-500">Caution</p>
-                  <p className="font-medium">{Number(booking.depositAmount).toLocaleString()} FCFA</p>
+                  <p className="font-medium">
+                    {Number(booking.depositAmount).toLocaleString()} FCFA
+                  </p>
                 </div>
               )}
               {booking.location && (
@@ -118,14 +146,23 @@ export default function RentalDetailPage() {
               <h2 className="text-lg font-semibold mb-4">Équipement loué</h2>
               <div className="flex items-start gap-4">
                 {booking.rental.images?.[0] && (
-                  <Image src={booking.rental.images[0]} alt={booking.rental.name} width={80} height={80} className="rounded-lg object-cover" unoptimized />
+                  <Image
+                    src={booking.rental.images[0]}
+                    alt={booking.rental.name}
+                    width={80}
+                    height={80}
+                    className="rounded-lg object-cover"
+                  />
                 )}
                 <div>
                   <p className="font-semibold">{booking.rental.name}</p>
                   <p className="text-sm text-gray-500">{booking.rental.description}</p>
                   <p className="text-sm mt-1">
-                    {Number(booking.rental.price).toLocaleString()} FCFA / {booking.rental.priceUnit || 'jour'}
-                    {booking.rental.deposit ? ` · Caution: ${Number(booking.rental.deposit).toLocaleString()} FCFA` : ''}
+                    {Number(booking.rental.price).toLocaleString()} FCFA /{' '}
+                    {booking.rental.priceUnit || 'jour'}
+                    {booking.rental.deposit
+                      ? ` · Caution: ${Number(booking.rental.deposit).toLocaleString()} FCFA`
+                      : ''}
                   </p>
                 </div>
               </div>
@@ -138,7 +175,8 @@ export default function RentalDetailPage() {
             <Card className="p-4">
               <h3 className="font-semibold mb-3">Actions</h3>
               <Button
-                className="w-full" variant="primary"
+                className="w-full"
+                variant="primary"
                 onClick={() => {
                   setNewEndDate(endDate ? endDate.toISOString().split('T')[0] : '');
                   setProlongModal(true);
@@ -168,7 +206,10 @@ export default function RentalDetailPage() {
               )}
               <div className="border-t pt-2 flex justify-between font-semibold">
                 <span>Total</span>
-                <span>{(Number(booking.price) + Number(booking.depositAmount || 0)).toLocaleString()} FCFA</span>
+                <span>
+                  {(Number(booking.price) + Number(booking.depositAmount || 0)).toLocaleString()}{' '}
+                  FCFA
+                </span>
               </div>
             </div>
           </Card>
@@ -194,14 +235,18 @@ export default function RentalDetailPage() {
             <div>
               <label className="block text-sm font-medium mb-1">Nouvelle date de fin</label>
               <input
-                type="date" min={endDate ? endDate.toISOString().split('T')[0] : ''}
-                value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)}
+                type="date"
+                min={endDate ? endDate.toISOString().split('T')[0] : ''}
+                value={newEndDate}
+                onChange={(e) => setNewEndDate(e.target.value)}
                 className="w-full border rounded-lg p-3 text-sm"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
-            <Button variant="ghost" onClick={() => setProlongModal(false)}>Annuler</Button>
+            <Button variant="ghost" onClick={() => setProlongModal(false)}>
+              Annuler
+            </Button>
             <Button
               variant="primary"
               disabled={!newEndDate || prolongMutation.isPending}

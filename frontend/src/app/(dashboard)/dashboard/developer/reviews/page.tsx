@@ -4,8 +4,21 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Star, MessageCircle, Reply, ThumbsUp, ThumbsDown, Flag, Lightbulb, Send,
-  ChevronDown, ChevronUp, User, Calendar, AlertTriangle, CheckCircle, X,
+  Star,
+  MessageCircle,
+  Reply,
+  ThumbsUp,
+  ThumbsDown,
+  Flag,
+  Lightbulb,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Calendar,
+  AlertTriangle,
+  CheckCircle,
+  X,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -26,7 +39,7 @@ export default function DeveloperReviewsPage() {
 
   const moduleList = useMemo(() => {
     if (!modules) return [];
-    return Array.isArray(modules) ? modules : (modules.modules || modules.data || []);
+    return Array.isArray(modules) ? modules : modules.modules || modules.data || [];
   }, [modules]);
 
   const allReviews: DeveloperModuleReview[] = useMemo(() => {
@@ -38,11 +51,14 @@ export default function DeveloperReviewsPage() {
         });
       }
     });
-    return reviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return reviews.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }, [moduleList]);
 
   const summary = useMemo(() => {
-    if (allReviews.length === 0) return { averageRating: 0, total: 0, breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } };
+    if (allReviews.length === 0)
+      return { averageRating: 0, total: 0, breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } };
     const total = allReviews.reduce((s, r) => s + r.rating, 0);
     const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     allReviews.forEach((r) => {
@@ -63,14 +79,19 @@ export default function DeveloperReviewsPage() {
       await respondToReview.mutateAsync({ reviewId, response: text });
       setReplyText((prev) => ({ ...prev, [reviewId]: '' }));
       setExpandedReview(null);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const renderStars = (rating: number, size: string = 'h-4 w-4') => {
     return Array.from({ length: 5 }).map((_, i) => (
       <Star
         key={i}
-        className={cn(size, i < rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 dark:text-gray-600')}
+        className={cn(
+          size,
+          i < rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 dark:text-gray-600'
+        )}
       />
     ));
   };
@@ -117,10 +138,15 @@ export default function DeveloperReviewsPage() {
               const pct = maxVal > 0 ? (count / maxVal) * 100 : 0;
               return (
                 <div key={star} className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400 w-6 text-right">{star}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 w-6 text-right">
+                    {star}
+                  </span>
                   <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
                   <div className="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-300" style={{ width: `${pct}%` }} />
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-300"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                   <span className="text-xs text-gray-500 dark:text-gray-400 w-6">{count}</span>
                 </div>
@@ -145,7 +171,13 @@ export default function DeveloperReviewsPage() {
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-50 to-purple-50 dark:from-brand-900/30 dark:to-purple-900/30 flex items-center justify-center shrink-0">
                       {review.user?.avatar ? (
-                        <Image src={review.user.avatar ?? ''} alt="" fill className="rounded-full object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                        <Image
+                          src={review.user.avatar ?? ''}
+                          alt=""
+                          fill
+                          className="rounded-full object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
                       ) : (
                         <span className="text-sm font-semibold text-brand">
                           {getUserInitials(review.user?.firstName, review.user?.lastName)}
@@ -157,7 +189,9 @@ export default function DeveloperReviewsPage() {
                         {review.user?.firstName} {review.user?.lastName || 'Utilisateur'}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <div className="flex items-center gap-0.5">{renderStars(review.rating, 'h-3.5 w-3.5')}</div>
+                        <div className="flex items-center gap-0.5">
+                          {renderStars(review.rating, 'h-3.5 w-3.5')}
+                        </div>
                         <span className="text-xs text-gray-400">·</span>
                         <div className="flex items-center gap-1 text-xs text-gray-400">
                           <Calendar className="h-3 w-3" />
@@ -175,7 +209,9 @@ export default function DeveloperReviewsPage() {
                 )}
 
                 {review.title && (
-                  <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{review.title}</p>
+                  <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {review.title}
+                  </p>
                 )}
                 {review.comment && (
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{review.comment}</p>
@@ -200,19 +236,27 @@ export default function DeveloperReviewsPage() {
                 {!review.response && (
                   <div className="mt-3">
                     <button
-                      onClick={() => setExpandedReview(expandedReview === review.id ? null : review.id)}
+                      onClick={() =>
+                        setExpandedReview(expandedReview === review.id ? null : review.id)
+                      }
                       className="flex items-center gap-1.5 text-xs font-medium text-brand hover:text-brand-700 transition-colors"
                     >
                       <Reply className="h-3.5 w-3.5" />
                       Répondre
-                      {expandedReview === review.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      {expandedReview === review.id ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
                     </button>
 
                     {expandedReview === review.id && (
                       <div className="mt-3 space-y-3">
                         <textarea
                           value={replyText[review.id] || ''}
-                          onChange={(e) => setReplyText((prev) => ({ ...prev, [review.id]: e.target.value }))}
+                          onChange={(e) =>
+                            setReplyText((prev) => ({ ...prev, [review.id]: e.target.value }))
+                          }
                           rows={3}
                           className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-brand focus:ring-brand/20 transition-all duration-200 resize-none"
                           placeholder="Écrivez votre réponse..."

@@ -4,9 +4,31 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Edit, Trash2, Loader, Clock, CheckCircle2, AlertTriangle,
-  MessageSquare, FileText, Image, Paperclip, User, CalendarDays, ListChecks,
-  Timer, History, Send, Plus, X, Play, Square, Check, XCircle, ClipboardList, Shield,
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Loader,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  MessageSquare,
+  FileText,
+  Image,
+  Paperclip,
+  User,
+  CalendarDays,
+  ListChecks,
+  Timer,
+  History,
+  Send,
+  Plus,
+  X,
+  Play,
+  Square,
+  Check,
+  XCircle,
+  ClipboardList,
+  Shield,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -14,42 +36,73 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import {
-  useAdvancedTask, useUpdateAdvancedTask, useDeleteAdvancedTask,
-  useAddTaskComment, useDeleteTaskComment, useStartTaskTimer, useStopTaskTimer,
-  useAddTaskChecklistItem, useToggleTaskChecklistItem, useDeleteTaskChecklistItem,
-  useAddTaskResource, useDeleteTaskResource, useRequestTaskValidation,
-  useApproveTaskValidation, useTaskHistory,
+  useAdvancedTask,
+  useUpdateAdvancedTask,
+  useDeleteAdvancedTask,
+  useAddTaskComment,
+  useDeleteTaskComment,
+  useStartTaskTimer,
+  useStopTaskTimer,
+  useAddTaskChecklistItem,
+  useToggleTaskChecklistItem,
+  useDeleteTaskChecklistItem,
+  useAddTaskResource,
+  useDeleteTaskResource,
+  useRequestTaskValidation,
+  useApproveTaskValidation,
+  useTaskHistory,
 } from '@/features/hooks';
 
 const STATUS_LABELS: Record<string, string> = {
-  TODO: 'À faire', IN_PROGRESS: 'En cours', ON_HOLD: 'En attente', DONE: 'Terminé', BLOCKED: 'Bloqué',
+  TODO: 'À faire',
+  IN_PROGRESS: 'En cours',
+  ON_HOLD: 'En attente',
+  DONE: 'Terminé',
+  BLOCKED: 'Bloqué',
 };
 
 const STATUS_COLORS: Record<string, 'warning' | 'info' | 'default' | 'success' | 'danger'> = {
-  TODO: 'warning', IN_PROGRESS: 'info', ON_HOLD: 'default', DONE: 'success', BLOCKED: 'danger',
+  TODO: 'warning',
+  IN_PROGRESS: 'info',
+  ON_HOLD: 'default',
+  DONE: 'success',
+  BLOCKED: 'danger',
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  URGENT: 'Urgent', HIGH: 'Haute', MEDIUM: 'Moyenne', LOW: 'Basse',
+  URGENT: 'Urgent',
+  HIGH: 'Haute',
+  MEDIUM: 'Moyenne',
+  LOW: 'Basse',
 };
 
 const PRIORITY_VARIANTS: Record<string, 'danger' | 'warning' | 'info' | 'default'> = {
-  URGENT: 'danger', HIGH: 'warning', MEDIUM: 'info', LOW: 'default',
+  URGENT: 'danger',
+  HIGH: 'warning',
+  MEDIUM: 'info',
+  LOW: 'default',
 };
 
-const VALIDATION_STATUS: Record<string, { label: string; variant: 'warning' | 'success' | 'danger' }> = {
+const VALIDATION_STATUS: Record<
+  string,
+  { label: string; variant: 'warning' | 'success' | 'danger' }
+> = {
   PENDING: { label: 'En attente', variant: 'warning' },
   APPROVED: { label: 'Approuvée', variant: 'success' },
   REJECTED: { label: 'Rejetée', variant: 'danger' },
 };
 
 const RESOURCE_ICONS: Record<string, any> = {
-  document: FileText, photo: Image, equipment: ClipboardList, vehicle: Truck,
+  document: FileText,
+  photo: Image,
+  equipment: ClipboardList,
+  vehicle: Truck,
 };
 
 const STATUS_ORDER = ['TODO', 'IN_PROGRESS', 'ON_HOLD', 'DONE', 'BLOCKED'];
 
 import { Truck } from 'lucide-react';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -71,11 +124,14 @@ export default function TaskDetailPage() {
   const approveValidation = useApproveTaskValidation();
   const { data: historyData } = useTaskHistory(id);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [newChecklistLabel, setNewChecklistLabel] = useState('');
   const [newChecklistAssignee, setNewChecklistAssignee] = useState('');
-  const [newResourceType, setNewResourceType] = useState<'document' | 'photo' | 'equipment' | 'vehicle'>('document');
+  const [newResourceType, setNewResourceType] = useState<
+    'document' | 'photo' | 'equipment' | 'vehicle'
+  >('document');
   const [newResourceLabel, setNewResourceLabel] = useState('');
   const [newResourceUrl, setNewResourceUrl] = useState('');
   const [validationNote, setValidationNote] = useState('');
@@ -112,15 +168,22 @@ export default function TaskDetailPage() {
   const totalTrackedTime = () => {
     if (!t?.timers) return 0;
     return t.timers.reduce((acc: number, tm: any) => {
-      if (tm.endTime) return acc + Math.floor((new Date(tm.endTime).getTime() - new Date(tm.startTime).getTime()) / 1000);
+      if (tm.endTime)
+        return (
+          acc +
+          Math.floor((new Date(tm.endTime).getTime() - new Date(tm.startTime).getTime()) / 1000)
+        );
       return acc;
     }, 0);
   };
 
   const hasActiveTimer = t?.timers?.some((tm: any) => !tm.endTime);
 
-  const handleDelete = async () => {
-    if (!confirm('Supprimer cette tâche ?')) return;
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
     setDeleting(true);
     try {
       await deleteTask.mutateAsync(id);
@@ -131,7 +194,11 @@ export default function TaskDetailPage() {
   };
 
   const handleStatusChange = async (status: string) => {
-    try { await updateTask.mutateAsync({ id, data: { status } }); } catch (e) { console.error(e); }
+    try {
+      await updateTask.mutateAsync({ id, data: { status } });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleAddComment = async () => {
@@ -139,11 +206,17 @@ export default function TaskDetailPage() {
     try {
       await addComment.mutateAsync({ taskId: id, data: { content: newComment } });
       setNewComment('');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    try { await deleteComment.mutateAsync({ taskId: id, commentId }); } catch (e) { console.error(e); }
+    try {
+      await deleteComment.mutateAsync({ taskId: id, commentId });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleAddChecklist = async () => {
@@ -155,15 +228,25 @@ export default function TaskDetailPage() {
       });
       setNewChecklistLabel('');
       setNewChecklistAssignee('');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleToggleChecklist = async (itemId: string) => {
-    try { await toggleChecklistItem.mutateAsync({ taskId: id, itemId }); } catch (e) { console.error(e); }
+    try {
+      await toggleChecklistItem.mutateAsync({ taskId: id, itemId });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleDeleteChecklist = async (itemId: string) => {
-    try { await deleteChecklistItem.mutateAsync({ taskId: id, itemId }); } catch (e) { console.error(e); }
+    try {
+      await deleteChecklistItem.mutateAsync({ taskId: id, itemId });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleAddResource = async () => {
@@ -175,51 +258,89 @@ export default function TaskDetailPage() {
       });
       setNewResourceLabel('');
       setNewResourceUrl('');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleDeleteResource = async (resourceId: string) => {
-    try { await deleteResource.mutateAsync({ taskId: id, resourceId }); } catch (e) { console.error(e); }
+    try {
+      await deleteResource.mutateAsync({ taskId: id, resourceId });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleRequestValidation = async () => {
     try {
       await requestValidation.mutateAsync({ taskId: id, data: { note: validationNote } });
       setValidationNote('');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleApproveValidation = async (validationId: string, status: 'APPROVED' | 'REJECTED') => {
     try {
       await approveValidation.mutateAsync({
-        taskId: id, validationId, data: { status, note: validationTarget === validationId ? validationNote : undefined },
+        taskId: id,
+        validationId,
+        data: { status, note: validationTarget === validationId ? validationNote : undefined },
       });
       setValidationTarget(null);
       setValidationNote('');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const checklistItems = t?.checklist || [];
   const completedCount = checklistItems.filter((i: any) => i.completed).length;
 
   if (!params?.id) return null;
-  if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><Loader className="h-8 w-8 animate-spin text-brand" /></div>;
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader className="h-8 w-8 animate-spin text-brand" />
+      </div>
+    );
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
-  if (!t) return <div className="flex items-center justify-center min-h-[400px]"><p className="text-gray-500">Tâche introuvable</p></div>;
+  if (!t)
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-gray-500">Tâche introuvable</p>
+      </div>
+    );
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href="/dashboard/tasks" className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+        <Link
+          href="/dashboard/tasks"
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+        >
           <ArrowLeft className="h-4 w-4" /> Retour
         </Link>
         <div className="flex items-center gap-2">
           <Link href={`/dashboard/tasks/${id}/edit`}>
-            <Button size="sm" variant="outline"><Edit className="h-4 w-4 mr-1.5" />Modifier</Button>
+            <Button size="sm" variant="outline">
+              <Edit className="h-4 w-4 mr-1.5" />
+              Modifier
+            </Button>
           </Link>
-          <Button size="sm" variant="outline" onClick={handleDelete} disabled={deleting} className="text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20">
-            {deleting ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            {deleting ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-1.5" />
+            )}
             Supprimer
           </Button>
         </div>
@@ -231,8 +352,16 @@ export default function TaskDetailPage() {
           <div className="space-y-3">
             <h1 className="text-3xl font-bold">{t.title}</h1>
             <div className="flex flex-wrap gap-2">
-              {t.status && <Badge variant={STATUS_COLORS[t.status] || 'default'}>{STATUS_LABELS[t.status] || t.status}</Badge>}
-              {t.priority && <Badge variant={PRIORITY_VARIANTS[t.priority] || 'default'}>{PRIORITY_LABELS[t.priority] || t.priority}</Badge>}
+              {t.status && (
+                <Badge variant={STATUS_COLORS[t.status] || 'default'}>
+                  {STATUS_LABELS[t.status] || t.status}
+                </Badge>
+              )}
+              {t.priority && (
+                <Badge variant={PRIORITY_VARIANTS[t.priority] || 'default'}>
+                  {PRIORITY_LABELS[t.priority] || t.priority}
+                </Badge>
+              )}
               {t.category?.name && <Badge variant="purple">{t.category.name}</Badge>}
             </div>
           </div>
@@ -244,8 +373,12 @@ export default function TaskDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* 1. Description & details */}
           <Card padding="lg">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Description</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{t.description || 'Aucune description.'}</p>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+              Description
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+              {t.description || 'Aucune description.'}
+            </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
               {t.category?.name && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -254,7 +387,8 @@ export default function TaskDetailPage() {
               )}
               {t.assignee && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <User className="h-4 w-4 text-gray-400" /> {t.assignee.firstName} {t.assignee.lastName}
+                  <User className="h-4 w-4 text-gray-400" /> {t.assignee.firstName}{' '}
+                  {t.assignee.lastName}
                 </div>
               )}
               {t.client?.name && (
@@ -264,12 +398,14 @@ export default function TaskDetailPage() {
               )}
               {t.startDate && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <CalendarDays className="h-4 w-4 text-gray-400" /> Début : {new Date(t.startDate).toLocaleDateString('fr-FR')}
+                  <CalendarDays className="h-4 w-4 text-gray-400" /> Début :{' '}
+                  {new Date(t.startDate).toLocaleDateString('fr-FR')}
                 </div>
               )}
               {t.dueDate && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <CalendarDays className="h-4 w-4 text-gray-400" /> Échéance : {new Date(t.dueDate).toLocaleDateString('fr-FR')}
+                  <CalendarDays className="h-4 w-4 text-gray-400" /> Échéance :{' '}
+                  {new Date(t.dueDate).toLocaleDateString('fr-FR')}
                 </div>
               )}
               {t.estimatedHours && (
@@ -287,12 +423,16 @@ export default function TaskDetailPage() {
                 )}
                 {t.linkedEntities?.bookingId && (
                   <Link href={`/dashboard/bookings/${t.linkedEntities.bookingId}`}>
-                    <Badge variant="info">Réservation #{t.linkedEntities.bookingId.slice(0, 8)}</Badge>
+                    <Badge variant="info">
+                      Réservation #{t.linkedEntities.bookingId.slice(0, 8)}
+                    </Badge>
                   </Link>
                 )}
                 {t.linkedEntities?.deliveryId && (
                   <Link href={`/dashboard/deliveries/${t.linkedEntities.deliveryId}`}>
-                    <Badge variant="info">Livraison #{t.linkedEntities.deliveryId.slice(0, 8)}</Badge>
+                    <Badge variant="info">
+                      Livraison #{t.linkedEntities.deliveryId.slice(0, 8)}
+                    </Badge>
                   </Link>
                 )}
                 {t.linkedEntities?.eventId && (
@@ -313,10 +453,14 @@ export default function TaskDetailPage() {
           <Card padding="lg">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
               <ListChecks className="h-4 w-4" /> Checklist
-              <span className="text-xs font-normal text-gray-400 normal-case">({completedCount}/{checklistItems.length})</span>
+              <span className="text-xs font-normal text-gray-400 normal-case">
+                ({completedCount}/{checklistItems.length})
+              </span>
             </h3>
             <div className="space-y-2 mb-4">
-              {checklistItems.length === 0 && <p className="text-sm text-gray-400">Aucun élément</p>}
+              {checklistItems.length === 0 && (
+                <p className="text-sm text-gray-400">Aucun élément</p>
+              )}
               {checklistItems.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-3 group">
                   <button
@@ -330,15 +474,20 @@ export default function TaskDetailPage() {
                   >
                     {item.completed && <Check className="h-3 w-3" />}
                   </button>
-                  <span className={cn(
-                    'text-sm flex-1',
-                    item.completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'
-                  )}>
+                  <span
+                    className={cn(
+                      'text-sm flex-1',
+                      item.completed
+                        ? 'line-through text-gray-400'
+                        : 'text-gray-700 dark:text-gray-200'
+                    )}
+                  >
                     {item.label}
                   </span>
                   {item.assignedTo && (
                     <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <User className="h-3 w-3" /> {item.assignedTo.firstName} {item.assignedTo.lastName}
+                      <User className="h-3 w-3" /> {item.assignedTo.firstName}{' '}
+                      {item.assignedTo.lastName}
                     </span>
                   )}
                   <button
@@ -352,13 +501,17 @@ export default function TaskDetailPage() {
             </div>
             <div className="flex gap-2">
               <input
-                type="text" value={newChecklistLabel} onChange={(e) => setNewChecklistLabel(e.target.value)}
+                type="text"
+                value={newChecklistLabel}
+                onChange={(e) => setNewChecklistLabel(e.target.value)}
                 placeholder="Ajouter un élément..."
                 className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
                 onKeyDown={(e) => e.key === 'Enter' && handleAddChecklist()}
               />
               <input
-                type="text" value={newChecklistAssignee} onChange={(e) => setNewChecklistAssignee(e.target.value)}
+                type="text"
+                value={newChecklistAssignee}
+                onChange={(e) => setNewChecklistAssignee(e.target.value)}
                 placeholder="Assigné à (optionnel)"
                 className="w-36 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
               />
@@ -388,7 +541,12 @@ export default function TaskDetailPage() {
                         {comment.author?.firstName} {comment.author?.lastName || 'Utilisateur'}
                       </span>
                       <span className="text-xs text-gray-400">
-                        {new Date(comment.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(comment.createdAt).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">{comment.content}</p>
@@ -404,12 +562,17 @@ export default function TaskDetailPage() {
             </div>
             <div className="flex gap-2">
               <textarea
-                value={newComment} onChange={(e) => setNewComment(e.target.value)}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Ajouter un commentaire..."
                 rows={2}
                 className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 resize-none"
               />
-              <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim() || addComment.isPending}>
+              <Button
+                size="sm"
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || addComment.isPending}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
@@ -423,19 +586,32 @@ export default function TaskDetailPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 {hasActiveTimer ? (
-                  <p className="text-2xl font-mono font-bold text-brand">{formatDuration(activeTimer)}</p>
+                  <p className="text-2xl font-mono font-bold text-brand">
+                    {formatDuration(activeTimer)}
+                  </p>
                 ) : (
                   <p className="text-sm text-gray-400">Chronomètre arrêté</p>
                 )}
-                <p className="text-xs text-gray-400">Total : {formatDuration(totalTrackedTime())}</p>
+                <p className="text-xs text-gray-400">
+                  Total : {formatDuration(totalTrackedTime())}
+                </p>
               </div>
               <div className="flex gap-2">
                 {hasActiveTimer ? (
-                  <Button size="sm" variant="outline" onClick={() => stopTimer.mutateAsync(id)} disabled={stopTimer.isPending}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => stopTimer.mutateAsync(id)}
+                    disabled={stopTimer.isPending}
+                  >
                     <Square className="h-4 w-4 mr-1.5" /> Arrêter
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={() => startTimer.mutateAsync(id)} disabled={startTimer.isPending}>
+                  <Button
+                    size="sm"
+                    onClick={() => startTimer.mutateAsync(id)}
+                    disabled={startTimer.isPending}
+                  >
                     <Play className="h-4 w-4 mr-1.5" /> Démarrer
                   </Button>
                 )}
@@ -460,8 +636,12 @@ export default function TaskDetailPage() {
                       <ResIcon className="h-4 w-4 text-gray-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <a href={res.url} target="_blank" rel="noopener noreferrer"
-                        className="text-sm font-medium text-brand hover:underline truncate block">
+                      <a
+                        href={res.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-brand hover:underline truncate block"
+                      >
                         {res.label}
                       </a>
                       <span className="text-xs text-gray-400 capitalize">{res.type}</span>
@@ -478,7 +658,8 @@ export default function TaskDetailPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
               <select
-                value={newResourceType} onChange={(e) => setNewResourceType(e.target.value as any)}
+                value={newResourceType}
+                onChange={(e) => setNewResourceType(e.target.value as any)}
                 className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
               >
                 <option value="document">Document</option>
@@ -487,16 +668,26 @@ export default function TaskDetailPage() {
                 <option value="vehicle">Véhicule</option>
               </select>
               <input
-                type="text" value={newResourceLabel} onChange={(e) => setNewResourceLabel(e.target.value)}
+                type="text"
+                value={newResourceLabel}
+                onChange={(e) => setNewResourceLabel(e.target.value)}
                 placeholder="Libellé..."
                 className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
               />
               <input
-                type="url" value={newResourceUrl} onChange={(e) => setNewResourceUrl(e.target.value)}
+                type="url"
+                value={newResourceUrl}
+                onChange={(e) => setNewResourceUrl(e.target.value)}
                 placeholder="URL..."
                 className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
               />
-              <Button size="sm" onClick={handleAddResource} disabled={!newResourceLabel.trim() || !newResourceUrl.trim() || addResource.isPending}>
+              <Button
+                size="sm"
+                onClick={handleAddResource}
+                disabled={
+                  !newResourceLabel.trim() || !newResourceUrl.trim() || addResource.isPending
+                }
+              >
                 <Plus className="h-4 w-4 mr-1.5" /> Ajouter
               </Button>
             </div>
@@ -517,11 +708,19 @@ export default function TaskDetailPage() {
               {(t.validations || []).map((v: any) => {
                 const vs = VALIDATION_STATUS[v.status] || VALIDATION_STATUS.PENDING;
                 return (
-                  <div key={v.id} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                  <div
+                    key={v.id}
+                    className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700"
+                  >
                     <div className="flex items-center justify-between mb-2">
-                      <Badge variant={vs.variant} size="xs">{vs.label}</Badge>
+                      <Badge variant={vs.variant} size="xs">
+                        {vs.label}
+                      </Badge>
                       <span className="text-xs text-gray-400">
-                        {new Date(v.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                        {new Date(v.createdAt).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
                       </span>
                     </div>
                     {v.note && <p className="text-xs text-gray-500 mb-2">{v.note}</p>}
@@ -532,12 +731,20 @@ export default function TaskDetailPage() {
                     )}
                     {v.status === 'PENDING' && (
                       <div className="flex gap-2 mt-2">
-                        <Button size="xs" variant="outline" onClick={() => handleApproveValidation(v.id, 'APPROVED')}
-                          className="text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => handleApproveValidation(v.id, 'APPROVED')}
+                          className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                        >
                           <Check className="h-3 w-3 mr-1" /> Approuver
                         </Button>
-                        <Button size="xs" variant="outline" onClick={() => handleApproveValidation(v.id, 'REJECTED')}
-                          className="text-red-600 border-red-200 hover:bg-red-50">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => handleApproveValidation(v.id, 'REJECTED')}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
                           <XCircle className="h-3 w-3 mr-1" /> Rejeter
                         </Button>
                       </div>
@@ -548,12 +755,18 @@ export default function TaskDetailPage() {
             </div>
             <div className="space-y-2">
               <textarea
-                value={validationNote} onChange={(e) => setValidationNote(e.target.value)}
+                value={validationNote}
+                onChange={(e) => setValidationNote(e.target.value)}
                 placeholder="Note de validation..."
                 rows={2}
                 className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 resize-none"
               />
-              <Button size="sm" onClick={handleRequestValidation} disabled={requestValidation.isPending} className="w-full">
+              <Button
+                size="sm"
+                onClick={handleRequestValidation}
+                disabled={requestValidation.isPending}
+                className="w-full"
+              >
                 <Send className="h-4 w-4 mr-1.5" /> Demander une validation
               </Button>
             </div>
@@ -565,37 +778,63 @@ export default function TaskDetailPage() {
               <History className="h-4 w-4" /> Historique
             </h3>
             <div className="space-y-3">
-              {!historyData && <div className="flex justify-center py-4"><Loader className="h-5 w-5 animate-spin text-gray-400" /></div>}
+              {!historyData && (
+                <div className="flex justify-center py-4">
+                  <Loader className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
+              )}
               {historyData && historyData.length === 0 && (
                 <p className="text-sm text-gray-400">Aucun événement</p>
               )}
               {(historyData || []).slice(0, 10).map((event: any, i: number, arr: any[]) => {
-                const EventIcon = event.action === 'CREATED' ? CheckCircle2
-                  : event.action === 'STATUS_CHANGED' ? Clock
-                  : event.action === 'COMMENT_ADDED' ? MessageSquare
-                  : event.action === 'TIMER_STARTED' ? Play
-                  : event.action === 'TIMER_STOPPED' ? Square
-                  : event.action === 'VALIDATION_REQUESTED' ? Shield
-                  : event.action === 'VALIDATION_APPROVED' ? Check
-                  : event.action === 'VALIDATION_REJECTED' ? XCircle
-                  : History;
+                const EventIcon =
+                  event.action === 'CREATED'
+                    ? CheckCircle2
+                    : event.action === 'STATUS_CHANGED'
+                      ? Clock
+                      : event.action === 'COMMENT_ADDED'
+                        ? MessageSquare
+                        : event.action === 'TIMER_STARTED'
+                          ? Play
+                          : event.action === 'TIMER_STOPPED'
+                            ? Square
+                            : event.action === 'VALIDATION_REQUESTED'
+                              ? Shield
+                              : event.action === 'VALIDATION_APPROVED'
+                                ? Check
+                                : event.action === 'VALIDATION_REJECTED'
+                                  ? XCircle
+                                  : History;
                 return (
                   <div key={event.id || i} className="flex items-start gap-3">
                     <div className="flex flex-col items-center">
-                      <div className={cn(
-                        'w-7 h-7 rounded-full flex items-center justify-center',
-                        i === 0 ? 'bg-brand-100 dark:bg-brand-900/30 text-brand' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
-                      )}>
+                      <div
+                        className={cn(
+                          'w-7 h-7 rounded-full flex items-center justify-center',
+                          i === 0
+                            ? 'bg-brand-100 dark:bg-brand-900/30 text-brand'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                        )}
+                      >
                         <EventIcon className="h-3.5 w-3.5" />
                       </div>
-                      {i < arr.length - 1 && <div className="w-0.5 h-5 bg-gray-200 dark:bg-gray-700" />}
+                      {i < arr.length - 1 && (
+                        <div className="w-0.5 h-5 bg-gray-200 dark:bg-gray-700" />
+                      )}
                     </div>
                     <div className="pt-1">
-                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100">{event.action}</p>
-                      {event.description && <p className="text-xs text-gray-500">{event.description}</p>}
+                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                        {event.action}
+                      </p>
+                      {event.description && (
+                        <p className="text-xs text-gray-500">{event.description}</p>
+                      )}
                       <p className="text-[10px] text-gray-400 mt-0.5">
                         {new Date(event.createdAt).toLocaleDateString('fr-FR', {
-                          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })}
                       </p>
                     </div>
@@ -636,7 +875,9 @@ export default function TaskDetailPage() {
                 disabled={updateTask.isPending}
                 className={cn(
                   'px-4 py-2 rounded-xl text-sm font-medium border transition-all',
-                  isActive ? activeColorMap[status] : `${colorMap[status]} hover:bg-gray-50 dark:hover:bg-gray-800`
+                  isActive
+                    ? activeColorMap[status]
+                    : `${colorMap[status]} hover:bg-gray-50 dark:hover:bg-gray-800`
                 )}
               >
                 {STATUS_LABELS[status]}
@@ -645,6 +886,17 @@ export default function TaskDetailPage() {
           })}
         </div>
       </Card>
+
+      <ConfirmationModal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDelete}
+        title="Supprimer cette tâche ?"
+        description="Cette action est irréversible. Toutes les données liées à cette tâche seront définitivement supprimées."
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="danger"
+      />
     </div>
   );
 }

@@ -4,8 +4,17 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  CreditCard, Check, Shield, Sparkles, ArrowLeft, Award, BadgeCheck,
-  CheckCircle, AlertTriangle, XCircle, XOctagon,
+  CreditCard,
+  Check,
+  Shield,
+  Sparkles,
+  ArrowLeft,
+  Award,
+  BadgeCheck,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  XOctagon,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
@@ -48,7 +57,12 @@ export default function DeveloperSubscriptionPage() {
     }
   }, [user, router]);
 
-  const { data: plansData, isLoading: plansLoading, error, refetch } = useQuery({
+  const {
+    data: plansData,
+    isLoading: plansLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['developer', 'subscription-plans'],
     queryFn: async () => {
       const res = await apiClient.get('/subscriptions/plans');
@@ -63,7 +77,9 @@ export default function DeveloperSubscriptionPage() {
       try {
         const res = await apiClient.get('/subscriptions/my-subscription');
         return res.data.data || null;
-      } catch { return null; }
+      } catch {
+        return null;
+      }
     },
   });
 
@@ -79,7 +95,10 @@ export default function DeveloperSubscriptionPage() {
       setSelectedPlan(null);
     },
     onError: (err: any) => {
-      setToast({ message: err?.response?.data?.error || 'Erreur lors de la souscription', type: 'error' });
+      setToast({
+        message: err?.response?.data?.error || 'Erreur lors de la souscription',
+        type: 'error',
+      });
     },
   });
 
@@ -95,7 +114,10 @@ export default function DeveloperSubscriptionPage() {
       setShowCancelConfirm(false);
     },
     onError: (err: any) => {
-      setToast({ message: err?.response?.data?.error || 'Erreur lors de la résiliation', type: 'error' });
+      setToast({
+        message: err?.response?.data?.error || 'Erreur lors de la résiliation',
+        type: 'error',
+      });
     },
   });
 
@@ -111,20 +133,33 @@ export default function DeveloperSubscriptionPage() {
     <div className="animate-fade-in space-y-6">
       {/* Toast notification */}
       {toast && (
-        <div className={cn(
-          'fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-slide-down',
-          toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
-        )}>
-          {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+        <div
+          className={cn(
+            'fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-slide-down',
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-red-50 text-red-800 border border-red-200'
+          )}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle className="h-4 w-4" />
+          ) : (
+            <AlertTriangle className="h-4 w-4" />
+          )}
           {toast.message}
-          <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100">✕</button>
+          <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100">
+            ✕
+          </button>
         </div>
       )}
 
       <PageHeader
         title="Mon abonnement"
         description="Gérez votre abonnement développeur AfriBiz"
-        breadcrumbs={[{ label: 'Développeur', href: '/dashboard/developer' }, { label: 'Abonnement' }]}
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Abonnement' },
+        ]}
         actions={
           <Link href="/dashboard/developer">
             <Button variant="outline" size="sm">
@@ -146,17 +181,27 @@ export default function DeveloperSubscriptionPage() {
       ) : (
         <>
           {/* Current plan info from API */}
-          <Card padding="lg" className={cn(
-            'bg-gradient-to-br',
-            hasActiveSub
-              ? 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/50'
-              : 'from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-indigo-200/50'
-          )}>
+          <Card
+            padding="lg"
+            className={cn(
+              'bg-gradient-to-br',
+              hasActiveSub
+                ? 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/50'
+                : 'from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-indigo-200/50'
+            )}
+          >
             <div className="flex items-start gap-4">
-              <div className={cn('p-3 rounded-xl shrink-0',
-                hasActiveSub ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-indigo-100 dark:bg-indigo-900/40'
-              )}>
-                <Award className={cn('h-6 w-6', hasActiveSub ? 'text-emerald-600' : 'text-indigo-600')} />
+              <div
+                className={cn(
+                  'p-3 rounded-xl shrink-0',
+                  hasActiveSub
+                    ? 'bg-emerald-100 dark:bg-emerald-900/40'
+                    : 'bg-indigo-100 dark:bg-indigo-900/40'
+                )}
+              >
+                <Award
+                  className={cn('h-6 w-6', hasActiveSub ? 'text-emerald-600' : 'text-indigo-600')}
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -170,11 +215,12 @@ export default function DeveloperSubscriptionPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {hasActiveSub
                     ? `Abonnement ${currentSub.plan.name} actif jusqu'au ${new Date(currentSub.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
-                    : 'Vous êtes sur le plan Gratuit. Publiez vos modules et gagnez des commissions sur chaque vente.'
-                  }
+                    : 'Vous êtes sur le plan Gratuit. Publiez vos modules et gagnez des commissions sur chaque vente.'}
                 </p>
                 {hasActiveSub && currentSub?.autoRenew && (
-                  <p className="text-xs text-emerald-600 font-medium mt-1">Renouvellement automatique actif</p>
+                  <p className="text-xs text-emerald-600 font-medium mt-1">
+                    Renouvellement automatique actif
+                  </p>
                 )}
                 <div className="flex flex-wrap gap-4 mt-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -193,7 +239,9 @@ export default function DeveloperSubscriptionPage() {
               </div>
               <div className="text-right shrink-0 hidden sm:block">
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {currentSub?.plan?.price ? `${Number(currentSub.plan.price).toLocaleString()} FCFA` : 'Gratuit'}
+                  {currentSub?.plan?.price
+                    ? `${Number(currentSub.plan.price).toLocaleString()} FCFA`
+                    : 'Gratuit'}
                 </p>
                 <p className="text-xs text-gray-500">
                   {currentSub?.plan?.price ? '/ mois' : '0 FCFA / mois'}
@@ -213,16 +261,25 @@ export default function DeveloperSubscriptionPage() {
 
           {/* Cancel confirmation modal */}
           {showCancelConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowCancelConfirm(false)}>
-              <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700" onClick={e => e.stopPropagation()}>
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowCancelConfirm(false)}
+            >
+              <div
+                className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/30">
                     <AlertTriangle className="h-5 w-5 text-red-600" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Résilier l&apos;abonnement ?</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    Résilier l&apos;abonnement ?
+                  </h3>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-                  Vous allez perdre l&apos;accès aux avantages de votre plan {currentSub?.plan?.name || 'actuel'}. Cette action est irréversible.
+                  Vous allez perdre l&apos;accès aux avantages de votre plan{' '}
+                  {currentSub?.plan?.name || 'actuel'}. Cette action est irréversible.
                 </p>
                 <div className="flex items-center gap-3">
                   <button
@@ -237,9 +294,14 @@ export default function DeveloperSubscriptionPage() {
                     className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                   >
                     {cancelMutation.isPending ? (
-                      <><span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" /> Résiliation...</>
+                      <>
+                        <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />{' '}
+                        Résiliation...
+                      </>
                     ) : (
-                      <><XCircle className="h-4 w-4" /> Oui, résilier</>
+                      <>
+                        <XCircle className="h-4 w-4" /> Oui, résilier
+                      </>
                     )}
                   </button>
                 </div>
@@ -283,19 +345,34 @@ export default function DeveloperSubscriptionPage() {
 
                     <div className="flex items-center gap-2 mb-2">
                       <CreditCard className="h-5 w-5 text-indigo-500" />
-                      <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">{plan.name}</h4>
-                      {isCurrent && <Badge variant="success" size="xs">Actuel</Badge>}
+                      <h4 className="text-base font-bold text-gray-900 dark:text-gray-100">
+                        {plan.name}
+                      </h4>
+                      {isCurrent && (
+                        <Badge variant="success" size="xs">
+                          Actuel
+                        </Badge>
+                      )}
                     </div>
 
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{plan.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                      {plan.description}
+                    </p>
 
                     <div className="mb-4">
                       <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {plan.price === 0 ? 'Gratuit' : `${Number(plan.price).toLocaleString()} ${plan.currency}`}
+                        {plan.price === 0
+                          ? 'Gratuit'
+                          : `${Number(plan.price).toLocaleString()} ${plan.currency}`}
                       </span>
                       {plan.price > 0 && (
                         <span className="text-sm text-gray-500 ml-1">
-                          / {plan.billingCycle === 'MONTHLY' ? 'mois' : plan.billingCycle === 'YEARLY' ? 'an' : plan.billingCycle}
+                          /{' '}
+                          {plan.billingCycle === 'MONTHLY'
+                            ? 'mois'
+                            : plan.billingCycle === 'YEARLY'
+                              ? 'an'
+                              : plan.billingCycle}
                         </span>
                       )}
                     </div>
@@ -308,7 +385,10 @@ export default function DeveloperSubscriptionPage() {
 
                     <ul className="space-y-2 flex-1 mb-4">
                       {plan.benefits.map((benefit, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400"
+                        >
                           <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
                           <span>{benefit}</span>
                         </li>
@@ -334,9 +414,13 @@ export default function DeveloperSubscriptionPage() {
                           }
                         }}
                       >
-                        {isSelected ? 'Confirmer la souscription' :
-                          plan.price === 0 ? 'Plan gratuit' :
-                          plan.trialDays ? 'Commencer l\'essai' : `Choisir ${plan.name}`}
+                        {isSelected
+                          ? 'Confirmer la souscription'
+                          : plan.price === 0
+                            ? 'Plan gratuit'
+                            : plan.trialDays
+                              ? "Commencer l'essai"
+                              : `Choisir ${plan.name}`}
                       </Button>
                     )}
                   </Card>

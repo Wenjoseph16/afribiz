@@ -26,7 +26,8 @@ const priorityOptions = [
   { value: 'CRITICAL', label: 'Critique' },
 ];
 
-const inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20';
+const inputClass =
+  'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20';
 const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5';
 
 export default function EditDisputePage() {
@@ -46,7 +47,7 @@ export default function EditDisputePage() {
     amount: '',
   });
 
-  const set = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
+  const set = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
 
   useEffect(() => {
     if (dispute) {
@@ -111,8 +112,12 @@ export default function EditDisputePage() {
             <div className="w-16 h-16 rounded-2xl bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center mb-4">
               <Scale className="h-8 w-8 text-gray-300 dark:text-gray-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Litige introuvable</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Les détails des litiges seront disponibles prochainement</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              Litige introuvable
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Les détails des litiges seront disponibles prochainement
+            </p>
           </div>
         </Card>
       </div>
@@ -132,7 +137,9 @@ export default function EditDisputePage() {
         ]}
         actions={
           <Link href={`/dashboard/disputes/${id}`}>
-            <Button variant="outline"><ArrowLeft className="h-4 w-4 mr-1.5" /> Annuler</Button>
+            <Button variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-1.5" /> Annuler
+            </Button>
           </Link>
         }
       />
@@ -144,8 +151,12 @@ export default function EditDisputePage() {
               <AlertTriangle className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100">Informations du litige</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Modifiez les détails de la réclamation</p>
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+                Informations du litige
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Modifiez les détails de la réclamation
+              </p>
             </div>
           </div>
 
@@ -184,17 +195,29 @@ export default function EditDisputePage() {
               </div>
               <div>
                 <label className={labelClass}>Type</label>
-                <select value={form.type} onChange={(e) => set('type', e.target.value)} className={inputClass}>
-                  {typeOptions.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                <select
+                  value={form.type}
+                  onChange={(e) => set('type', e.target.value)}
+                  className={inputClass}
+                >
+                  {typeOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className={labelClass}>Priorité</label>
-                <select value={form.priority} onChange={(e) => set('priority', e.target.value)} className={inputClass}>
-                  {priorityOptions.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                <select
+                  value={form.priority}
+                  onChange={(e) => set('priority', e.target.value)}
+                  className={inputClass}
+                >
+                  {priorityOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -225,7 +248,9 @@ export default function EditDisputePage() {
 
         <div className="flex items-center justify-between">
           <Link href={`/dashboard/disputes/${id}`}>
-            <Button type="button" variant="outline"><ArrowLeft className="h-4 w-4 mr-1.5" /> Annuler</Button>
+            <Button type="button" variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-1.5" /> Annuler
+            </Button>
           </Link>
           <Button type="submit" isLoading={updateMutation.isPending}>
             {updateMutation.isPending ? null : <Save className="h-4 w-4 mr-1.5" />}

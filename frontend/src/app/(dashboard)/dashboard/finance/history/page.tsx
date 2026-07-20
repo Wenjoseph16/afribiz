@@ -1,10 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Loader, Clock, DollarSign, Shield, User, AlertTriangle, CheckCircle2, Send } from 'lucide-react';
+import {
+  FileText,
+  Loader,
+  Clock,
+  DollarSign,
+  Shield,
+  User,
+  AlertTriangle,
+  CheckCircle2,
+  Send,
+} from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { cn } from '@/lib/utils';
+import ModuleCharts from '@/components/dashboard/ModuleCharts';
+import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
 import { useDebtLogs } from '@/features/hooks';
 import { formatPrice } from '@/utils/helpers';
 
@@ -40,11 +52,16 @@ export default function FinanceHistoryPage() {
   const params = { limit: 100, action: actionFilter !== 'all' ? actionFilter : undefined };
   const { data, isLoading } = useDebtLogs(params);
 
-  const logs: any[] = Array.isArray(data) ? data : (data?.logs || data?.items || []);
+  const logs: any[] = Array.isArray(data) ? data : data?.logs || data?.items || [];
 
   const actionTypes = ['all', ...new Set(logs.map((l: any) => l.action))];
 
-  if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><Loader className="h-8 w-8 animate-spin text-brand" /></div>;
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader className="h-8 w-8 animate-spin text-brand" />
+      </div>
+    );
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -53,29 +70,96 @@ export default function FinanceHistoryPage() {
         <p className="text-sm text-gray-500">Toutes les actions financières tracées</p>
       </div>
 
+      {/* Charts */}
+      {logs.length > 0 &&
+        (() => {
+          const payments = logs.filter((l: any) => l.action === 'PAYMENT_RECEIVED').length;
+          const debts = logs.filter((l: any) => l.action?.startsWith('DEBT')).length;
+          const escrows = logs.filter((l: any) => l.action?.startsWith('ESCROW')).length;
+          const others = logs.length - payments - debts - escrows;
+          const chartData: ModuleChartData = {
+            distribution: [
+              { name: 'Paiements', value: payments, color: '#10b981' },
+              { name: 'Dettes', value: debts, color: '#f59e0b' },
+              { name: 'Escrow', value: escrows, color: '#3b82f6' },
+              { name: 'Autres', value: others, color: '#6b7280' },
+            ].filter((d) => d.value > 0),
+            daily: [
+              { label: 'Total', value: logs.length },
+              { label: 'Paiements', value: payments },
+              { label: 'Dettes', value: debts },
+              { label: 'Escrow', value: escrows },
+            ],
+          };
+          return (
+            <ModuleCharts
+              data={chartData}
+              title="ANALYTICS HISTORIQUE"
+              distributionLabel="Types d'actions"
+              dailyLabel="Vue d'ensemble"
+              variant="services"
+            />
+          );
+        })()}
+
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="p-3"><div className="flex items-center gap-2"><div className="p-1.5 rounded-lg bg-brand/10"><FileText className="w-4 h-4 text-brand" /></div><div><p className="text-[10px] text-gray-500">Total actions</p><p className="text-sm font-bold">{logs.length}</p></div></div></Card>
-        <Card className="p-3"><div className="flex items-center gap-2"><div className="p-1.5 rounded-lg bg-emerald-100"><CheckCircle2 className="w-4 h-4 text-emerald-600" /></div><div><p className="text-[10px] text-gray-500">Paiements</p><p className="text-sm font-bold">{logs.filter((l: any) => l.action === 'PAYMENT_RECEIVED').length}</p></div></div></Card>
-        <Card className="p-3"><div className="flex items-center gap-2"><div className="p-1.5 rounded-lg bg-amber-100"><DollarSign className="w-4 h-4 text-amber-600" /></div><div><p className="text-[10px] text-gray-500">Dettes</p><p className="text-sm font-bold">{logs.filter((l: any) => l.action?.startsWith('DEBT')).length}</p></div></div></Card>
-        <Card className="p-3"><div className="flex items-center gap-2"><div className="p-1.5 rounded-lg bg-blue-100"><Shield className="w-4 h-4 text-blue-600" /></div><div><p className="text-[10px] text-gray-500">Escrow</p><p className="text-sm font-bold">{logs.filter((l: any) => l.action?.startsWith('ESCROW')).length}</p></div></div></Card>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatsCard
+          icon={<FileText className="h-5 w-5" />}
+          iconBg="bg-brand/10"
+          iconColor="text-brand"
+          label="Total actions"
+          value={logs.length}
+        />
+        <StatsCard
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          iconBg="bg-emerald-50"
+          iconColor="text-emerald-600"
+          label="Paiements"
+          value={logs.filter((l: any) => l.action === 'PAYMENT_RECEIVED').length}
+        />
+        <StatsCard
+          icon={<DollarSign className="h-5 w-5" />}
+          iconBg="bg-amber-50"
+          iconColor="text-amber-600"
+          label="Dettes"
+          value={logs.filter((l: any) => l.action?.startsWith('DEBT')).length}
+        />
+        <StatsCard
+          icon={<Shield className="h-5 w-5" />}
+          iconBg="bg-blue-50"
+          iconColor="text-blue-600"
+          label="Escrow"
+          value={logs.filter((l: any) => l.action?.startsWith('ESCROW')).length}
+        />
       </div>
 
       {/* Filter */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex gap-1 overflow-x-auto flex-wrap">
           {actionTypes.slice(0, 10).map((action: string) => (
-            <button key={action} onClick={() => setActionFilter(action)}
-              className={cn('px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
-                actionFilter === action ? 'bg-brand text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              )}>{action === 'all' ? 'Toutes' : ACTION_LABELS[action] || action}</button>
+            <button
+              key={action}
+              onClick={() => setActionFilter(action)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
+                actionFilter === action
+                  ? 'bg-brand text-white'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              )}
+            >
+              {action === 'all' ? 'Toutes' : ACTION_LABELS[action] || action}
+            </button>
           ))}
         </div>
       </div>
 
       {/* Timeline */}
       {logs.length === 0 ? (
-        <Card className="text-center py-12"><Clock className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" /><p className="text-sm text-gray-500">Aucune action enregistrée</p></Card>
+        <Card className="text-center py-12">
+          <Clock className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Aucune action enregistrée</p>
+        </Card>
       ) : (
         <div className="space-y-2">
           {logs.map((log: any) => {
@@ -84,17 +168,36 @@ export default function FinanceHistoryPage() {
             return (
               <Card key={log.id} className="p-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-brand" /></div>
+                  <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-brand" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{ACTION_LABELS[log.action] || log.action}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {ACTION_LABELS[log.action] || log.action}
+                        </p>
                         <p className="text-xs text-gray-500 mt-0.5">{log.description || '—'}</p>
-                        {log.amount && <p className="text-xs font-medium text-brand mt-0.5">{formatPrice(Number(log.amount))}</p>}
+                        {log.amount && (
+                          <p className="text-xs font-medium text-brand mt-0.5">
+                            {formatPrice(Number(log.amount))}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[10px] text-gray-400">{new Date(log.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                        <p className="text-[10px] text-gray-400">{new Date(log.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-[10px] text-gray-400">
+                          {new Date(log.createdAt).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {new Date(log.createdAt).toLocaleTimeString('fr-FR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
                       </div>
                     </div>
                   </div>

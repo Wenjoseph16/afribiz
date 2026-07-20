@@ -12,7 +12,11 @@ const COUNTRY_NAMES: Record<string, string> = {
   SN: 'Sénégal',
 };
 
-export async function generateMetadata({ params }: { params: Promise<{ country: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ country: string }>;
+}): Promise<Metadata> {
   const { country } = await params;
   const code = country.toUpperCase();
   const name = COUNTRY_NAMES[code] || country;
@@ -20,9 +24,12 @@ export async function generateMetadata({ params }: { params: Promise<{ country: 
     title: `Marketplace ${name} - AfriBiz`,
     description: `Découvrez les meilleurs business, produits et services au ${name} sur AfriBiz.`,
     keywords: [
-      `marketplace ${name.toLowerCase()}`, `business ${name.toLowerCase()}`,
-      `produits ${name.toLowerCase()}`, `services ${name.toLowerCase()}`,
-      'AfriBiz', `entreprises ${name.toLowerCase()}`,
+      `marketplace ${name.toLowerCase()}`,
+      `business ${name.toLowerCase()}`,
+      `produits ${name.toLowerCase()}`,
+      `services ${name.toLowerCase()}`,
+      'AfriBiz',
+      `entreprises ${name.toLowerCase()}`,
     ],
     openGraph: {
       title: `Marketplace ${name} — AfriBiz`,
@@ -37,7 +44,11 @@ export async function generateMetadata({ params }: { params: Promise<{ country: 
   };
 }
 
-export default async function CountryMarketplacePage({ params }: { params: Promise<{ country: string }> }) {
+export default async function CountryMarketplacePage({
+  params,
+}: {
+  params: Promise<{ country: string }>;
+}) {
   const { country } = await params;
   return <CountryMarketplaceClient countryCode={country.toUpperCase()} />;
 }

@@ -3,11 +3,22 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  Wallet, TrendingUp, DollarSign, Percent, Calendar,
-  ArrowRight, CreditCard, Banknote, Clock,
-  Download, FileText, Filter, BarChart3, AlertCircle,
+  Wallet,
+  TrendingUp,
+  DollarSign,
+  Percent,
+  Calendar,
+  ArrowRight,
+  CreditCard,
+  Banknote,
+  Clock,
+  Download,
+  FileText,
+  Filter,
+  BarChart3,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
@@ -16,7 +27,11 @@ import { EmptyState } from '@/components/dashboard/EmptyState';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
-import { useDeveloperRevenues, useDeveloperRevenueSummary, useDeveloperPayouts } from '@/features/developerHooks';
+import {
+  useDeveloperRevenues,
+  useDeveloperRevenueSummary,
+  useDeveloperPayouts,
+} from '@/features/developerHooks';
 import type { DeveloperRevenue } from '@/types/developer';
 
 const TYPE_LABELS: Record<string, string> = {
@@ -44,7 +59,12 @@ export default function DeveloperRevenuesPage() {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [monthFilter, setMonthFilter] = useState('ALL');
 
-  const { data: revenues, isLoading: revLoading, error: revError, refetch: revRefetch } = useDeveloperRevenues();
+  const {
+    data: revenues,
+    isLoading: revLoading,
+    error: revError,
+    refetch: revRefetch,
+  } = useDeveloperRevenues();
   const { data: summary, isLoading: sumLoading } = useDeveloperRevenueSummary();
   const { data: payouts } = useDeveloperPayouts();
 
@@ -52,7 +72,7 @@ export default function DeveloperRevenuesPage() {
 
   const revenueList = useMemo(() => {
     if (!revenues) return [];
-    const list = Array.isArray(revenues) ? revenues : (revenues.revenues || revenues.data || []);
+    const list = Array.isArray(revenues) ? revenues : revenues.revenues || revenues.data || [];
     return list.filter((r: DeveloperRevenue) => {
       if (typeFilter !== 'ALL' && r.type !== typeFilter) return false;
       if (monthFilter !== 'ALL') {
@@ -66,7 +86,7 @@ export default function DeveloperRevenuesPage() {
 
   const months = useMemo(() => {
     if (!revenues) return [];
-    const list = Array.isArray(revenues) ? revenues : (revenues.revenues || revenues.data || []);
+    const list = Array.isArray(revenues) ? revenues : revenues.revenues || revenues.data || [];
     const seen = new Set<string>();
     return list
       .map((r: DeveloperRevenue) => {
@@ -92,7 +112,7 @@ export default function DeveloperRevenuesPage() {
 
   const revenueByType = useMemo(() => {
     if (!revenues) return {};
-    const list = Array.isArray(revenues) ? revenues : (revenues.revenues || revenues.data || []);
+    const list = Array.isArray(revenues) ? revenues : revenues.revenues || revenues.data || [];
     const byType: Record<string, number> = {};
     list.forEach((r: DeveloperRevenue) => {
       byType[r.type] = (byType[r.type] || 0) + Number(r.amount || 0);
@@ -102,7 +122,7 @@ export default function DeveloperRevenuesPage() {
 
   const monthlyData = useMemo(() => {
     if (!revenues) return [];
-    const list = Array.isArray(revenues) ? revenues : (revenues.revenues || revenues.data || []);
+    const list = Array.isArray(revenues) ? revenues : revenues.revenues || revenues.data || [];
     const byMonth: Record<string, { amount: number; net: number }> = {};
     list.forEach((r: DeveloperRevenue) => {
       const d = new Date(r.createdAt);
@@ -204,12 +224,17 @@ export default function DeveloperRevenuesPage() {
               {monthlyData.map(([month, data]) => {
                 const pct = (data.amount / maxMonthly) * 100;
                 const [year, m] = month.split('-');
-                const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+                const label = new Date(Number(year), Number(m) - 1).toLocaleDateString('fr-FR', {
+                  month: 'short',
+                  year: 'numeric',
+                });
                 return (
                   <div key={month} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400 font-medium">{label}</span>
-                      <span className="text-gray-900 dark:text-gray-100 font-semibold">{data.amount.toLocaleString()} FCFA</span>
+                      <span className="text-gray-900 dark:text-gray-100 font-semibold">
+                        {data.amount.toLocaleString()} FCFA
+                      </span>
                     </div>
                     <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                       <div
@@ -226,7 +251,9 @@ export default function DeveloperRevenuesPage() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">Aucune donnée mensuelle</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">
+              Aucune donnée mensuelle
+            </p>
           )}
         </Card>
 
@@ -243,30 +270,48 @@ export default function DeveloperRevenuesPage() {
                   <div key={type} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        <div className={cn('w-2.5 h-2.5 rounded-full', TYPE_COLORS[type] || 'bg-gray-400')} />
-                        <span className="text-gray-600 dark:text-gray-400">{TYPE_LABELS[type] || type}</span>
+                        <div
+                          className={cn(
+                            'w-2.5 h-2.5 rounded-full',
+                            TYPE_COLORS[type] || 'bg-gray-400'
+                          )}
+                        />
+                        <span className="text-gray-600 dark:text-gray-400">
+                          {TYPE_LABELS[type] || type}
+                        </span>
                       </div>
-                      <span className="text-gray-900 dark:text-gray-100 font-medium">{amount.toLocaleString()} FCFA</span>
+                      <span className="text-gray-900 dark:text-gray-100 font-medium">
+                        {amount.toLocaleString()} FCFA
+                      </span>
                     </div>
                     <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div className={cn('h-full rounded-full', TYPE_COLORS[type] || 'bg-gray-400')} style={{ width: `${pct}%` }} />
+                      <div
+                        className={cn('h-full rounded-full', TYPE_COLORS[type] || 'bg-gray-400')}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">Aucune donnée</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 py-8 text-center">
+              Aucune donnée
+            </p>
           )}
 
           <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-gray-500">Total retiré</span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{totalPayouts.toLocaleString()} FCFA</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {totalPayouts.toLocaleString()} FCFA
+              </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">Restant</span>
-              <span className="font-semibold text-emerald-600">{(s.netTotal - totalPayouts).toLocaleString()} FCFA</span>
+              <span className="font-semibold text-emerald-600">
+                {(s.netTotal - totalPayouts).toLocaleString()} FCFA
+              </span>
             </div>
           </div>
         </Card>
@@ -293,18 +338,21 @@ export default function DeveloperRevenuesPage() {
                 {f.label}
               </button>
             ))}
-            <select
+            <Select
               value={monthFilter}
               onChange={(e) => setMonthFilter(e.target.value)}
-              className="ml-2 text-xs px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400"
-            >
-              <option value="ALL">Tous les mois</option>
-              {months.map((m: string) => {
-                const [y, month] = m.split('-');
-                const label = new Date(Number(y), Number(month) - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-                return <option key={m} value={m}>{label}</option>;
-              })}
-            </select>
+              options={[
+                { value: 'ALL', label: 'Tous les mois' },
+                ...months.map((m: string) => {
+                  const [y, month] = m.split('-');
+                  const label = new Date(Number(y), Number(month) - 1).toLocaleDateString('fr-FR', {
+                    month: 'long',
+                    year: 'numeric',
+                  });
+                  return { value: m, label };
+                }),
+              ]}
+            />
           </div>
         </div>
 
@@ -319,19 +367,38 @@ export default function DeveloperRevenuesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Date</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Module</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Type</th>
-                  <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Montant</th>
-                  <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Commission</th>
-                  <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Net</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Statut</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Facture</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Date
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Module
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Type
+                  </th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Montant
+                  </th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Commission
+                  </th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Net
+                  </th>
+                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Statut
+                  </th>
+                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Facture
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {revenueList.map((rev: DeveloperRevenue) => (
-                  <tr key={rev.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={rev.id}
+                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="py-3 px-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {new Date(rev.createdAt).toLocaleDateString('fr-FR')}
                     </td>
@@ -339,12 +406,16 @@ export default function DeveloperRevenuesPage() {
                       {rev.module?.name || '—'}
                     </td>
                     <td className="py-3 px-2">
-                      <span className={cn(
-                        'text-xs font-medium px-2 py-0.5 rounded-full',
-                        rev.type === 'SALE' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                        rev.type === 'SUBSCRIPTION' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                        'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                      )}>
+                      <span
+                        className={cn(
+                          'text-xs font-medium px-2 py-0.5 rounded-full',
+                          rev.type === 'SALE'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : rev.type === 'SUBSCRIPTION'
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                              : 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        )}
+                      >
                         {TYPE_LABELS[rev.type] || rev.type}
                       </span>
                     </td>
@@ -359,14 +430,27 @@ export default function DeveloperRevenuesPage() {
                     </td>
                     <td className="py-3 px-2 text-center">
                       <Badge
-                        variant={rev.status === 'COMPLETED' ? 'success' : rev.status === 'PENDING' ? 'warning' : 'default'}
+                        variant={
+                          rev.status === 'COMPLETED'
+                            ? 'success'
+                            : rev.status === 'PENDING'
+                              ? 'warning'
+                              : 'default'
+                        }
                         size="xs"
                       >
-                        {rev.status === 'COMPLETED' ? 'Complété' : rev.status === 'PENDING' ? 'En attente' : rev.status}
+                        {rev.status === 'COMPLETED'
+                          ? 'Complété'
+                          : rev.status === 'PENDING'
+                            ? 'En attente'
+                            : rev.status}
                       </Badge>
                     </td>
                     <td className="py-3 px-2 text-center">
-                      <Link href={`/dashboard/developer/revenues/invoices`} className="text-brand hover:text-brand-700 text-xs font-medium transition-colors">
+                      <Link
+                        href={`/dashboard/developer/revenues/invoices`}
+                        className="text-brand hover:text-brand-700 text-xs font-medium transition-colors"
+                      >
                         <FileText className="h-3.5 w-3.5 inline mr-1" />
                         Voir
                       </Link>

@@ -2,7 +2,15 @@
 
 import { useState } from 'react';
 import {
-  Flag, Plus, Search, X, ToggleLeft, ToggleRight, Pencil, Trash2, Filter,
+  Flag,
+  Plus,
+  Search,
+  X,
+  ToggleLeft,
+  ToggleRight,
+  Pencil,
+  Trash2,
+  Filter,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -10,9 +18,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
 
@@ -44,13 +54,19 @@ interface FlagForm {
   enabled: boolean;
 }
 
-const defaultForm: FlagForm = { key: '', label: '', description: '', scope: 'GLOBAL', enabled: false };
+const defaultForm: FlagForm = {
+  key: '',
+  label: '',
+  description: '',
+  scope: 'GLOBAL',
+  enabled: false,
+};
 
 function useFlags(filters?: any) {
   return useQuery({
     queryKey: ['admin', 'feature-flags', filters],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/feature-flags', { params: filters });
+      const res = await apiClient.adminGetFeatureFlags(filters);
       return res.data.data as FeatureFlag[];
     },
   });
@@ -74,23 +90,32 @@ export default function AdminFeatureFlagsPage() {
   const { data: flags, isLoading, error, refetch } = useFlags(filters);
 
   const createMutation = useMutation({
-    mutationFn: (data: FlagForm) => apiClient.post('/admin/feature-flags', data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'feature-flags'] }); },
+    mutationFn: (data: FlagForm) => apiClient.adminCreateFeatureFlag(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'feature-flags'] });
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<FlagForm> }) => apiClient.put(`/admin/feature-flags/${id}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'feature-flags'] }); },
+    mutationFn: ({ id, data }: { id: string; data: Partial<FlagForm> }) =>
+      apiClient.adminUpdateFeatureFlag(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'feature-flags'] });
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/admin/feature-flags/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'feature-flags'] }); },
+    mutationFn: (id: string) => apiClient.adminDeleteFeatureFlag(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'feature-flags'] });
+    },
   });
 
   const toggleMutation = useMutation({
-    mutationFn: (id: string) => apiClient.patch(`/admin/feature-flags/${id}/toggle`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'feature-flags'] }); },
+    mutationFn: (id: string) => apiClient.adminToggleFeatureFlag(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'feature-flags'] });
+    },
   });
 
   const openCreate = () => {
@@ -101,7 +126,13 @@ export default function AdminFeatureFlagsPage() {
 
   const openEdit = (flag: FeatureFlag) => {
     setEditingFlag(flag);
-    setForm({ key: flag.key, label: flag.label, description: flag.description, scope: flag.scope, enabled: flag.enabled });
+    setForm({
+      key: flag.key,
+      label: flag.label,
+      description: flag.description,
+      scope: flag.scope,
+      enabled: flag.enabled,
+    });
     setModalOpen(true);
   };
 
@@ -117,24 +148,34 @@ export default function AdminFeatureFlagsPage() {
       }
       setModalOpen(false);
     } catch {
-      setToast({ message: 'Erreur lors de l\'enregistrement du flag', type: 'error' });
+      setToast({ message: "Erreur lors de l'enregistrement du flag", type: 'error' });
     }
   };
 
-  const handleDelete = async (flag: FeatureFlag) => {
-    if (!window.confirm(`Supprimer le flag « ${flag.key} » ?`)) return;
+  const [deleteFlagTarget, setDeleteFlagTarget] = useState<FeatureFlag | null>(null);
+
+  const confirmDeleteFlag = async () => {
+    if (!deleteFlagTarget) return;
     try {
-      await deleteMutation.mutateAsync(flag.id);
+      await deleteMutation.mutateAsync(deleteFlagTarget.id);
       setToast({ message: 'Flag supprimé avec succès', type: 'success' });
     } catch {
       setToast({ message: 'Erreur lors de la suppression', type: 'error' });
     }
+    setDeleteFlagTarget(null);
+  };
+
+  const handleDelete = async (flag: FeatureFlag) => {
+    setDeleteFlagTarget(flag);
   };
 
   const handleToggle = async (flag: FeatureFlag) => {
     try {
       await toggleMutation.mutateAsync(flag.id);
-      setToast({ message: `Flag ${flag.enabled ? 'désactivé' : 'activé'} avec succès`, type: 'success' });
+      setToast({
+        message: `Flag ${flag.enabled ? 'désactivé' : 'activé'} avec succès`,
+        type: 'success',
+      });
     } catch {
       setToast({ message: 'Erreur lors du basculement', type: 'error' });
     }
@@ -151,13 +192,17 @@ export default function AdminFeatureFlagsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -189,25 +234,23 @@ export default function AdminFeatureFlagsPage() {
               className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
             />
           </div>
-          <select
+          <Select
             value={scopeFilter}
             onChange={(e) => setScopeFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          >
-            <option value="">Tous les scopes</option>
-            {SCOPES.map((s) => (
-              <option key={s} value={s}>{SCOPE_LABELS[s]}</option>
-            ))}
-          </select>
-          <select
+            options={[
+              { value: '', label: 'Tous les scopes' },
+              ...SCOPES.map((s) => ({ value: s, label: SCOPE_LABELS[s] })),
+            ]}
+          />
+          <Select
             value={enabledFilter}
             onChange={(e) => setEnabledFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          >
-            <option value="">Tous les statuts</option>
-            <option value="true">Activé</option>
-            <option value="false">Désactivé</option>
-          </select>
+            options={[
+              { value: '', label: 'Tous les statuts' },
+              { value: 'true', label: 'Activé' },
+              { value: 'false', label: 'Désactivé' },
+            ]}
+          />
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
               <X className="h-4 w-4" />
@@ -237,14 +280,25 @@ export default function AdminFeatureFlagsPage() {
               </thead>
               <tbody>
                 {(flags as FeatureFlag[]).map((flag) => (
-                  <tr key={flag.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={flag.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4">
-                      <code className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{flag.key}</code>
+                      <code className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                        {flag.key}
+                      </code>
                     </td>
-                    <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">{flag.label}</td>
-                    <td className="p-4 text-gray-500 max-w-[200px] truncate">{flag.description || '-'}</td>
+                    <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
+                      {flag.label}
+                    </td>
+                    <td className="p-4 text-gray-500 max-w-[200px] truncate">
+                      {flag.description || '-'}
+                    </td>
                     <td className="p-4">
-                      <Badge variant="info" size="xs">{SCOPE_LABELS[flag.scope] || flag.scope}</Badge>
+                      <Badge variant="info" size="xs">
+                        {SCOPE_LABELS[flag.scope] || flag.scope}
+                      </Badge>
                     </td>
                     <td className="p-4">
                       <Badge variant={flag.enabled ? 'success' : 'warning'} size="xs">
@@ -260,7 +314,11 @@ export default function AdminFeatureFlagsPage() {
                           isLoading={toggleMutation.isPending}
                           title={flag.enabled ? 'Désactiver' : 'Activer'}
                         >
-                          {flag.enabled ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4 text-gray-400" />}
+                          {flag.enabled ? (
+                            <ToggleRight className="h-4 w-4 text-emerald-500" />
+                          ) : (
+                            <ToggleLeft className="h-4 w-4 text-gray-400" />
+                          )}
                         </Button>
                         <Button variant="ghost" size="xs" onClick={() => openEdit(flag)}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -279,8 +337,17 @@ export default function AdminFeatureFlagsPage() {
           <EmptyState
             icon={<Flag className="h-8 w-8" />}
             title="Aucun feature flag"
-            description={hasActiveFilters ? 'Aucun flag ne correspond aux filtres.' : 'Créez votre premier feature flag pour commencer.'}
-            action={<Button size="sm" onClick={openCreate}><Plus className="h-4 w-4" />Créer un flag</Button>}
+            description={
+              hasActiveFilters
+                ? 'Aucun flag ne correspond aux filtres.'
+                : 'Créez votre premier feature flag pour commencer.'
+            }
+            action={
+              <Button size="sm" onClick={openCreate}>
+                <Plus className="h-4 w-4" />
+                Créer un flag
+              </Button>
+            }
           />
         )}
       </Card>
@@ -322,15 +389,11 @@ export default function AdminFeatureFlagsPage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Scope
             </label>
-            <select
+            <Select
               value={form.scope}
               onChange={(e) => setForm({ ...form, scope: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring"
-            >
-              {SCOPES.map((s) => (
-                <option key={s} value={s}>{SCOPE_LABELS[s]}</option>
-              ))}
-            </select>
+              options={SCOPES.map((s) => ({ value: s, label: SCOPE_LABELS[s] }))}
+            />
           </div>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -350,6 +413,15 @@ export default function AdminFeatureFlagsPage() {
             </Button>
           </div>
         </form>
+        <ConfirmationModal
+          open={!!deleteFlagTarget}
+          onClose={() => setDeleteFlagTarget(null)}
+          onConfirm={confirmDeleteFlag}
+          title="Supprimer le feature flag"
+          description={deleteFlagTarget ? `Supprimer le flag « ${deleteFlagTarget.key} » ?` : ''}
+          confirmLabel="Supprimer"
+          variant="danger"
+        />
       </Modal>
     </div>
   );

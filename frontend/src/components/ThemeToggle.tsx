@@ -12,7 +12,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={toggle}
       className={cn(
         'p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors',
-        className,
+        className
       )}
       aria-label="Basculer le thème"
     >

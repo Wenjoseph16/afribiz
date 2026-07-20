@@ -54,63 +54,137 @@ export default function EditRentalPage() {
         },
       });
       router.push('/dashboard/rentals');
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const update = (field: string, value: string) => setForm((f: any) => ({ ...f, [field]: value }));
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
-      <PageHeader title="Modifier l'article" description="Mettez à jour les informations de votre article en location"
+      <PageHeader
+        title="Modifier l'article"
+        description="Mettez à jour les informations de votre article en location"
         breadcrumbs={[{ label: 'Locations', href: '/dashboard/rentals' }, { label: 'Modifier' }]}
-        actions={<Link href={`/dashboard/rentals/${id}`}><Button variant="outline" size="sm"><ArrowLeft className="h-4 w-4 mr-1.5" />Retour</Button></Link>}
+        actions={
+          <Link href={`/dashboard/rentals/${id}`}>
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Retour
+            </Button>
+          </Link>
+        }
       />
       <Card padding="lg">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom de l'article *</label>
-            <input type="text" value={form.name || ''} onChange={e => update('name', e.target.value)} required
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nom de l'article *
+            </label>
+            <input
+              type="text"
+              value={form.name || ''}
+              onChange={(e) => update('name', e.target.value)}
+              required
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-            <textarea rows={3} value={form.description || ''} onChange={e => update('description', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description
+            </label>
+            <textarea
+              rows={3}
+              value={form.description || ''}
+              onChange={(e) => update('description', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prix * ({form.currency || 'FCFA'})</label>
-              <input type="number" step="0.01" value={form.price || ''} onChange={e => update('price', e.target.value)} required
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Prix * ({form.currency || 'FCFA'})
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={form.price || ''}
+                onChange={(e) => update('price', e.target.value)}
+                required
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unité de prix</label>
-              <select value={form.priceUnit || 'day'} onChange={e => update('priceUnit', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100">
-                {PRICE_UNITS.map(u => <option key={u} value={u}>{u === 'day' ? 'Jour' : u === 'hour' ? 'Heure' : u === 'week' ? 'Semaine' : u === 'month' ? 'Mois' : 'Pièce'}</option>)}
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Unité de prix
+              </label>
+              <select
+                value={form.priceUnit || 'day'}
+                onChange={(e) => update('priceUnit', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              >
+                {PRICE_UNITS.map((u) => (
+                  <option key={u} value={u}>
+                    {u === 'day'
+                      ? 'Jour'
+                      : u === 'hour'
+                        ? 'Heure'
+                        : u === 'week'
+                          ? 'Semaine'
+                          : u === 'month'
+                            ? 'Mois'
+                            : 'Pièce'}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Caution (optionnelle)</label>
-              <input type="number" step="0.01" value={form.deposit || ''} onChange={e => update('deposit', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Caution (optionnelle)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={form.deposit || ''}
+                onChange={(e) => update('deposit', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantité</label>
-              <input type="number" min="1" value={form.quantity || '1'} onChange={e => update('quantity', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Quantité
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={form.quantity || '1'}
+                onChange={(e) => update('quantity', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unité (ex: chaise, vélo, tente)</label>
-            <input type="text" value={form.unit || ''} onChange={e => update('unit', e.target.value)}
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Unité (ex: chaise, vélo, tente)
+            </label>
+            <input
+              type="text"
+              value={form.unit || ''}
+              onChange={(e) => update('unit', e.target.value)}
               placeholder="ex: chaise, vélo, tente, appareil"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <Link href={`/dashboard/rentals/${id}`}><Button variant="outline" type="button">Annuler</Button></Link>
+            <Link href={`/dashboard/rentals/${id}`}>
+              <Button variant="outline" type="button">
+                Annuler
+              </Button>
+            </Link>
             <Button type="submit" disabled={updateRental.isPending}>
-              <Save className="h-4 w-4 mr-1.5" />{updateRental.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              <Save className="h-4 w-4 mr-1.5" />
+              {updateRental.isPending ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>
         </form>

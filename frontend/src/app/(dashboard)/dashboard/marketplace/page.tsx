@@ -3,10 +3,26 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Puzzle, ShoppingBag, Calendar,
-  Car, Megaphone, Package, Hand, Bed, Users, Palette,
-  Truck, CreditCard, FileText, MessageCircle, Zap,
-  Search, Check, X, Loader2, Sparkles,
+  Puzzle,
+  ShoppingBag,
+  Calendar,
+  Car,
+  Megaphone,
+  Package,
+  Hand,
+  Bed,
+  Users,
+  Palette,
+  Truck,
+  CreditCard,
+  FileText,
+  MessageCircle,
+  Zap,
+  Search,
+  Check,
+  X,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -19,45 +35,228 @@ import type { BusinessModule } from '@/types/business';
 import { cn } from '@/lib/utils';
 
 const MODULES = [
-  { id: 'PRODUCTS', name: 'Produits', desc: 'Gérez votre catalogue de produits avec stock, prix, variantes et catégories.', icon: Package, color: 'text-blue-600', bg: 'bg-blue-50', popular: true },
-  { id: 'SERVICES', name: 'Services', desc: 'Proposez et gérez vos services avec durée, tarifs et disponibilité.', icon: Hand, color: 'text-purple-600', bg: 'bg-purple-50', popular: true },
-  { id: 'MENU', name: 'Menu / Carte', desc: 'Créez un menu digital avec catégories, plats, prix et photos.', icon: ShoppingBag, color: 'text-orange-600', bg: 'bg-orange-50' },
-  { id: 'BOOKINGS', name: 'Réservations', desc: 'Gérez les réservations de tables, rendez-vous ou créneaux.', icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', popular: true },
-  { id: 'ROOMS', name: 'Chambres / Hébergement', desc: 'Gérez vos chambres, taux d\'occupation et tarifs.', icon: Bed, color: 'text-teal-600', bg: 'bg-teal-50' },
-  { id: 'ORDERS', name: 'Commandes', desc: 'Suivez et gérez les commandes de vos clients en temps réel.', icon: ShoppingBag, color: 'text-emerald-600', bg: 'bg-emerald-50', popular: true },
-  { id: 'EVENTS', name: 'Événements', desc: 'Créez et gérez des événements avec inscriptions et billeterie.', icon: Megaphone, color: 'text-red-600', bg: 'bg-red-50' },
-  { id: 'RENTALS', name: 'Locations', desc: 'Gérez la location de véhicules, matériel ou espaces.', icon: Car, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-  { id: 'PROMOTIONS', name: 'Promotions', desc: 'Créez des offres spéciales, réductions et codes promo.', icon: Zap, color: 'text-pink-600', bg: 'bg-pink-50' },
-  { id: 'PORTFOLIO', name: 'Portfolio', desc: 'Exposez vos réalisations et travaux (photographe, artisan, etc.).', icon: Palette, color: 'text-rose-600', bg: 'bg-rose-50' },
-  { id: 'DELIVERIES', name: 'Livraisons', desc: 'Configurez vos zones et tarifs de livraison.', icon: Truck, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  { id: 'EMPLOYEES', name: 'Employés', desc: 'Gérez vos employés, horaires et permissions.', icon: Users, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-  { id: 'PLANNING', name: 'Planning', desc: 'Planifiez les tâches et rendez-vous de votre équipe.', icon: Calendar, color: 'text-sky-600', bg: 'bg-sky-50' },
-  { id: 'QUOTES_INVOICES', name: 'Devis & Factures', desc: 'Générez des devis et factures professionnels.', icon: FileText, color: 'text-violet-600', bg: 'bg-violet-50' },
-  { id: 'DEBTS_PAYMENTS', name: 'Dettes & Paiements', desc: 'Suivez les dettes clients et les paiements en attente.', icon: CreditCard, color: 'text-orange-600', bg: 'bg-orange-50' },
-  { id: 'SUBSCRIPTIONS', name: 'Abonnements', desc: 'Gérez les abonnements et paiements récurrents.', icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { id: 'DOCUMENTS', name: 'Documents', desc: 'Stockez et partagez vos documents importants.', icon: FileText, color: 'text-gray-600', bg: 'bg-gray-50' },
-  { id: 'PARTNERS', name: 'Partenaires', desc: 'Gérez vos partenariats et affiliations.', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-  { id: 'DISPUTES', name: 'Litiges', desc: 'Gérez les réclamations et litiges clients.', icon: MessageCircle, color: 'text-red-600', bg: 'bg-red-50' },
-  { id: 'ADVANCED_TASKS', name: 'Tâches avancées', desc: 'Automatisations et workflows personnalisés.', icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50' },
+  {
+    id: 'PRODUCTS',
+    name: 'Produits',
+    desc: 'Gérez votre catalogue de produits avec stock, prix, variantes et catégories.',
+    icon: Package,
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    popular: true,
+  },
+  {
+    id: 'SERVICES',
+    name: 'Services',
+    desc: 'Proposez et gérez vos services avec durée, tarifs et disponibilité.',
+    icon: Hand,
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+    popular: true,
+  },
+  {
+    id: 'MENU',
+    name: 'Menu / Carte',
+    desc: 'Créez un menu digital avec catégories, plats, prix et photos.',
+    icon: ShoppingBag,
+    color: 'text-orange-600',
+    bg: 'bg-orange-50',
+  },
+  {
+    id: 'BOOKINGS',
+    name: 'Réservations',
+    desc: 'Gérez les réservations de tables, rendez-vous ou créneaux.',
+    icon: Calendar,
+    color: 'text-amber-600',
+    bg: 'bg-amber-50',
+    popular: true,
+  },
+  {
+    id: 'ROOMS',
+    name: 'Chambres / Hébergement',
+    desc: "Gérez vos chambres, taux d'occupation et tarifs.",
+    icon: Bed,
+    color: 'text-teal-600',
+    bg: 'bg-teal-50',
+  },
+  {
+    id: 'ORDERS',
+    name: 'Commandes',
+    desc: 'Suivez et gérez les commandes de vos clients en temps réel.',
+    icon: ShoppingBag,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    popular: true,
+  },
+  {
+    id: 'EVENTS',
+    name: 'Événements',
+    desc: 'Créez et gérez des événements avec inscriptions et billeterie.',
+    icon: Megaphone,
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+  },
+  {
+    id: 'RENTALS',
+    name: 'Locations',
+    desc: 'Gérez la location de véhicules, matériel ou espaces.',
+    icon: Car,
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+  },
+  {
+    id: 'PROMOTIONS',
+    name: 'Promotions',
+    desc: 'Créez des offres spéciales, réductions et codes promo.',
+    icon: Zap,
+    color: 'text-pink-600',
+    bg: 'bg-pink-50',
+  },
+  {
+    id: 'PORTFOLIO',
+    name: 'Portfolio',
+    desc: 'Exposez vos réalisations et travaux (photographe, artisan, etc.).',
+    icon: Palette,
+    color: 'text-rose-600',
+    bg: 'bg-rose-50',
+  },
+  {
+    id: 'DELIVERIES',
+    name: 'Livraisons',
+    desc: 'Configurez vos zones et tarifs de livraison.',
+    icon: Truck,
+    color: 'text-yellow-600',
+    bg: 'bg-yellow-50',
+  },
+  {
+    id: 'EMPLOYEES',
+    name: 'Employés',
+    desc: 'Gérez vos employés, horaires et permissions.',
+    icon: Users,
+    color: 'text-cyan-600',
+    bg: 'bg-cyan-50',
+  },
+  {
+    id: 'PLANNING',
+    name: 'Planning',
+    desc: 'Planifiez les tâches et rendez-vous de votre équipe.',
+    icon: Calendar,
+    color: 'text-sky-600',
+    bg: 'bg-sky-50',
+  },
+  {
+    id: 'QUOTES_INVOICES',
+    name: 'Devis & Factures',
+    desc: 'Générez des devis et factures professionnels.',
+    icon: FileText,
+    color: 'text-violet-600',
+    bg: 'bg-violet-50',
+  },
+  {
+    id: 'DEBTS_PAYMENTS',
+    name: 'Dettes & Paiements',
+    desc: 'Suivez les dettes clients et les paiements en attente.',
+    icon: CreditCard,
+    color: 'text-orange-600',
+    bg: 'bg-orange-50',
+  },
+  {
+    id: 'SUBSCRIPTIONS',
+    name: 'Abonnements',
+    desc: 'Gérez les abonnements et paiements récurrents.',
+    icon: CreditCard,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+  },
+  {
+    id: 'DOCUMENTS',
+    name: 'Documents',
+    desc: 'Stockez et partagez vos documents importants.',
+    icon: FileText,
+    color: 'text-gray-600',
+    bg: 'bg-gray-50',
+  },
+  {
+    id: 'PARTNERS',
+    name: 'Partenaires',
+    desc: 'Gérez vos partenariats et affiliations.',
+    icon: Users,
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+  },
+  {
+    id: 'DISPUTES',
+    name: 'Litiges',
+    desc: 'Gérez les réclamations et litiges clients.',
+    icon: MessageCircle,
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+  },
+  {
+    id: 'MODULE_MARKETPLACE',
+    name: 'Marketplace Développeurs',
+    desc: 'Accédez au marketplace de modules développeurs pour étendre vos fonctionnalités.',
+    icon: Puzzle,
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50',
+  },
+  {
+    id: 'TRAINING',
+    name: 'Formations',
+    desc: 'Créez et gérez des formations en ligne avec cours, quiz et certificats.',
+    icon: Zap,
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+  },
+  {
+    id: 'ADVANCED_TASKS',
+    name: 'Tâches avancées',
+    desc: 'Automatisations et workflows personnalisés.',
+    icon: Zap,
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+  },
 ];
 
 export default function MarketplacePage() {
   const queryClient = useQueryClient();
-  const { business } = useBusinessStore();
+  const { business, moduleAssignments, setModuleAssignments } = useBusinessStore();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'installed' | 'available'>('all');
 
-  const activeModules = business?.modules || [];
+  // Fetch module assignments from the new API
+  const { data: assignmentsData } = useQuery({
+    queryKey: ['business', 'moduleAssignments'],
+    queryFn: async () => {
+      const res = await apiClient.getModuleAssignments();
+      const data = res.data?.data ?? [];
+      setModuleAssignments(data);
+      return data;
+    },
+    enabled: !!business,
+  });
+
+  // Active modules: combine old modules[] + new moduleAssignments
+  const activeModulesFromAssignments = (assignmentsData ?? moduleAssignments)
+    .filter((a: any) => a.status === 'ACTIVE')
+    .map((a: any) => a.module as BusinessModule);
+  const activeModules = [
+    ...new Set([...(business?.modules ?? []), ...activeModulesFromAssignments]),
+  ];
 
   const toggleModule = useMutation({
-    mutationFn: ({ module, enabled }: { module: string; enabled: boolean }) => apiClient.toggleBusinessModule(module, enabled),
+    mutationFn: ({ module, enabled }: { module: string; enabled: boolean }) =>
+      apiClient.toggleBusinessModule(module, enabled),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myBusiness'] });
+      queryClient.invalidateQueries({ queryKey: ['business', 'moduleAssignments'] });
     },
   });
 
   const filteredModules = MODULES.filter((mod) => {
-    const matchesSearch = !search || mod.name.toLowerCase().includes(search.toLowerCase()) || mod.desc.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+      !search ||
+      mod.name.toLowerCase().includes(search.toLowerCase()) ||
+      mod.desc.toLowerCase().includes(search.toLowerCase());
     const isInstalled = activeModules.includes(mod.id as BusinessModule);
     if (filter === 'installed') return matchesSearch && isInstalled;
     if (filter === 'available') return matchesSearch && !isInstalled;
@@ -111,17 +310,19 @@ export default function MarketplacePage() {
       {/* Module grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredModules.map((mod) => {
-    const isInstalled = activeModules.includes(mod.id as BusinessModule);
-    const Icon = mod.icon;
-    return (
-              <Card key={mod.id} hoverable className="flex flex-col">
+          const isInstalled = activeModules.includes(mod.id as BusinessModule);
+          const Icon = mod.icon;
+          return (
+            <Card key={mod.id} hoverable className="flex flex-col">
               <div className="flex items-start gap-4 mb-3">
                 <div className={cn('p-3 rounded-xl shrink-0', mod.bg, mod.color)}>
                   <Icon className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{mod.name}</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {mod.name}
+                    </h3>
                     {mod.popular && (
                       <span className="text-[10px] font-medium text-brand bg-brand-50 dark:bg-brand-900/30 px-1.5 py-0.5 rounded-full shrink-0">
                         Populaire
@@ -133,31 +334,37 @@ export default function MarketplacePage() {
               </div>
               <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700">
                 {isInstalled ? (
-                  <div className="flex gap-2">                <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => toggleModule.mutate({ module: mod.id, enabled: false })}
-                      disabled={toggleModule.isPending}
-                    >
-                      {toggleModule.isPending && toggleModule.variables?.module === mod.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      )}
-                      Installé
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleModule.mutate({ module: mod.id, enabled: false })}
-                      disabled={toggleModule.isPending}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      {toggleModule.isPending && toggleModule.variables?.module === mod.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                    </Button>
-                  </div>
+                  <div className="flex gap-2">
+                    {' '}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => toggleModule.mutate({ module: mod.id, enabled: false })}
+                        disabled={toggleModule.isPending}
+                      >
+                        {toggleModule.isPending && toggleModule.variables?.module === mod.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        )}
+                        Installé
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleModule.mutate({ module: mod.id, enabled: false })}
+                        disabled={toggleModule.isPending}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        {toggleModule.isPending && toggleModule.variables?.module === mod.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <X className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <Button

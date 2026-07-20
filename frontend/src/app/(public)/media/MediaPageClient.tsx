@@ -4,9 +4,24 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Play, Users, Clock, MapPin, ShoppingBag, ChevronRight,
-  TrendingUp, Zap, Calendar, Star, Eye, Heart, MessageCircle,
-  Share2, Sparkles, Flame, Tag, ArrowRight,
+  Play,
+  Users,
+  Clock,
+  MapPin,
+  ShoppingBag,
+  ChevronRight,
+  TrendingUp,
+  Zap,
+  Calendar,
+  Star,
+  Eye,
+  Heart,
+  MessageCircle,
+  Share2,
+  Sparkles,
+  Flame,
+  Tag,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StoryRing } from '@/components/stories/StoryRing';
@@ -33,7 +48,12 @@ function LiveCard({ live }: { live: any }) {
     >
       <div className="relative aspect-video bg-gray-100 dark:bg-gray-700 overflow-hidden">
         {live.coverImage ? (
-          <Image src={live.coverImage} alt={live.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+          <Image
+            src={live.coverImage}
+            alt={live.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-600/20">
             <Play className="w-12 h-12 text-red-500/40" />
@@ -65,7 +85,9 @@ function LiveCard({ live }: { live: any }) {
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{live.business?.name}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+            {live.business?.name}
+          </p>
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Users className="w-3 h-3" />
             <span>{live._count?.participants || 0} spectateurs</span>
@@ -81,16 +103,25 @@ function LiveCard({ live }: { live: any }) {
 
 function OfferCard({ offer }: { offer: any }) {
   const [claimed, setClaimed] = useState(false);
-  const timeLeft = offer.endAt ? Math.max(0, Math.floor((new Date(offer.endAt).getTime() - Date.now()) / 1000)) : 0;
+  const timeLeft = offer.endAt
+    ? Math.max(0, Math.floor((new Date(offer.endAt).getTime() - Date.now()) / 1000))
+    : 0;
   const hours = Math.floor(timeLeft / 3600);
   const mins = Math.floor((timeLeft % 3600) / 60);
-  const stockPercent = offer.quantity ? Math.min(100, Math.round((offer.soldCount / offer.quantity) * 100)) : 0;
+  const stockPercent = offer.quantity
+    ? Math.min(100, Math.round((offer.soldCount / offer.quantity) * 100))
+    : 0;
 
   return (
     <div className="group flex-shrink-0 w-56 sm:w-64 rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300">
       <div className="relative aspect-[4/3] bg-gray-100 dark:bg-gray-700 overflow-hidden">
         {offer.image ? (
-          <Image src={offer.image} alt={offer.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+          <Image
+            src={offer.image}
+            alt={offer.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-500/20 to-red-500/20">
             <Zap className="w-10 h-10 text-amber-500/40" />
@@ -111,15 +142,21 @@ function OfferCard({ offer }: { offer: any }) {
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
           <p className="text-white text-sm font-semibold">{offer.flashPrice?.toLocaleString()} F</p>
           {offer.originalPrice && (
-            <p className="text-white/60 text-xs line-through">{offer.originalPrice.toLocaleString()} F</p>
+            <p className="text-white/60 text-xs line-through">
+              {offer.originalPrice.toLocaleString()} F
+            </p>
           )}
         </div>
       </div>
       <div className="p-3 space-y-2">
-        <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">{offer.title}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">
+          {offer.title}
+        </p>
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <Clock className="w-3 h-3 text-red-500" />
-          <span className="text-red-500 font-medium">{hours}h {mins}m</span>
+          <span className="text-red-500 font-medium">
+            {hours}h {mins}m
+          </span>
           <span className="text-gray-300">|</span>
           <Users className="w-3 h-3" />
           <span>{offer.soldCount || 0} vendus</span>
@@ -128,7 +165,11 @@ function OfferCard({ offer }: { offer: any }) {
           <div
             className={cn(
               'h-full rounded-full transition-all duration-500',
-              stockPercent > 80 ? 'bg-red-500' : stockPercent > 50 ? 'bg-amber-500' : 'bg-emerald-500'
+              stockPercent > 80
+                ? 'bg-red-500'
+                : stockPercent > 50
+                  ? 'bg-amber-500'
+                  : 'bg-emerald-500'
             )}
             style={{ width: `${stockPercent}%` }}
           />
@@ -146,7 +187,7 @@ function OfferCard({ offer }: { offer: any }) {
               : 'bg-gradient-to-r from-brand-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-brand-500/20 active:scale-95'
           )}
         >
-          {claimed ? '✅ Offre obtenue !' : 'Je profite de l\'offre'}
+          {claimed ? '✅ Offre obtenue !' : "Je profite de l'offre"}
         </button>
       </div>
     </div>
@@ -161,7 +202,12 @@ function ShortCard({ short }: { short: any }) {
     >
       <div className="relative aspect-[9/16] bg-gray-100 dark:bg-gray-700 overflow-hidden">
         {short.thumbnailUrl ? (
-          <Image src={short.thumbnailUrl} alt={short.title || ''} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+          <Image
+            src={short.thumbnailUrl}
+            alt={short.title || ''}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-500/20 to-purple-500/20">
             <Play className="w-10 h-10 text-brand-500/40" />
@@ -169,9 +215,7 @@ function ShortCard({ short }: { short: any }) {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute bottom-3 left-3 right-3">
-          {short.title && (
-            <p className="text-white text-xs font-medium truncate">{short.title}</p>
-          )}
+          {short.title && <p className="text-white text-xs font-medium truncate">{short.title}</p>}
           <div className="flex items-center gap-2 text-[10px] text-white/70 mt-1">
             <Eye className="w-3 h-3" />
             <span>{short.viewsCount || 0}</span>
@@ -185,9 +229,13 @@ function ShortCard({ short }: { short: any }) {
       </div>
       <div className="p-2.5 flex items-center gap-2">
         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-400 to-purple-500 flex items-center justify-center flex-shrink-0">
-          <span className="text-[8px] font-bold text-white">{short.business?.name?.charAt(0) || '?'}</span>
+          <span className="text-[8px] font-bold text-white">
+            {short.business?.name?.charAt(0) || '?'}
+          </span>
         </div>
-        <p className="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate">{short.business?.name}</p>
+        <p className="text-[11px] font-medium text-gray-700 dark:text-gray-300 truncate">
+          {short.business?.name}
+        </p>
       </div>
     </Link>
   );
@@ -202,14 +250,22 @@ function BusinessCard({ business }: { business: any }) {
       <div className="p-4 flex flex-col items-center gap-2">
         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/30 dark:to-brand-800/30 flex items-center justify-center overflow-hidden ring-2 ring-brand-500/20 group-hover:ring-brand-500/40 transition-all">
           {business.logo ? (
-            <Image src={business.logo} alt={business.name} width={64} height={64} className="object-cover w-full h-full" />
+            <Image
+              src={business.logo}
+              alt={business.name}
+              width={64}
+              height={64}
+              className="object-cover w-full h-full"
+            />
           ) : (
             <span className="text-xl font-bold text-brand-600 dark:text-brand-400">
               {business.name?.charAt(0)}
             </span>
           )}
         </div>
-        <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-full">{business.name}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-full">
+          {business.name}
+        </p>
         {business.type && (
           <p className="text-[11px] text-gray-400 truncate max-w-full">{business.type}</p>
         )}
@@ -244,7 +300,10 @@ export function MediaPageClient() {
           Découvrez le commerce vidéo
         </div>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white">
-          AfriBiz <span className="bg-gradient-to-r from-brand-500 to-emerald-500 bg-clip-text text-transparent">Media</span>
+          AfriBiz{' '}
+          <span className="bg-gradient-to-r from-brand-500 to-emerald-500 bg-clip-text text-transparent">
+            Media
+          </span>
         </h1>
         <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
           Stories, shorts, lives et offres flash. Découvrez des produits et services en vidéo,
@@ -276,12 +335,17 @@ export function MediaPageClient() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Lives en direct</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                Lives en direct
+              </h2>
               <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
                 {lives.length}
               </span>
             </div>
-            <Link href="/lives" className="text-sm text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+            <Link
+              href="/lives"
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
+            >
               Voir tout <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -299,7 +363,9 @@ export function MediaPageClient() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Flame className="w-5 h-5 text-brand-500" />
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Stories</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                Stories
+              </h2>
             </div>
             {storyGroups && storyGroups.length > 0 && (
               <span className="text-xs text-gray-400">{storyGroups.length} commerces</span>
@@ -317,7 +383,10 @@ export function MediaPageClient() {
               <Play className="w-5 h-5 text-brand-500" />
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Shorts</h2>
             </div>
-            <Link href="/shorts" className="text-sm text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+            <Link
+              href="/shorts"
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
+            >
               Voir tout <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -343,12 +412,17 @@ export function MediaPageClient() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-amber-500" />
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Offres Flash</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                Offres Flash
+              </h2>
               <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-medium rounded-full">
                 {offers.length} offres
               </span>
             </div>
-            <Link href="/offers" className="text-sm text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1">
+            <Link
+              href="/offers"
+              className="text-sm text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+            >
               Voir tout <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -366,9 +440,14 @@ export function MediaPageClient() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-brand-500" />
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Business populaires</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                Business populaires
+              </h2>
             </div>
-            <Link href="/marketplace" className="text-sm text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+            <Link
+              href="/marketplace"
+              className="text-sm text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
+            >
               Marketplace <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -388,19 +467,22 @@ export function MediaPageClient() {
             <h2 className="text-lg sm:text-xl font-bold">Marché du Jour</h2>
           </div>
           <p className="text-emerald-100 text-sm mb-6 max-w-xl">
-            Les meilleures trouvailles du jour sélectionnées pour vous. Produits, services et offres à ne pas manquer.
+            Les meilleures trouvailles du jour sélectionnées pour vous. Produits, services et offres
+            à ne pas manquer.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {['Mode & Accessoires', 'Restauration', 'Beauté & Bien-être', 'Tech & Services'].map((cat, i) => (
-              <Link
-                key={cat}
-                href={`/marketplace?category=${cat}`}
-                className="p-4 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 transition-all text-center group"
-              >
-                <p className="text-sm font-medium">{cat}</p>
-                <p className="text-[11px] text-emerald-200 mt-1">Découvrir →</p>
-              </Link>
-            ))}
+            {['Mode & Accessoires', 'Restauration', 'Beauté & Bien-être', 'Tech & Services'].map(
+              (cat, i) => (
+                <Link
+                  key={cat}
+                  href={`/marketplace?category=${cat}`}
+                  className="p-4 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 transition-all text-center group"
+                >
+                  <p className="text-sm font-medium">{cat}</p>
+                  <p className="text-[11px] text-emerald-200 mt-1">Découvrir →</p>
+                </Link>
+              )
+            )}
           </div>
         </section>
       )}
@@ -410,7 +492,9 @@ export function MediaPageClient() {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-5 h-5 text-brand-500" />
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Nouveautés</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+              Nouveautés
+            </h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {shorts.slice(0, 8).map((short: any) => (

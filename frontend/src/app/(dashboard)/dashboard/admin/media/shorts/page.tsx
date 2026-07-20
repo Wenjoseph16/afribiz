@@ -2,292 +2,274 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Video, PlayCircle, ThumbsUp, Eye, Bookmark, Search,
-  PauseCircle, Trash2, AlertTriangle,
+  Video,
+  PlayCircle,
+  ThumbsUp,
+  Eye,
+  Bookmark,
+  Search,
+  Trash2,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { PageHeader } from '@/components/dashboard/PageHeader';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { apiClient } from '@/services/apiClient';
+import { cn } from '@/lib/utils';
 
 const STATUS_STYLES: Record<string, string> = {
-  ACTIF: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   ACTIVE: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  SUSPENDU: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   SUSPENDED: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  SIGNALÉ: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   REPORTED: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  EN_ATTENTE: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  PENDING: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
 };
 
-const MOCK_SHORTS = [
-  { id: '1', business: { name: 'Tech Solutions SARL' }, title: 'Astuce React en 60s', videoUrl: 'https://example.com/short1.mp4', duration: 60, likes: 234, views: 5400, saves: 89, status: 'ACTIF' },
-  { id: '2', business: { name: 'Mode Africa' }, title: 'Tenue du jour', videoUrl: 'https://example.com/short2.mp4', duration: 45, likes: 567, views: 12300, saves: 210, status: 'ACTIF' },
-  { id: '3', business: { name: 'Restaurant Le Déli' }, title: 'Recette express', videoUrl: 'https://example.com/short3.mp4', duration: 90, likes: 45, views: 890, saves: 12, status: 'SIGNALÉ' },
-  { id: '4', business: { name: 'Coach Fitness Pro' }, title: 'Exercice abdos 5 min', videoUrl: 'https://example.com/short4.mp4', duration: 120, likes: 890, views: 23400, saves: 678, status: 'ACTIF' },
-  { id: '5', business: { name: 'Agence Digital Plus' }, title: 'Tendance SEO 2025', videoUrl: 'https://example.com/short5.mp4', duration: 75, likes: 123, views: 3200, saves: 45, status: 'SUSPENDU' },
-];
-
-function useShortsList() {
+function useShortsList(page: number, limit: number) {
   return useQuery({
-    queryKey: ['admin', 'shorts'],
+    queryKey: ['admin', 'shorts', page],
     queryFn: async () => {
-      try {
-        const res = await apiClient.get('/admin/shorts');
-        return res.data.data;
-      } catch {
-        return MOCK_SHORTS;
-      }
+      const res = await apiClient.get('/admin/shorts');
+      const items = Array.isArray(res.data.data) ? res.data.data : (res.data.data?.items ?? []);
+      const start = (page - 1) * limit;
+      return {
+        items: items.slice(start, start + limit),
+        total: items.length,
+        page,
+        limit,
+        totalPages: Math.ceil(items.length / limit),
+      };
     },
   });
 }
 
 export default function AdminShortsPage() {
   const qc = useQueryClient();
+  const [deleteShortId, setDeleteShortId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [page, setPage] = useState(1);
+  const limit = 15;
 
-  const { data: shorts, isLoading } = useShortsList();
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiClient.put(`/admin/shorts/${id}/status`, { status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'shorts'] }); },
-  });
+  const { data, isLoading, error, refetch } = useShortsList(page, limit);
+  const shorts = data?.items ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/admin/shorts/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'shorts'] }); },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'shorts'] }),
   });
 
-  const list = Array.isArray(shorts) ? shorts : [];
-
-  const stats = useMemo(() => ({
-    total: list.length,
-    active: list.filter((s: any) => s.status === 'ACTIF' || s.status === 'ACTIVE').length,
-    reported: list.filter((s: any) => s.status === 'SIGNALÉ' || s.status === 'REPORTED').length,
-  }), [list]);
-
   const filtered = useMemo(() => {
-    let result = list;
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter((s: any) =>
-        s.title?.toLowerCase().includes(q) || s.business?.name?.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [list, search]);
+    if (!search) return shorts;
+    const q = search.toLowerCase();
+    return shorts.filter(
+      (s: any) => s.business?.name?.toLowerCase().includes(q) || s.title?.toLowerCase().includes(q)
+    );
+  }, [shorts, search]);
 
-  const handleStatusAction = async (id: string, status: string, label: string) => {
-    const actionLabel = status === 'ACTIF' ? 'activer' : status === 'SUSPENDU' ? 'suspendre' : label;
-    if (!window.confirm(`Êtes-vous sûr de vouloir ${actionLabel} ce short ?`)) return;
-    try {
-      await statusMutation.mutateAsync({ id, status });
-      setToast({ message: `Short ${actionLabel} avec succès`, type: 'success' });
-    } catch {
-      setToast({ message: `Erreur lors de l'action`, type: 'error' });
-    }
-  };
+  const stats = useMemo(
+    () => ({
+      total: data?.total ?? 0,
+      totalViews: shorts.reduce((sum: number, s: any) => sum + (s.views || 0), 0),
+      totalLikes: shorts.reduce((sum: number, s: any) => sum + (s.likes || 0), 0),
+      totalSaves: shorts.reduce((sum: number, s: any) => sum + (s.bookmarks || s.saves || 0), 0),
+    }),
+    [data, shorts]
+  );
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`Supprimer définitivement le short « ${title} » ?`)) return;
-    try {
-      await deleteMutation.mutateAsync(id);
-      setToast({ message: 'Short supprimé', type: 'success' });
-    } catch {
-      setToast({ message: 'Erreur lors de la suppression', type: 'error' });
-    }
-  };
-
-  const formatDuration = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const statusLabel = (s: any) => {
-    if (s.status === 'ACTIF' || s.status === 'ACTIVE') return 'Actif';
-    if (s.status === 'SUSPENDU' || s.status === 'SUSPENDED') return 'Suspendu';
-    if (s.status === 'SIGNALÉ' || s.status === 'REPORTED') return 'Signalé';
-    if (s.status === 'EN_ATTENTE') return 'En attente';
-    return s.status;
-  };
+  if (error) return <ErrorState message={(error as any).message} onRetry={refetch} />;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
-          {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
-        </div>
-      )}
-
       <PageHeader
-        title="Gestion des shorts"
-        description="Modérez et gérez les courtes vidéos des entreprises"
+        title="Shorts"
+        description="Gérez les vidéos courtes"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Admin', href: '/dashboard/admin' },
-          { label: 'Média' },
+          { label: 'Média', href: '/dashboard/admin/media' },
           { label: 'Shorts' },
         ]}
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-brand">
-              <Video className="h-5 w-5" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          {
+            label: 'Total shorts',
+            value: stats.total,
+            icon: Video,
+            color: 'bg-brand-50 dark:bg-brand-900/30 text-brand',
+          },
+          {
+            label: 'Vues totales',
+            value: stats.totalViews.toLocaleString(),
+            icon: Eye,
+            color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600',
+          },
+          {
+            label: 'Likes totaux',
+            value: stats.totalLikes.toLocaleString(),
+            icon: ThumbsUp,
+            color: 'bg-rose-50 dark:bg-rose-900/30 text-rose-600',
+          },
+          {
+            label: 'Sauvegardes',
+            value: stats.totalSaves.toLocaleString(),
+            icon: Bookmark,
+            color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600',
+          },
+        ].map((s) => (
+          <Card key={s.label} className="p-4">
+            <div className="flex items-center gap-3">
+              <div className={cn('p-2.5 rounded-lg', s.color)}>
+                <s.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{s.label}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{s.value}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <PlayCircle className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Actifs</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.active}</p>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Signalés</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.reported}</p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        ))}
       </div>
 
-      {/* Search */}
-      <Card padding="md">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher par titre ou entreprise..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          />
-        </div>
-      </Card>
+      <div className="relative max-w-xs">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Rechercher..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+        />
+      </div>
 
-      {/* Table */}
-      <Card padding="none">
-        {isLoading ? (
-          <Loader className="py-20" />
-        ) : filtered.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                  <th className="p-4 font-medium">Entreprise</th>
-                  <th className="p-4 font-medium">Titre</th>
-                  <th className="p-4 font-medium">Durée</th>
-                  <th className="p-4 font-medium">Vues</th>
-                  <th className="p-4 font-medium">Likes</th>
-                  <th className="p-4 font-medium">Sauvegardes</th>
-                  <th className="p-4 font-medium">Statut</th>
-                  <th className="p-4 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((s: any) => (
-                  <tr key={s.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
-                      {s.business?.name || 'N/A'}
-                    </td>
-                    <td className="p-4 text-gray-500 max-w-[180px] truncate">{s.title}</td>
-                    <td className="p-4 text-gray-500 text-xs">
-                      {s.duration ? formatDuration(s.duration) : '-'}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-gray-500">
-                        <Eye className="h-3.5 w-3.5" />
-                        {s.views?.toLocaleString() || '0'}
+      {isLoading ? (
+        <Loader className="py-20" />
+      ) : (
+        <Card padding="none">
+          {filtered.length > 0 ? (
+            <div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filtered.map((short: any) => (
+                  <div
+                    key={short.id}
+                    className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-50 to-rose-50 dark:from-brand-900/30 dark:to-rose-900/30 flex items-center justify-center shrink-0">
+                        <Video className="h-5 w-5 text-brand" />
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-gray-500">
-                        <ThumbsUp className="h-3.5 w-3.5" />
-                        {s.likes?.toLocaleString() || '0'}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {short.title || 'Short'}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {short.business?.name || '—'} ·{' '}
+                          {short.duration ? `${short.duration}s` : '—'}
+                        </p>
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-gray-500">
-                        <Bookmark className="h-3.5 w-3.5" />
-                        {s.saves?.toLocaleString() || '0'}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_STYLES[s.status] || 'bg-gray-100 text-gray-600'}`}>
-                        {statusLabel(s)}
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-gray-500 shrink-0">
+                      <span className="flex items-center gap-1">
+                        <PlayCircle className="h-3 w-3" />
+                        {short.views || 0}
                       </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5">
-                        {(s.status === 'ACTIF' || s.status === 'ACTIVE') && (
-                          <Button
-                            variant="ghost" size="xs"
-                            onClick={() => handleStatusAction(s.id, 'SUSPENDU', 'suspendre')}
-                            isLoading={statusMutation.isPending}
-                          >
-                            <PauseCircle className="h-3.5 w-3.5 text-red-500" />
-                            Suspendre
-                          </Button>
-                        )}
-                        {(s.status === 'SUSPENDU' || s.status === 'SUSPENDED') && (
-                          <Button
-                            variant="ghost" size="xs"
-                            onClick={() => handleStatusAction(s.id, 'ACTIF', 'activer')}
-                            isLoading={statusMutation.isPending}
-                          >
-                            <PlayCircle className="h-3.5 w-3.5 text-emerald-500" />
-                            Activer
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost" size="xs"
-                          onClick={() => handleDelete(s.id, s.title)}
-                          isLoading={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                      <span className="flex items-center gap-1">
+                        <ThumbsUp className="h-3 w-3" />
+                        {short.likes || 0}
+                      </span>
+                      <Badge
+                        variant={
+                          short.isReported ? 'warning' : short.isActive ? 'success' : 'default'
+                        }
+                        size="xs"
+                      >
+                        {short.isActive
+                          ? 'ACTIF'
+                          : short.isReported
+                            ? 'SIGNALÉ'
+                            : short.status || 'INACTIF'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1 ml-3">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => setDeleteShortId(short.id)}
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState
-            icon={<Video className="h-8 w-8" />}
-            title="Aucun short"
-            description={search ? 'Aucun short ne correspond à votre recherche.' : 'Aucun short à modérer pour le moment.'}
-          />
-        )}
-      </Card>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Précédent
+                  </button>
+                  {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={cn(
+                        'px-3 py-1.5 text-sm rounded-lg transition-colors',
+                        p === page
+                          ? 'bg-brand text-white'
+                          : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Suivant
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Video className="h-10 w-10" />}
+              title="Aucun short"
+              description={search ? 'Essayez une autre recherche' : 'Aucun short disponible.'}
+            />
+          )}
+        </Card>
+      )}
+      <ConfirmationModal
+        open={!!deleteShortId}
+        onClose={() => setDeleteShortId(null)}
+        onConfirm={async () => {
+          if (deleteShortId) {
+            await deleteMutation.mutateAsync(deleteShortId);
+            setDeleteShortId(null);
+          }
+        }}
+        title="Supprimer le short"
+        description="Êtes-vous sûr de vouloir supprimer ce short ? Cette action est irréversible."
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
     </div>
   );
 }

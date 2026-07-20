@@ -60,16 +60,23 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 33vw"
-              unoptimized
               onError={() => setImgError(true)}
             />
           ) : initials ? (
             <span className="select-none">{initials.slice(0, 2).toUpperCase()}</span>
           ) : (
-            <User className={cn(
-              'text-current opacity-60',
-              size === 'xs' ? 'h-3 w-3' : size === 'sm' ? 'h-4 w-4' : size === 'xl' ? 'h-7 w-7' : 'h-5 w-5'
-            )} />
+            <User
+              className={cn(
+                'text-current opacity-60',
+                size === 'xs'
+                  ? 'h-3 w-3'
+                  : size === 'sm'
+                    ? 'h-4 w-4'
+                    : size === 'xl'
+                      ? 'h-7 w-7'
+                      : 'h-5 w-5'
+              )}
+            />
           )}
         </div>
         {status && (

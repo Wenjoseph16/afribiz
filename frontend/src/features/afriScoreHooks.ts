@@ -52,9 +52,15 @@ export function useMyScore() {
   return useQuery({
     queryKey: afriScoreKeys.myScore,
     queryFn: async () => {
-      const res = await apiClient.getMyScore();
-      return res.data.data;
+      try {
+        const res = await apiClient.getMyScore();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement score:', error);
+        return null;
+      }
     },
+    retry: false,
   });
 }
 
@@ -62,9 +68,15 @@ export function useScoreHistory(days?: number) {
   return useQuery({
     queryKey: afriScoreKeys.history(days),
     queryFn: async () => {
-      const res = await apiClient.get('/afriscore/mine/history', { params: { days } });
-      return res.data.data;
+      try {
+        const res = await apiClient.getScoreHistory(days);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement historique score:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -72,9 +84,15 @@ export function useMyBadges() {
   return useQuery({
     queryKey: afriScoreKeys.badges,
     queryFn: async () => {
-      const res = await apiClient.getMyBadges();
-      return res.data.data;
+      try {
+        const res = await apiClient.getMyBadges();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement badges:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -94,10 +112,16 @@ export function usePublicScore(businessId: string) {
   return useQuery({
     queryKey: afriScoreKeys.publicScore(businessId),
     queryFn: async () => {
-      const res = await apiClient.getPublicScore(businessId);
-      return res.data.data;
+      try {
+        const res = await apiClient.getPublicScore(businessId);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement score public:', error);
+        return null;
+      }
     },
     enabled: !!businessId,
+    retry: false,
   });
 }
 
@@ -105,9 +129,15 @@ export function useHubPlatformStats() {
   return useQuery({
     queryKey: hubKeys.platformStats,
     queryFn: async () => {
-      const res = await apiClient.getHubPlatformStats();
-      return res.data.data;
+      try {
+        const res = await apiClient.getHubPlatformStats();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement stats plateforme:', error);
+        return { totalBusinesses: 0, totalOrders: 0, totalRevenue: 0, avgScore: 0 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -115,9 +145,15 @@ export function useHubSectorBenchmarks() {
   return useQuery({
     queryKey: hubKeys.sectorBenchmarks,
     queryFn: async () => {
-      const res = await apiClient.getHubSectorBenchmarks();
-      return res.data.data;
+      try {
+        const res = await apiClient.getHubSectorBenchmarks();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement benchmarks secteurs:', error);
+        return { sectors: [] };
+      }
     },
+    retry: false,
   });
 }
 
@@ -125,10 +161,16 @@ export function useHubSectorStats(sector: string) {
   return useQuery({
     queryKey: hubKeys.sectorStats(sector),
     queryFn: async () => {
-      const res = await apiClient.getHubSectorStats(sector);
-      return res.data.data;
+      try {
+        const res = await apiClient.getHubSectorStats(sector);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement stats secteur:', error);
+        return null;
+      }
     },
     enabled: !!sector,
+    retry: false,
   });
 }
 
@@ -136,9 +178,15 @@ export function useHubGeographicStats() {
   return useQuery({
     queryKey: hubKeys.geoStats,
     queryFn: async () => {
-      const res = await apiClient.getHubGeographicStats();
-      return res.data.data;
+      try {
+        const res = await apiClient.getHubGeographicStats();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement stats geographiques:', error);
+        return { regions: [] };
+      }
     },
+    retry: false,
   });
 }
 
@@ -146,9 +194,15 @@ export function useHubGrowthStats() {
   return useQuery({
     queryKey: hubKeys.growthStats,
     queryFn: async () => {
-      const res = await apiClient.getHubGrowthStats();
-      return res.data.data;
+      try {
+        const res = await apiClient.getHubGrowthStats();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement croissance:', error);
+        return { newBusinesses: 0, transactionGrowth: 0, adoptionRate: 0 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -156,9 +210,15 @@ export function useHubPaymentTrends() {
   return useQuery({
     queryKey: hubKeys.paymentTrends,
     queryFn: async () => {
-      const res = await apiClient.getHubPaymentTrends();
-      return res.data.data;
+      try {
+        const res = await apiClient.getHubPaymentTrends();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement tendances paiements:', error);
+        return { totalPayments: 0, successRate: 0, avgAmount: 0, pendingAmount: 0 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -166,9 +226,15 @@ export function usePartnerReports(params?: { page?: number; limit?: number }) {
   return useQuery({
     queryKey: hubKeys.partnerReports(params),
     queryFn: async () => {
-      const res = await apiClient.getPartnerReports(params);
-      return res.data.data;
+      try {
+        const res = await apiClient.getPartnerReports(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement rapports:', error);
+        return { reports: [] };
+      }
     },
+    retry: false,
   });
 }
 
@@ -176,10 +242,16 @@ export function usePartnerReportDetail(id: string) {
   return useQuery({
     queryKey: hubKeys.partnerReport(id),
     queryFn: async () => {
-      const res = await apiClient.getPartnerReportDetail(id);
-      return res.data.data;
+      try {
+        const res = await apiClient.getPartnerReportDetail(id);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement rapport:', error);
+        return null;
+      }
     },
     enabled: !!id,
+    retry: false,
   });
 }
 
@@ -194,13 +266,26 @@ export function useOrderPartnerReport() {
   });
 }
 
-export function usePartnerBusinesses(params?: { q?: string; sector?: string; country?: string; city?: string; page?: number; limit?: number }) {
+export function usePartnerBusinesses(params?: {
+  q?: string;
+  sector?: string;
+  country?: string;
+  city?: string;
+  page?: number;
+  limit?: number;
+}) {
   return useQuery({
     queryKey: hubKeys.partnerBusinesses(params),
     queryFn: async () => {
-      const res = await apiClient.get('/admin/partners/search', { params });
-      return res.data.data;
+      try {
+        const res = await apiClient.searchPartnerBusinesses(params?.q || '');
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement businesses:', error);
+        return { businesses: [] };
+      }
     },
+    retry: false,
   });
 }
 
@@ -208,10 +293,16 @@ export function usePartnerBusinessDetails(businessId: string) {
   return useQuery({
     queryKey: hubKeys.partnerBusiness(businessId),
     queryFn: async () => {
-      const res = await apiClient.getPartnerBusinessDetails(businessId);
-      return res.data.data;
+      try {
+        const res = await apiClient.getPartnerBusinessDetails(businessId);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement details business:', error);
+        return null;
+      }
     },
     enabled: !!businessId,
+    retry: false,
   });
 }
 
@@ -219,10 +310,16 @@ export function useMyConsents() {
   return useQuery({
     queryKey: consentKeys.all,
     queryFn: async () => {
-      const res = await apiClient.getMyConsents();
-      const data = res.data.data;
-      return { consents: data ? [data] : [] };
+      try {
+        const res = await apiClient.getMyConsents();
+        const data = res.data.data;
+        return { consents: data ? [data] : [] };
+      } catch (error) {
+        console.warn('Erreur chargement consentements:', error);
+        return { consents: [] };
+      }
     },
+    retry: false,
   });
 }
 
@@ -256,9 +353,16 @@ export function useAdminGetPartners(params?: { page?: number; limit?: number; st
   return useQuery({
     queryKey: adminHubKeys.partners(params),
     queryFn: async () => {
-      const res = await apiClient.adminGetPartners(params);
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetPartners(params);
+        const data = res.data.data;
+        return Array.isArray(data) ? { partners: data, total: data.length, totalPages: 1 } : data;
+      } catch (error) {
+        console.warn('Erreur chargement partenaires:', error);
+        return { partners: [], total: 0, totalPages: 1 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -266,10 +370,16 @@ export function useAdminGetPartnerDetail(id: string) {
   return useQuery({
     queryKey: adminHubKeys.partner(id),
     queryFn: async () => {
-      const res = await apiClient.adminGetPartnerDetail(id);
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetPartnerDetail(id);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement partenaire:', error);
+        return null;
+      }
     },
     enabled: !!id,
+    retry: false,
   });
 }
 
@@ -307,9 +417,18 @@ export function useAdminGetDataAccessLogs(params?: { page?: number; limit?: numb
   return useQuery({
     queryKey: adminHubKeys.logs(params),
     queryFn: async () => {
-      const res = await apiClient.adminGetDataAccessLogs(params);
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetDataAccessLogs(params);
+        const data = res.data.data;
+        return data?.data
+          ? { logs: data.data, total: data.total, totalPages: data.totalPages }
+          : data;
+      } catch (error) {
+        console.warn('Erreur chargement logs:', error);
+        return { logs: [], total: 0, totalPages: 1 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -317,9 +436,18 @@ export function useAdminGetReports(params?: { page?: number; limit?: number; typ
   return useQuery({
     queryKey: adminHubKeys.reports(params),
     queryFn: async () => {
-      const res = await apiClient.adminGetReports(params);
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetReports(params);
+        const data = res.data.data;
+        return data?.data
+          ? { reports: data.data, total: data.total, totalPages: data.totalPages }
+          : data;
+      } catch (error) {
+        console.warn('Erreur chargement rapports admin:', error);
+        return { reports: [], total: 0, totalPages: 1 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -327,9 +455,22 @@ export function useAdminGetPlatformAnalytics() {
   return useQuery({
     queryKey: adminHubKeys.analytics,
     queryFn: async () => {
-      const res = await apiClient.adminGetPlatformAnalytics();
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetPlatformAnalytics();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement analytics plateforme:', error);
+        return {
+          totalBusinesses: 0,
+          totalPartners: 0,
+          totalReports: 0,
+          totalAccessLogs: 0,
+          activeConsents: 0,
+          avgScore: 0,
+        };
+      }
     },
+    retry: false,
   });
 }
 
@@ -339,9 +480,15 @@ export function useSearchTrends(days?: number) {
   return useQuery({
     queryKey: analyticsKeys.searchTrends(days),
     queryFn: async () => {
-      const res = await apiClient.get('/analytics/search-trends', { params: { days } });
-      return res.data.data;
+      try {
+        const res = await apiClient.getSearchTrends({ days });
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement tendances recherche:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -349,9 +496,15 @@ export function useConversionFunnel() {
   return useQuery({
     queryKey: analyticsKeys.conversionFunnel,
     queryFn: async () => {
-      const res = await apiClient.get('/analytics/conversion-funnel');
-      return res.data.data;
+      try {
+        const res = await apiClient.getConversionFunnel();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement entonnoir conversion:', error);
+        return { stages: [], conversionRates: {}, totalVisitors: 0 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -359,9 +512,15 @@ export function useRetentionCohorts() {
   return useQuery({
     queryKey: analyticsKeys.retentionCohorts,
     queryFn: async () => {
-      const res = await apiClient.get('/analytics/retention-cohorts');
-      return res.data.data;
+      try {
+        const res = await apiClient.getRetentionCohorts();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement cohorts:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -369,9 +528,15 @@ export function useProductRecommendations(limit?: number) {
   return useQuery({
     queryKey: analyticsKeys.productRecommendations(limit),
     queryFn: async () => {
-      const res = await apiClient.get('/analytics/product-recommendations', { params: { limit } });
-      return res.data.data;
+      try {
+        const res = await apiClient.getProductRecommendations({ limit });
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement recommandations:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -379,9 +544,21 @@ export function useEngagementAnalytics() {
   return useQuery({
     queryKey: analyticsKeys.engagement,
     queryFn: async () => {
-      const res = await apiClient.get('/analytics/engagement');
-      return res.data.data;
+      try {
+        const res = await apiClient.get('/analytics/engagement');
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement engagement:', error);
+        return {
+          totalClients: 0,
+          activeClients: 0,
+          engagementRate: 0,
+          pageViews30d: 0,
+          conversations30d: 0,
+        };
+      }
     },
+    retry: false,
   });
 }
 
@@ -391,9 +568,15 @@ export function useDailyTips() {
   return useQuery({
     queryKey: copilotKeys.dailyTips,
     queryFn: async () => {
-      const res = await apiClient.get('/copilot/daily-tips');
-      return res.data.data;
+      try {
+        const res = await apiClient.getDailyTips();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement conseils:', error);
+        return { tips: [], totalUnresolvedIssues: 0 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -401,9 +584,25 @@ export function useBusinessHealth() {
   return useQuery({
     queryKey: copilotKeys.businessHealth,
     queryFn: async () => {
-      const res = await apiClient.get('/copilot/business-health');
-      return res.data.data;
+      try {
+        const res = await apiClient.getBusinessHealth();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement sante business:', error);
+        return {
+          healthScore: 0,
+          status: 'fair',
+          metrics: {
+            afriScore: 0,
+            orders30d: 0,
+            pageViews30d: 0,
+            totalProducts: 0,
+            activeAdCampaigns: 0,
+          },
+        };
+      }
     },
+    retry: false,
   });
 }
 

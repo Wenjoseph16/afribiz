@@ -96,8 +96,7 @@ export default function EditDebtPage() {
       </div>
     );
 
-  const update = (field: string, value: string) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const update = (field: string, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -110,7 +109,9 @@ export default function EditDebtPage() {
         },
       });
       router.push(`/dashboard/debts-payments/${id}`);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -229,9 +230,7 @@ export default function EditDebtPage() {
 
         {/* Échéance */}
         <Card padding="lg">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-5">
-            Échéance
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-5">Échéance</h2>
           <div>
             <label className={labelClass}>Date d&apos;échéance</label>
             <input
@@ -245,9 +244,7 @@ export default function EditDebtPage() {
 
         {/* Source */}
         <Card padding="lg">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-5">
-            Source
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-5">Source</h2>
           <div>
             <label className={labelClass}>Type de source</label>
             <select

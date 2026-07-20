@@ -4,13 +4,40 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Users, Package, Truck, Briefcase, Building2, Wrench,
-  Phone, Mail, Globe, MapPin, MessageCircle, Star,
-  FileText, DollarSign, Calendar, Clock, CheckCircle,
-  XCircle, AlertTriangle, Award, Edit3, Trash2,
-  ArrowUpRight, ChevronLeft, Plus, Download, Camera, Music4, Handshake,
-  TrendingUp, BadgeCheck, Shield,
+  Users,
+  Package,
+  Truck,
+  Briefcase,
+  Building2,
+  Wrench,
+  Phone,
+  Mail,
+  Globe,
+  MapPin,
+  MessageCircle,
+  Star,
+  FileText,
+  DollarSign,
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Award,
+  Edit3,
+  Trash2,
+  ArrowUpRight,
+  ChevronLeft,
+  Plus,
+  Download,
+  Camera,
+  Music4,
+  Handshake,
+  TrendingUp,
+  BadgeCheck,
+  Shield,
 } from 'lucide-react';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -20,10 +47,14 @@ import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import {
-  usePartner, useDeletePartner,
-  usePartnerContracts, usePartnerTransactions,
-  usePartnerAssignments, usePartnerReviews,
-  usePartnerDocuments, usePartnerPermissions,
+  usePartner,
+  useDeletePartner,
+  usePartnerContracts,
+  usePartnerTransactions,
+  usePartnerAssignments,
+  usePartnerReviews,
+  usePartnerDocuments,
+  usePartnerPermissions,
 } from '@/features/partnerHooks';
 
 const CATEGORY_MAP: Record<string, { label: string; icon: any; color: string }> = {
@@ -35,7 +66,10 @@ const CATEGORY_MAP: Record<string, { label: string; icon: any; color: string }> 
 };
 
 const COLLAB_LABELS: Record<string, string> = {
-  PONCTUEL: 'Ponctuel', REGULIER: 'Régulier', STRATEGIQUE: 'Stratégique', PREMIUM: 'Premium',
+  PONCTUEL: 'Ponctuel',
+  REGULIER: 'Régulier',
+  STRATEGIQUE: 'Stratégique',
+  PREMIUM: 'Premium',
 };
 
 export default function PartnerDetailPage() {
@@ -50,13 +84,18 @@ export default function PartnerDetailPage() {
   const { data: reviews } = usePartnerReviews({ partnerId: id });
   const { data: documents } = usePartnerDocuments({ partnerId: id });
   const { data: permissions } = usePartnerPermissions({ partnerId: id });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
   if (isLoading) return <Loader />;
   if (error || !partner) return <ErrorState message="Partenaire non trouvé" onRetry={refetch} />;
 
   const p = partner as any;
-  const catInfo = CATEGORY_MAP[p.category] || { label: p.category, icon: Users, color: 'text-gray-600 bg-gray-50' };
+  const catInfo = CATEGORY_MAP[p.category] || {
+    label: p.category,
+    icon: Users,
+    color: 'text-gray-600 bg-gray-50',
+  };
   const CatIcon = catInfo.icon;
   const collabLabel = COLLAB_LABELS[p.collaborationLevel] || p.collaborationLevel;
 
@@ -67,11 +106,10 @@ export default function PartnerDetailPage() {
   const docList: any[] = Array.isArray(documents) ? documents : [];
   const permList: any[] = Array.isArray(permissions) ? permissions : [];
 
-  const handleDelete = async () => {
-    if (confirm('Désactiver ce partenaire ?')) {
-      await deletePartner.mutateAsync(id);
-      router.push('/dashboard/partners');
-    }
+  const confirmDelete = async () => {
+    await deletePartner.mutateAsync(id);
+    setShowDeleteConfirm(false);
+    router.push('/dashboard/partners');
   };
 
   const tabs = [
@@ -101,7 +139,12 @@ export default function PartnerDetailPage() {
                 Modifier
               </Button>
             </Link>
-            <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
               <Trash2 className="h-4 w-4 mr-1.5" />
               Désactiver
             </Button>
@@ -129,60 +172,91 @@ export default function PartnerDetailPage() {
               </Badge>
             </div>
 
-            {p.description && <p className="text-sm text-gray-600 dark:text-gray-400">{p.description}</p>}
+            {p.description && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">{p.description}</p>
+            )}
 
             {/* Score */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Star className="h-5 w-5 text-amber-400" fill="currentColor" />
-                <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{p.score || 0}</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  {p.score || 0}
+                </span>
                 <span className="text-sm text-gray-400">/100</span>
               </div>
               <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
-              <span className="text-sm text-gray-500">
-                {reviewList.length} avis
-              </span>
+              <span className="text-sm text-gray-500">{reviewList.length} avis</span>
               <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
-              <span className="text-sm text-gray-500">
-                {contractList.length} contrats
-              </span>
+              <span className="text-sm text-gray-500">{contractList.length} contrats</span>
             </div>
 
             {/* Contact */}
             <div className="flex flex-wrap gap-4">
               {p.phone && (
-                <a href={`tel:${p.phone}`} className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-brand transition-colors">
+                <a
+                  href={`tel:${p.phone}`}
+                  className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-brand transition-colors"
+                >
                   <Phone className="h-4 w-4" /> {p.phone}
                 </a>
               )}
               {p.whatsapp && (
-                <a href={`https://wa.me/${p.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" className="inline-flex items-center gap-1.5 text-sm text-emerald-600 hover:text-emerald-700 transition-colors">
+                <a
+                  href={`https://wa.me/${p.whatsapp.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 text-sm text-emerald-600 hover:text-emerald-700 transition-colors"
+                >
                   <MessageCircle className="h-4 w-4" /> WhatsApp
                 </a>
               )}
               {p.email && (
-                <a href={`mailto:${p.email}`} className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-brand transition-colors">
+                <a
+                  href={`mailto:${p.email}`}
+                  className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-brand transition-colors"
+                >
                   <Mail className="h-4 w-4" /> {p.email}
                 </a>
               )}
               {p.website && (
-                <a href={p.website} target="_blank" className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-brand transition-colors">
+                <a
+                  href={p.website}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-brand transition-colors"
+                >
                   <Globe className="h-4 w-4" /> Site web
                 </a>
               )}
               {(p.address || p.city) && (
                 <span className="inline-flex items-center gap-1.5 text-sm text-gray-500">
-                  <MapPin className="h-4 w-4" /> {[p.address, p.city, p.country].filter(Boolean).join(', ')}
+                  <MapPin className="h-4 w-4" />{' '}
+                  {[p.address, p.city, p.country].filter(Boolean).join(', ')}
                 </span>
               )}
             </div>
 
             {/* Social */}
             <div className="flex flex-wrap gap-3">
-              {p.facebook && <a href={p.facebook} target="_blank" className="text-blue-600 hover:text-blue-700"><Globe className="h-4 w-4" /></a>}
-              {p.instagram && <a href={p.instagram} target="_blank" className="text-pink-600 hover:text-pink-700"><Camera className="h-4 w-4" /></a>}
-              {p.linkedin && <a href={p.linkedin} target="_blank" className="text-blue-700 hover:text-blue-800"><Briefcase className="h-4 w-4" /></a>}
-              {p.tiktok && <a href={p.tiktok} target="_blank" className="text-gray-600 hover:text-gray-700"><Music4 className="h-4 w-4" /></a>}
+              {p.facebook && (
+                <a href={p.facebook} target="_blank" className="text-blue-600 hover:text-blue-700">
+                  <Globe className="h-4 w-4" />
+                </a>
+              )}
+              {p.instagram && (
+                <a href={p.instagram} target="_blank" className="text-pink-600 hover:text-pink-700">
+                  <Camera className="h-4 w-4" />
+                </a>
+              )}
+              {p.linkedin && (
+                <a href={p.linkedin} target="_blank" className="text-blue-700 hover:text-blue-800">
+                  <Briefcase className="h-4 w-4" />
+                </a>
+              )}
+              {p.tiktok && (
+                <a href={p.tiktok} target="_blank" className="text-gray-600 hover:text-gray-700">
+                  <Music4 className="h-4 w-4" />
+                </a>
+              )}
             </div>
 
             {/* Specialite & Zones */}
@@ -190,19 +264,25 @@ export default function PartnerDetailPage() {
               {p.specialite && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Spécialité</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.specialite}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {p.specialite}
+                  </p>
                 </div>
               )}
               {p.zonesCouvertes && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Zones couvertes</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.zonesCouvertes}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {p.zonesCouvertes}
+                  </p>
                 </div>
               )}
               {p.horairesDisponibilite && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Disponibilité</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.horairesDisponibilite}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {p.horairesDisponibilite}
+                  </p>
                 </div>
               )}
             </div>
@@ -219,24 +299,34 @@ export default function PartnerDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Card className="p-4 text-center">
               <Handshake className="h-5 w-5 mx-auto text-purple-500 mb-1" />
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{contractList.length}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {contractList.length}
+              </p>
               <p className="text-xs text-gray-500">Contrats</p>
             </Card>
             <Card className="p-4 text-center">
               <DollarSign className="h-5 w-5 mx-auto text-emerald-500 mb-1" />
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                {txList.filter((t: any) => t.type === 'PAIEMENT').reduce((a: number, t: any) => a + (t.amount || 0), 0).toLocaleString()} F
+                {txList
+                  .filter((t: any) => t.type === 'PAIEMENT')
+                  .reduce((a: number, t: any) => a + (t.amount || 0), 0)
+                  .toLocaleString()}{' '}
+                F
               </p>
               <p className="text-xs text-gray-500">Paiements</p>
             </Card>
             <Card className="p-4 text-center">
               <ArrowUpRight className="h-5 w-5 mx-auto text-amber-500 mb-1" />
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{assignmentList.length}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {assignmentList.length}
+              </p>
               <p className="text-xs text-gray-500">Assignations</p>
             </Card>
             <Card className="p-4 text-center">
               <Star className="h-5 w-5 mx-auto text-amber-400 mb-1" />
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{reviewList.length}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {reviewList.length}
+              </p>
               <p className="text-xs text-gray-500">Avis</p>
             </Card>
           </div>
@@ -244,18 +334,24 @@ export default function PartnerDetailPage() {
           {/* Services/Products */}
           {(p.servicesProposes || p.produitsFournis) && (
             <Card className="p-6">
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Services & Produits</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Services & Produits
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {p.servicesProposes && (
                   <div>
                     <p className="text-xs text-gray-500 mb-2">Services proposés</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{p.servicesProposes}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                      {p.servicesProposes}
+                    </p>
                   </div>
                 )}
                 {p.produitsFournis && (
                   <div>
                     <p className="text-xs text-gray-500 mb-2">Produits fournis</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{p.produitsFournis}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                      {p.produitsFournis}
+                    </p>
                   </div>
                 )}
               </div>
@@ -268,14 +364,28 @@ export default function PartnerDetailPage() {
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Avis récents</h3>
               <div className="space-y-3">
                 {reviewList.slice(0, 3).map((r: any) => (
-                  <div key={r.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                  <div
+                    key={r.id}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+                  >
                     <div className="flex items-center gap-0.5">
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} className={cn('h-3.5 w-3.5', s <= r.rating ? 'text-amber-400' : 'text-gray-200 dark:text-gray-600')} fill={s <= r.rating ? 'currentColor' : 'none'} />
+                        <Star
+                          key={s}
+                          className={cn(
+                            'h-3.5 w-3.5',
+                            s <= r.rating ? 'text-amber-400' : 'text-gray-200 dark:text-gray-600'
+                          )}
+                          fill={s <= r.rating ? 'currentColor' : 'none'}
+                        />
                       ))}
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 flex-1">{r.comment || 'Avis sans commentaire'}</p>
-                    <span className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex-1">
+                      {r.comment || 'Avis sans commentaire'}
+                    </p>
+                    <span className="text-xs text-gray-400">
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -284,25 +394,25 @@ export default function PartnerDetailPage() {
         </div>
       )}
 
-      {activeTab === 'contracts' && (
-        <ContractsSection contracts={contractList} partnerId={id} />
-      )}
+      <ConfirmationModal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDelete}
+        title="Désactiver le partenaire"
+        description="Êtes-vous sûr de vouloir désactiver ce partenaire ? Cette action peut être réversible."
+        confirmLabel="Désactiver"
+        variant="danger"
+      />
 
-      {activeTab === 'transactions' && (
-        <TransactionsSection transactions={txList} partnerId={id} />
-      )}
+      {activeTab === 'contracts' && <ContractsSection contracts={contractList} partnerId={id} />}
 
-      {activeTab === 'assignments' && (
-        <AssignmentsSection assignments={assignmentList} />
-      )}
+      {activeTab === 'transactions' && <TransactionsSection transactions={txList} partnerId={id} />}
 
-      {activeTab === 'documents' && (
-        <DocumentsSection documents={docList} partnerId={id} />
-      )}
+      {activeTab === 'assignments' && <AssignmentsSection assignments={assignmentList} />}
 
-      {activeTab === 'permissions' && (
-        <PermissionsSection permissions={permList} partnerId={id} />
-      )}
+      {activeTab === 'documents' && <DocumentsSection documents={docList} partnerId={id} />}
+
+      {activeTab === 'permissions' && <PermissionsSection permissions={permList} partnerId={id} />}
     </div>
   );
 }
@@ -312,11 +422,16 @@ export default function PartnerDetailPage() {
 function ContractsSection({ contracts, partnerId }: { contracts: any[]; partnerId: string }) {
   const statusColor = (s: string) => {
     switch (s) {
-      case 'ACTIF': return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
-      case 'EXPIRE': return 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-      case 'RESILIE': return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
-      case 'RENOUVELLE': return 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'ACTIF':
+        return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+      case 'EXPIRE':
+        return 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      case 'RESILIE':
+        return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+      case 'RENOUVELLE':
+        return 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      default:
+        return 'bg-gray-100 text-gray-600';
     }
   };
 
@@ -335,20 +450,26 @@ function ContractsSection({ contracts, partnerId }: { contracts: any[]; partnerI
       ) : (
         <div className="space-y-3">
           {contracts.map((c: any) => (
-            <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <div
+              key={c.id}
+              className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+            >
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-gray-400" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.title}</p>
                   <p className="text-xs text-gray-500">
-                    {new Date(c.startDate).toLocaleDateString()} - {c.endDate ? new Date(c.endDate).toLocaleDateString() : 'Indéfini'}
+                    {new Date(c.startDate).toLocaleDateString()} -{' '}
+                    {c.endDate ? new Date(c.endDate).toLocaleDateString() : 'Indéfini'}
                     {c.amount ? ` • ${c.amount.toLocaleString()} FCFA` : ''}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Badge className={statusColor(c.status)}>{c.status}</Badge>
-                {c.signedByBusiness && c.signedByPartner && <CheckCircle className="h-4 w-4 text-emerald-500" />}
+                {c.signedByBusiness && c.signedByPartner && (
+                  <CheckCircle className="h-4 w-4 text-emerald-500" />
+                )}
               </div>
             </div>
           ))}
@@ -358,15 +479,27 @@ function ContractsSection({ contracts, partnerId }: { contracts: any[]; partnerI
   );
 }
 
-function TransactionsSection({ transactions, partnerId }: { transactions: any[]; partnerId: string }) {
+function TransactionsSection({
+  transactions,
+  partnerId,
+}: {
+  transactions: any[];
+  partnerId: string;
+}) {
   const typeColor = (t: string) => {
     switch (t) {
-      case 'PAIEMENT': return 'text-emerald-600';
-      case 'COMMISSION': return 'text-blue-600';
-      case 'AVANCE': return 'text-amber-600';
-      case 'REMBOURSEMENT': return 'text-red-600';
-      case 'PRET': return 'text-purple-600';
-      default: return 'text-gray-600';
+      case 'PAIEMENT':
+        return 'text-emerald-600';
+      case 'COMMISSION':
+        return 'text-blue-600';
+      case 'AVANCE':
+        return 'text-amber-600';
+      case 'REMBOURSEMENT':
+        return 'text-red-600';
+      case 'PRET':
+        return 'text-purple-600';
+      default:
+        return 'text-gray-600';
     }
   };
 
@@ -385,15 +518,22 @@ function TransactionsSection({ transactions, partnerId }: { transactions: any[];
       ) : (
         <div className="space-y-2">
           {transactions.map((t: any) => (
-            <div key={t.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <div
+              key={t.id}
+              className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+            >
               <div className="flex items-center gap-3">
                 <DollarSign className={cn('h-5 w-5', typeColor(t.type))} />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t.type}</p>
-                  <p className="text-xs text-gray-500">{t.description || ''} {t.paidAt ? new Date(t.paidAt).toLocaleDateString() : ''}</p>
+                  <p className="text-xs text-gray-500">
+                    {t.description || ''} {t.paidAt ? new Date(t.paidAt).toLocaleDateString() : ''}
+                  </p>
                 </div>
               </div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t.amount.toLocaleString()} FCFA</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {t.amount.toLocaleString()} FCFA
+              </p>
             </div>
           ))}
         </div>
@@ -411,16 +551,29 @@ function AssignmentsSection({ assignments }: { assignments: any[] }) {
       ) : (
         <div className="space-y-2">
           {assignments.map((a: any) => (
-            <div key={a.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <div
+              key={a.id}
+              className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+            >
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{a.referenceTitle || a.type}</p>
-                <p className="text-xs text-gray-500">{a.type} • {new Date(a.assignedAt).toLocaleDateString()}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {a.referenceTitle || a.type}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {a.type} • {new Date(a.assignedAt).toLocaleDateString()}
+                </p>
               </div>
-              <Badge className={
-                a.status === 'TERMINE' ? 'bg-emerald-50 text-emerald-700' :
-                a.status === 'EN_COURS' ? 'bg-blue-50 text-blue-700' :
-                'bg-gray-100 text-gray-600'
-              }>{a.status}</Badge>
+              <Badge
+                className={
+                  a.status === 'TERMINE'
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : a.status === 'EN_COURS'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'bg-gray-100 text-gray-600'
+                }
+              >
+                {a.status}
+              </Badge>
             </div>
           ))}
         </div>
@@ -438,19 +591,29 @@ function DocumentsSection({ documents, partnerId }: { documents: any[]; partnerI
       ) : (
         <div className="space-y-2">
           {documents.map((d: any) => (
-            <div key={d.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <div
+              key={d.id}
+              className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+            >
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-gray-400" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{d.title}</p>
-                  <p className="text-xs text-gray-500">{d.type}{d.expiresAt ? ` • Expire le ${new Date(d.expiresAt).toLocaleDateString()}` : ''}</p>
+                  <p className="text-xs text-gray-500">
+                    {d.type}
+                    {d.expiresAt
+                      ? ` • Expire le ${new Date(d.expiresAt).toLocaleDateString()}`
+                      : ''}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 {d.isVerified && <BadgeCheck className="h-4 w-4 text-emerald-500" />}
                 {d.fileUrl && (
                   <a href={d.fileUrl} target="_blank">
-                    <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5" /></Button>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
                   </a>
                 )}
               </div>
@@ -471,7 +634,10 @@ function PermissionsSection({ permissions, partnerId }: { permissions: any[]; pa
       ) : (
         <div className="space-y-2">
           {permissions.map((p: any) => (
-            <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+            <div
+              key={p.id}
+              className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+            >
               <div className="flex items-center gap-3">
                 <Shield className="h-5 w-5 text-gray-400" />
                 <div>
@@ -479,7 +645,11 @@ function PermissionsSection({ permissions, partnerId }: { permissions: any[]; pa
                   <p className="text-xs text-gray-500">Niveau: {p.accessLevel}</p>
                 </div>
               </div>
-              <Badge className={p.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}>
+              <Badge
+                className={
+                  p.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                }
+              >
                 {p.isActive ? 'Actif' : 'Inactif'}
               </Badge>
             </div>
@@ -489,5 +659,3 @@ function PermissionsSection({ permissions, partnerId }: { permissions: any[]; pa
     </Card>
   );
 }
-
-

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, HelpCircle } from 'lucide-react';
+import { ChevronDown, HelpCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePublicBusinessFaqs } from '@/features/hooks';
 
 interface FAQItem {
   question: string;
@@ -11,19 +12,49 @@ interface FAQItem {
 
 interface FAQProps {
   faqs?: FAQItem[];
+  slug?: string;
 }
 
 const DEFAULT_FAQS: FAQItem[] = [
-  { question: 'Quels sont vos horaires d\'ouverture ?', answer: 'Consultez nos horaires dans la section contact ou sur la page d\'accueil.' },
-  { question: 'Comment puis-je passer une commande ?', answer: 'Vous pouvez parcourir nos produits et services directement sur cette page, puis cliquer sur "Commander" ou nous contacter.' },
-  { question: 'Quels moyens de paiement acceptez-vous ?', answer: 'Nous acceptons TMoney, Flooz, Wave, carte bancaire, virement et espèces selon la configuration de notre entreprise.' },
-  { question: 'Proposez-vous la livraison ?', answer: 'Si la livraison est activée, vous pouvez choisir cette option lors de votre commande. Les frais dépendent de votre zone.' },
-  { question: 'Comment puis-vous contacter pour une réclamation ?', answer: 'Utilisez notre formulaire de contact ou envoyez-nous un message directement depuis la plateforme.' },
+  {
+    question: "Quels sont vos horaires d'ouverture ?",
+    answer: "Consultez nos horaires dans la section contact ou sur la page d'accueil.",
+  },
+  {
+    question: 'Comment puis-je passer une commande ?',
+    answer:
+      'Vous pouvez parcourir nos produits et services directement sur cette page, puis cliquer sur "Commander" ou nous contacter.',
+  },
+  {
+    question: 'Quels moyens de paiement acceptez-vous ?',
+    answer:
+      'Nous acceptons TMoney, Flooz, Wave, carte bancaire, virement et espèces selon la configuration de notre entreprise.',
+  },
+  {
+    question: 'Proposez-vous la livraison ?',
+    answer:
+      'Si la livraison est activée, vous pouvez choisir cette option lors de votre commande. Les frais dépendent de votre zone.',
+  },
+  {
+    question: 'Comment puis-vous contacter pour une réclamation ?',
+    answer:
+      'Utilisez notre formulaire de contact ou envoyez-nous un message directement depuis la plateforme.',
+  },
 ];
 
-export function FAQ({ faqs }: FAQProps) {
+export function FAQ({ faqs, slug }: FAQProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const items = faqs?.length ? faqs : DEFAULT_FAQS;
+
+  // Fetch FAQs from API if slug is provided, otherwise use props or defaults
+  const { data: apiFaqs, isLoading } = usePublicBusinessFaqs(slug || '');
+
+  const items = slug
+    ? apiFaqs?.length
+      ? apiFaqs
+      : DEFAULT_FAQS
+    : faqs?.length
+      ? faqs
+      : DEFAULT_FAQS;
 
   return (
     <section id="section-faq" className="scroll-mt-24">
@@ -31,13 +62,11 @@ export function FAQ({ faqs }: FAQProps) {
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
           Questions fréquentes
         </h2>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
-          Tout ce que vous devez savoir
-        </p>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">Tout ce que vous devez savoir</p>
       </div>
 
       <div className="space-y-3 max-w-3xl">
-        {items.map((item, index) => (
+        {items.map((item: { question: string; answer: string }, index: number) => (
           <div
             key={index}
             className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200"

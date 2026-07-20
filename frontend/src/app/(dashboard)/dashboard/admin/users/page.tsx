@@ -2,12 +2,23 @@
 
 import { useState } from 'react';
 import {
-  Users, Search, ChevronLeft, ChevronRight, Shield, UserX, UserCheck,
-  Ban, Eye, SlidersHorizontal, X,
+  Users,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  UserX,
+  UserCheck,
+  Ban,
+  Eye,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { apiClient } from '@/services/apiClient';
@@ -39,9 +50,15 @@ function useAdminUsers(params?: any) {
   return useQuery({
     queryKey: ['admin', 'users', params],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/users', { params });
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetUsers(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement users:', error);
+        return { users: [], totalPages: 1 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -49,7 +66,7 @@ function useAdminUserStatusAction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: string }) =>
-      apiClient.put(`/admin/users/${id}/status`, { action }),
+      apiClient.updateUserStatus(id, action),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
@@ -65,6 +82,11 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [actionTarget, setActionTarget] = useState<{
+    id: string;
+    action: string;
+    name: string;
+  } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const limit = 20;
 
@@ -76,26 +98,11 @@ export default function AdminUsersPage() {
   const { data: usersData, isLoading } = useAdminUsers(params);
   const statusMutation = useAdminUserStatusAction();
 
-  const users = Array.isArray(usersData) ? usersData : usersData?.users ?? [];
+  const users = Array.isArray(usersData) ? usersData : (usersData?.users ?? []);
   const totalPages = usersData?.totalPages ?? 1;
 
   const handleStatusAction = async (id: string, action: string, userName: string) => {
-    const actionLabels: Record<string, string> = {
-      suspend: 'suspendre',
-      reactivate: 'réactiver',
-      block: 'bloquer',
-    };
-    const confirmed = window.confirm(
-      `Êtes-vous sûr de vouloir ${actionLabels[action] || action} l'utilisateur « ${userName} » ?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await statusMutation.mutateAsync({ id, action });
-      setToast({ message: `Utilisateur ${actionLabels[action] || action} avec succès`, type: 'success' });
-    } catch {
-      setToast({ message: `Erreur lors de l'action « ${actionLabels[action] || action} »`, type: 'error' });
-    }
+    setActionTarget({ id, action, name: userName });
   };
 
   const applyFilters = () => {
@@ -130,13 +137,17 @@ export default function AdminUsersPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Toast */}
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -167,27 +178,29 @@ export default function AdminUsersPage() {
             />
           </div>
 
-          <select
+          <Select
             value={roleFilter}
-            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          >
-            <option value="">Tous les rôles</option>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-            ))}
-          </select>
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setPage(1);
+            }}
+            options={[
+              { value: '', label: 'Tous les rôles' },
+              ...ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] })),
+            ]}
+          />
 
-          <select
+          <Select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          >
-            <option value="">Tous les statuts</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-            ))}
-          </select>
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            options={[
+              { value: '', label: 'Tous les statuts' },
+              ...STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+            ]}
+          />
 
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -217,7 +230,10 @@ export default function AdminUsersPage() {
               </thead>
               <tbody>
                 {users.map((u: any) => (
-                  <tr key={u.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={u.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-sm font-bold text-brand shrink-0">
@@ -242,9 +258,11 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                        STATUS_STYLES[u.status] || 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          STATUS_STYLES[u.status] || 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
                         {STATUS_LABELS[u.status] || u.status}
                       </span>
                     </td>
@@ -256,7 +274,7 @@ export default function AdminUsersPage() {
                         <Button
                           variant="ghost"
                           size="xs"
-                          onClick={() => window.location.href = `/dashboard/admin/users/${u.id}`}
+                          onClick={() => (window.location.href = `/dashboard/admin/users/${u.id}`)}
                         >
                           <Eye className="h-3.5 w-3.5" />
                           Voir
@@ -305,7 +323,11 @@ export default function AdminUsersPage() {
           <EmptyState
             icon={<Users className="h-8 w-8" />}
             title="Aucun utilisateur"
-            description={hasActiveFilters ? 'Aucun utilisateur ne correspond aux filtres.' : 'Aucun utilisateur trouvé.'}
+            description={
+              hasActiveFilters
+                ? 'Aucun utilisateur ne correspond aux filtres.'
+                : 'Aucun utilisateur trouvé.'
+            }
           />
         )}
       </Card>
@@ -338,6 +360,36 @@ export default function AdminUsersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        open={!!actionTarget}
+        onClose={() => setActionTarget(null)}
+        onConfirm={async () => {
+          if (!actionTarget) return;
+          const actionLabels: Record<string, string> = {
+            suspend: 'suspendre',
+            reactivate: 'réactiver',
+            block: 'bloquer',
+          };
+          try {
+            await statusMutation.mutateAsync({ id: actionTarget.id, action: actionTarget.action });
+            setToast({
+              message: `Utilisateur ${actionLabels[actionTarget.action]} avec succès`,
+              type: 'success',
+            });
+          } catch {
+            setToast({
+              message: `Erreur lors de l'action ${actionLabels[actionTarget.action]}`,
+              type: 'error',
+            });
+          }
+          setActionTarget(null);
+        }}
+        title="Confirmer l'action"
+        description={`Êtes-vous sûr de vouloir effectuer cette action sur « ${actionTarget?.name} » ?`}
+        confirmLabel="Confirmer"
+        variant="warning"
+      />
     </div>
   );
 }

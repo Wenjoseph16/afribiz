@@ -3,17 +3,41 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Rocket, User, Shield, Check, Building2, Code2, Star, Upload,
-  ArrowRight, ChevronLeft, AlertCircle, Camera, FileText, X,
-  Globe, MapPin, Phone, Mail, Briefcase, Link as LinkIcon,
-  ExternalLink, Package, Users, Save,
+  Rocket,
+  User,
+  Shield,
+  Check,
+  Building2,
+  Code2,
+  Star,
+  Upload,
+  ArrowRight,
+  ChevronLeft,
+  AlertCircle,
+  Camera,
+  FileText,
+  X,
+  Globe,
+  MapPin,
+  Phone,
+  Mail,
+  Briefcase,
+  Link as LinkIcon,
+  ExternalLink,
+  Package,
+  Users,
+  Save,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
-import { useDeveloperActivation, useUpdateDeveloperProfile, useSubmitDeveloperVerification } from '@/features/developerHooks';
+import {
+  useDeveloperActivation,
+  useUpdateDeveloperProfile,
+  useSubmitDeveloperVerification,
+} from '@/features/developerHooks';
 
 const STEPS = [
   { id: 1, label: 'Bienvenue', icon: Rocket },
@@ -23,10 +47,22 @@ const STEPS = [
 ];
 
 const BENEFITS = [
-  { icon: Code2, title: 'Publiez vos modules', desc: 'Créez et distribuez vos solutions sur la marketplace AfriBiz' },
-  { icon: Star, title: 'Gagnez de l\'argent', desc: 'Monétisez vos créations via ventes et abonnements' },
+  {
+    icon: Code2,
+    title: 'Publiez vos modules',
+    desc: 'Créez et distribuez vos solutions sur la marketplace AfriBiz',
+  },
+  {
+    icon: Star,
+    title: "Gagnez de l'argent",
+    desc: 'Monétisez vos créations via ventes et abonnements',
+  },
   { icon: Shield, title: 'Support prioritaire', desc: 'Accédez à une assistance technique dédiée' },
-  { icon: Rocket, title: 'Visibilité africaine', desc: 'Touchez des milliers d\'entreprises sur tout le continent' },
+  {
+    icon: Rocket,
+    title: 'Visibilité africaine',
+    desc: "Touchez des milliers d'entreprises sur tout le continent",
+  },
 ];
 
 interface UploadedDoc {
@@ -71,7 +107,8 @@ export default function DeveloperOnboardingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
 
-  const updateField = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }));
+  const updateField = (field: string, value: any) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
 
   const addTag = (key: 'specialties' | 'technologies', inputKey: 'specInput' | 'techInput') => {
     const v = form[inputKey].trim();
@@ -82,7 +119,10 @@ export default function DeveloperOnboardingPage() {
   };
 
   const removeTag = (key: 'specialties' | 'technologies', value: string) => {
-    updateField(key, form[key].filter((x) => x !== value));
+    updateField(
+      key,
+      form[key].filter((x) => x !== value)
+    );
   };
 
   const handleFileUpload = (docKey: string, file: File) => {
@@ -113,7 +153,9 @@ export default function DeveloperOnboardingPage() {
     try {
       await activate.mutateAsync();
       setStep(2);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleNext = async () => {
@@ -160,7 +202,8 @@ export default function DeveloperOnboardingPage() {
     router.push('/dashboard/developer');
   };
 
-  const isPending = activate.isPending || updateProfile.isPending || submitVerification.isPending || isSaving;
+  const isPending =
+    activate.isPending || updateProfile.isPending || submitVerification.isPending || isSaving;
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' o';
@@ -180,26 +223,36 @@ export default function DeveloperOnboardingPage() {
         {STEPS.map((s, i) => (
           <div key={s.id} className="flex items-center">
             <div className="flex flex-col items-center">
-              <div className={cn(
-                'w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300',
-                step > s.id ? 'bg-emerald-500 text-white shadow-md' :
-                step === s.id ? 'bg-brand text-white shadow-lg shadow-brand/20 ring-2 ring-brand/30' :
-                'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500',
-              )}>
+              <div
+                className={cn(
+                  'w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300',
+                  step > s.id
+                    ? 'bg-emerald-500 text-white shadow-md'
+                    : step === s.id
+                      ? 'bg-brand text-white shadow-lg shadow-brand/20 ring-2 ring-brand/30'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+                )}
+              >
                 {step > s.id ? <Check className="h-5 w-5" /> : <s.icon className="h-5 w-5" />}
               </div>
-              <span className={cn(
-                'text-[11px] font-medium mt-1.5 text-center whitespace-nowrap',
-                step >= s.id ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500',
-              )}>
+              <span
+                className={cn(
+                  'text-[11px] font-medium mt-1.5 text-center whitespace-nowrap',
+                  step >= s.id
+                    ? 'text-gray-700 dark:text-gray-300'
+                    : 'text-gray-400 dark:text-gray-500'
+                )}
+              >
                 {s.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={cn(
-                'h-0.5 w-16 sm:w-28 mx-2 rounded-full transition-colors duration-500',
-                step > s.id ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700',
-              )} />
+              <div
+                className={cn(
+                  'h-0.5 w-16 sm:w-28 mx-2 rounded-full transition-colors duration-500',
+                  step > s.id ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700'
+                )}
+              />
             )}
           </div>
         ))}
@@ -216,17 +269,23 @@ export default function DeveloperOnboardingPage() {
               Bienvenue dans l&apos;espace développeur AfriBiz
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8">
-              Rejoignez notre plateforme et créez des modules qui aideront des milliers d&apos;entreprises africaines à se développer.
+              Rejoignez notre plateforme et créez des modules qui aideront des milliers
+              d&apos;entreprises africaines à se développer.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-8 text-left">
               {BENEFITS.map((b) => (
-                <div key={b.title} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800/80 transition-colors">
+                <div
+                  key={b.title}
+                  className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800/80 transition-colors"
+                >
                   <div className="p-2 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand shrink-0">
                     <b.icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{b.title}</h4>
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {b.title}
+                    </h4>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{b.desc}</p>
                   </div>
                 </div>
@@ -254,8 +313,12 @@ export default function DeveloperOnboardingPage() {
                 <User className="h-5 w-5 text-brand" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Informations du profil</h3>
-                <p className="text-xs text-gray-500">Ces informations seront visibles sur votre profil public</p>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Informations du profil
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Ces informations seront visibles sur votre profil public
+                </p>
               </div>
             </div>
 
@@ -341,15 +404,27 @@ export default function DeveloperOnboardingPage() {
 
             {/* Skills: Specialties */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Spécialités</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Spécialités
+              </label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.specialties.length === 0 && (
-                  <span className="text-xs text-gray-400 italic px-1">Ajoutez vos domaines d&apos;expertise</span>
+                  <span className="text-xs text-gray-400 italic px-1">
+                    Ajoutez vos domaines d&apos;expertise
+                  </span>
                 )}
                 {form.specialties.map((s) => (
-                  <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand text-sm font-medium">
+                  <span
+                    key={s}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand text-sm font-medium"
+                  >
                     {s}
-                    <button onClick={() => removeTag('specialties', s)} className="hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+                    <button
+                      onClick={() => removeTag('specialties', s)}
+                      className="hover:text-red-500 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -358,23 +433,47 @@ export default function DeveloperOnboardingPage() {
                   value={form.specInput}
                   onChange={(e) => updateField('specInput', e.target.value)}
                   placeholder="Ex: E-commerce, Paiement, CRM..."
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag('specialties', 'specInput'); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag('specialties', 'specInput');
+                    }
+                  }}
                 />
-                <Button variant="secondary" onClick={() => addTag('specialties', 'specInput')} type="button" size="sm">Ajouter</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => addTag('specialties', 'specInput')}
+                  type="button"
+                  size="sm"
+                >
+                  Ajouter
+                </Button>
               </div>
             </div>
 
             {/* Skills: Technologies */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Technologies</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Technologies
+              </label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.technologies.length === 0 && (
-                  <span className="text-xs text-gray-400 italic px-1">Ajoutez vos technologies préférées</span>
+                  <span className="text-xs text-gray-400 italic px-1">
+                    Ajoutez vos technologies préférées
+                  </span>
                 )}
                 {form.technologies.map((t) => (
-                  <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 text-sm font-medium">
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 text-sm font-medium"
+                  >
                     {t}
-                    <button onClick={() => removeTag('technologies', t)} className="hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+                    <button
+                      onClick={() => removeTag('technologies', t)}
+                      className="hover:text-red-500 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   </span>
                 ))}
               </div>
@@ -383,9 +482,21 @@ export default function DeveloperOnboardingPage() {
                   value={form.techInput}
                   onChange={(e) => setForm((prev) => ({ ...prev, techInput: e.target.value }))}
                   placeholder="Ex: React, Node.js, Python..."
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag('technologies', 'techInput'); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag('technologies', 'techInput');
+                    }
+                  }}
                 />
-                <Button variant="secondary" onClick={() => addTag('technologies', 'techInput')} type="button" size="sm">Ajouter</Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => addTag('technologies', 'techInput')}
+                  type="button"
+                  size="sm"
+                >
+                  Ajouter
+                </Button>
               </div>
             </div>
 
@@ -435,34 +546,67 @@ export default function DeveloperOnboardingPage() {
                 <Shield className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Vérification du compte</h3>
-                <p className="text-xs text-gray-500">Fournissez les documents requis pour valider votre identité</p>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Vérification du compte
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Fournissez les documents requis pour valider votre identité
+                </p>
               </div>
             </div>
 
             <div className="grid gap-4">
               {[
-                { key: 'identityDoc', label: "Pièce d'identité", icon: Camera, desc: 'Passeport, CNI ou permis de conduire', accept: 'image/*,.pdf' },
-                { key: 'companyDoc', label: "Document d'entreprise", icon: FileText, desc: 'Registre de commerce, patente, ou RC', accept: 'image/*,.pdf' },
-                { key: 'responsiblePhoto', label: 'Photo du responsable', icon: User, desc: 'Selfie avec votre pièce d\'identité', accept: 'image/*' },
+                {
+                  key: 'identityDoc',
+                  label: "Pièce d'identité",
+                  icon: Camera,
+                  desc: 'Passeport, CNI ou permis de conduire',
+                  accept: 'image/*,.pdf',
+                },
+                {
+                  key: 'companyDoc',
+                  label: "Document d'entreprise",
+                  icon: FileText,
+                  desc: 'Registre de commerce, patente, ou RC',
+                  accept: 'image/*,.pdf',
+                },
+                {
+                  key: 'responsiblePhoto',
+                  label: 'Photo du responsable',
+                  icon: User,
+                  desc: "Selfie avec votre pièce d'identité",
+                  accept: 'image/*',
+                },
               ].map((doc) => (
-                <div key={doc.key} className={cn(
-                  'relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all',
-                  docs[doc.key]
-                    ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
-                    : 'border-dashed border-gray-200 dark:border-gray-700 hover:border-brand/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
-                )}>
-                  <div className={cn(
-                    'p-3 rounded-lg shrink-0',
-                    docs[doc.key] ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-50 dark:bg-gray-800/50'
-                  )}>
-                    <doc.icon className={cn(
-                      'h-6 w-6',
-                      docs[doc.key] ? 'text-emerald-600' : 'text-gray-400'
-                    )} />
+                <div
+                  key={doc.key}
+                  className={cn(
+                    'relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all',
+                    docs[doc.key]
+                      ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
+                      : 'border-dashed border-gray-200 dark:border-gray-700 hover:border-brand/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'p-3 rounded-lg shrink-0',
+                      docs[doc.key]
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                        : 'bg-gray-50 dark:bg-gray-800/50'
+                    )}
+                  >
+                    <doc.icon
+                      className={cn(
+                        'h-6 w-6',
+                        docs[doc.key] ? 'text-emerald-600' : 'text-gray-400'
+                      )}
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">{doc.label}</h4>
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {doc.label}
+                    </h4>
                     <p className="text-xs text-gray-400 mt-0.5">{doc.desc}</p>
                     {docs[doc.key] && (
                       <div className="flex items-center gap-2 mt-1.5">
@@ -504,11 +648,28 @@ export default function DeveloperOnboardingPage() {
                         >
                           {uploadingDoc === doc.key ? (
                             <span className="flex items-center gap-1">
-                              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="none"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
                               Chargement...
                             </span>
                           ) : (
-                            <><Upload className="h-3.5 w-3.5" /> Upload</>
+                            <>
+                              <Upload className="h-3.5 w-3.5" /> Upload
+                            </>
                           )}
                         </label>
                       </>
@@ -522,7 +683,11 @@ export default function DeveloperOnboardingPage() {
               <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div className="text-sm text-amber-700 dark:text-amber-300">
                 <p className="font-medium">Pourquoi ces documents ?</p>
-                <p className="mt-1 text-xs">Ils permettent à AfriBiz de vérifier votre identité et d&apos;assurer la confiance sur la marketplace. Les documents sont stockés de manière sécurisée et ne sont pas partagés publiquement.</p>
+                <p className="mt-1 text-xs">
+                  Ils permettent à AfriBiz de vérifier votre identité et d&apos;assurer la confiance
+                  sur la marketplace. Les documents sont stockés de manière sécurisée et ne sont pas
+                  partagés publiquement.
+                </p>
               </div>
             </div>
           </div>
@@ -542,25 +707,44 @@ export default function DeveloperOnboardingPage() {
               Félicitations ! 🎉
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8">
-              Votre compte développeur est activé. Vous avez désormais accès à l&apos;espace développeur AfriBiz pour créer et publier vos modules.
+              Votre compte développeur est activé. Vous avez désormais accès à l&apos;espace
+              développeur AfriBiz pour créer et publier vos modules.
             </p>
 
             {/* Summary cards */}
             <div className="grid sm:grid-cols-3 gap-3 mb-8 text-left">
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50">
-                <div className="text-brand mb-2"><Package className="h-5 w-5" /></div>
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Publier un module</h4>
-                <p className="text-xs text-gray-500 mt-1">Créez votre premier module et publiez-le sur la marketplace</p>
+                <div className="text-brand mb-2">
+                  <Package className="h-5 w-5" />
+                </div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Publier un module
+                </h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  Créez votre premier module et publiez-le sur la marketplace
+                </p>
               </div>
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50">
-                <div className="text-brand mb-2"><Users className="h-5 w-5" /></div>
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Compléter le profil</h4>
-                <p className="text-xs text-gray-500 mt-1">Ajoutez votre photo et vos réseaux sociaux depuis les paramètres</p>
+                <div className="text-brand mb-2">
+                  <Users className="h-5 w-5" />
+                </div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Compléter le profil
+                </h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  Ajoutez votre photo et vos réseaux sociaux depuis les paramètres
+                </p>
               </div>
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50">
-                <div className="text-brand mb-2"><Shield className="h-5 w-5" /></div>
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Restez vérifié</h4>
-                <p className="text-xs text-gray-500 mt-1">Soumettez vos documents de vérification dans votre profil</p>
+                <div className="text-brand mb-2">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Restez vérifié
+                </h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  Soumettez vos documents de vérification dans votre profil
+                </p>
               </div>
             </div>
 
@@ -591,15 +775,9 @@ export default function DeveloperOnboardingPage() {
 
           <div className="flex items-center gap-2">
             {step === 2 && (
-              <span className="text-xs text-gray-400">
-                Étape 2 sur 3 — Complétez votre profil
-              </span>
+              <span className="text-xs text-gray-400">Étape 2 sur 3 — Complétez votre profil</span>
             )}
-            <Button
-              variant="gradient"
-              onClick={handleNext}
-              isLoading={isPending}
-            >
+            <Button variant="gradient" onClick={handleNext} isLoading={isPending}>
               {step === 2 ? 'Continuer' : step === 3 ? 'Terminer' : 'Suivant'}
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -609,4 +787,3 @@ export default function DeveloperOnboardingPage() {
     </div>
   );
 }
-

@@ -1,173 +1,218 @@
 'use client';
-
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/services/apiClient';
+import {
+  DollarSign,
+  Plus,
+  Search,
+  Download,
+  Loader,
+  FileText,
+  User,
+  CalendarDays,
+} from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Loader } from '@/components/ui/Loader';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/dashboard/EmptyState';
-import { Wallet, TrendingUp, Download, Users } from 'lucide-react';
 import { useMyEmployees } from '@/features/hooks';
-
-function fmt(n: number) {
-  return n.toLocaleString('fr-FR') + ' FCFA';
-}
+import { apiClient } from '@/services/apiClient';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function PayrollPage() {
-  const { data: employeesData, isLoading } = useMyEmployees();
+  const qc = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
-  const employees = useMemo(() => {
-    const raw = Array.isArray(employeesData) ? employeesData : employeesData?.employees || employeesData?.data || [];
-    return raw.filter((e: any) => e.status === 'ACTIVE' && e.salary && Number(e.salary) > 0);
+  const { data: employeesData } = useMyEmployees({ limit: 200 });
+  const employees: any[] = useMemo(() => {
+    const raw = Array.isArray(employeesData)
+      ? employeesData
+      : employeesData?.employees || employeesData?.data || [];
+    return raw;
   }, [employeesData]);
 
-  const stats = useMemo(() => {
-    const total = employees.reduce((sum: number, e: any) => sum + Number(e.salary), 0);
-    const avg = employees.length > 0 ? total / employees.length : 0;
-    const max = employees.length > 0 ? Math.max(...employees.map((e: any) => Number(e.salary))) : 0;
-    const min = employees.length > 0 ? Math.min(...employees.map((e: any) => Number(e.salary))) : 0;
-    return { total, avg, max, min, count: employees.length };
-  }, [employees]);
+  const {
+    data: payrollData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['employee-payroll', statusFilter],
+    queryFn: async () => {
+      const res = await apiClient.get('/employees/payroll', {
+        params: { status: statusFilter !== 'ALL' ? statusFilter : undefined, limit: 100 },
+      });
+      return res.data.data;
+    },
+  });
 
-  const groupedByDepartment = useMemo(() => {
-    const groups: Record<string, any[]> = {};
-    employees.forEach((e: any) => {
-      const dept = e.department || 'Non défini';
-      if (!groups[dept]) groups[dept] = [];
-      groups[dept].push(e);
-    });
-    return groups;
-  }, [employees]);
+  const payrolls: any[] = useMemo(() => {
+    const raw = payrollData?.items || payrollData?.data || [];
+    return raw;
+  }, [payrollData]);
 
-  const month = new Date().toISOString().slice(0, 7);
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      apiClient.patch('/employees/payroll/' + id + '/status', { status }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['employee-payroll'] }),
+  });
 
-  const handleExportCSV = () => {
-    const headers = ['Prénom', 'Nom', 'Email', 'Poste', 'Département', 'Salaire', 'Devise'];
-    const rows = employees.map((e: any) => [
-      e.firstName, e.lastName, e.email, e.position || '', e.department || '', Number(e.salary).toFixed(2), e.salaryCurrency || 'FCFA',
-    ]);
-    const csv = [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `paie-${month}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const filtered = payrolls.filter((p: any) => {
+    if (search) {
+      const emp = employees.find((e: any) => e.id === p.employeeId);
+      const name = emp?.name || emp?.firstName + ' ' + (emp?.lastName || '') || '';
+      if (!name.toLowerCase().includes(search.toLowerCase())) return false;
+    }
+    if (statusFilter !== 'ALL' && p.status !== statusFilter) return false;
+    return true;
+  });
+
+  const stats = {
+    total: payrolls.length,
+    draft: payrolls.filter((p: any) => p.status === 'DRAFT').length,
+    paid: payrolls.filter((p: any) => p.status === 'PAID').length,
+    totalAmount: payrolls.reduce((s: number, p: any) => s + Number(p.netSalary || 0), 0),
   };
 
-  if (isLoading) return <Loader className="py-12" />;
+  const statusBadge = (s: string) => {
+    switch (s) {
+      case 'DRAFT':
+        return <Badge variant="warning">Brouillon</Badge>;
+      case 'PAID':
+        return <Badge variant="success">Payé</Badge>;
+      case 'CANCELLED':
+        return <Badge variant="danger">Annulé</Badge>;
+      default:
+        return <Badge>{s}</Badge>;
+    }
+  };
+
+  if (error) return <ErrorState message={(error as any).message} onRetry={refetch} />;
 
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Paie & Salaires"
-        description="Gérez les salaires de vos employés"
-        actions={
-          employees.length > 0 ? (
-            <Button variant="secondary" onClick={handleExportCSV}>
-              <Download className="h-4 w-4 mr-1.5" />
-              Exporter CSV
-            </Button>
-          ) : undefined
-        }
+        title="Paies"
+        description="Gérez les fiches de paie de vos employés"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Employés', href: '/dashboard/employees' },
+          { label: 'Paies' },
+        ]}
       />
 
-      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand">
-              <Wallet className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{fmt(stats.total)}</p>
-              <p className="text-xs text-gray-500">Masse salariale</p>
-            </div>
-          </div>
+        <Card className="p-4">
+          <p className="text-2xl font-bold">{stats.total}</p>
+          <p className="text-sm text-gray-500">Total fiches</p>
         </Card>
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{fmt(stats.avg)}</p>
-              <p className="text-xs text-gray-500">Salaire moyen</p>
-            </div>
-          </div>
+        <Card className="p-4">
+          <p className="text-2xl font-bold text-amber-600">{stats.draft}</p>
+          <p className="text-sm text-gray-500">Brouillons</p>
         </Card>
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{fmt(stats.max)}</p>
-              <p className="text-xs text-gray-500">Salaire max</p>
-            </div>
-          </div>
+        <Card className="p-4">
+          <p className="text-2xl font-bold text-emerald-600">{stats.paid}</p>
+          <p className="text-sm text-gray-500">Payées</p>
         </Card>
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.count}</p>
-              <p className="text-xs text-gray-500">Employés actifs</p>
-            </div>
-          </div>
+        <Card className="p-4">
+          <p className="text-2xl font-bold">{Number(stats.totalAmount).toLocaleString()} FCFA</p>
+          <p className="text-sm text-gray-500">Total net</p>
         </Card>
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher employé..."
+            className="w-full pl-10 pr-4 py-2 text-sm border rounded-xl outline-none bg-transparent"
+          />
+        </div>
+        <div className="flex gap-2">
+          {['ALL', 'DRAFT', 'PAID'].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={
+                'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ' +
+                (statusFilter === s
+                  ? 'bg-brand text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+              }
+            >
+              {s === 'ALL'
+                ? 'Tous'
+                : s === 'DRAFT'
+                  ? 'Brouillon'
+                  : s.charAt(0) + s.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
+      </div>
 
-
-      {employees.length === 0 ? (
+      {isLoading ? (
+        <Loader className="h-8 w-8 animate-spin text-brand mx-auto" />
+      ) : filtered.length === 0 ? (
         <EmptyState
-          icon={<Wallet className="h-8 w-8" />}
-          title="Aucun salaire à gérer"
-          description="Ajoutez des employés avec un salaire pour commencer à gérer la paie"
+          icon={<DollarSign className="h-12 w-12" />}
+          title="Aucune fiche de paie"
+          description="Aucune fiche de paie pour le moment"
         />
       ) : (
-        <div className="space-y-6">
-          {/* By department */}
-          {Object.entries(groupedByDepartment).map(([dept, emps]) => {
-            const deptTotal = emps.reduce((sum: number, e: any) => sum + Number(e.salary), 0);
+        <div className="space-y-3">
+          {filtered.map((pay: any) => {
+            const emp = employees.find((e: any) => e.id === pay.employeeId);
             return (
-              <div key={dept}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">{dept}</h3>
-                  <span className="text-sm font-medium text-brand">{fmt(deptTotal)}</span>
+              <Card key={pay.id} className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="p-2 rounded-xl bg-emerald-50">
+                      <DollarSign className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-sm">
+                          {emp?.name || emp?.firstName + ' ' + (emp?.lastName || '') || 'Employé'}
+                        </p>
+                        {statusBadge(pay.status)}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {pay.position || emp?.position || '-'}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-sm font-semibold">
+                          {Number(pay.netSalary || 0).toLocaleString()} FCFA
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {pay.periodStart
+                            ? new Date(pay.periodStart).toLocaleDateString('fr-FR', {
+                                month: 'long',
+                                year: 'numeric',
+                              })
+                            : ''}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    {pay.status === 'DRAFT' && (
+                      <Button
+                        size="xs"
+                        onClick={() => statusMutation.mutate({ id: pay.id, status: 'PAID' })}
+                      >
+                        Marquer payé
+                      </Button>
+                    )}
+                    <Button size="xs" variant="outline">
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-gray-500 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                        <th className="p-3 font-medium">Employé</th>
-                        <th className="p-3 font-medium">Poste</th>
-                        <th className="p-3 font-medium">Salaire</th>
-                        <th className="p-3 font-medium">Devise</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {emps.map((emp: any) => (
-                        <tr key={emp.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                          <td className="p-3 font-medium text-gray-900 dark:text-gray-100">
-                            {emp.firstName} {emp.lastName}
-                          </td>
-                          <td className="p-3 text-gray-500">{emp.position || '-'}</td>
-                          <td className="p-3 font-semibold text-gray-900 dark:text-gray-100">{fmt(Number(emp.salary))}</td>
-                          <td className="p-3 text-gray-500">{emp.salaryCurrency || 'FCFA'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              </Card>
             );
           })}
         </div>

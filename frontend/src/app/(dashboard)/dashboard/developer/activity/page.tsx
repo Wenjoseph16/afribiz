@@ -2,21 +2,41 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Activity as ActivityIcon, Clock, RefreshCw,
-  Package, Download, DollarSign, Star, UserPlus, Settings,
-  Shield, AlertTriangle, CheckCircle, XCircle, MessageCircle,
-  FileText, Key, Wifi, CreditCard, Ban,
+  Activity as ActivityIcon,
+  Clock,
+  RefreshCw,
+  Package,
+  Download,
+  DollarSign,
+  Star,
+  UserPlus,
+  Settings,
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  MessageCircle,
+  FileText,
+  Key,
+  Wifi,
+  CreditCard,
+  Ban,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { useDeveloperModules } from '@/features/developerHooks';
-import { useModuleActivity, useDeveloperActivityFeed, useActivityStats } from '@/features/developerModulesHooks';
+import {
+  useModuleActivity,
+  useDeveloperActivityFeed,
+  useActivityStats,
+} from '@/features/developerModulesHooks';
 import type { ModuleActivityLog } from '@/types/developer';
 
 const ACTIVITY_ICONS: Record<string, typeof ActivityIcon> = {
@@ -108,7 +128,7 @@ function formatRelativeTime(dateStr: string) {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'À l\'instant';
+  if (diffMins < 1) return "À l'instant";
   if (diffMins < 60) return `Il y a ${diffMins} min`;
   if (diffHours < 24) return `Il y a ${diffHours}h`;
   if (diffDays < 7) return `Il y a ${diffDays}j`;
@@ -120,13 +140,23 @@ export default function DeveloperActivityPage() {
   const [viewMode, setViewMode] = useState<'feed' | 'module'>('feed');
 
   const { data: modules, isLoading: modulesLoading } = useDeveloperModules();
-  const { data: feed, isLoading: feedLoading, error: feedError, refetch: refetchFeed } = useDeveloperActivityFeed(50);
-  const { data: moduleActivity, isLoading: moduleLoading, error: moduleError, refetch: refetchModule } = useModuleActivity(selectedModuleId, 50);
+  const {
+    data: feed,
+    isLoading: feedLoading,
+    error: feedError,
+    refetch: refetchFeed,
+  } = useDeveloperActivityFeed(50);
+  const {
+    data: moduleActivity,
+    isLoading: moduleLoading,
+    error: moduleError,
+    refetch: refetchModule,
+  } = useModuleActivity(selectedModuleId, 50);
   const { data: activityStats, isLoading: statsLoading } = useActivityStats(selectedModuleId);
 
   const moduleList = useMemo(() => {
     if (!modules) return [];
-    return Array.isArray(modules) ? modules : (modules.modules || modules.data || []);
+    return Array.isArray(modules) ? modules : modules.modules || modules.data || [];
   }, [modules]);
 
   const activityList = useMemo(() => {
@@ -180,7 +210,10 @@ export default function DeveloperActivityPage() {
             Fil d'activité
           </button>
           <button
-            onClick={() => { setViewMode('module'); setSelectedModuleId(selectedModuleId || moduleList[0]?.id || ''); }}
+            onClick={() => {
+              setViewMode('module');
+              setSelectedModuleId(selectedModuleId || moduleList[0]?.id || '');
+            }}
             className={cn(
               'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
               viewMode === 'module'
@@ -193,24 +226,25 @@ export default function DeveloperActivityPage() {
         </div>
 
         {viewMode === 'module' && (
-          <select
+          <Select
             value={selectedModuleId}
             onChange={(e) => setSelectedModuleId(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
-          >
-            {moduleList.map((mod: any) => (
-              <option key={mod.id} value={mod.id}>{mod.name}</option>
-            ))}
-          </select>
+            options={moduleList.map((mod: any) => ({ value: mod.id, label: mod.name }))}
+          />
         )}
       </div>
 
       {/* Stats row */}
       {viewMode === 'module' && statsByType.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium px-2 py-1">Activité par type :</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium px-2 py-1">
+            Activité par type :
+          </span>
           {statsByType.map((s: any) => (
-            <span key={s.activityType} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+            <span
+              key={s.activityType}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+            >
               {s.activityType.replace('MODULE_', '')} <span className="font-bold">{s._count}</span>
             </span>
           ))}
@@ -226,8 +260,13 @@ export default function DeveloperActivityPage() {
             {activityList.map((log: ModuleActivityLog, idx: number) => {
               const Icon = getActivityIcon(log.activityType);
               return (
-                <div key={log.id || idx} className="flex items-start gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <div className={cn('p-2.5 rounded-xl shrink-0', getActivityColor(log.activityType))}>
+                <div
+                  key={log.id || idx}
+                  className="flex items-start gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <div
+                    className={cn('p-2.5 rounded-xl shrink-0', getActivityColor(log.activityType))}
+                  >
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -262,7 +301,10 @@ export default function DeveloperActivityPage() {
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {new Date(log.createdAt).toLocaleString('fr-FR', {
-                          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
                         })}
                       </span>
                     </div>

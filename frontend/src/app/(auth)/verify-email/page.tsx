@@ -21,14 +21,19 @@ function VerifyEmailContent() {
       return;
     }
 
-    apiClient.verifyEmail(token)
+    apiClient
+      .verifyEmail(token)
       .then(() => {
         setStatus('success');
         setMessage('Votre email a été vérifié avec succès !');
       })
       .catch((err) => {
         setStatus('error');
-        setMessage(err?.response?.data?.error || err?.message || 'Échec de la vérification. Le lien est peut-être expiré.');
+        setMessage(
+          err?.response?.data?.error ||
+            err?.message ||
+            'Échec de la vérification. Le lien est peut-être expiré.'
+        );
       });
   }, [token]);
 
@@ -37,8 +42,12 @@ function VerifyEmailContent() {
       {status === 'loading' && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-xl shadow-slate-900/5">
           <Loader variant="spinner" size="lg" className="mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Vérification en cours...</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Veuillez patienter pendant la vérification de votre email.</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Vérification en cours...
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Veuillez patienter pendant la vérification de votre email.
+          </p>
         </div>
       )}
 
@@ -47,7 +56,9 @@ function VerifyEmailContent() {
           <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="h-8 w-8 text-emerald-600" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Email vérifié !</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Email vérifié !
+          </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{message}</p>
           <Button onClick={() => router.push('/login')} fullWidth>
             Se connecter
@@ -60,7 +71,9 @@ function VerifyEmailContent() {
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <XCircle className="h-8 w-8 text-red-600" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Échec de la vérification</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Échec de la vérification
+          </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{message}</p>
           <div className="space-y-3">
             <Button onClick={() => router.push('/login')} variant="outline" fullWidth>
@@ -76,11 +89,13 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader variant="spinner" size="lg" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader variant="spinner" size="lg" />
+        </div>
+      }
+    >
       <VerifyEmailContent />
     </Suspense>
   );

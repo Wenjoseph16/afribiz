@@ -2,8 +2,14 @@
 
 import Link from 'next/link';
 import {
-  MessageCircle, Star, ShoppingBag, Clock, AlertTriangle,
-  CheckCircle2, ArrowRight, Sparkles,
+  MessageCircle,
+  Star,
+  ShoppingBag,
+  Clock,
+  AlertTriangle,
+  CheckCircle2,
+  ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -58,7 +64,9 @@ export default function DailyActions({ actions, onDismiss }: DailyActionsProps) 
         <div className="flex items-center gap-3 text-emerald-600">
           <CheckCircle2 className="h-5 w-5" />
           <div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">Tout est en ordre !</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              Tout est en ordre !
+            </p>
             <p className="text-xs text-gray-500">Aucune action urgente pour le moment.</p>
           </div>
         </div>
@@ -73,16 +81,22 @@ export default function DailyActions({ actions, onDismiss }: DailyActionsProps) 
           const Icon = ACTION_ICONS[action.type] || Sparkles;
           return (
             <Link key={action.id} href={action.link} className="block">
-              <div className={cn(
-                'flex items-start gap-3 p-3 rounded-xl border-l-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors',
-                PRIORITY_BORDER[action.priority],
-              )}>
+              <div
+                className={cn(
+                  'flex items-start gap-3 p-3 rounded-xl border-l-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors',
+                  PRIORITY_BORDER[action.priority]
+                )}
+              >
                 <div className={cn('p-2 rounded-lg shrink-0', ACTION_COLORS[action.type])}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{action.label}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{action.description}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    {action.label}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">
+                    {action.description}
+                  </p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-gray-400 shrink-0 mt-2" />
               </div>
@@ -91,7 +105,9 @@ export default function DailyActions({ actions, onDismiss }: DailyActionsProps) 
         })}
       </div>
       {actions.length > 8 && (
-        <p className="text-xs text-gray-400 text-center mt-3">+{actions.length - 8} autres actions</p>
+        <p className="text-xs text-gray-400 text-center mt-3">
+          +{actions.length - 8} autres actions
+        </p>
       )}
     </Card>
   );

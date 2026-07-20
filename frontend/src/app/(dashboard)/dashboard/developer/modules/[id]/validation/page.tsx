@@ -3,8 +3,15 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  FileCheck, Send, Clock, CheckCircle2, XCircle, AlertTriangle,
-  RefreshCw, ListChecks, Shield,
+  FileCheck,
+  Send,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  RefreshCw,
+  ListChecks,
+  Shield,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -15,12 +22,16 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { useDeveloperModule } from '@/features/developerHooks';
 import {
-  useModuleValidation, useValidationHistory,
+  useModuleValidation,
+  useValidationHistory,
   useSubmitForValidation,
 } from '@/features/developerModulesHooks';
 import type { ModuleValidation, ValidationCheck } from '@/types/developer';
 
-const STATUS_VARIANT: Record<string, 'default' | 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'purple'> = {
+const STATUS_VARIANT: Record<
+  string,
+  'default' | 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'purple'
+> = {
   PENDING: 'warning',
   IN_REVIEW: 'info',
   APPROVED: 'success',
@@ -74,7 +85,7 @@ export default function ModuleValidationPage() {
       await submitForValidation.mutateAsync(moduleId);
       showToast('Module soumis pour validation', 'success');
     } catch {
-      showToast("Erreur lors de la soumission", 'error');
+      showToast('Erreur lors de la soumission', 'error');
     }
   };
 
@@ -83,7 +94,8 @@ export default function ModuleValidationPage() {
     return Array.isArray(history) ? history : [];
   }, [history]);
 
-  const canSubmit = mod?.status === 'DRAFT' || mod?.status === 'REJECTED' || mod?.status === 'ARCHIVED';
+  const canSubmit =
+    mod?.status === 'DRAFT' || mod?.status === 'REJECTED' || mod?.status === 'ARCHIVED';
 
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
   if (isLoading) return <Loader variant="spinner" size="md" fullScreen />;
@@ -91,26 +103,37 @@ export default function ModuleValidationPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={cn(
-          'p-3 rounded-xl text-sm font-medium',
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        )}>
+        <div
+          className={cn(
+            'p-3 rounded-xl text-sm font-medium',
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          )}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Validation du module</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Validation du module
+          </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Soumettez votre module pour validation avant publication
           </p>
         </div>
         {canSubmit && (
-          <Button variant="gradient" size="sm" onClick={handleSubmit} isLoading={submitForValidation.isPending}>
+          <Button
+            variant="gradient"
+            size="sm"
+            onClick={handleSubmit}
+            isLoading={submitForValidation.isPending}
+          >
             <Send className="h-4 w-4" />
             Soumettre pour validation
           </Button>
@@ -128,10 +151,14 @@ export default function ModuleValidationPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-4">
               {mod?.status === 'PUBLISHED'
                 ? 'Ce module est déjà publié.'
-                : 'Soumettez votre module pour qu\'il soit vérifié par notre équipe avant publication.'}
+                : "Soumettez votre module pour qu'il soit vérifié par notre équipe avant publication."}
             </p>
             {canSubmit && (
-              <Button variant="gradient" onClick={handleSubmit} isLoading={submitForValidation.isPending}>
+              <Button
+                variant="gradient"
+                onClick={handleSubmit}
+                isLoading={submitForValidation.isPending}
+              >
                 <Send className="h-4 w-4" /> Soumettre pour validation
               </Button>
             )}
@@ -140,34 +167,53 @@ export default function ModuleValidationPage() {
       ) : (
         <>
           {/* Status banner */}
-          <Card padding="lg" className={cn(
-            'border-2',
-            validation.status === 'APPROVED' ? 'border-emerald-300 dark:border-emerald-700' :
-            validation.status === 'REJECTED' ? 'border-red-300 dark:border-red-700' :
-            validation.status === 'CHANGES_REQUESTED' ? 'border-amber-300 dark:border-amber-700' :
-            'border-blue-300 dark:border-blue-700'
-          )}>
+          <Card
+            padding="lg"
+            className={cn(
+              'border-2',
+              validation.status === 'APPROVED'
+                ? 'border-emerald-300 dark:border-emerald-700'
+                : validation.status === 'REJECTED'
+                  ? 'border-red-300 dark:border-red-700'
+                  : validation.status === 'CHANGES_REQUESTED'
+                    ? 'border-amber-300 dark:border-amber-700'
+                    : 'border-blue-300 dark:border-blue-700'
+            )}
+          >
             <div className="flex items-center gap-4">
-              <div className={cn(
-                'p-3 rounded-2xl',
-                validation.status === 'APPROVED' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' :
-                validation.status === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 text-red-600' :
-                'bg-blue-50 dark:bg-blue-900/30 text-blue-600'
-              )}>
-                {validation.status === 'APPROVED' ? <CheckCircle2 className="h-8 w-8" /> :
-                 validation.status === 'REJECTED' ? <XCircle className="h-8 w-8" /> :
-                 <Clock className="h-8 w-8" />}
+              <div
+                className={cn(
+                  'p-3 rounded-2xl',
+                  validation.status === 'APPROVED'
+                    ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600'
+                    : validation.status === 'REJECTED'
+                      ? 'bg-red-50 dark:bg-red-900/30 text-red-600'
+                      : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600'
+                )}
+              >
+                {validation.status === 'APPROVED' ? (
+                  <CheckCircle2 className="h-8 w-8" />
+                ) : validation.status === 'REJECTED' ? (
+                  <XCircle className="h-8 w-8" />
+                ) : (
+                  <Clock className="h-8 w-8" />
+                )}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {STATUS_LABELS[validation.status] || validation.status}
                   </h3>
-                  <Badge variant={STATUS_VARIANT[validation.status] || 'default'}>{STATUS_LABELS[validation.status] || validation.status}</Badge>
+                  <Badge variant={STATUS_VARIANT[validation.status] || 'default'}>
+                    {STATUS_LABELS[validation.status] || validation.status}
+                  </Badge>
                 </div>
                 {validation.score !== null && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Score : <span className="font-bold text-gray-900 dark:text-gray-100">{validation.score}/100</span>
+                    Score :{' '}
+                    <span className="font-bold text-gray-900 dark:text-gray-100">
+                      {validation.score}/100
+                    </span>
                   </p>
                 )}
                 {validation.reviewerNotes && (
@@ -177,8 +223,13 @@ export default function ModuleValidationPage() {
                 )}
                 {validation.submittedAt && (
                   <p className="text-xs text-gray-400 mt-2">
-                    Soumis le {new Date(validation.submittedAt).toLocaleDateString('fr-FR', {
-                      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                    Soumis le{' '}
+                    {new Date(validation.submittedAt).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
                     })}
                   </p>
                 )}
@@ -197,31 +248,51 @@ export default function ModuleValidationPage() {
                 {validation.checks.map((check: ValidationCheck) => {
                   const CheckIcon = CHECK_STATUS_ICONS[check.status] || Clock;
                   return (
-                    <div key={check.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                      <div className={cn('p-2 rounded-lg shrink-0', CHECK_STATUS_COLORS[check.status] || 'bg-gray-100')}>
+                    <div
+                      key={check.id}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+                    >
+                      <div
+                        className={cn(
+                          'p-2 rounded-lg shrink-0',
+                          CHECK_STATUS_COLORS[check.status] || 'bg-gray-100'
+                        )}
+                      >
                         <CheckIcon className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{check.type}</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {check.type}
+                          </span>
                           {check.passed !== null && (
                             <span className={CHECK_PASSED_COLORS[String(check.passed)]}>
-                              {check.passed ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                              {check.passed ? (
+                                <CheckCircle2 className="h-4 w-4" />
+                              ) : (
+                                <XCircle className="h-4 w-4" />
+                              )}
                             </span>
                           )}
                           {check.score !== null && (
-                            <span className={cn(
-                              'text-xs font-semibold px-1.5 py-0.5 rounded-full',
-                              check.score >= 80 ? 'bg-emerald-50 text-emerald-700' :
-                              check.score >= 50 ? 'bg-amber-50 text-amber-700' :
-                              'bg-red-50 text-red-700'
-                            )}>
+                            <span
+                              className={cn(
+                                'text-xs font-semibold px-1.5 py-0.5 rounded-full',
+                                check.score >= 80
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : check.score >= 50
+                                    ? 'bg-amber-50 text-amber-700'
+                                    : 'bg-red-50 text-red-700'
+                              )}
+                            >
                               {check.score}/100
                             </span>
                           )}
                         </div>
                         {check.details && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{check.details}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {check.details}
+                          </p>
                         )}
                         {check.completedAt && (
                           <p className="text-[10px] text-gray-400 mt-1">
@@ -229,12 +300,25 @@ export default function ModuleValidationPage() {
                           </p>
                         )}
                       </div>
-                      <Badge variant={
-                        check.status === 'COMPLETED' ? (check.passed ? 'success' : 'danger') :
-                        check.status === 'IN_PROGRESS' ? 'info' : 'warning'
-                      } size="xs">
-                        {check.status === 'COMPLETED' ? (check.passed ? 'Réussi' : 'Échoué') :
-                         check.status === 'IN_PROGRESS' ? 'En cours' : 'En attente'}
+                      <Badge
+                        variant={
+                          check.status === 'COMPLETED'
+                            ? check.passed
+                              ? 'success'
+                              : 'danger'
+                            : check.status === 'IN_PROGRESS'
+                              ? 'info'
+                              : 'warning'
+                        }
+                        size="xs"
+                      >
+                        {check.status === 'COMPLETED'
+                          ? check.passed
+                            ? 'Réussi'
+                            : 'Échoué'
+                          : check.status === 'IN_PROGRESS'
+                            ? 'En cours'
+                            : 'En attente'}
                       </Badge>
                     </div>
                   );
@@ -248,20 +332,33 @@ export default function ModuleValidationPage() {
       {/* Validation history */}
       {historyList.length > 0 && (
         <Card padding="lg">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Historique des validations</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Historique des validations
+          </h3>
           <div className="space-y-3">
             {historyList.map((v: ModuleValidation) => (
-              <div key={v.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+              <div
+                key={v.id}
+                className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50"
+              >
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    'p-2 rounded-lg',
-                    v.status === 'APPROVED' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600' :
-                    v.status === 'REJECTED' ? 'bg-red-50 dark:bg-red-900/30 text-red-600' :
-                    'bg-blue-50 dark:bg-blue-900/30 text-blue-600'
-                  )}>
-                    {v.status === 'APPROVED' ? <CheckCircle2 className="h-4 w-4" /> :
-                     v.status === 'REJECTED' ? <XCircle className="h-4 w-4" /> :
-                     <Clock className="h-4 w-4" />}
+                  <div
+                    className={cn(
+                      'p-2 rounded-lg',
+                      v.status === 'APPROVED'
+                        ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600'
+                        : v.status === 'REJECTED'
+                          ? 'bg-red-50 dark:bg-red-900/30 text-red-600'
+                          : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600'
+                    )}
+                  >
+                    {v.status === 'APPROVED' ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : v.status === 'REJECTED' ? (
+                      <XCircle className="h-4 w-4" />
+                    ) : (
+                      <Clock className="h-4 w-4" />
+                    )}
                   </div>
                   <div>
                     <Badge variant={STATUS_VARIANT[v.status] || 'default'} size="xs">

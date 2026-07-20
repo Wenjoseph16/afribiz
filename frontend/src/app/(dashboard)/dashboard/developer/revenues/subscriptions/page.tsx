@@ -1,7 +1,17 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Repeat, DollarSign, CreditCard, Users, TrendingUp, CheckCircle, XCircle, Ban, Eye } from 'lucide-react';
+import {
+  Repeat,
+  DollarSign,
+  CreditCard,
+  Users,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  Ban,
+  Eye,
+} from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -39,7 +49,9 @@ export default function SubscriptionsRevenuePage() {
 
   const subscriptions = useMemo(() => {
     if (!subscriptionsData) return [];
-    return Array.isArray(subscriptionsData) ? subscriptionsData : (subscriptionsData.subscriptions || subscriptionsData.data || []);
+    return Array.isArray(subscriptionsData)
+      ? subscriptionsData
+      : subscriptionsData.subscriptions || subscriptionsData.data || [];
   }, [subscriptionsData]);
 
   const filtered = useMemo(() => {
@@ -92,12 +104,16 @@ export default function SubscriptionsRevenuePage() {
         </Card>
         <Card padding="md" hoverable>
           <DollarSign className="h-5 w-5 text-emerald-600 mb-2" />
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.mrr.toLocaleString()} FCFA</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {stats.mrr.toLocaleString()} FCFA
+          </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">MRR (revenu mensuel)</p>
         </Card>
         <Card padding="md" hoverable>
           <TrendingUp className="h-5 w-5 text-purple-600 mb-2" />
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.arr.toLocaleString()} FCFA</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {stats.arr.toLocaleString()} FCFA
+          </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">ARR (revenu annuel)</p>
         </Card>
         <Card padding="md" hoverable>
@@ -109,7 +125,9 @@ export default function SubscriptionsRevenuePage() {
 
       <Card padding="lg">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Détail des abonnements</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            Détail des abonnements
+          </h3>
           <div className="flex items-center gap-1">
             {PLAN_FILTERS.map((f) => (
               <button
@@ -117,7 +135,9 @@ export default function SubscriptionsRevenuePage() {
                 onClick={() => setFilterPlan(f.value)}
                 className={cn(
                   'px-2.5 py-1 text-xs font-medium rounded-lg transition-colors',
-                  filterPlan === f.value ? 'bg-brand text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+                  filterPlan === f.value
+                    ? 'bg-brand text-white'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                 )}
               >
                 {f.label}
@@ -137,18 +157,35 @@ export default function SubscriptionsRevenuePage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Module</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Client</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Plan</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Montant</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Début</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Prochaine fact.</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Statut</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Module
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Client
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Plan
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Montant
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Début
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Prochaine fact.
+                  </th>
+                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Statut
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((sub: any) => (
-                  <tr key={sub.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={sub.id}
+                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="py-3 px-2 font-medium text-gray-900 dark:text-gray-100">
                       {sub.module?.name || '—'}
                     </td>
@@ -156,13 +193,18 @@ export default function SubscriptionsRevenuePage() {
                       {sub.client?.name || sub.business?.name || sub.clientName || '—'}
                     </td>
                     <td className="py-3 px-2">
-                      <span className={cn(
-                        'inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full',
-                        (sub.plan || sub.pricingType) === 'MONTHLY' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                        (sub.plan || sub.pricingType) === 'QUARTERLY' ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                        (sub.plan || sub.pricingType) === 'YEARLY' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                        'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                      )}>
+                      <span
+                        className={cn(
+                          'inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full',
+                          (sub.plan || sub.pricingType) === 'MONTHLY'
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                            : (sub.plan || sub.pricingType) === 'QUARTERLY'
+                              ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                              : (sub.plan || sub.pricingType) === 'YEARLY'
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                : 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        )}
+                      >
                         {sub.plan || sub.pricingType || '—'}
                       </span>
                     </td>
@@ -173,7 +215,9 @@ export default function SubscriptionsRevenuePage() {
                       {sub.startDate ? new Date(sub.startDate).toLocaleDateString('fr-FR') : '—'}
                     </td>
                     <td className="py-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                      {sub.nextBillingDate ? new Date(sub.nextBillingDate).toLocaleDateString('fr-FR') : '—'}
+                      {sub.nextBillingDate
+                        ? new Date(sub.nextBillingDate).toLocaleDateString('fr-FR')
+                        : '—'}
                     </td>
                     <td className="py-3 px-2 text-center">
                       <Badge variant={STATUS_VARIANTS[sub.status] || 'default'} size="xs">

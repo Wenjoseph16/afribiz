@@ -3,8 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  User, Mail, Shield, Activity, LogIn, CreditCard, AlertTriangle,
-  ArrowLeft, Globe, Monitor, Smartphone, Clock,
+  User,
+  Mail,
+  Shield,
+  Activity,
+  LogIn,
+  CreditCard,
+  AlertTriangle,
+  ArrowLeft,
+  Globe,
+  Monitor,
+  Smartphone,
+  Clock,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -114,10 +124,10 @@ export default function AdminUserDetailPage() {
   const { data: paymentsData, isLoading: paymentsLoading } = useAdminUserPayments(id);
   const { data: reportsData, isLoading: reportsLoading } = useAdminUserReports(id);
 
-  const activities = Array.isArray(activityData) ? activityData : activityData?.logs ?? [];
-  const sessions = Array.isArray(sessionsData) ? sessionsData : sessionsData?.sessions ?? [];
-  const payments = Array.isArray(paymentsData) ? paymentsData : paymentsData?.payments ?? [];
-  const reports = Array.isArray(reportsData) ? reportsData : reportsData?.reports ?? [];
+  const activities = Array.isArray(activityData) ? activityData : (activityData?.logs ?? []);
+  const sessions = Array.isArray(sessionsData) ? sessionsData : (sessionsData?.sessions ?? []);
+  const payments = Array.isArray(paymentsData) ? paymentsData : (paymentsData?.payments ?? []);
+  const reports = Array.isArray(reportsData) ? reportsData : (reportsData?.reports ?? []);
 
   if (userLoading) return <Loader className="min-h-[60vh]" />;
 
@@ -140,13 +150,17 @@ export default function AdminUserDetailPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Toast */}
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -167,9 +181,11 @@ export default function AdminUserDetailPage() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {user.name || 'N/A'}
               </h2>
-              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                STATUS_STYLES[user.status] || 'bg-gray-100 text-gray-600'
-              }`}>
+              <span
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                  STATUS_STYLES[user.status] || 'bg-gray-100 text-gray-600'
+                }`}
+              >
                 {user.status || 'N/A'}
               </span>
             </div>
@@ -229,16 +245,20 @@ export default function AdminUserDetailPage() {
                       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {log.action || 'Action inconnue'}
                       </p>
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                        log.status === 'SUCCESS'
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          log.status === 'SUCCESS'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        }`}
+                      >
                         {log.status}
                       </span>
                     </div>
                     {log.details && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{log.details}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {log.details}
+                      </p>
                     )}
                     <p className="text-xs text-gray-400 mt-1">
                       {log.createdAt ? new Date(log.createdAt).toLocaleString('fr-FR') : ''}
@@ -289,12 +309,16 @@ export default function AdminUserDetailPage() {
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Connecté: {session.createdAt ? new Date(session.createdAt).toLocaleString('fr-FR') : '-'}
+                        Connecté:{' '}
+                        {session.createdAt
+                          ? new Date(session.createdAt).toLocaleString('fr-FR')
+                          : '-'}
                       </span>
                       {session.lastActivity && (
                         <span className="flex items-center gap-1">
                           <Activity className="h-3 w-3" />
-                          Dernière activité: {new Date(session.lastActivity).toLocaleString('fr-FR')}
+                          Dernière activité:{' '}
+                          {new Date(session.lastActivity).toLocaleString('fr-FR')}
                         </span>
                       )}
                     </div>
@@ -332,7 +356,10 @@ export default function AdminUserDetailPage() {
                 </thead>
                 <tbody>
                   {payments.map((p: any) => (
-                    <tr key={p.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+                    <tr
+                      key={p.id}
+                      className="border-b border-gray-100 dark:border-gray-800 last:border-0"
+                    >
                       <td className="py-2.5 text-gray-900 dark:text-gray-100">
                         {p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '-'}
                       </td>
@@ -345,13 +372,17 @@ export default function AdminUserDetailPage() {
                         </span>
                       </td>
                       <td className="py-2.5">
-                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                          p.status === 'COMPLETED' || p.status === 'SUCCESS'
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            : p.status === 'PENDING'
-                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>{p.status}</span>
+                        <span
+                          className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                            p.status === 'COMPLETED' || p.status === 'SUCCESS'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : p.status === 'PENDING'
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}
+                        >
+                          {p.status}
+                        </span>
                       </td>
                       <td className="py-2.5 text-gray-500 text-xs">{p.reference || '-'}</td>
                     </tr>
@@ -387,15 +418,21 @@ export default function AdminUserDetailPage() {
                       <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                         {report.title || 'Signalement'}
                       </p>
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                        report.status === 'RESOLVED'
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : report.status === 'PENDING'
-                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                          : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                      }`}>{report.status}</span>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          report.status === 'RESOLVED'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : report.status === 'PENDING'
+                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        }`}
+                      >
+                        {report.status}
+                      </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{report.description || report.reason || ''}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {report.description || report.reason || ''}
+                    </p>
                     <p className="text-xs text-gray-400 mt-1">
                       {report.createdAt ? new Date(report.createdAt).toLocaleString('fr-FR') : ''}
                       {report.reportedBy ? ` · Rapporté par: ${report.reportedBy}` : ''}

@@ -28,7 +28,9 @@ export function ErrorState({
         {icon || <AlertTriangle className="h-8 w-8" />}
       </div>
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1.5">{title}</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm mb-6 leading-relaxed">{message}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm mb-6 leading-relaxed">
+        {message}
+      </p>
       {onRetry && (
         <Button variant="outline" onClick={onRetry}>
           <RefreshCw className="h-4 w-4 mr-1.5" />

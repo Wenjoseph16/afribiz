@@ -2,10 +2,20 @@
 
 import { useState } from 'react';
 import {
-  Star, MessageSquare, Code2, Package, Flag, Shield,
-  CheckCircle, EyeOff, Trash2, ChevronLeft, ChevronRight,
+  Star,
+  MessageSquare,
+  Code2,
+  Package,
+  Flag,
+  Shield,
+  CheckCircle,
+  EyeOff,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
@@ -53,9 +63,15 @@ function useAdminReviews(params?: any) {
   return useQuery({
     queryKey: ['admin', 'reviews', params],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/reviews', { params });
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetReviews2(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement avis:', error);
+        return { reviews: [], totalPages: 1 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -63,7 +79,7 @@ function useAdminReviewAction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: string }) =>
-      apiClient.put(`/admin/reviews/${id}/${action}`),
+      apiClient.adminUpdateReviewStatus(id, action),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'reviews'] });
     },
@@ -73,7 +89,7 @@ function useAdminReviewAction() {
 function useAdminReviewDelete() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/admin/reviews/${id}`),
+    mutationFn: (id: string) => apiClient.adminDeleteReview2(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'reviews'] });
     },
@@ -87,6 +103,12 @@ export default function AdminReviewsPage() {
   const [activeTab, setActiveTab] = useState<ReviewTab>('business');
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [actionTarget, setActionTarget] = useState<{
+    id: string;
+    action: string;
+    label: string;
+  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const limit = 20;
 
   const params: any = { page, limit, type: activeTab };
@@ -95,31 +117,15 @@ export default function AdminReviewsPage() {
   const actionMutation = useAdminReviewAction();
   const deleteMutation = useAdminReviewDelete();
 
-  const reviews: Review[] = Array.isArray(reviewsData)
-    ? reviewsData
-    : reviewsData?.reviews ?? [];
+  const reviews: Review[] = Array.isArray(reviewsData) ? reviewsData : (reviewsData?.reviews ?? []);
   const totalPages = reviewsData?.totalPages ?? 1;
 
   const handleAction = async (id: string, action: string, label: string) => {
-    const confirmed = window.confirm(`Confirmer l'action « ${label} » sur cet avis ?`);
-    if (!confirmed) return;
-    try {
-      await actionMutation.mutateAsync({ id, action });
-      setToast({ message: `Avis ${label.toLowerCase()} avec succès`, type: 'success' });
-    } catch {
-      setToast({ message: `Erreur lors de « ${label} »`, type: 'error' });
-    }
+    setActionTarget({ id, action, label });
   };
 
   const handleDelete = async (id: string) => {
-    const confirmed = window.confirm('Êtes-vous sûr de vouloir supprimer définitivement cet avis ?');
-    if (!confirmed) return;
-    try {
-      await deleteMutation.mutateAsync(id);
-      setToast({ message: 'Avis supprimé avec succès', type: 'success' });
-    } catch {
-      setToast({ message: 'Erreur lors de la suppression', type: 'error' });
-    }
+    setDeleteTarget(id);
   };
 
   const renderStars = (rating: number) => {
@@ -129,9 +135,7 @@ export default function AdminReviewsPage() {
           <Star
             key={star}
             className={`h-3.5 w-3.5 ${
-              star <= rating
-                ? 'text-amber-400 fill-amber-400'
-                : 'text-gray-300 dark:text-gray-600'
+              star <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300 dark:text-gray-600'
             }`}
           />
         ))}
@@ -157,13 +161,17 @@ export default function AdminReviewsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -186,7 +194,10 @@ export default function AdminReviewsPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setPage(1); }}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setPage(1);
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
                   ? 'border-brand text-brand'
@@ -220,7 +231,10 @@ export default function AdminReviewsPage() {
               </thead>
               <tbody>
                 {reviews.map((review) => (
-                  <tr key={review.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={review.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-xs font-bold text-brand shrink-0">
@@ -234,21 +248,23 @@ export default function AdminReviewsPage() {
                     <td className="p-4 text-gray-500">
                       {review.target?.name || review.targetName || '-'}
                     </td>
-                    <td className="p-4">
-                      {renderStars(review.rating)}
-                    </td>
+                    <td className="p-4">{renderStars(review.rating)}</td>
                     <td className="p-4 max-w-[250px]">
                       <p className="truncate text-gray-600 dark:text-gray-300">
                         {review.content || review.comment || '-'}
                       </p>
                     </td>
                     <td className="p-4 text-gray-500 whitespace-nowrap text-xs">
-                      {review.createdAt ? new Date(review.createdAt).toLocaleDateString('fr-FR') : '-'}
+                      {review.createdAt
+                        ? new Date(review.createdAt).toLocaleDateString('fr-FR')
+                        : '-'}
                     </td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                        STATUS_STYLES[review.status] || 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          STATUS_STYLES[review.status] || 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
                         {STATUS_LABELS[review.status] || review.status}
                       </span>
                     </td>
@@ -329,6 +345,47 @@ export default function AdminReviewsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        open={!!actionTarget}
+        onClose={() => setActionTarget(null)}
+        onConfirm={async () => {
+          if (!actionTarget) return;
+          try {
+            await actionMutation.mutateAsync({ id: actionTarget.id, action: actionTarget.action });
+            setToast({
+              message: `Avis ${actionTarget.label.toLowerCase()} avec succès`,
+              type: 'success',
+            });
+          } catch {
+            setToast({ message: `Erreur lors de « ${actionTarget.label} »`, type: 'error' });
+          }
+          setActionTarget(null);
+        }}
+        title="Confirmer l'action"
+        description={`Confirmer l'action « ${actionTarget?.label} » sur cet avis ?`}
+        confirmLabel="Confirmer"
+        variant="warning"
+      />
+
+      <ConfirmationModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          try {
+            await deleteMutation.mutateAsync(deleteTarget);
+            setToast({ message: 'Avis supprimé avec succès', type: 'success' });
+          } catch {
+            setToast({ message: 'Erreur lors de la suppression', type: 'error' });
+          }
+          setDeleteTarget(null);
+        }}
+        title="Supprimer l'avis"
+        description="Êtes-vous sûr de vouloir supprimer définitivement cet avis ?"
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
     </div>
   );
 }

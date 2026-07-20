@@ -27,7 +27,7 @@ export default function InfiniteScrollSentinel({
           onIntersect?.();
         }
       },
-      { rootMargin: '300px' },
+      { rootMargin: '300px' }
     );
     observer.observe(el);
     return () => observer.disconnect();

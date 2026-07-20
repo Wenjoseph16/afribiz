@@ -1,18 +1,18 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import {
-  Bell, Plus, Search, X, Pencil, Trash2, ToggleLeft, ToggleRight,
-} from 'lucide-react';
+import { Bell, Plus, Search, X, Pencil, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Loader } from '@/components/ui/Loader';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
 
@@ -106,28 +106,44 @@ export default function AdminNotificationTemplatesPage() {
     mutationFn: (data: TemplateForm) =>
       apiClient.post('/admin/notification-templates', {
         ...data,
-        variables: data.variables.split(',').map((v) => v.trim()).filter(Boolean),
+        variables: data.variables
+          .split(',')
+          .map((v) => v.trim())
+          .filter(Boolean),
       }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'notification-templates'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notification-templates'] });
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<TemplateForm> }) =>
       apiClient.put(`/admin/notification-templates/${id}`, {
         ...data,
-        variables: data.variables ? data.variables.split(',').map((v) => v.trim()).filter(Boolean) : undefined,
+        variables: data.variables
+          ? data.variables
+              .split(',')
+              .map((v) => v.trim())
+              .filter(Boolean)
+          : undefined,
       }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'notification-templates'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notification-templates'] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/admin/notification-templates/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'notification-templates'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notification-templates'] });
+    },
   });
 
   const toggleMutation = useMutation({
     mutationFn: (id: string) => apiClient.patch(`/admin/notification-templates/${id}/toggle`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'notification-templates'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notification-templates'] });
+    },
   });
 
   const openCreate = () => {
@@ -165,45 +181,74 @@ export default function AdminNotificationTemplatesPage() {
     }
   };
 
-  const handleDelete = async (tpl: NotificationTemplate) => {
-    if (!window.confirm(`Supprimer le template « ${tpl.type} » (${CHANNEL_LABELS[tpl.channel]}) ?`)) return;
+  const [deleteTplTarget, setDeleteTplTarget] = useState<NotificationTemplate | null>(null);
+
+  const confirmDeleteTpl = async () => {
+    if (!deleteTplTarget) return;
     try {
-      await deleteMutation.mutateAsync(tpl.id);
+      await deleteMutation.mutateAsync(deleteTplTarget.id);
       setToast({ message: 'Template supprimé avec succès', type: 'success' });
     } catch {
       setToast({ message: 'Erreur lors de la suppression', type: 'error' });
     }
+    setDeleteTplTarget(null);
+  };
+
+  const handleDelete = async (tpl: NotificationTemplate) => {
+    setDeleteTplTarget(tpl);
   };
 
   const handleToggle = async (tpl: NotificationTemplate) => {
     try {
       await toggleMutation.mutateAsync(tpl.id);
-      setToast({ message: `Template ${tpl.isActive ? 'désactivé' : 'activé'} avec succès`, type: 'success' });
+      setToast({
+        message: `Template ${tpl.isActive ? 'désactivé' : 'activé'} avec succès`,
+        type: 'success',
+      });
     } catch {
       setToast({ message: 'Erreur lors du basculement', type: 'error' });
     }
   };
 
   const tplList = Array.isArray(templates) ? (templates as NotificationTemplate[]) : [];
-  const typesList = (Array.isArray(types) ? (types as string[]) : ['welcome_email', 'password_reset', 'account_verification', 'transaction_notification', 'promotional']);
-  const channelsList = (Array.isArray(channels) ? (channels as string[]) : ['EMAIL', 'SMS', 'WHATSAPP', 'IN_APP']);
+  const typesList = Array.isArray(types)
+    ? (types as string[])
+    : [
+        'welcome_email',
+        'password_reset',
+        'account_verification',
+        'transaction_notification',
+        'promotional',
+      ];
+  const channelsList = Array.isArray(channels)
+    ? (channels as string[])
+    : ['EMAIL', 'SMS', 'WHATSAPP', 'IN_APP'];
 
   const filteredList = tplList.filter((t) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return t.type.toLowerCase().includes(q) || t.subject?.toLowerCase().includes(q) || t.channel.toLowerCase().includes(q);
+    return (
+      t.type.toLowerCase().includes(q) ||
+      t.subject?.toLowerCase().includes(q) ||
+      t.channel.toLowerCase().includes(q)
+    );
   });
 
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={'p-3 rounded-xl text-sm font-medium ' + (
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        )}>
+        <div
+          className={
+            'p-3 rounded-xl text-sm font-medium ' +
+            (toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400')
+          }
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -263,9 +308,14 @@ export default function AdminNotificationTemplatesPage() {
               </thead>
               <tbody>
                 {filteredList.map((tpl) => (
-                  <tr key={tpl.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={tpl.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4">
-                      <Badge variant="purple" size="xs">{tpl.type.replace(/_/g, ' ')}</Badge>
+                      <Badge variant="purple" size="xs">
+                        {tpl.type.replace(/_/g, ' ')}
+                      </Badge>
                     </td>
                     <td className="p-4">
                       <Badge variant={CHANNEL_VARIANTS[tpl.channel] || 'default'} size="xs">
@@ -312,8 +362,19 @@ export default function AdminNotificationTemplatesPage() {
           <EmptyState
             icon={<Bell className="h-8 w-8" />}
             title="Aucun template de notification"
-            description={search ? 'Aucun template ne correspond à la recherche.' : 'Créez votre premier template de notification.'}
-            action={!search ? <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4" />Créer un template</Button> : undefined}
+            description={
+              search
+                ? 'Aucun template ne correspond à la recherche.'
+                : 'Créez votre premier template de notification.'
+            }
+            action={
+              !search ? (
+                <Button size="sm" onClick={openCreate}>
+                  <Plus className="h-4 w-4" />
+                  Créer un template
+                </Button>
+              ) : undefined
+            }
           />
         )}
       </Card>
@@ -329,34 +390,26 @@ export default function AdminNotificationTemplatesPage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Type
             </label>
-            <select
+            <Select
               value={form.type}
               onChange={(e) => setForm({ ...form, type: e.target.value })}
-              required
               disabled={typesLoading}
-              className="w-full px-4 py-2.5 rounded-xl border-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring"
-            >
-              <option value="">Sélectionner un type</option>
-              {typesList.map((t) => (
-                <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'Sélectionner un type' },
+                ...typesList.map((t) => ({ value: t, label: t.replace(/_/g, ' ') })),
+              ]}
+            />
           </div>
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Canal
             </label>
-            <select
+            <Select
               value={form.channel}
               onChange={(e) => setForm({ ...form, channel: e.target.value })}
-              required
               disabled={channelsLoading}
-              className="w-full px-4 py-2.5 rounded-xl border-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 focus:border-brand focus:ring-brand/20 transition-all duration-200 focus-ring"
-            >
-              {channelsList.map((c) => (
-                <option key={c} value={c}>{CHANNEL_LABELS[c] || c}</option>
-              ))}
-            </select>
+              options={channelsList.map((c) => ({ value: c, label: CHANNEL_LABELS[c] || c }))}
+            />
           </div>
           <Input
             label="Sujet"
@@ -394,6 +447,15 @@ export default function AdminNotificationTemplatesPage() {
             </Button>
           </div>
         </form>
+        <ConfirmationModal
+          open={!!deleteTplTarget}
+          onClose={() => setDeleteTplTarget(null)}
+          onConfirm={confirmDeleteTpl}
+          title="Supprimer le template"
+          description={deleteTplTarget ? `Supprimer le template « ${deleteTplTarget.type} » ?` : ''}
+          confirmLabel="Supprimer"
+          variant="danger"
+        />
       </Modal>
     </div>
   );

@@ -3,9 +3,18 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Shield, CheckCircle2, Clock, XCircle, AlertTriangle,
-  Search, DollarSign, FileText, MessageCircle,
-  RefreshCw, Eye, Loader2,
+  Shield,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  AlertTriangle,
+  Search,
+  DollarSign,
+  FileText,
+  MessageCircle,
+  RefreshCw,
+  Eye,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -18,13 +27,40 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { useClientEscrows, useConfirmClientEscrow, useDisputeClientEscrow } from '@/features/hooks';
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default'; color: string }> = {
-  HELD: { label: 'Actif', variant: 'success', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  PENDING: { label: 'En attente', variant: 'warning', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  RELEASED: { label: 'Libéré', variant: 'default', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  REFUNDED: { label: 'Remboursé', variant: 'info', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-  DISPUTED: { label: 'Litige', variant: 'danger', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  CANCELLED: { label: 'Annulé', variant: 'default', color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default'; color: string }
+> = {
+  HELD: {
+    label: 'Actif',
+    variant: 'success',
+    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  PENDING: {
+    label: 'En attente',
+    variant: 'warning',
+    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  RELEASED: {
+    label: 'Libéré',
+    variant: 'default',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  REFUNDED: {
+    label: 'Remboursé',
+    variant: 'info',
+    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  },
+  DISPUTED: {
+    label: 'Litige',
+    variant: 'danger',
+    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
+  CANCELLED: {
+    label: 'Annulé',
+    variant: 'default',
+    color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  },
 };
 
 const TABS = [
@@ -37,7 +73,10 @@ const TABS = [
 export default function EscrowPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
-  const [disputeModal, setDisputeModal] = useState<{ open: boolean; escrowId: string }>({ open: false, escrowId: '' });
+  const [disputeModal, setDisputeModal] = useState<{ open: boolean; escrowId: string }>({
+    open: false,
+    escrowId: '',
+  });
   const [disputeReason, setDisputeReason] = useState('');
 
   const { data, isLoading, error, refetch } = useClientEscrows();
@@ -45,36 +84,50 @@ export default function EscrowPage() {
   const disputeMutation = useDisputeClientEscrow();
 
   const escrows = useMemo(() => {
-    const d = Array.isArray(data) ? data : (data?.escrows || data?.items || []);
-    return d as any[];
+    const d = Array.isArray(data)
+      ? data
+      : (data as Record<string, unknown>)?.escrows ||
+        (data as Record<string, unknown>)?.items ||
+        [];
+    return Array.isArray(d) ? d : [];
   }, [data]);
 
-  const stats = useMemo(() => ({
-    total: escrows.length,
-    active: escrows.filter((e: any) => e.status === 'HELD' || e.status === 'PENDING').length,
-    released: escrows.filter((e: any) => e.status === 'RELEASED').length,
-    disputed: escrows.filter((e: any) => e.status === 'DISPUTED').length,
-    totalHeld: escrows
-      .filter((e: any) => e.status === 'HELD' || e.status === 'PENDING')
-      .reduce((sum: number, e: any) => sum + Number(e.amount || e.montant || 0), 0),
-    totalReleased: escrows
-      .filter((e: any) => e.status === 'RELEASED')
-      .reduce((sum: number, e: any) => sum + Number(e.amount || e.montant || 0), 0),
-  }), [escrows]);
+  const stats = useMemo(
+    () => ({
+      total: escrows.length,
+      active: escrows.filter((e: any) => e.status === 'HELD' || e.status === 'PENDING').length,
+      released: escrows.filter((e: any) => e.status === 'RELEASED').length,
+      disputed: escrows.filter((e: any) => e.status === 'DISPUTED').length,
+      totalHeld: escrows
+        .filter((e: any) => e.status === 'HELD' || e.status === 'PENDING')
+        .reduce((sum: number, e: any) => sum + Number(e.amount || e.montant || 0), 0),
+      totalReleased: escrows
+        .filter((e: any) => e.status === 'RELEASED')
+        .reduce((sum: number, e: any) => sum + Number(e.amount || e.montant || 0), 0),
+    }),
+    [escrows]
+  );
 
   const filtered = useMemo(() => {
     let f = [...escrows];
     switch (activeTab) {
-      case 'active': f = f.filter((e: any) => ['HELD', 'PENDING'].includes(e.status)); break;
-      case 'released': f = f.filter((e: any) => e.status === 'RELEASED'); break;
-      case 'disputed': f = f.filter((e: any) => e.status === 'DISPUTED'); break;
+      case 'active':
+        f = f.filter((e: any) => ['HELD', 'PENDING'].includes(e.status));
+        break;
+      case 'released':
+        f = f.filter((e: any) => e.status === 'RELEASED');
+        break;
+      case 'disputed':
+        f = f.filter((e: any) => e.status === 'DISPUTED');
+        break;
     }
     if (search) {
       const q = search.toLowerCase();
-      f = f.filter((e: any) =>
-        (e.reference || e.id || '').toLowerCase().includes(q) ||
-        (e.businessName || e.business || '').toLowerCase().includes(q) ||
-        (e.description || '').toLowerCase().includes(q)
+      f = f.filter(
+        (e: any) =>
+          (e.reference || e.id || '').toLowerCase().includes(q) ||
+          (e.businessName || e.business || '').toLowerCase().includes(q) ||
+          (e.description || '').toLowerCase().includes(q)
       );
     }
     return f;
@@ -102,8 +155,8 @@ export default function EscrowPage() {
             <div>
               <h2 className="text-lg font-bold text-white">Paiement sécurisé</h2>
               <p className="text-emerald-100/80 text-sm mt-1 max-w-lg">
-                Les fonds sont bloqués jusqu&apos;à ce que vous confirmiez la réception du service ou du produit.
-                Vous êtes ainsi protégé en cas de litige.
+                Les fonds sont bloqués jusqu&apos;à ce que vous confirmiez la réception du service
+                ou du produit. Vous êtes ainsi protégé en cas de litige.
               </p>
             </div>
           </div>
@@ -114,7 +167,9 @@ export default function EscrowPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand"><Shield className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand">
+              <Shield className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
@@ -123,7 +178,9 @@ export default function EscrowPage() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600"><CheckCircle2 className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Actifs</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.active}</p>
@@ -132,7 +189,9 @@ export default function EscrowPage() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600"><RefreshCw className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600">
+              <RefreshCw className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Libérés</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.released}</p>
@@ -141,7 +200,9 @@ export default function EscrowPage() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600"><AlertTriangle className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Litiges</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.disputed}</p>
@@ -150,19 +211,27 @@ export default function EscrowPage() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600"><DollarSign className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600">
+              <DollarSign className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Bloqué</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.totalHeld.toLocaleString()} FCFA</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.totalHeld.toLocaleString()} FCFA
+              </p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600"><DollarSign className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
+              <DollarSign className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Libéré</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.totalReleased.toLocaleString()} FCFA</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.totalReleased.toLocaleString()} FCFA
+              </p>
             </div>
           </div>
         </Card>
@@ -185,7 +254,13 @@ export default function EscrowPage() {
               {tab.label}
               {tab.key !== 'all' && (
                 <span className="ml-1.5 text-xs opacity-70">
-                  ({tab.key === 'active' ? stats.active : tab.key === 'released' ? stats.released : stats.disputed})
+                  (
+                  {tab.key === 'active'
+                    ? stats.active
+                    : tab.key === 'released'
+                      ? stats.released
+                      : stats.disputed}
+                  )
                 </span>
               )}
             </button>
@@ -214,7 +289,11 @@ export default function EscrowPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((escrow: any) => {
-            const statusInfo = STATUS_CONFIG[escrow.status] || { label: escrow.status, variant: 'default' as const, color: 'bg-gray-100 text-gray-600' };
+            const statusInfo = STATUS_CONFIG[escrow.status] || {
+              label: escrow.status,
+              variant: 'default' as const,
+              color: 'bg-gray-100 text-gray-600',
+            };
 
             return (
               <Card key={escrow.id} className="p-5 hover:shadow-md transition-all duration-200">
@@ -235,7 +314,10 @@ export default function EscrowPage() {
                           </Badge>
                         </div>
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">
-                          {escrow.description || escrow.businessName || escrow.business || 'Transaction sécurisée'}
+                          {escrow.description ||
+                            escrow.businessName ||
+                            escrow.business ||
+                            'Transaction sécurisée'}
                         </h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           {escrow.businessName || escrow.business || 'Business'}
@@ -259,7 +341,9 @@ export default function EscrowPage() {
                         <Clock className="h-3.5 w-3.5" />
                         {escrow.createdAt
                           ? new Date(escrow.createdAt).toLocaleDateString('fr-FR', {
-                              day: 'numeric', month: 'short', year: 'numeric'
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
                             })
                           : '-'}
                       </span>
@@ -275,16 +359,26 @@ export default function EscrowPage() {
                     {(escrow.status === 'HELD' || escrow.status === 'PENDING') && (
                       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                         <Button
-                          size="xs" variant="primary"
+                          size="xs"
+                          variant="primary"
                           onClick={() => confirmMutation.mutate(escrow.id)}
                           disabled={confirmMutation.isPending}
                         >
-                          {confirmMutation.isPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+                          {confirmMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                          )}
                           Confirmer réception
                         </Button>
                         <Button
-                          size="xs" variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50"
-                          onClick={() => { setDisputeModal({ open: true, escrowId: escrow.id }); setDisputeReason(''); }}
+                          size="xs"
+                          variant="outline"
+                          className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                          onClick={() => {
+                            setDisputeModal({ open: true, escrowId: escrow.id });
+                            setDisputeReason('');
+                          }}
                         >
                           <AlertTriangle className="h-3 w-3 mr-1" />
                           Signaler un problème
@@ -292,27 +386,138 @@ export default function EscrowPage() {
                       </div>
                     )}
 
-                    {escrow.status === 'DISPUTED' && (
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                        <Button size="xs" variant="secondary">
-                          <Eye className="h-3 w-3 mr-1" />
-                          Voir les détails du litige
-                        </Button>
-                        <Button size="xs" variant="ghost">
-                          <MessageCircle className="h-3 w-3 mr-1" />
-                          Contacter le support
-                        </Button>
-                      </div>
-                    )}
+                    {/* Timeline de progression */}
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      {(() => {
+                        const escrowStatusIdx = [
+                          'PENDING',
+                          'HELD',
+                          'RELEASED',
+                          'REFUNDED',
+                          'DISPUTED',
+                          'CANCELLED',
+                        ].indexOf(escrow.status);
+                        return (
+                          <>
+                            <div className="flex items-center gap-1">
+                              {['PENDING', 'HELD', 'RELEASED'].map((step, si, arr) => {
+                                const stepIdx = ['PENDING', 'HELD', 'RELEASED'].indexOf(step);
+                                const isActive = escrowStatusIdx >= stepIdx;
+                                return (
+                                  <div key={step} className="flex items-center flex-1">
+                                    <div
+                                      className={cn(
+                                        'flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 transition-all',
+                                        isActive
+                                          ? 'bg-brand text-white shadow-sm shadow-brand/30'
+                                          : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                                      )}
+                                    >
+                                      {step === 'PENDING' ? '1' : step === 'HELD' ? '2' : '3'}
+                                    </div>
+                                    {si < arr.length - 1 && (
+                                      <div
+                                        className={cn(
+                                          'flex-1 h-0.5 mx-1.5 rounded transition-colors',
+                                          escrowStatusIdx > stepIdx
+                                            ? 'bg-brand'
+                                            : escrow.status === 'DISPUTED' ||
+                                                escrow.status === 'CANCELLED'
+                                              ? 'bg-red-300'
+                                              : 'bg-gray-200 dark:bg-gray-600'
+                                        )}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="flex justify-between mt-1.5">
+                              {['Créée', 'Bloquée', 'Libérée'].map((label, i) => (
+                                <span
+                                  key={label}
+                                  className={cn(
+                                    'text-[10px]',
+                                    escrowStatusIdx >= i
+                                      ? 'text-brand font-medium'
+                                      : 'text-gray-400'
+                                  )}
+                                >
+                                  {label}
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
 
-                    {escrow.status === 'RELEASED' && (
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                        <Button size="xs" variant="ghost">
-                          <FileText className="h-3 w-3 mr-1" />
-                          Voir le reçu
-                        </Button>
-                      </div>
-                    )}
+                    {/* Actions specifiques */}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      {(escrow.status === 'HELD' || escrow.status === 'PENDING') && (
+                        <>
+                          <Button
+                            size="xs"
+                            variant="primary"
+                            onClick={() => confirmMutation.mutate(escrow.id)}
+                            disabled={confirmMutation.isPending}
+                          >
+                            {confirmMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                            )}
+                            Confirmer réception
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                            onClick={() => {
+                              setDisputeModal({ open: true, escrowId: escrow.id });
+                              setDisputeReason('');
+                            }}
+                          >
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Problème
+                          </Button>
+                        </>
+                      )}
+
+                      {escrow.status === 'DISPUTED' && (
+                        <>
+                          <span className="flex items-center gap-1.5 text-xs text-red-600 font-medium bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-lg">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            Litige en cours — Support informé
+                          </span>
+                          <Button size="xs" variant="ghost">
+                            <MessageCircle className="h-3 w-3 mr-1" />
+                            Voir
+                          </Button>
+                        </>
+                      )}
+
+                      {escrow.status === 'RELEASED' && (
+                        <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Paiement libéré avec succès
+                        </span>
+                      )}
+
+                      {escrow.status === 'REFUNDED' && (
+                        <span className="flex items-center gap-1.5 text-xs text-purple-600 font-medium">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          Remboursement effectué
+                        </span>
+                      )}
+
+                      {escrow.status === 'CANCELLED' && (
+                        <span className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
+                          <XCircle className="h-3.5 w-3.5" />
+                          Transaction annulée
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -320,7 +525,10 @@ export default function EscrowPage() {
           })}
         </div>
       )}
-      <Modal open={disputeModal.open} onClose={() => setDisputeModal({ open: false, escrowId: '' })}>
+      <Modal
+        open={disputeModal.open}
+        onClose={() => setDisputeModal({ open: false, escrowId: '' })}
+      >
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-4">Signaler un problème</h3>
           <textarea
@@ -330,7 +538,9 @@ export default function EscrowPage() {
             onChange={(e) => setDisputeReason(e.target.value)}
           />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setDisputeModal({ open: false, escrowId: '' })}>Annuler</Button>
+            <Button variant="ghost" onClick={() => setDisputeModal({ open: false, escrowId: '' })}>
+              Annuler
+            </Button>
             <Button
               variant="danger"
               disabled={!disputeReason.trim() || disputeMutation.isPending}

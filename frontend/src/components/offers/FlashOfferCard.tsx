@@ -25,7 +25,9 @@ function CountdownTimer({ endAt }: { endAt: string }) {
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      setTimeLeft(
+        `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+      );
     };
     calc();
     const interval = setInterval(calc, 1000);
@@ -40,7 +42,13 @@ function CountdownTimer({ endAt }: { endAt: string }) {
   );
 }
 
-export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }: FlashOfferCardProps) {
+export function FlashOfferCard({
+  offer,
+  onClaim,
+  isClaiming,
+  claimed,
+  compact,
+}: FlashOfferCardProps) {
   if (!offer) return null;
 
   const progress = offer.quantity > 0 ? Math.round((offer.soldCount / offer.quantity) * 100) : 0;
@@ -65,10 +73,14 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{offer.title}</h4>
+            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+              {offer.title}
+            </h4>
             <div className="flex items-center gap-2 mt-0.5">
               <CountdownTimer endAt={offer.endAt} />
-              <span className="text-[10px] text-gray-400">{remaining}/{offer.quantity} restants</span>
+              <span className="text-[10px] text-gray-400">
+                {remaining}/{offer.quantity} restants
+              </span>
             </div>
           </div>
           <div className="text-right flex-shrink-0">
@@ -78,7 +90,9 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
               </p>
             )}
             {offer.originalPrice && (
-              <p className="text-[10px] text-gray-400 line-through">{offer.originalPrice.toLocaleString()} FCFA</p>
+              <p className="text-[10px] text-gray-400 line-through">
+                {offer.originalPrice.toLocaleString()} FCFA
+              </p>
             )}
           </div>
         </div>
@@ -87,18 +101,29 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
   }
 
   return (
-    <Card padding="none" variant="elevated" className={cn(
-      'group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5',
-      (isExpired || isSoldOut) && 'opacity-50',
-      !isExpired && !isSoldOut && 'ring-1 ring-brand-500/10 hover:ring-brand-500/30'
-    )}>
+    <Card
+      padding="none"
+      variant="elevated"
+      className={cn(
+        'group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5',
+        (isExpired || isSoldOut) && 'opacity-50',
+        !isExpired && !isSoldOut && 'ring-1 ring-brand-500/10 hover:ring-brand-500/30'
+      )}
+    >
       {/* Image avec effet d'urgence */}
-      <div className={cn(
-        'aspect-[16/9] relative bg-gray-100 dark:bg-gray-900 overflow-hidden',
-        !isExpired && !isSoldOut && progress < 80 && 'animate-pulse-soft'
-      )}>
+      <div
+        className={cn(
+          'aspect-[16/9] relative bg-gray-100 dark:bg-gray-900 overflow-hidden',
+          !isExpired && !isSoldOut && progress < 80 && 'animate-pulse-soft'
+        )}
+      >
         {offer.image ? (
-          <Image src={offer.image} alt={offer.title} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+          <Image
+            src={offer.image}
+            alt={offer.title}
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-110"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/10 via-brand-500/10 to-purple-500/10">
             <Zap className="w-12 h-12 text-brand-400/50" />
@@ -136,9 +161,11 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
             <div
               className={cn(
                 'h-full transition-all duration-1000 ease-out',
-                progress >= 80 ? 'bg-gradient-to-r from-red-500 to-red-400' :
-                progress >= 50 ? 'bg-gradient-to-r from-amber-500 to-amber-400' :
-                'bg-gradient-to-r from-brand-500 to-brand-400'
+                progress >= 80
+                  ? 'bg-gradient-to-r from-red-500 to-red-400'
+                  : progress >= 50
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-400'
+                    : 'bg-gradient-to-r from-brand-500 to-brand-400'
               )}
               style={{ width: `${Math.min(progress, 100)}%` }}
             />
@@ -153,14 +180,23 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
           <div className="flex items-center gap-2 mb-2.5">
             <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0 ring-2 ring-white/50 dark:ring-gray-600/50">
               {offer.business.logo ? (
-                <Image src={offer.business.logo} alt="" width={24} height={24} className="object-cover w-full h-full" />
+                <Image
+                  src={offer.business.logo}
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="object-cover w-full h-full"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-500">
                   {offer.business.name?.charAt(0)}
                 </div>
               )}
             </div>
-            <Link href={'/business/' + offer.business.slug} className="text-xs text-gray-500 dark:text-gray-400 hover:text-brand-500 font-medium truncate transition-colors">
+            <Link
+              href={'/business/' + offer.business.slug}
+              className="text-xs text-gray-500 dark:text-gray-400 hover:text-brand-500 font-medium truncate transition-colors"
+            >
               {offer.business.name}
             </Link>
             {offer.business.city && (
@@ -177,14 +213,17 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
           {offer.title}
         </h3>
         {offer.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{offer.description}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+            {offer.description}
+          </p>
         )}
 
         {/* Pricing — highlight flash price */}
         <div className="flex items-end gap-2 mt-3">
           {offer.flashPrice && (
             <p className="text-xl font-bold bg-gradient-to-r from-brand-600 to-brand-500 dark:from-brand-400 dark:to-brand-300 bg-clip-text text-transparent">
-              {offer.flashPrice.toLocaleString()} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">FCFA</span>
+              {offer.flashPrice.toLocaleString()}{' '}
+              <span className="text-xs font-normal text-gray-500 dark:text-gray-400">FCFA</span>
             </p>
           )}
           {offer.originalPrice && (
@@ -196,12 +235,18 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
 
         {/* Availability — avec warning si stock bas */}
         <div className="flex items-center justify-between mt-3">
-          <div className={cn(
-            'flex items-center gap-1 text-xs',
-            remaining <= 5 && !isSoldOut ? 'text-red-500 font-medium' : 'text-gray-500 dark:text-gray-400'
-          )}>
+          <div
+            className={cn(
+              'flex items-center gap-1 text-xs',
+              remaining <= 5 && !isSoldOut
+                ? 'text-red-500 font-medium'
+                : 'text-gray-500 dark:text-gray-400'
+            )}
+          >
             <ShoppingBag className="w-3 h-3" />
-            <span>{remaining} / {offer.quantity} restants</span>
+            <span>
+              {remaining} / {offer.quantity} restants
+            </span>
             {remaining <= 5 && !isSoldOut && (
               <span className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-medium animate-pulse-soft">
                 Dépêchez-vous !
@@ -209,9 +254,7 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
             )}
           </div>
           {offer.maxPerCustomer && (
-            <div className="text-[10px] text-gray-400">
-              Max {offer.maxPerCustomer} / client
-            </div>
+            <div className="text-[10px] text-gray-400">Max {offer.maxPerCustomer} / client</div>
           )}
         </div>
 
@@ -251,9 +294,7 @@ export function FlashOfferCard({ offer, onClaim, isClaiming, claimed, compact }:
         </button>
 
         {/* Terms */}
-        {offer.terms && (
-          <p className="text-[10px] text-gray-400 mt-2 text-center">{offer.terms}</p>
-        )}
+        {offer.terms && <p className="text-[10px] text-gray-400 mt-2 text-center">{offer.terms}</p>}
       </div>
     </Card>
   );

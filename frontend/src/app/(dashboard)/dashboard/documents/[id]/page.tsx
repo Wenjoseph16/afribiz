@@ -2,13 +2,24 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useState } from 'react';
 import {
-  ArrowLeft, Pencil, Trash2, ExternalLink, Download,
-  FileText, CalendarDays, Clock, HardDrive, FileType,
-  Loader, AlertTriangle,
+  ArrowLeft,
+  Pencil,
+  Trash2,
+  ExternalLink,
+  Download,
+  FileText,
+  CalendarDays,
+  Clock,
+  HardDrive,
+  FileType,
+  Loader,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useDocument, useDeleteDocument } from '@/features/hooks';
@@ -29,21 +40,30 @@ export default function DocumentDetailPage() {
   const { data: document, isLoading, error, refetch } = useDocument(id);
 
   const deleteMutation = useDeleteDocument();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   if (!params?.id) return null;
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
-  if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><Loader className="h-8 w-8 animate-spin text-brand" /></div>;
-  if (!document) return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-      <div className="p-4 rounded-full bg-amber-50 dark:bg-amber-900/20">
-        <AlertTriangle className="h-8 w-8 text-amber-500" />
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader className="h-8 w-8 animate-spin text-brand" />
       </div>
-      <p className="text-gray-500 text-sm">Le module Documents est en cours de développement</p>
-      <Link href="/dashboard/documents">
-        <Button variant="outline" size="sm"><ArrowLeft className="h-4 w-4 mr-1.5" /> Retour aux documents</Button>
-      </Link>
-    </div>
-  );
+    );
+  if (!document)
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <div className="p-4 rounded-full bg-amber-50 dark:bg-amber-900/20">
+          <AlertTriangle className="h-8 w-8 text-amber-500" />
+        </div>
+        <p className="text-gray-500 text-sm">Le module Documents est en cours de développement</p>
+        <Link href="/dashboard/documents">
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-1.5" /> Retour aux documents
+          </Button>
+        </Link>
+      </div>
+    );
 
   const doc: any = document;
   const createdDate = doc.createdAt ? new Date(doc.createdAt) : null;
@@ -60,21 +80,28 @@ export default function DocumentDetailPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <Link href="/dashboard/documents" className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+        <Link
+          href="/dashboard/documents"
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        >
           <ArrowLeft className="h-4 w-4" /> Retour
         </Link>
         <div className="flex items-center gap-2">
           <Link href={`/dashboard/documents/${id}/edit`}>
-            <Button size="sm" variant="outline"><Pencil className="h-4 w-4 mr-1.5" />Modifier</Button>
+            <Button size="sm" variant="outline">
+              <Pencil className="h-4 w-4 mr-1.5" />
+              Modifier
+            </Button>
           </Link>
           <Button
             size="sm"
             variant="outline"
             className="text-red-500 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
-            onClick={() => { if (confirm('Supprimer ce document ?')) { deleteMutation.mutate(id, { onSuccess: () => router.push('/dashboard/documents') }); } }}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={deleteMutation.isPending}
           >
-            <Trash2 className="h-4 w-4 mr-1.5" />Supprimer
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Supprimer
           </Button>
         </div>
       </div>
@@ -105,7 +132,9 @@ export default function DocumentDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card padding="lg" className="md:col-span-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Actions</h3>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            Actions
+          </h3>
           <div className="flex flex-wrap gap-3">
             {doc.fileUrl && (
               <>
@@ -121,19 +150,21 @@ export default function DocumentDetailPage() {
                 </a>
               </>
             )}
-            {!doc.fileUrl && (
-              <p className="text-sm text-gray-500">Aucun fichier associé</p>
-            )}
+            {!doc.fileUrl && <p className="text-sm text-gray-500">Aucun fichier associé</p>}
           </div>
         </Card>
 
         <div className="space-y-4">
           <Card padding="lg">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Informations</h3>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+              Informations
+            </h3>
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-300">
                 <FileType className="h-4 w-4 text-gray-400 shrink-0" />
-                <span className="font-medium text-gray-900 dark:text-gray-100">{TYPE_LABELS[doc.type] || doc.type}</span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {TYPE_LABELS[doc.type] || doc.type}
+                </span>
               </div>
               <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-300">
                 <HardDrive className="h-4 w-4 text-gray-400 shrink-0" />
@@ -163,6 +194,19 @@ export default function DocumentDetailPage() {
           </Card>
         </div>
       </div>
+      <ConfirmationModal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={async () => {
+          await deleteMutation.mutateAsync(id);
+          router.push('/dashboard/documents');
+        }}
+        title="Supprimer ce document ?"
+        description="Cette action est irréversible. Le document sera définitivement supprimé."
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="danger"
+      />
     </div>
   );
 }

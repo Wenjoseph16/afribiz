@@ -1,26 +1,41 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import type {
-  ModulePermission, ModuleLicense, DeveloperApiKey, ModuleWebhook,
-  WebhookDelivery, ModuleAnalytics, ModuleErrorLog, ModuleValidation,
-  ValidationCheck, ModuleConfiguration, ModuleActivityLog,
-  PermissionCheckResult, PermissionSummary, LicenseCheckResult,
-  LicenseStats, ModuleAnalyticsData, DeveloperAnalyticsOverview,
-  ActivityStats, ModuleSubscription,
+  ModulePermission,
+  ModuleLicense,
+  DeveloperApiKey,
+  ModuleWebhook,
+  WebhookDelivery,
+  ModuleAnalytics,
+  ModuleErrorLog,
+  ModuleValidation,
+  ValidationCheck,
+  ModuleConfiguration,
+  ModuleActivityLog,
+  PermissionCheckResult,
+  PermissionSummary,
+  LicenseCheckResult,
+  LicenseStats,
+  ModuleAnalyticsData,
+  DeveloperAnalyticsOverview,
+  ActivityStats,
+  ModuleSubscription,
 } from '@/types/developer';
 
 export const extendedDevKeys = {
   permissions: {
     list: (moduleId: string) => ['module-permissions', moduleId] as const,
     summary: (moduleId: string) => ['module-permissions', moduleId, 'summary'] as const,
-    check: (moduleId: string, businessId: string) => ['module-permissions', moduleId, 'check', businessId] as const,
+    check: (moduleId: string, businessId: string) =>
+      ['module-permissions', moduleId, 'check', businessId] as const,
   },
   licenses: {
     list: (moduleId: string) => ['module-licenses', moduleId] as const,
     all: ['module-licenses-all'] as const,
     business: (businessId: string) => ['module-licenses-business', businessId] as const,
     stats: ['module-licenses-stats'] as const,
-    check: (moduleId: string, businessId: string) => ['module-licenses-check', moduleId, businessId] as const,
+    check: (moduleId: string, businessId: string) =>
+      ['module-licenses-check', moduleId, businessId] as const,
   },
   apiKeys: {
     all: ['developer-api-keys'] as const,
@@ -40,7 +55,8 @@ export const extendedDevKeys = {
     pending: ['validations-pending'] as const,
   },
   configuration: {
-    detail: (moduleId: string, businessId: string) => ['module-config', moduleId, businessId] as const,
+    detail: (moduleId: string, businessId: string) =>
+      ['module-config', moduleId, businessId] as const,
     list: (moduleId: string) => ['module-configs', moduleId] as const,
     business: (businessId: string) => ['module-configs-business', businessId] as const,
   },
@@ -70,8 +86,13 @@ export function useModulePermissions(moduleId: string) {
 export function useAddModulePermission() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ moduleId, data }: { moduleId: string; data: { resource: string; accessLevel: string; description?: string; isRequired?: boolean } }) =>
-      apiClient.addModulePermission(moduleId, data),
+    mutationFn: ({
+      moduleId,
+      data,
+    }: {
+      moduleId: string;
+      data: { resource: string; accessLevel: string; description?: string; isRequired?: boolean };
+    }) => apiClient.addModulePermission(moduleId, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-permissions'] }),
   });
 }
@@ -156,8 +177,15 @@ export function useCheckLicense(moduleId: string, businessId: string) {
 export function useCreateLicense() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { moduleId: string; businessId: string; licenseType: string; price?: number; currency?: string; expiresAt?: Date; autoRenew?: boolean }) =>
-      apiClient.createLicense(data),
+    mutationFn: (data: {
+      moduleId: string;
+      businessId: string;
+      licenseType: string;
+      price?: number;
+      currency?: string;
+      expiresAt?: Date;
+      autoRenew?: boolean;
+    }) => apiClient.createLicense(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-licenses'] }),
   });
 }
@@ -173,7 +201,8 @@ export function useActivateLicense() {
 export function useRevokeLicense() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) => apiClient.revokeLicense(id, reason),
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      apiClient.revokeLicense(id, reason),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-licenses'] }),
   });
 }
@@ -181,7 +210,8 @@ export function useRevokeLicense() {
 export function useRenewLicense() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, durationDays }: { id: string; durationDays?: number }) => apiClient.renewLicense(id, durationDays),
+    mutationFn: ({ id, durationDays }: { id: string; durationDays?: number }) =>
+      apiClient.renewLicense(id, durationDays),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-licenses'] }),
   });
 }
@@ -203,7 +233,8 @@ export function useApiKeys() {
 export function useCreateApiKey() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; scopes?: string[]; expiresAt?: Date }) => apiClient.createApiKey(data),
+    mutationFn: (data: { name: string; scopes?: string[]; expiresAt?: Date }) =>
+      apiClient.createApiKey(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: extendedDevKeys.apiKeys.all }),
   });
 }
@@ -367,8 +398,15 @@ export function useSubmitForValidation() {
 export function useApproveValidationCheck() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ checkId, score, details }: { checkId: string; score: number; details?: string }) =>
-      apiClient.approveValidationCheck(checkId, score, details),
+    mutationFn: ({
+      checkId,
+      score,
+      details,
+    }: {
+      checkId: string;
+      score: number;
+      details?: string;
+    }) => apiClient.approveValidationCheck(checkId, score, details),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-validation'] }),
   });
 }
@@ -385,8 +423,15 @@ export function useRejectValidationCheck() {
 export function useCompleteValidation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ validationId, status, notes }: { validationId: string; status: string; notes?: string }) =>
-      apiClient.completeValidation(validationId, status, notes),
+    mutationFn: ({
+      validationId,
+      status,
+      notes,
+    }: {
+      validationId: string;
+      status: string;
+      notes?: string;
+    }) => apiClient.completeValidation(validationId, status, notes),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-validation'] }),
   });
 }
@@ -409,8 +454,13 @@ export function useModuleConfiguration(moduleId: string, businessId: string) {
 export function useSaveModuleConfiguration() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ moduleId, data }: { moduleId: string; data: { businessId: string; installationId: string; settings: any } }) =>
-      apiClient.saveModuleConfiguration(moduleId, data),
+    mutationFn: ({
+      moduleId,
+      data,
+    }: {
+      moduleId: string;
+      data: { businessId: string; installationId: string; settings: any };
+    }) => apiClient.saveModuleConfiguration(moduleId, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-config'] }),
   });
 }
@@ -418,8 +468,15 @@ export function useSaveModuleConfiguration() {
 export function useToggleModuleActive() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ moduleId, businessId, isActive }: { moduleId: string; businessId: string; isActive: boolean }) =>
-      apiClient.toggleModuleActive(moduleId, businessId, isActive),
+    mutationFn: ({
+      moduleId,
+      businessId,
+      isActive,
+    }: {
+      moduleId: string;
+      businessId: string;
+      isActive: boolean;
+    }) => apiClient.toggleModuleActive(moduleId, businessId, isActive),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-config'] }),
   });
 }
@@ -485,8 +542,19 @@ export function useBusinessActivityFeed(businessId: string, limit?: number) {
 export function useLogActivity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ moduleId, data }: { moduleId: string; data: { activityType: string; businessId?: string; installationId?: string; description?: string; metadata?: any } }) =>
-      apiClient.logActivity(moduleId, data),
+    mutationFn: ({
+      moduleId,
+      data,
+    }: {
+      moduleId: string;
+      data: {
+        activityType: string;
+        businessId?: string;
+        installationId?: string;
+        description?: string;
+        metadata?: any;
+      };
+    }) => apiClient.logActivity(moduleId, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['module-activity'] }),
   });
 }

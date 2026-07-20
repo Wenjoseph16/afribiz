@@ -5,303 +5,81 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  LayoutDashboard, Globe, Users, MessageCircle, Star, Bell, BarChart3, Settings, LifeBuoy,
-  ShoppingBag, Hand, UtensilsCrossed, Hotel, CalendarCheck, Truck, Palette, Car, Calendar, CalendarDays,
-  Megaphone, Clock, FileText, Wallet, Repeat, File, Scale, Briefcase, Wrench, Store,
-  X, ChevronDown, ChevronLeft, Sparkles, Heart, Shield, Code, User, Compass, Search,
-  Package, CreditCard, Award, Database, UserCheck, UserPlus, Building2, ShoppingCart,
-  Flag, Lock, Key, HardDrive, Download, Upload, Activity, GraduationCap,
-  MessageSquare, Folder, Image as ImageIcon, Beaker, Layers,
-  Tag, TrendingUp, Gem, Percent, Bot, AlertTriangle, ShieldCheck, Zap,
-  ClipboardList, Play, Film, Radio, Monitor, History,
-} from 'lucide-react';
+import { X, ChevronDown, ChevronLeft, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/index';
 import { useAuthStore } from '@/stores/authStore';
 import { useBusinessStore } from '@/stores/businessStore';
 import { useMyBusiness } from '@/features/hooks';
+import { useSidebarUnreadCount } from '@/hooks/useSidebarUnreadCount';
 import { APP_NAME, NAV_GROUPS } from '@/constants/index';
-import type { BusinessModule } from '@/types/business';
+import {
+  iconMap,
+  MODULE_ICON_MAP,
+  MODULE_LABEL_MAP,
+  MODULE_HREF_MAP,
+  MODULE_SUB_ITEMS,
+} from './sidebar-data';
+import { DEVELOPER_NAV_GROUPS, BUSINESS_CORE_NAV } from './sidebar-data';
 
-const iconMap: Record<string, React.ComponentType<any>> = {
-  LayoutDashboard, Globe, Users, MessageCircle, Star, Bell, BarChart3, Settings, LifeBuoy,
-  ShoppingBag, ShoppingCart, Hand, UtensilsCrossed, Hotel, CalendarCheck, Truck, Palette, Car, Calendar,
-  Megaphone, Clock, FileText, Wallet, Repeat, File, Scale, Briefcase, Wrench, Store,
-  Heart, Shield, Code, User, Compass, Search, Sparkles, Package, CreditCard,
-  Award, Database, UserCheck, UserPlus, Building2, Flag, Lock, Key, HardDrive, Download, Upload, Activity,
-  CalendarDays, GraduationCap, MessageSquare, Folder, Image: ImageIcon,
-  Beaker, Layers, Tag, TrendingUp,
-  Gem, Percent, Bot, AlertTriangle, ShieldCheck, Zap, ClipboardList,
-  Play, Film, Radio, Monitor,
-};
-
-const MODULE_ICON_MAP: Record<string, string> = {
-  PRODUCTS: 'ShoppingBag', SERVICES: 'Hand', MENU: 'UtensilsCrossed',
-  ROOMS: 'Hotel', BOOKINGS: 'CalendarCheck', ORDERS: 'ShoppingBag',
-  EVENTS: 'Calendar', RENTALS: 'Car', PROMOTIONS: 'Megaphone',
-  PORTFOLIO: 'Palette',  TRAININGS: 'GraduationCap',
-  DELIVERIES: 'Truck', EMPLOYEES: 'Briefcase',
-  PLANNING: 'Clock', QUOTES_INVOICES: 'FileText', DEBTS_PAYMENTS: 'Wallet',
-  SUBSCRIPTIONS: 'Repeat', DOCUMENTS: 'File', PARTNERS: 'Users',
-  DISPUTES: 'Scale', MODULE_MARKETPLACE: 'Store', ADVANCED_TASKS: 'Wrench',
-};
-
-const MODULE_LABEL_MAP: Record<string, string> = {
-  PRODUCTS: 'Produits', SERVICES: 'Services', MENU: 'Menu / Carte',
-  ROOMS: 'Chambres', BOOKINGS: 'Réservations', ORDERS: 'Commandes',
-  EVENTS: 'Événements', RENTALS: 'Locations', PROMOTIONS: 'Promotions',
-  PORTFOLIO: 'Portfolio', DELIVERIES: 'Livraisons', EMPLOYEES: 'Employés',
-  PLANNING: 'Planning', QUOTES_INVOICES: 'Devis & Factures',
-  DEBTS_PAYMENTS: 'Créances', SUBSCRIPTIONS: 'Abonnements',
-  TRAININGS: 'Formations',
-  DOCUMENTS: 'Documents', PARTNERS: 'Partenaires', DISPUTES: 'Litiges',
-  MODULE_MARKETPLACE: 'Marketplace', ADVANCED_TASKS: 'Tâches avancées',
-};
-
-const MODULE_HREF_MAP: Record<string, string> = {
-  QUOTES_INVOICES: '/dashboard/quotes',
-  DEBTS_PAYMENTS: '/dashboard/debts-payments',
-  MODULE_MARKETPLACE: '/dashboard/marketplace',
-  ADVANCED_TASKS: '/dashboard/tasks',
-  DOCUMENTS: '/dashboard/documents',
-  DISPUTES: '/dashboard/disputes',
-  TRAININGS: '/dashboard/trainings/manage',
-};
-
-const DEVELOPER_NAV_GROUPS = [
-  {
-    label: 'Général',
-    key: 'dev_general',
-    items: [
-      { label: 'Tableau de bord', href: '/dashboard/developer', icon: 'LayoutDashboard' },
-    ],
-  },
-  {
-    label: 'Media',
-    key: 'dev_media',
-    items: [
-      { label: 'Media Hub', href: '/dashboard/developer/media', icon: 'Play' },
-      { label: 'Stories', href: '/dashboard/developer/media/stories', icon: 'Sparkles' },
-      { label: 'Shorts', href: '/dashboard/developer/media/shorts', icon: 'Film' },
-      { label: 'Lives', href: '/dashboard/developer/media/lives', icon: 'Radio' },
-    ],
-  },
-  {
-    label: 'Modules',
-    key: 'dev_modules',
-    items: [
-      { label: 'Tous les modules', href: '/dashboard/developer/modules', icon: 'Package' },
-      { label: 'Créer un module', href: '/dashboard/developer/modules/publish', icon: 'Sparkles' },
-      { label: 'Versions & Releases', href: '/dashboard/developer/versions', icon: 'Repeat' },
-    ],
-  },
-  {
-    label: 'Marketplace',
-    key: 'dev_marketplace',
-    items: [
-      { label: 'Marketplace', href: '/dashboard/developer/marketplace', icon: 'Store' },
-      { label: 'Validation AfriBiz', href: '/dashboard/developer/validation', icon: 'Shield' },
-    ],
-  },
-  {
-    label: 'Revenus',
-    key: 'dev_revenues',
-    items: [
-      { label: 'Vue d\'ensemble', href: '/dashboard/developer/revenues', icon: 'Wallet' },
-      { label: 'Ventes', href: '/dashboard/developer/revenues/sales', icon: 'ShoppingBag' },
-      { label: 'Abonnements', href: '/dashboard/developer/revenues/subscriptions', icon: 'CreditCard' },
-      { label: 'Retraits', href: '/dashboard/developer/revenues/payouts', icon: 'Download' },
-      { label: 'Factures', href: '/dashboard/developer/revenues/invoices', icon: 'FileText' },
-    ],
-  },
-  {
-    label: 'Clients',
-    key: 'dev_clients',
-    items: [
-      { label: 'Installations', href: '/dashboard/developer/installations', icon: 'Download' },
-      { label: 'Clients', href: '/dashboard/developer/clients', icon: 'Users' },
-    ],
-  },
-  {
-    label: 'Support & Avis',
-    key: 'dev_support',
-    items: [
-      { label: 'Support', href: '/dashboard/developer/support', icon: 'LifeBuoy' },
-      { label: 'Avis & Notes', href: '/dashboard/developer/reviews', icon: 'Star' },
-    ],
-  },
-  {
-    label: 'Analyse',
-    key: 'dev_analytics',
-    items: [
-      { label: 'Analytics', href: '/dashboard/developer/analytics', icon: 'BarChart3' },
-      { label: 'Performance', href: '/dashboard/developer/performance', icon: 'Activity' },
-    ],
-  },
-  {
-    label: 'Marketing',
-    key: 'dev_marketing',
-    items: [
-      { label: 'Marketing', href: '/dashboard/developer/marketing', icon: 'Megaphone' },
-    ],
-  },
-  {
-    label: 'Documentation',
-    key: 'dev_docs',
-    items: [
-      { label: 'Documentation', href: '/dashboard/developer/documentation', icon: 'FileText' },
-      { label: 'Communauté', href: '/dashboard/developer/community', icon: 'MessageCircle' },
-    ],
-  },
-  {      label: 'Développeur',
-      key: 'dev_developer',
-      items: [
-        { label: 'Mon abonnement', href: '/dashboard/developer/subscription', icon: 'CreditCard' },
-        { label: 'API & Intégrations', href: '/dashboard/developer/api', icon: 'Key' },
-        { label: 'Sécurité', href: '/dashboard/developer/security', icon: 'Lock' },
-        { label: 'Profil', href: '/dashboard/developer/profile', icon: 'User' },
-        { label: 'Paramètres', href: '/dashboard/developer/settings', icon: 'Settings' },
-      ],
-    },
-    {
-      label: 'Simulation',
-    key: 'dev_simulation',
-    items: [
-      { label: 'Sandbox', href: '/dashboard/developer/simulation', icon: 'Beaker' },
-    ],
-  },
-];
-
-const BUSINESS_PRIMARY_NAV = [
-  {
-    label: 'Général',
-    items: [
-      { label: 'Tableau de bord', href: '/dashboard/business', icon: 'LayoutDashboard' },
-      { label: 'Page publique', href: '/dashboard/public-page', icon: 'Globe' },
-      { label: 'Commandes reçues', href: '/dashboard/business/orders', icon: 'ShoppingBag' },
-      { label: 'Mes modules', href: '/dashboard/business/modules', icon: 'Package' },
-    ],
-  },
-  {
-    label: 'Social Commerce',
-    items: [
-      { label: 'Explorer', href: '/dashboard/explore', icon: 'Compass' },
-      { label: 'Stories', href: '/dashboard/stories', icon: 'Sparkles' },
-      { label: 'Shorts', href: '/dashboard/shorts', icon: 'Film' },
-      { label: 'Lives', href: '/dashboard/lives', icon: 'Radio' },
-      { label: 'Offres Flash', href: '/dashboard/offers', icon: 'Zap' },
-    ],
-  },
-  {
-    label: 'Relation client',
-    items: [
-      { label: 'Clients', href: '/dashboard/clients', icon: 'Users' },
-      { label: 'Segments', href: '/dashboard/clients/segments', icon: 'Layers' },
-      { label: 'Analytics CRM', href: '/dashboard/clients/analytics', icon: 'BarChart3' },
-      { label: 'Messages', href: '/dashboard/messages', icon: 'MessageCircle' },
-      { label: 'Avis', href: '/dashboard/reviews', icon: 'Star' },
-      { label: 'Notifications', href: '/dashboard/notifications', icon: 'Bell' },
-    ],
-  },
-  {
-    label: 'Logistique',
-    items: [
-      { label: 'Livraisons', href: '/dashboard/deliveries', icon: 'Truck' },
-      { label: 'Zones de livraison', href: '/dashboard/deliveries/zones', icon: 'MapPin' },
-      { label: 'Livreurs', href: '/dashboard/deliveries/drivers', icon: 'User' },
-    ],
-  },
-  {
-    label: 'Ressources Humaines',
-    items: [
-      { label: 'Employés', href: '/dashboard/employees', icon: 'Briefcase' },
-      { label: 'Rôles & Permissions', href: '/dashboard/employees/roles', icon: 'Shield' },
-      { label: 'Planning', href: '/dashboard/planning', icon: 'Clock' },
-    ],
-  },
-  {
-    label: 'Marketing',
-    items: [
-      { label: 'Publicités', href: '/dashboard/ads', icon: 'Megaphone' },
-      { label: 'Promotions', href: '/dashboard/promotions', icon: 'Sparkles' },
-    ],
-  },
-  {
-    label: 'Analyse',
-    items: [
-      { label: 'Statistiques', href: '/dashboard/statistics', icon: 'BarChart3' },
-      { label: 'AfriScore', href: '/dashboard/afriscore', icon: 'Award' },
-    ],
-  },
-  {
-    label: 'Configuration',
-    items: [
-      { label: 'Mon abonnement', href: '/dashboard/business/subscription', icon: 'CreditCard' },
-      { label: 'Consentements', href: '/dashboard/consents', icon: 'Shield' },
-      { label: 'Automatisations', href: '/dashboard/automations', icon: 'Activity' },
-      { label: 'Notifications client', href: '/dashboard/business/notification-templates', icon: 'Bell' },
-      { label: 'Paramètres', href: '/dashboard/business/settings', icon: 'Settings' },
-      { label: 'Support', href: '/dashboard/support', icon: 'LifeBuoy' },
-    ],
-  },
-  {
-    label: 'Data Hub',
-    items: [
-      { label: 'Explorer', href: '/dashboard/datahub', icon: 'Database' },
-    ],
-  },
-];
+// MODULE_LABEL_MAP et MODULE_HREF_MAP sont importés depuis ./sidebar-data
 
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarOpen, sidebarCollapsed, closeSidebar, toggleSidebarCollapsed } = useUiStore();
-  const { user, setPrimaryRole, selectedSpace, setSelectedSpace } = useAuthStore();
+  const { user, selectedSpace, setSelectedSpace } = useAuthStore();
   const { business, setBusiness } = useBusinessStore();
-  const { data: myBusiness } = useMyBusiness();
+  const { data: myBusiness } = useMyBusiness({
+    enabled: !!user?.roles?.includes('BUSINESS') || !!business,
+  });
   const router = useRouter();
   const queryClient = useQueryClient();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
+  const { data: unreadData } = useSidebarUnreadCount();
+  const unreadTotal = unreadData?.total ?? 0;
+
   const currentPath = pathname || '';
 
-  const switchSpace = useCallback((role: string, href: string) => {
-    setPrimaryRole(role);
-    setSelectedSpace(role);
-    queryClient.invalidateQueries();
-    closeSidebar();
-    router.push(href);
-  }, [setPrimaryRole, setSelectedSpace, queryClient, closeSidebar, router]);
+  const switchSpace = useCallback(
+    (role: string, href: string) => {
+      setSelectedSpace(role);
+      queryClient.invalidateQueries();
+      closeSidebar();
+      router.push(href);
+    },
+    [setSelectedSpace, queryClient, closeSidebar, router]
+  );
 
   // Liste des pages partagées entre l'espace client et l'espace business
   // Ces pages existent à la racine /dashboard/* mais sont aussi accessibles depuis l'espace business
-  const BUSINESS_SHARED_PATHS = [
-    '/dashboard/explore', '/dashboard/stories', '/dashboard/shorts', '/dashboard/lives', '/dashboard/offers',
-    '/dashboard/public-page', '/dashboard/clients', '/dashboard/messages', '/dashboard/reviews',
-    '/dashboard/notifications', '/dashboard/ads', '/dashboard/promotions', '/dashboard/statistics',
-    '/dashboard/afriscore', '/dashboard/consents', '/dashboard/automations', '/dashboard/support',
-    '/dashboard/datahub', '/dashboard/marketplace',
-  ];
 
   // ⭐ Espace VISITÉ :
   // - Les chemins explicites (/dashboard/business/*) → TOUJOURS espace business
-  // - Les pages partagées (BUSINESS_SHARED_PATHS) → espace business UNIQUEMENT si primaryRole === BUSINESS
+  // - Les chemins core business (BUSINESS_CORE_NAV) → espace business UNIQUEMENT si activeSpace === BUSINESS
   // - Le reste → espace client
-  // Utiliser selectedSpace (set via le switcher) sinon fallback sur primaryRole du serveur
-  const activeSpace = selectedSpace || user?.primaryRole || 'CLIENT';
+  // S'assure que selectedSpace (persisté localStorage) correspond à un rôle réellement possédé
+  const activeSpace =
+    selectedSpace && user?.roles?.includes(selectedSpace)
+      ? selectedSpace
+      : user?.primaryRole || 'CLIENT';
 
   const onExplicitBusinessPath = currentPath.startsWith('/dashboard/business');
   const onExplicitDeveloperPath = currentPath.startsWith('/dashboard/developer');
   const onExplicitAdminPath = currentPath.startsWith('/dashboard/admin');
-  const onSharedBusinessPath = BUSINESS_SHARED_PATHS.some(p => currentPath === p || currentPath.startsWith(p + '/'));
+  const coreBusinessPaths = BUSINESS_CORE_NAV.flatMap((g) => g.items.map((i) => i.href));
+  const onSharedBusinessPath = coreBusinessPaths.some(
+    (p) => currentPath === p || currentPath.startsWith(p + '/')
+  );
 
   // ✅ Logique claire :
   // - Chemins explicites (/dashboard/business/*) → TOUJOURS espace business
-  // - Pages partagées (BUSINESS_SHARED_PATHS) → espace business SI activeSpace === 'BUSINESS'
+  // - Chemins core business → espace business SI activeSpace === 'BUSINESS'
   // - /dashboard/developer/* → espace dev
   // - /dashboard/admin/* → espace admin
   // - Tout le reste → espace client
-  const inBusinessSpace = onExplicitBusinessPath || (onSharedBusinessPath && activeSpace === 'BUSINESS');
+  const inBusinessSpace =
+    onExplicitBusinessPath || (onSharedBusinessPath && activeSpace === 'BUSINESS');
   const inDeveloperSpace = onExplicitDeveloperPath;
   const inAdminSpace = onExplicitAdminPath;
   const inClientSpace = !inBusinessSpace && !inDeveloperSpace && !inAdminSpace;
@@ -311,6 +89,26 @@ export function Sidebar() {
   const canAccessBusiness = user?.roles?.includes('BUSINESS') || !!business;
   const canAccessAdmin = user?.roles?.includes('ADMIN');
 
+  // Synchronise selectedSpace avec le chemin explicite visité
+  useEffect(() => {
+    const path = currentPath;
+    if (path.startsWith('/dashboard/business') && activeSpace !== 'BUSINESS') {
+      setSelectedSpace('BUSINESS');
+    } else if (path.startsWith('/dashboard/developer') && activeSpace !== 'DEVELOPER') {
+      setSelectedSpace('DEVELOPER');
+    } else if (path.startsWith('/dashboard/admin') && activeSpace !== 'ADMIN') {
+      setSelectedSpace('ADMIN');
+    } else if (
+      !path.startsWith('/dashboard/business') &&
+      !path.startsWith('/dashboard/developer') &&
+      !path.startsWith('/dashboard/admin') &&
+      activeSpace === 'BUSINESS' &&
+      !onSharedBusinessPath
+    ) {
+      setSelectedSpace('CLIENT');
+    }
+  }, [currentPath]);
+
   useEffect(() => {
     if (myBusiness) setBusiness(myBusiness);
   }, [myBusiness, setBusiness]);
@@ -319,7 +117,7 @@ export function Sidebar() {
     if (business?.modules.length) {
       setExpandedGroups((prev) => ({
         ...prev,
-        'modules': true,
+        modules: true,
       }));
     }
   }, [business?.modules.length]);
@@ -329,17 +127,29 @@ export function Sidebar() {
     return currentPath === href || currentPath.startsWith(href + '/');
   };
 
-  const moduleNav = (business?.modules || []).map((mod) => ({
-    label: MODULE_LABEL_MAP[mod] || mod,
-    href: MODULE_HREF_MAP[mod] || `/dashboard/${mod.toLowerCase()}`,
-    icon: MODULE_ICON_MAP[mod] || 'LayoutDashboard',
-  }));
+  const moduleNav = [
+    {
+      label: MODULE_LABEL_MAP['MODULE_MARKETPLACE'] || 'Marketplace',
+      href: MODULE_HREF_MAP['MODULE_MARKETPLACE'] || '/dashboard/marketplace',
+      icon: MODULE_ICON_MAP['MODULE_MARKETPLACE'] || 'Store',
+    },
+    ...(business?.modules || [])
+      .filter((mod) => mod !== 'MODULE_MARKETPLACE')
+      .map((mod) => ({
+        label: MODULE_LABEL_MAP[mod] || mod,
+        href: MODULE_HREF_MAP[mod] || `/dashboard/${mod.toLowerCase()}`,
+        icon: MODULE_ICON_MAP[mod] || 'LayoutDashboard',
+      })),
+  ];
 
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const renderNavItems = (items: { label: string; href: string; icon: string; badge?: number }[], collapsed: boolean) => (
+  const renderNavItems = (
+    items: { label: string; href: string; icon: string; badge?: number }[],
+    collapsed: boolean
+  ) =>
     items.map((item) => {
       const Icon = iconMap[item.icon];
       const active = isActive(item.href);
@@ -362,17 +172,29 @@ export function Sidebar() {
           )}
           {Icon && <Icon className={cn('shrink-0', collapsed ? 'h-5 w-5' : 'h-4 w-4')} />}
           {!collapsed && <span className="truncate">{item.label}</span>}
-          {item.badge !== undefined && !collapsed && (
+          {/* Badge messages non lus */}
+          {!collapsed && unreadTotal > 0 && item.href === '/dashboard/messages' && (
+            <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm shadow-red-500/30">
+              {unreadTotal > 99 ? '99+' : unreadTotal}
+            </span>
+          )}
+          {collapsed && unreadTotal > 0 && item.href === '/dashboard/messages' && (
+            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-950" />
+          )}
+          {item.badge !== undefined && !collapsed && item.href !== '/dashboard/messages' && (
             <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
               {item.badge}
             </span>
           )}
         </Link>
       );
-    })
-  );
+    });
 
-  const activeNav = inAdminSpace ? [] : inDeveloperSpace ? [] : inBusinessSpace ? BUSINESS_PRIMARY_NAV : NAV_GROUPS as any;
+  const coreNavGroups = inBusinessSpace
+    ? BUSINESS_CORE_NAV
+    : inClientSpace
+      ? (NAV_GROUPS as any)
+      : [];
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-gradient-to-b from-emerald-900 via-emerald-950 to-black text-white relative overflow-hidden">
@@ -382,13 +204,17 @@ export function Sidebar() {
       <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-48 bg-emerald-500/10 rounded-full blur-3xl" />
 
       {/* Logo */}
-      <div className={cn(
-        'flex items-center shrink-0 border-b border-white/5 relative z-10',
-        sidebarCollapsed ? 'justify-center h-16 px-2' : 'justify-between h-16 px-4'
-      )}>
+      <div
+        className={cn(
+          'flex items-center shrink-0 border-b border-white/5 relative z-10',
+          sidebarCollapsed ? 'justify-center h-16 px-2' : 'justify-between h-16 px-4'
+        )}
+      >
         <Link href="/" className="flex items-center gap-2.5 min-w-0" onClick={closeSidebar}>
           {!sidebarCollapsed && (
-            <span className="font-bold text-base text-white tracking-tight truncate">{APP_NAME}</span>
+            <span className="font-bold text-base text-white tracking-tight truncate">
+              {APP_NAME}
+            </span>
           )}
         </Link>
         <button
@@ -405,7 +231,13 @@ export function Sidebar() {
           <div className="flex items-center gap-3">
             <div className="relative w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-sm font-bold text-white/80 shrink-0 overflow-hidden">
               {business.logo ? (
-                <Image src={business.logo ?? ''} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                <Image
+                  src={business.logo ?? ''}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
               ) : (
                 business.name[0]
               )}
@@ -423,35 +255,57 @@ export function Sidebar() {
         {/* Role switcher — show all dashboards the user has access to */}
         {!sidebarCollapsed && (canAccessBusiness || canAccessDeveloper || canAccessAdmin) && (
           <div className="px-3 pb-2 mb-2 border-b border-white/10">
-            <p className="text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em] mb-1.5">Mes espaces</p>
+            <p className="text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em] mb-1.5">
+              Mes espaces
+            </p>
             <div className="flex flex-wrap gap-1.5">
-              <button onClick={() => switchSpace('CLIENT', '/dashboard')}
-                className={cn('px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
-                  inClientSpace ? 'bg-emerald-500/20 text-emerald-200' : 'text-white/50 hover:text-white hover:bg-white/10'
-                )}>
+              <button
+                onClick={() => switchSpace('CLIENT', '/dashboard')}
+                className={cn(
+                  'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
+                  inClientSpace
+                    ? 'bg-emerald-500/20 text-emerald-200'
+                    : 'text-white/50 hover:text-white hover:bg-white/10'
+                )}
+              >
                 Client
               </button>
               {canAccessBusiness && (
-                <button onClick={() => switchSpace('BUSINESS', '/dashboard/business')}
-                  className={cn('px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
-                    inBusinessSpace ? 'bg-emerald-500/20 text-emerald-200' : 'text-white/50 hover:text-white hover:bg-white/10'
-                  )}>
+                <button
+                  onClick={() => switchSpace('BUSINESS', '/dashboard/business')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
+                    inBusinessSpace
+                      ? 'bg-emerald-500/20 text-emerald-200'
+                      : 'text-white/50 hover:text-white hover:bg-white/10'
+                  )}
+                >
                   Business
                 </button>
               )}
               {canAccessDeveloper && (
-                <button onClick={() => switchSpace('DEVELOPER', '/dashboard/developer')}
-                  className={cn('px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
-                    inDeveloperSpace ? 'bg-indigo-500/20 text-indigo-200' : 'text-white/50 hover:text-white hover:bg-white/10'
-                  )}>
+                <button
+                  onClick={() => switchSpace('DEVELOPER', '/dashboard/developer')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
+                    inDeveloperSpace
+                      ? 'bg-indigo-500/20 text-indigo-200'
+                      : 'text-white/50 hover:text-white hover:bg-white/10'
+                  )}
+                >
                   Développeur
                 </button>
               )}
               {canAccessAdmin && (
-                <button onClick={() => switchSpace('ADMIN', '/dashboard/admin')}
-                  className={cn('px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
-                    inAdminSpace ? 'bg-rose-500/20 text-rose-200' : 'text-white/50 hover:text-white hover:bg-white/10'
-                  )}>
+                <button
+                  onClick={() => switchSpace('ADMIN', '/dashboard/admin')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
+                    inAdminSpace
+                      ? 'bg-rose-500/20 text-rose-200'
+                      : 'text-white/50 hover:text-white hover:bg-white/10'
+                  )}
+                >
                   Admin
                 </button>
               )}
@@ -459,73 +313,156 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* Primary sections */}
-        {activeNav.map((group: any) => (
-          <div key={group.label} className="mb-1">
-            {!sidebarCollapsed && (
-              <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em]">
-                {group.label}
-              </p>
-            )}
-            {renderNavItems(group.items, sidebarCollapsed)}
-          </div>
-        ))}
+        {/* Core sections */}
+        {inBusinessSpace
+          ? BUSINESS_CORE_NAV.map((group) => {
+              const isExpanded = expandedGroups[group.label] !== false;
+              const anyActive = group.items.some((item) => isActive(item.href));
+              return (
+                <div key={group.label} className="mb-1">
+                  {!sidebarCollapsed && (
+                    <button
+                      onClick={() => toggleGroup(group.label)}
+                      className={cn(
+                        'flex items-center w-full rounded-xl transition-colors',
+                        sidebarCollapsed ? 'justify-center p-2.5' : 'px-3 py-2',
+                        anyActive ? 'text-emerald-200' : 'text-white/30 hover:text-white/60'
+                      )}
+                    >
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.15em]">
+                        {group.label}
+                      </span>
+                      <ChevronDown
+                        className={cn(
+                          'ml-auto h-3 w-3 transition-transform duration-200',
+                          isExpanded && 'rotate-180'
+                        )}
+                      />
+                    </button>
+                  )}
+                  {(isExpanded || sidebarCollapsed) && (
+                    <div className={cn(sidebarCollapsed ? 'space-y-0.5' : 'mt-0.5 space-y-0.5')}>
+                      {group.items.map((item) => {
+                        const Icon = iconMap[item.icon];
+                        const active = isActive(item.href);
+                        const isMessagerie = item.href === '/dashboard/business/messages';
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={closeSidebar}
+                            title={sidebarCollapsed ? item.label : undefined}
+                            className={cn(
+                              'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
+                              sidebarCollapsed
+                                ? 'justify-center p-2.5 mx-auto w-10 h-10'
+                                : 'px-3 py-2.5',
+                              active
+                                ? 'bg-emerald-500/20 text-emerald-200 shadow-sm'
+                                : 'text-white/60 hover:text-white hover:bg-white/5'
+                            )}
+                          >
+                            {active && !sidebarCollapsed && (
+                              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-400 rounded-r-full" />
+                            )}
+                            {Icon && (
+                              <Icon
+                                className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')}
+                              />
+                            )}
+                            {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                            {/* Badge messages non lus — espace business */}
+                            {!sidebarCollapsed && unreadTotal > 0 && isMessagerie && (
+                              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm shadow-red-500/30">
+                                {unreadTotal > 99 ? '99+' : unreadTotal}
+                              </span>
+                            )}
+                            {sidebarCollapsed && unreadTotal > 0 && isMessagerie && (
+                              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-950" />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          : coreNavGroups.map((group: any) => (
+              <div key={group.label} className="mb-1">
+                {!sidebarCollapsed && (
+                  <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em]">
+                    {group.label}
+                  </p>
+                )}
+                {renderNavItems(group.items, sidebarCollapsed)}
+              </div>
+            ))}
 
         {/* Developer section */}
-        {inDeveloperSpace && DEVELOPER_NAV_GROUPS.map((group) => {
-          const isExpanded = expandedGroups[group.key] !== false;
-          const anyActive = group.items.some((item) => isActive(item.href));
-          return (
-            <div key={group.key} className="mb-1">
-              {!sidebarCollapsed && (
-                <button
-                  onClick={() => toggleGroup(group.key)}
-                  className={cn(
-                    'flex items-center w-full rounded-xl px-3 py-2 transition-colors',
-                    anyActive ? 'text-indigo-200' : 'text-white/30 hover:text-white/60'
-                  )}
-                >
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.15em]">
-                    {group.label}
-                  </span>
-                  <ChevronDown className={cn(
-                    'ml-auto h-3 w-3 transition-transform duration-200',
-                    isExpanded && 'rotate-180'
-                  )} />
-                </button>
-              )}
-              {(isExpanded || sidebarCollapsed) && (
-                <div className={cn(sidebarCollapsed ? 'space-y-0.5' : 'mt-0.5 space-y-0.5')}>
-                  {group.items.map((item) => {
-                    const Icon = iconMap[item.icon];
-                    const active = isActive(item.href);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={closeSidebar}
-                        title={sidebarCollapsed ? item.label : undefined}
-                        className={cn(
-                          'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
-                          sidebarCollapsed ? 'justify-center p-2.5 mx-auto w-10 h-10' : 'px-3 py-2.5',
-                          active
-                            ? 'bg-indigo-500/20 text-indigo-200 shadow-sm'
-                            : 'text-white/60 hover:text-white hover:bg-white/5'
-                        )}
-                      >
-                        {active && !sidebarCollapsed && (
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-400 rounded-r-full" />
-                        )}
-                        {Icon && <Icon className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')} />}
-                        {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {inDeveloperSpace &&
+          DEVELOPER_NAV_GROUPS.map((group) => {
+            const isExpanded = expandedGroups[group.key] !== false;
+            const anyActive = group.items.some((item) => isActive(item.href));
+            return (
+              <div key={group.key} className="mb-1">
+                {!sidebarCollapsed && (
+                  <button
+                    onClick={() => toggleGroup(group.key)}
+                    className={cn(
+                      'flex items-center w-full rounded-xl px-3 py-2 transition-colors',
+                      anyActive ? 'text-indigo-200' : 'text-white/30 hover:text-white/60'
+                    )}
+                  >
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.15em]">
+                      {group.label}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        'ml-auto h-3 w-3 transition-transform duration-200',
+                        isExpanded && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                )}
+                {(isExpanded || sidebarCollapsed) && (
+                  <div className={cn(sidebarCollapsed ? 'space-y-0.5' : 'mt-0.5 space-y-0.5')}>
+                    {group.items.map((item) => {
+                      const Icon = iconMap[item.icon];
+                      const active = isActive(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={closeSidebar}
+                          title={sidebarCollapsed ? item.label : undefined}
+                          className={cn(
+                            'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
+                            sidebarCollapsed
+                              ? 'justify-center p-2.5 mx-auto w-10 h-10'
+                              : 'px-3 py-2.5',
+                            active
+                              ? 'bg-indigo-500/20 text-indigo-200 shadow-sm'
+                              : 'text-white/60 hover:text-white hover:bg-white/5'
+                          )}
+                        >
+                          {active && !sidebarCollapsed && (
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-400 rounded-r-full" />
+                          )}
+                          {Icon && (
+                            <Icon
+                              className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')}
+                            />
+                          )}
+                          {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
         {/* Admin section */}
         {inAdminSpace && (
@@ -546,6 +483,7 @@ export function Sidebar() {
                   { label: 'Business', href: '/dashboard/admin/businesses', icon: 'Building2' },
                   { label: 'Développeurs', href: '/dashboard/admin/developers', icon: 'Code' },
                   { label: 'Modules', href: '/dashboard/admin/modules', icon: 'Package' },
+                  { label: 'Demandes', href: '/dashboard/admin/demands', icon: 'Users' },
                   { label: 'Marketplace', href: '/dashboard/admin/marketplace', icon: 'Store' },
                 ],
               },
@@ -559,7 +497,11 @@ export function Sidebar() {
                   { label: 'Abonnements', href: '/dashboard/admin/subscriptions', icon: 'Repeat' },
                   { label: 'Plans', href: '/dashboard/admin/subscriptions/plans', icon: 'Gem' },
                   { label: 'Commissions', href: '/dashboard/admin/commissions', icon: 'Percent' },
-                  { label: 'Comm. développeurs', href: '/dashboard/admin/developers/commissions', icon: 'Code' },
+                  {
+                    label: 'Comm. développeurs',
+                    href: '/dashboard/admin/developers/commissions',
+                    icon: 'Code',
+                  },
                 ],
               },
               {
@@ -567,7 +509,11 @@ export function Sidebar() {
                 key: 'admin_media',
                 items: [
                   { label: 'AfriBiz TV', href: '/dashboard/admin/media/tv', icon: 'Monitor' },
-                  { label: 'Contenus signalés', href: '/dashboard/admin/media/reports', icon: 'Flag' },
+                  {
+                    label: 'Contenus signalés',
+                    href: '/dashboard/admin/media/reports',
+                    icon: 'Flag',
+                  },
                   { label: 'Stories', href: '/dashboard/admin/media/stories', icon: 'Sparkles' },
                   { label: 'Shorts', href: '/dashboard/admin/media/shorts', icon: 'Film' },
                   { label: 'Lives', href: '/dashboard/admin/media/lives', icon: 'Radio' },
@@ -587,11 +533,16 @@ export function Sidebar() {
                 label: 'Support',
                 key: 'admin_support',
                 items: [
+                  { label: 'Messages', href: '/dashboard/admin/messages', icon: 'MessageCircle' },
                   { label: 'Support', href: '/dashboard/admin/support', icon: 'LifeBuoy' },
                   { label: 'Litiges', href: '/dashboard/admin/disputes', icon: 'Scale' },
                   { label: 'Avis', href: '/dashboard/admin/reviews', icon: 'Star' },
                   { label: 'Signalements', href: '/dashboard/admin/reports', icon: 'Flag' },
-                  { label: 'Avertissements', href: '/dashboard/admin/warnings', icon: 'AlertTriangle' },
+                  {
+                    label: 'Avertissements',
+                    href: '/dashboard/admin/warnings',
+                    icon: 'AlertTriangle',
+                  },
                 ],
               },
               {
@@ -599,8 +550,17 @@ export function Sidebar() {
                 key: 'admin_analytics',
                 items: [
                   { label: 'Statistiques', href: '/dashboard/admin/statistics', icon: 'BarChart3' },
-                  { label: 'Rapports', href: '/dashboard/admin/reports/financial', icon: 'FileText' },
+                  {
+                    label: 'Rapports',
+                    href: '/dashboard/admin/reports/financial',
+                    icon: 'FileText',
+                  },
                   { label: 'Notifications', href: '/dashboard/admin/notifications', icon: 'Bell' },
+                  {
+                    label: 'Analyse notifs',
+                    href: '/dashboard/admin/notification-analytics',
+                    icon: 'BarChart3',
+                  },
                 ],
               },
               {
@@ -612,10 +572,24 @@ export function Sidebar() {
                   { label: 'Rôles Admin', href: '/dashboard/admin/roles', icon: 'ShieldCheck' },
                   { label: 'Feature Flags', href: '/dashboard/admin/feature-flags', icon: 'Flag' },
                   { label: 'Automatisation', href: '/dashboard/admin/automation', icon: 'Zap' },
+                  { label: 'Campagnes', href: '/dashboard/admin/campaigns', icon: 'Megaphone' },
                   { label: 'CMS', href: '/dashboard/admin/cms', icon: 'FileText' },
                   { label: 'Formulaires', href: '/dashboard/admin/forms', icon: 'ClipboardList' },
-                  { label: 'Notifications', href: '/dashboard/admin/notification-templates', icon: 'Bell' },
-                  { label: 'Audit monétisation', href: '/dashboard/admin/monetization/audit', icon: 'History' },
+                  {
+                    label: 'Notifications',
+                    href: '/dashboard/admin/notification-templates',
+                    icon: 'Bell',
+                  },
+                  {
+                    label: 'Audit monétisation',
+                    href: '/dashboard/admin/monetization/audit',
+                    icon: 'History',
+                  },
+                  {
+                    label: 'Monitoring CRON',
+                    href: '/dashboard/admin/cron-monitoring',
+                    icon: 'Activity',
+                  },
                   { label: 'Logs système', href: '/dashboard/admin/logs', icon: 'Activity' },
                   { label: 'Clés API', href: '/dashboard/admin/api-keys', icon: 'Key' },
                   { label: 'Sauvegardes', href: '/dashboard/admin/backups', icon: 'HardDrive' },
@@ -637,10 +611,12 @@ export function Sidebar() {
                       <span className="text-[10px] font-semibold uppercase tracking-[0.15em]">
                         {group.label}
                       </span>
-                      <ChevronDown className={cn(
-                        'ml-auto h-3 w-3 transition-transform duration-200',
-                        isExpanded && 'rotate-180'
-                      )} />
+                      <ChevronDown
+                        className={cn(
+                          'ml-auto h-3 w-3 transition-transform duration-200',
+                          isExpanded && 'rotate-180'
+                        )}
+                      />
                     </button>
                   )}
                   {(isExpanded || sidebarCollapsed) && (
@@ -656,7 +632,9 @@ export function Sidebar() {
                             title={sidebarCollapsed ? item.label : undefined}
                             className={cn(
                               'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
-                              sidebarCollapsed ? 'justify-center p-2.5 mx-auto w-10 h-10' : 'px-3 py-2.5',
+                              sidebarCollapsed
+                                ? 'justify-center p-2.5 mx-auto w-10 h-10'
+                                : 'px-3 py-2.5',
                               active
                                 ? 'bg-rose-500/20 text-rose-200 shadow-sm'
                                 : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -665,7 +643,11 @@ export function Sidebar() {
                             {active && !sidebarCollapsed && (
                               <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-rose-400 rounded-r-full" />
                             )}
-                            {Icon && <Icon className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')} />}
+                            {Icon && (
+                              <Icon
+                                className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')}
+                              />
+                            )}
                             {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                           </Link>
                         );
@@ -685,7 +667,9 @@ export function Sidebar() {
               onClick={() => toggleGroup('modules')}
               className={cn(
                 'flex items-center w-full rounded-xl transition-colors',
-                sidebarCollapsed ? 'justify-center p-2.5' : 'px-3 py-2 text-white/60 hover:text-white hover:bg-white/5'
+                sidebarCollapsed
+                  ? 'justify-center p-2.5'
+                  : 'px-3 py-2 text-white/60 hover:text-white hover:bg-white/5'
               )}
             >
               {!sidebarCollapsed && (
@@ -693,10 +677,12 @@ export function Sidebar() {
                   <span className="text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em]">
                     Mes modules
                   </span>
-                  <ChevronDown className={cn(
-                    'ml-auto h-3.5 w-3.5 transition-transform duration-200',
-                    expandedGroups['modules'] && 'rotate-180'
-                  )} />
+                  <ChevronDown
+                    className={cn(
+                      'ml-auto h-3.5 w-3.5 transition-transform duration-200',
+                      expandedGroups['modules'] && 'rotate-180'
+                    )}
+                  />
                 </>
               )}
             </button>
@@ -705,42 +691,7 @@ export function Sidebar() {
                 {moduleNav.map((item) => {
                   const Icon = iconMap[item.icon];
                   const active = isActive(item.href);
-                  const subItemsMap: Record<string, { label: string; href: string; icon: string }[]> = {
-                    Promotions: [
-                      { label: 'Coupons', href: '/dashboard/promotions/coupons', icon: 'Tag' },
-                      { label: 'Bundles', href: '/dashboard/promotions/bundles', icon: 'Package' },
-                      { label: 'Campagnes', href: '/dashboard/promotions/campaigns', icon: 'Megaphone' },
-                      { label: 'Stats', href: '/dashboard/promotions/stats', icon: 'BarChart3' },
-                      { label: 'Fidélité', href: '/dashboard/promotions/loyalty', icon: 'Award' },
-                    ],
-                    Planning: [
-                      { label: 'Calendrier', href: '/dashboard/planning/calendar', icon: 'CalendarDays' },
-                      { label: 'Schedules', href: '/dashboard/planning/schedules', icon: 'Clock' },
-                      { label: 'Stats', href: '/dashboard/planning/stats', icon: 'BarChart3' },
-                    ],
-                    ['Employés']: [
-                      { label: 'Rôles', href: '/dashboard/employees/roles', icon: 'Shield' },
-                      { label: 'Pointage', href: '/dashboard/employees/attendances', icon: 'CalendarCheck' },
-                      { label: 'Performance', href: '/dashboard/employees/performance', icon: 'TrendingUp' },
-                      { label: 'Documents', href: '/dashboard/employees/documents', icon: 'File' },
-                      { label: 'Stats', href: '/dashboard/employees/stats', icon: 'BarChart3' },
-                      { label: 'Activités', href: '/dashboard/employees/activities', icon: 'Activity' },
-                      { label: 'Portail', href: '/dashboard/employees/portal', icon: 'User' },
-                    ],
-                    Portfolio: [
-                      { label: 'Témoignages', href: '/dashboard/portfolio/testimonials', icon: 'MessageSquare' },
-                      { label: 'Catégories', href: '/dashboard/portfolio/categories', icon: 'Folder' },
-                      { label: 'Média', href: '/dashboard/portfolio/media', icon: 'Image' },
-                      { label: 'Stats', href: '/dashboard/portfolio/stats', icon: 'BarChart3' },
-                    ],
-                    ['Abonnements']: [
-                      { label: 'Abonnés', href: '/dashboard/subscriptions/subscribers', icon: 'Users' },
-                      { label: 'Paiements', href: '/dashboard/subscriptions/payments', icon: 'CreditCard' },
-                      { label: 'Stats', href: '/dashboard/subscriptions/stats', icon: 'BarChart3' },
-                      { label: 'Activités', href: '/dashboard/subscriptions/logs', icon: 'Activity' },
-                    ],
-                  };
-                  const subItems = subItemsMap[item.label] || [];
+                  const subItems = MODULE_SUB_ITEMS[item.label] || [];
                   return (
                     <div key={item.href}>
                       <Link
@@ -749,7 +700,9 @@ export function Sidebar() {
                         title={sidebarCollapsed ? item.label : undefined}
                         className={cn(
                           'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
-                          sidebarCollapsed ? 'justify-center p-2.5 mx-auto w-10 h-10' : 'px-3 py-2.5',
+                          sidebarCollapsed
+                            ? 'justify-center p-2.5 mx-auto w-10 h-10'
+                            : 'px-3 py-2.5',
                           active
                             ? 'bg-white/15 text-white shadow-sm'
                             : 'text-white/50 hover:text-white hover:bg-white/5'
@@ -758,7 +711,11 @@ export function Sidebar() {
                         {active && !sidebarCollapsed && (
                           <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-400 rounded-r-full shadow-glow" />
                         )}
-                        {Icon && <Icon className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')} />}
+                        {Icon && (
+                          <Icon
+                            className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')}
+                          />
+                        )}
                         {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                       </Link>
                       {/* Sub-nav for modules */}
@@ -794,18 +751,23 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* Module marketplace link */}
+        {/* Module analysis link */}
         {!sidebarCollapsed && (
-          <div className="px-3 pt-4">
+          <div className="px-3 pt-4 space-y-1">
             <Link
-              href="/dashboard/marketplace"
+              href="/dashboard/modules-analysis"
               onClick={closeSidebar}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-emerald-400/5 hover:from-emerald-500/25 hover:via-emerald-500/20 hover:to-emerald-400/15 transition-all duration-200 border border-emerald-400/10 hover:border-emerald-400/20 group cursor-pointer"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 border group cursor-pointer',
+                isActive('/dashboard/modules-analysis')
+                  ? 'bg-white/15 text-white border-white/10'
+                  : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border-transparent hover:border-white/10'
+              )}
             >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400/30 to-emerald-500/20 flex items-center justify-center group-hover:scale-110 group-hover:from-emerald-400/40 group-hover:to-emerald-500/30 transition-all duration-200">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400/30 to-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-all duration-200">
+                <Package className="w-3.5 h-3.5 text-amber-300" />
               </div>
-              <span className="text-sm font-medium text-white/70 group-hover:text-white transition-colors">Découvrir des modules</span>
+              <span className="text-sm font-medium transition-colors">Analyse des modules</span>
             </Link>
           </div>
         )}
@@ -816,7 +778,9 @@ export function Sidebar() {
         onClick={toggleSidebarCollapsed}
         className="hidden lg:flex items-center justify-center h-10 border-t border-white/5 text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
       >
-        <ChevronLeft className={cn('h-4 w-4 transition-transform', sidebarCollapsed && 'rotate-180')} />
+        <ChevronLeft
+          className={cn('h-4 w-4 transition-transform', sidebarCollapsed && 'rotate-180')}
+        />
       </button>
 
       {/* Version */}
@@ -830,10 +794,12 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className={cn(
-        'hidden lg:flex lg:flex-col h-full shrink-0 overflow-hidden transition-all duration-300',
-        sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
-      )}>
+      <aside
+        className={cn(
+          'hidden lg:flex lg:flex-col h-full shrink-0 overflow-hidden transition-all duration-300',
+          sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
+        )}
+      >
         {sidebarContent}
       </aside>
 

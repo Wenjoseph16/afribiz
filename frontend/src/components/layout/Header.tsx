@@ -3,30 +3,54 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowRight, ChevronDown, LayoutDashboard, LogOut, Search as SearchIcon,
-  Menu, X, Store, Code, BookOpen, Info, Play, Building2, Package,
-  TrendingUp, ArrowRight as ArrowRightIcon, ShoppingCart as ShoppingCartIcon,
+  ArrowRight,
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Search as SearchIcon,
+  Menu,
+  X,
+  Store,
+  Code,
+  BookOpen,
+  Info,
+  Play,
+  Building2,
+  Package,
+  TrendingUp,
+  ArrowRight as ArrowRightIcon,
+  ShoppingCart as ShoppingCartIcon,
+  MessageCircle,
 } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from '@/components/ThemeToggle';
+
 import { apiClient } from '@/services/apiClient';
 import { CartIconPublic } from '@/components/CartIconPublic';
-
-const navLinks = [
-  { label: 'Accueil', href: '/', icon: Store },
-  { label: 'Marketplace', href: '/marketplace', icon: BookOpen },
-  { label: 'Media', href: '/media', icon: Play },
-  { label: 'Développeurs', href: '/developers', icon: Code },
-  { label: 'Tarifs', href: '/pricing', icon: null },
-  { label: 'À propos', href: '/about', icon: Info },
-  { label: 'Contact', href: '/contact', icon: null },
-];
 
 export function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const navLinks = useMemo(
+    () => [
+      { label: 'Accueil', href: '/', icon: Store },
+      { label: 'Marketplace', href: '/marketplace', icon: BookOpen },
+      { label: 'Média', href: '/media', icon: Play },
+      { label: 'Développeurs', href: '/developers', icon: Code },
+      { label: 'Tarifs', href: '/pricing', icon: null },
+      { label: 'À propos', href: '/about', icon: Info },
+      { label: 'Contact', href: '/contact', icon: null },
+    ],
+    []
+  );
   const [showMenu, setShowMenu] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -51,7 +75,11 @@ export function Header() {
   }, []);
 
   const doSearch = useCallback(async (q: string) => {
-    if (!q.trim()) { setSearchResults([]); setShowResults(false); return; }
+    if (!q.trim()) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
     setSearching(true);
     try {
       const res = await apiClient.searchMarketplace({ q, limit: 6 });
@@ -107,9 +135,7 @@ export function Header() {
       <nav className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <span className="font-bold text-xl text-brand dark:text-brand-400">
-            AfriBiz
-          </span>
+          <span className="font-bold text-xl text-brand dark:text-brand-400">AfriBiz</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -138,14 +164,19 @@ export function Header() {
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Rechercher un business, produit..."
+                  placeholder="Rechercher..."
+                  aria-label="Rechercher"
                   value={searchQuery}
                   onChange={(e) => handleSearchInput(e.target.value)}
                   onFocus={() => searchResults.length > 0 && setShowResults(true)}
                   className="w-64 bg-transparent px-2.5 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none"
                 />
                 <button
-                  onClick={() => { setSearchOpen(false); setSearchQuery(''); setShowResults(false); }}
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearchQuery('');
+                    setShowResults(false);
+                  }}
                   className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <X className="h-4 w-4" />
@@ -153,7 +184,10 @@ export function Header() {
               </div>
             ) : (
               <button
-                onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 100); }}
+                onClick={() => {
+                  setSearchOpen(true);
+                  setTimeout(() => searchInputRef.current?.focus(), 100);
+                }}
                 className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
                 title="Rechercher"
               >
@@ -187,14 +221,20 @@ export function Header() {
                           className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors border-b border-gray-50 dark:border-gray-700/30 last:border-0"
                         >
                           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand to-emerald-400 flex items-center justify-center text-white shrink-0">
-                            {item._type === 'business' ? <Building2 className="h-4 w-4" /> : <Package className="h-4 w-4" />}
+                            {item._type === 'business' ? (
+                              <Building2 className="h-4 w-4" />
+                            ) : (
+                              <Package className="h-4 w-4" />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                               {item.name || item.title || 'Sans nom'}
                             </p>
                             <p className="text-xs text-gray-400 truncate">
-                              {item._type === 'business' ? item.city || item.country || 'Business' : 'Produit'}
+                              {item._type === 'business'
+                                ? item.city || item.country || 'Page entreprise'
+                                : 'Produit'}
                             </p>
                           </div>
                           <ArrowRightIcon className="h-4 w-4 text-gray-300 shrink-0" />
@@ -202,7 +242,11 @@ export function Header() {
                       ))}
                       <Link
                         href={`/marketplace?q=${encodeURIComponent(searchQuery)}`}
-                        onClick={() => { setSearchOpen(false); setShowResults(false); setSearchQuery(''); }}
+                        onClick={() => {
+                          setSearchOpen(false);
+                          setShowResults(false);
+                          setSearchQuery('');
+                        }}
                         className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-brand hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors border-t border-gray-100 dark:border-gray-700"
                       >
                         <SearchIcon className="h-4 w-4" />
@@ -217,13 +261,24 @@ export function Header() {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <ThemeToggle />
 
-          {/* Cart icon */}
-          <CartIconPublic />
+          {/* Cart icon + Messages — uniquement pour les utilisateurs connectés */}
+          {mounted && isAuthenticated() && (
+            <>
+              <Link
+                href="/dashboard/messages"
+                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors relative"
+                title="Messages"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </Link>
+              <CartIconPublic />
+            </>
+          )}
 
-          {isAuthenticated() && user ? (
+          {mounted && isAuthenticated() && user ? (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowMenu(!showMenu)}
@@ -285,13 +340,13 @@ export function Header() {
                 href="/signup"
                 className="inline-flex items-center gap-1.5 bg-gradient-to-r from-brand to-emerald-400 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-brand/20 transition-all duration-200"
               >
-                Créer mon business
+                S'inscrire
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <button
                 onClick={() => setMobileMenu(!mobileMenu)}
                 className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
-                aria-label={mobileMenu ? 'Fermer le menu' : 'Ouvrir le menu'}
+                aria-label={mobileMenu ? 'Fermer' : 'Menu'}
               >
                 {mobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
@@ -316,7 +371,8 @@ export function Header() {
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Rechercher un business, produit..."
+                  placeholder="Rechercher..."
+                  aria-label="Rechercher"
                   value={searchQuery}
                   onChange={(e) => handleSearchInput(e.target.value)}
                   onFocus={() => searchResults.length > 0 && setShowResults(true)}
@@ -327,11 +383,18 @@ export function Header() {
                     {searchResults.slice(0, 4).map((item: any, i: number) => (
                       <button
                         key={item.id || i}
-                        onClick={() => { navigateSearch(item); setMobileMenu(false); }}
+                        onClick={() => {
+                          navigateSearch(item);
+                          setMobileMenu(false);
+                        }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors border-b border-gray-100 dark:border-gray-700/50 last:border-0"
                       >
                         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand to-emerald-400 flex items-center justify-center text-white shrink-0">
-                          {item._type === 'business' ? <Building2 className="h-3.5 w-3.5" /> : <Package className="h-3.5 w-3.5" />}
+                          {item._type === 'business' ? (
+                            <Building2 className="h-3.5 w-3.5" />
+                          ) : (
+                            <Package className="h-3.5 w-3.5" />
+                          )}
                         </div>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {item.name || item.title || 'Sans nom'}
@@ -368,7 +431,7 @@ export function Header() {
                 onClick={() => setMobileMenu(false)}
                 className="block px-3 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand to-emerald-400 text-white text-center hover:shadow-lg transition-all"
               >
-                Créer mon business
+                S'inscrire
               </Link>
             </div>
           </motion.div>

@@ -1,4 +1,12 @@
-export type ResultType = 'business' | 'product' | 'service' | 'menu' | 'event' | 'rental' | 'developer' | 'module';
+export type ResultType =
+  | 'business'
+  | 'product'
+  | 'service'
+  | 'menu'
+  | 'event'
+  | 'rental'
+  | 'developer'
+  | 'module';
 
 export interface BaseResult {
   id: string;
@@ -33,6 +41,13 @@ export interface ProductResult extends BaseResult {
   available: boolean;
   image: string;
   description?: string;
+  reviews?: {
+    id: string;
+    rating: number;
+    comment?: string;
+    createdAt?: string;
+    user?: { firstName?: string; lastName?: string };
+  }[];
 }
 
 export interface ServiceResult extends BaseResult {

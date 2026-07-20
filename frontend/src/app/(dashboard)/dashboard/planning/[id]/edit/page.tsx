@@ -53,59 +53,121 @@ export default function EditPlanningTaskPage() {
         },
       });
       router.push('/dashboard/planning');
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const update = (field: string, value: string) => setForm((f: any) => ({ ...f, [field]: value }));
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
-      <PageHeader title="Modifier la tâche" description="Mettez à jour les informations de votre tâche"
-        breadcrumbs={[{ label: 'Planification', href: '/dashboard/planning' }, { label: 'Modifier' }]}
-        actions={<Link href={`/dashboard/planning/${id}`}><Button variant="outline" size="sm"><ArrowLeft className="h-4 w-4 mr-1.5" />Retour</Button></Link>}
+      <PageHeader
+        title="Modifier la tâche"
+        description="Mettez à jour les informations de votre tâche"
+        breadcrumbs={[
+          { label: 'Planification', href: '/dashboard/planning' },
+          { label: 'Modifier' },
+        ]}
+        actions={
+          <Link href={`/dashboard/planning/${id}`}>
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Retour
+            </Button>
+          </Link>
+        }
       />
       <Card padding="lg">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titre *</label>
-            <input type="text" value={form.title || ''} onChange={e => update('title', e.target.value)} required
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Titre *
+            </label>
+            <input
+              type="text"
+              value={form.title || ''}
+              onChange={(e) => update('title', e.target.value)}
+              required
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-            <textarea rows={4} value={form.description || ''} onChange={e => update('description', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Description
+            </label>
+            <textarea
+              rows={4}
+              value={form.description || ''}
+              onChange={(e) => update('description', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigné à</label>
-            <input type="text" value={form.assignee || ''} onChange={e => update('assignee', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Assigné à
+            </label>
+            <input
+              type="text"
+              value={form.assignee || ''}
+              onChange={(e) => update('assignee', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date d'échéance</label>
-            <input type="date" value={form.dueDate || ''} onChange={e => update('dueDate', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Date d'échéance
+            </label>
+            <input
+              type="date"
+              value={form.dueDate || ''}
+              onChange={(e) => update('dueDate', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priorité</label>
-              <select value={form.priority || 'MEDIUM'} onChange={e => update('priority', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100">
-                {PRIORITIES.map((p: string) => <option key={p} value={p}>{p}</option>)}
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Priorité
+              </label>
+              <select
+                value={form.priority || 'MEDIUM'}
+                onChange={(e) => update('priority', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              >
+                {PRIORITIES.map((p: string) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Statut</label>
-              <select value={form.status || 'PENDING'} onChange={e => update('status', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100">
-                {STATUSES.map((s: string) => <option key={s} value={s}>{s}</option>)}
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Statut
+              </label>
+              <select
+                value={form.status || 'PENDING'}
+                onChange={(e) => update('status', e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:bg-gray-800 dark:text-gray-100"
+              >
+                {STATUSES.map((s: string) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <Link href={`/dashboard/planning/${id}`}><Button variant="outline" type="button">Annuler</Button></Link>
+            <Link href={`/dashboard/planning/${id}`}>
+              <Button variant="outline" type="button">
+                Annuler
+              </Button>
+            </Link>
             <Button type="submit" disabled={updateTask.isPending}>
-              <Save className="h-4 w-4 mr-1.5" />{updateTask.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              <Save className="h-4 w-4 mr-1.5" />
+              {updateTask.isPending ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>
         </form>

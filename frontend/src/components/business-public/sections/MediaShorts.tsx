@@ -29,7 +29,12 @@ export function MediaShorts({ businessId }: MediaShortsProps) {
               className="group relative aspect-[9/16] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 shadow-sm hover:shadow-lg transition-all duration-300"
             >
               {short.thumbnailUrl ? (
-                <Image src={short.thumbnailUrl} alt={short.title || ''} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                <Image
+                  src={short.thumbnailUrl}
+                  alt={short.title || ''}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-500/20 to-purple-500/20">
                   <Play className="w-8 h-8 text-brand-500/40" />

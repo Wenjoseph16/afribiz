@@ -20,11 +20,15 @@ export function ProductViewTracker({ businessId, productId, source }: Props) {
     if (tracked.current || !businessId || !productId) return;
     tracked.current = true;
 
-    apiClient.trackProductView({
-      productId,
-      userId: user?.id,
-      source: source || 'direct',
-    }).catch(() => {});
+    apiClient
+      .trackProductView({
+        productId,
+        userId: user?.id,
+        source: source || 'direct',
+      })
+      .catch((e) => {
+        console.error('Erreur tracking produit:', e);
+      });
   }, [businessId, productId, source, user?.id]);
 
   return null;
@@ -40,6 +44,8 @@ export function useProductClick() {
         userId: user?.id,
         source: source || 'marketplace',
       });
-    } catch {}
+    } catch (e) {
+      console.error('Erreur click produit:', e);
+    }
   };
 }

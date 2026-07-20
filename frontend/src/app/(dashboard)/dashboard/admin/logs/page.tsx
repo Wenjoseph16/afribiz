@@ -2,9 +2,18 @@
 
 import { useState } from 'react';
 import {
-  Activity, Search, ChevronLeft, ChevronRight, RefreshCw,
-  Shield, CheckCircle, XCircle, AlertTriangle, Filter,
+  Activity,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Shield,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Filter,
 } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -14,13 +23,32 @@ import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 
 const MODULES = [
-  'Tous', 'Auth', 'Utilisateurs', 'Business', 'Paiements', 'Marketplace',
-  'DataHub', 'Publicités', 'Support', 'Sécurité', 'Notifications',
+  'Tous',
+  'Auth',
+  'Utilisateurs',
+  'Business',
+  'Paiements',
+  'Marketplace',
+  'DataHub',
+  'Publicités',
+  'Support',
+  'Sécurité',
+  'Notifications',
 ];
 
 const ACTION_TYPES = [
-  'Tous', 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'APPROVE',
-  'REJECT', 'SUSPEND', 'ACTIVATE', 'BLOCK', 'UNBLOCK',
+  'Tous',
+  'CREATE',
+  'UPDATE',
+  'DELETE',
+  'LOGIN',
+  'LOGOUT',
+  'APPROVE',
+  'REJECT',
+  'SUSPEND',
+  'ACTIVATE',
+  'BLOCK',
+  'UNBLOCK',
 ];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -58,7 +86,7 @@ export default function AdminLogsPage() {
     refetchInterval: autoRefresh ? 15000 : false,
   });
 
-  const logs = Array.isArray(data) ? data : data?.logs ?? [];
+  const logs = Array.isArray(data) ? data : (data?.logs ?? []);
   const totalPages = data?.totalPages ?? 1;
 
   const clearFilters = () => {
@@ -75,8 +103,14 @@ export default function AdminLogsPage() {
   if (!isAdmin) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Logs système</h1>
-        <EmptyState icon={<Shield className="h-8 w-8" />} title="Accès réservé" description="Vous devez être administrateur pour accéder à cette page." />
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+          Logs système
+        </h1>
+        <EmptyState
+          icon={<Shield className="h-8 w-8" />}
+          title="Accès réservé"
+          description="Vous devez être administrateur pour accéder à cette page."
+        />
       </div>
     );
   }
@@ -85,8 +119,12 @@ export default function AdminLogsPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Logs système</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Historique des actions administrateurs et système</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+            Logs système
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Historique des actions administrateurs et système
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2 cursor-pointer">
@@ -97,7 +135,9 @@ export default function AdminLogsPage() {
               onClick={() => setAutoRefresh(!autoRefresh)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoRefresh ? 'bg-brand' : 'bg-gray-300 dark:bg-gray-600'}`}
             >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoRefresh ? 'translate-x-6' : 'translate-x-1'}`} />
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${autoRefresh ? 'translate-x-6' : 'translate-x-1'}`}
+              />
             </button>
             <span className="text-xs text-gray-500 dark:text-gray-400">Auto-refresh</span>
           </label>
@@ -109,27 +149,60 @@ export default function AdminLogsPage() {
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Du</label>
-            <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Au</label>
-            <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand" />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Module</label>
-            <select value={module} onChange={(e) => { setModule(e.target.value); setPage(1); }} className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand">
-              {MODULES.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
+            <Select
+              value={module}
+              onChange={(e) => {
+                setModule(e.target.value);
+                setPage(1);
+              }}
+              options={MODULES.map((m) => ({ value: m, label: m }))}
+            />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Action</label>
-            <select value={actionType} onChange={(e) => { setActionType(e.target.value); setPage(1); }} className="px-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand">
-              {ACTION_TYPES.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
+            <Select
+              value={actionType}
+              onChange={(e) => {
+                setActionType(e.target.value);
+                setPage(1);
+              }}
+              options={ACTION_TYPES.map((a) => ({ value: a, label: a }))}
+            />
           </div>
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="text" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && setPage(1)} className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && setPage(1)}
+              className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand"
+            />
           </div>
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -163,25 +236,42 @@ export default function AdminLogsPage() {
                 {logs.map((log: any) => {
                   const d = log.createdAt || log.date ? new Date(log.createdAt || log.date) : null;
                   return (
-                    <tr key={log.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                      <td className="p-4 text-xs text-gray-900 dark:text-gray-100">{d ? d.toLocaleDateString('fr-FR') : '-'}</td>
-                      <td className="p-4 text-xs text-gray-500">{d ? d.toLocaleTimeString('fr-FR') : '-'}</td>
-                      <td className="p-4 text-gray-500">{log.user?.name || log.user?.email || log.userId?.slice(0, 8) || '-'}</td>
-                      <td className="p-4 text-gray-500">{log.admin?.name || log.admin?.email || log.adminId?.slice(0, 8) || '-'}</td>
+                    <tr
+                      key={log.id}
+                      className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    >
+                      <td className="p-4 text-xs text-gray-900 dark:text-gray-100">
+                        {d ? d.toLocaleDateString('fr-FR') : '-'}
+                      </td>
+                      <td className="p-4 text-xs text-gray-500">
+                        {d ? d.toLocaleTimeString('fr-FR') : '-'}
+                      </td>
+                      <td className="p-4 text-gray-500">
+                        {log.user?.name || log.user?.email || log.userId?.slice(0, 8) || '-'}
+                      </td>
+                      <td className="p-4 text-gray-500">
+                        {log.admin?.name || log.admin?.email || log.adminId?.slice(0, 8) || '-'}
+                      </td>
                       <td className="p-4">
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{log.action || '-'}</span>
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                          {log.action || '-'}
+                        </span>
                       </td>
                       <td className="p-4 text-xs text-gray-500">{log.module || '-'}</td>
                       <td className="p-4 text-xs text-gray-500">{log.ip || '-'}</td>
                       <td className="p-4">
-                        <span className={`text-xs font-medium flex items-center gap-1 ${STATUS_STYLES[log.status] || 'text-gray-500'}`}>
+                        <span
+                          className={`text-xs font-medium flex items-center gap-1 ${STATUS_STYLES[log.status] || 'text-gray-500'}`}
+                        >
                           {log.status === 'SUCCESS' && <CheckCircle className="h-3 w-3" />}
                           {log.status === 'ERROR' && <XCircle className="h-3 w-3" />}
                           {log.status === 'WARNING' && <AlertTriangle className="h-3 w-3" />}
                           {log.status || '-'}
                         </span>
                       </td>
-                      <td className="p-4 text-xs text-gray-400 max-w-[200px] truncate">{log.details || log.description || '-'}</td>
+                      <td className="p-4 text-xs text-gray-400 max-w-[200px] truncate">
+                        {log.details || log.description || '-'}
+                      </td>
                     </tr>
                   );
                 })}
@@ -189,19 +279,37 @@ export default function AdminLogsPage() {
             </table>
           </div>
         ) : (
-          <EmptyState icon={<Activity className="h-8 w-8" />} title="Aucun log" description={hasFilters ? 'Aucun log ne correspond aux filtres.' : 'Aucun log système trouvé.'} />
+          <EmptyState
+            icon={<Activity className="h-8 w-8" />}
+            title="Aucun log"
+            description={
+              hasFilters ? 'Aucun log ne correspond aux filtres.' : 'Aucun log système trouvé.'
+            }
+          />
         )}
       </Card>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Page {page} sur {totalPages}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Page {page} sur {totalPages}
+          </p>
           <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
               <ChevronLeft className="h-4 w-4" /> Précédent
             </Button>
-            <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
               Suivant <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

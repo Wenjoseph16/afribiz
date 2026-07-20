@@ -24,8 +24,6 @@ export const MarketMapDynamic = dynamic(
   () => import('./MarketMap').then((mod) => ({ default: mod.default })),
   {
     ssr: false,
-    loading: () => (
-      <Skeleton className="h-[400px] w-full rounded-xl" />
-    ),
+    loading: () => <Skeleton className="h-[400px] w-full rounded-xl" />,
   }
 );

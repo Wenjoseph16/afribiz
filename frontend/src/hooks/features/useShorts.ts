@@ -12,7 +12,7 @@ export function useShorts(params?: { businessId?: string; page?: number; limit?:
   return useQuery({
     queryKey: shortKeys.list(params),
     queryFn: async () => {
-      const res = await apiClient.get('/shorts', { params });
+      const res = await apiClient.getShorts(params);
       return res.data.data as {
         items: any[];
         total: number;
@@ -28,7 +28,7 @@ export function useShort(id: string) {
   return useQuery({
     queryKey: shortKeys.detail(id),
     queryFn: async () => {
-      const res = await apiClient.get('/shorts/' + id);
+      const res = await apiClient.getShort(id);
       return res.data.data;
     },
     enabled: !!id,
@@ -38,7 +38,7 @@ export function useShort(id: string) {
 export function useCreateShort() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => apiClient.post('/shorts', data),
+    mutationFn: (data: any) => apiClient.createShort(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: shortKeys.all }),
   });
 }
@@ -46,7 +46,7 @@ export function useCreateShort() {
 export function useUpdateShort() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiClient.put('/shorts/' + id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiClient.updateShort(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: shortKeys.all }),
   });
 }
@@ -54,7 +54,7 @@ export function useUpdateShort() {
 export function useDeleteShort() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.delete('/shorts/' + id),
+    mutationFn: (id: string) => apiClient.deleteShort(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: shortKeys.all }),
   });
 }
@@ -62,7 +62,7 @@ export function useDeleteShort() {
 export function useLikeShort() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.post('/shorts/' + id + '/like'),
+    mutationFn: (id: string) => apiClient.likeShort(id),
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: shortKeys.detail(id) });
       qc.invalidateQueries({ queryKey: shortKeys.list() });
@@ -73,7 +73,8 @@ export function useLikeShort() {
 export function useAddComment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, content }: { id: string; content: string }) => apiClient.post('/shorts/' + id + '/comments', { content }),
+    mutationFn: ({ id, content }: { id: string; content: string }) =>
+      apiClient.addShortComment(id, content),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: shortKeys.comments(id) });
     },
@@ -84,7 +85,7 @@ export function useShortComments(id: string) {
   return useQuery({
     queryKey: shortKeys.comments(id),
     queryFn: async () => {
-      const res = await apiClient.get('/shorts/' + id + '/comments');
+      const res = await apiClient.getShortComments(id);
       return res.data.data as { items: any[]; total: number };
     },
     enabled: !!id,
@@ -93,20 +94,20 @@ export function useShortComments(id: string) {
 
 export function useViewShort() {
   return useMutation({
-    mutationFn: (id: string) => apiClient.post('/shorts/' + id + '/view'),
+    mutationFn: (id: string) => apiClient.viewShort(id),
   });
 }
 
 export function useShareShort() {
   return useMutation({
-    mutationFn: (id: string) => apiClient.post('/shorts/' + id + '/share'),
+    mutationFn: (id: string) => apiClient.shareShort(id),
   });
 }
 
 export function useSaveShort() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.post('/shorts/' + id + '/save'),
+    mutationFn: (id: string) => apiClient.saveShort(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: shortKeys.all }),
   });
 }

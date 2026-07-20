@@ -2,8 +2,18 @@
 
 import { useState } from 'react';
 import {
-  Percent, Plus, Search, Tag, Gift, TrendingUp,
-  CheckCircle, XCircle, Clock, AlertTriangle,
+  Percent,
+  Plus,
+  Search,
+  Tag,
+  Gift,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -15,7 +25,10 @@ import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 
 function formatCFA(amount: number) {
-  return new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(amount) + ' FCFA';
+  return (
+    new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(amount) +
+    ' FCFA'
+  );
 }
 
 type PromosTab = 'coupons' | 'promotions';
@@ -26,11 +39,13 @@ export default function AdminPromosPage() {
   const isAdmin = user?.roles?.includes('ADMIN');
   const [activeTab, setActiveTab] = useState<PromosTab>('coupons');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin', 'promos', 'stats'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/promos/stats');
+      const res = await apiClient.adminGetPromoStats();
       return res.data.data;
     },
     enabled: isAdmin,
@@ -39,7 +54,7 @@ export default function AdminPromosPage() {
   const { data: coupons, isLoading: couponsLoading } = useQuery({
     queryKey: ['admin', 'promos', 'coupons'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/promos/coupons');
+      const res = await apiClient.adminGetPromoCoupons();
       return res.data.data;
     },
     enabled: isAdmin,
@@ -48,14 +63,14 @@ export default function AdminPromosPage() {
   const { data: promotions } = useQuery({
     queryKey: ['admin', 'promos', 'promotions'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/promos/promotions');
+      const res = await apiClient.adminGetPromoPromotions();
       return res.data.data;
     },
     enabled: isAdmin,
   });
 
   const disableMutation = useMutation({
-    mutationFn: (id: string) => apiClient.patch(`/admin/promos/coupons/${id}/disable`),
+    mutationFn: (id: string) => apiClient.adminDisableCoupon(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'promos'] });
     },
@@ -65,7 +80,11 @@ export default function AdminPromosPage() {
     return (
       <div className="space-y-6 animate-fade-in">
         <h1 className="text-2xl sm:text-3xl font-bold">Codes promo</h1>
-        <EmptyState icon={<Percent className="h-8 w-8" />} title="Accès réservé" description="Administrateurs uniquement." />
+        <EmptyState
+          icon={<Percent className="h-8 w-8" />}
+          title="Accès réservé"
+          description="Administrateurs uniquement."
+        />
       </div>
     );
   }
@@ -93,7 +112,9 @@ export default function AdminPromosPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card className="p-4">
             <p className="text-xs font-medium text-gray-500">Coupons total</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.totalCoupons}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              {stats.totalCoupons}
+            </p>
           </Card>
           <Card className="p-4">
             <p className="text-xs font-medium text-gray-500">Actifs</p>
@@ -109,7 +130,9 @@ export default function AdminPromosPage() {
           </Card>
           <Card className="p-4">
             <p className="text-xs font-medium text-gray-500">Promotions</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.totalPromotions}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              {stats.totalPromotions}
+            </p>
           </Card>
           <Card className="p-4">
             <p className="text-xs font-medium text-gray-500">Promotions actives</p>
@@ -160,69 +183,149 @@ export default function AdminPromosPage() {
             </div>
           </div>
 
-          {couponsLoading ? <Loader className="py-12" /> : !coupons?.length ? (
-            <EmptyState icon={<Tag className="h-8 w-8" />} title="Aucun coupon" description="Aucun code promo sur la plateforme pour le moment." />
+          {couponsLoading ? (
+            <Loader className="py-12" />
+          ) : !coupons?.length ? (
+            <EmptyState
+              icon={<Tag className="h-8 w-8" />}
+              title="Aucun coupon"
+              description="Aucun code promo sur la plateforme pour le moment."
+            />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                    <th className="p-3 font-medium">Code</th>
-                    <th className="p-3 font-medium">Business</th>
-                    <th className="p-3 font-medium">Type</th>
-                    <th className="p-3 font-medium">Valeur</th>
-                    <th className="p-3 font-medium">Client</th>
-                    <th className="p-3 font-medium">Statut</th>
-                    <th className="p-3 font-medium">Utilisations</th>
-                    <th className="p-3 font-medium">Expire le</th>
-                    <th className="p-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {coupons
-                    .filter((c: any) => !search || c.code.toLowerCase().includes(search.toLowerCase()) || c.business?.name?.toLowerCase().includes(search.toLowerCase()))
-                    .map((coupon: any) => (
-                      <tr key={coupon.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                        <td className="p-3">
-                          <span className="font-mono font-bold text-gray-900 dark:text-gray-100">{coupon.code}</span>
-                        </td>
-                        <td className="p-3 text-gray-900 dark:text-gray-100">{coupon.business?.name || '-'}</td>
-                        <td className="p-3">
-                          <Badge variant={coupon.discountType === 'PERCENTAGE' ? 'info' : 'default'} size="xs">
-                            {coupon.discountType === 'PERCENTAGE' ? '%' : 'Fixe'}
-                          </Badge>
-                        </td>
-                        <td className="p-3 font-semibold text-gray-900 dark:text-gray-100">
-                          {coupon.discountType === 'PERCENTAGE' ? `${Number(coupon.discountValue)}%` : formatCFA(Number(coupon.discountValue))}
-                        </td>
-                        <td className="p-3 text-gray-600 dark:text-gray-400">
-                          {coupon.client ? `${coupon.client.firstName} ${coupon.client.lastName}` : 'Tous'}
-                        </td>
-                        <td className="p-3">
-                          <Badge variant={statusBadge[coupon.status] || 'default'} size="xs">{coupon.status}</Badge>
-                        </td>
-                        <td className="p-3 text-gray-900 dark:text-gray-100">
-                          {coupon.useCount}/{coupon.maxUses || '∞'}
-                        </td>
-                        <td className="p-3 text-gray-500">
-                          {coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString('fr-FR') : '-'}
-                        </td>
-                        <td className="p-3">
-                          {coupon.status === 'ACTIVE' && (
-                            <Button
-                              variant="secondary"
+            <div>
+              <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                      <th className="p-3 font-medium">Code</th>
+                      <th className="p-3 font-medium">Business</th>
+                      <th className="p-3 font-medium">Type</th>
+                      <th className="p-3 font-medium">Valeur</th>
+                      <th className="p-3 font-medium">Client</th>
+                      <th className="p-3 font-medium">Statut</th>
+                      <th className="p-3 font-medium">Utilisations</th>
+                      <th className="p-3 font-medium">Expire le</th>
+                      <th className="p-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coupons
+                      .filter(
+                        (c: any) =>
+                          !search ||
+                          c.code.toLowerCase().includes(search.toLowerCase()) ||
+                          c.business?.name?.toLowerCase().includes(search.toLowerCase())
+                      )
+                      .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+                      .map((coupon: any) => (
+                        <tr
+                          key={coupon.id}
+                          className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                        >
+                          <td className="p-3">
+                            <span className="font-mono font-bold text-gray-900 dark:text-gray-100">
+                              {coupon.code}
+                            </span>
+                          </td>
+                          <td className="p-3 text-gray-900 dark:text-gray-100">
+                            {coupon.business?.name || '-'}
+                          </td>
+                          <td className="p-3">
+                            <Badge
+                              variant={coupon.discountType === 'PERCENTAGE' ? 'info' : 'default'}
                               size="xs"
-                              onClick={() => disableMutation.mutate(coupon.id)}
-                              isLoading={disableMutation.isPending}
                             >
-                              <XCircle className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+                              {coupon.discountType === 'PERCENTAGE' ? '%' : 'Fixe'}
+                            </Badge>
+                          </td>
+                          <td className="p-3 font-semibold text-gray-900 dark:text-gray-100">
+                            {coupon.discountType === 'PERCENTAGE'
+                              ? `${Number(coupon.discountValue)}%`
+                              : formatCFA(Number(coupon.discountValue))}
+                          </td>
+                          <td className="p-3 text-gray-600 dark:text-gray-400">
+                            {coupon.client
+                              ? `${coupon.client.firstName} ${coupon.client.lastName}`
+                              : 'Tous'}
+                          </td>
+                          <td className="p-3">
+                            <Badge variant={statusBadge[coupon.status] || 'default'} size="xs">
+                              {coupon.status}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-gray-900 dark:text-gray-100">
+                            {coupon.useCount}/{coupon.maxUses || '∞'}
+                          </td>
+                          <td className="p-3 text-gray-500">
+                            {coupon.expiresAt
+                              ? new Date(coupon.expiresAt).toLocaleDateString('fr-FR')
+                              : '-'}
+                          </td>
+                          <td className="p-3">
+                            {coupon.status === 'ACTIVE' && (
+                              <Button
+                                variant="secondary"
+                                size="xs"
+                                onClick={() => disableMutation.mutate(coupon.id)}
+                                isLoading={disableMutation.isPending}
+                              >
+                                <XCircle className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              {(() => {
+                const filteredCoupons = Array.isArray(coupons)
+                  ? coupons.filter(
+                      (c: any) =>
+                        !search ||
+                        c.code.toLowerCase().includes(search.toLowerCase()) ||
+                        c.business?.name?.toLowerCase().includes(search.toLowerCase())
+                    )
+                  : [];
+                const totalCouponPages = Math.max(1, Math.ceil(filteredCoupons.length / PAGE_SIZE));
+                if (totalCouponPages <= 1) return null;
+                return (
+                  <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Précédent
+                    </button>
+                    {Array.from({ length: Math.min(totalCouponPages, 10) }, (_, i) => i + 1).map(
+                      (p) => (
+                        <button
+                          key={p}
+                          onClick={() => setPage(p)}
+                          className={
+                            'px-3 py-1.5 text-sm rounded-lg transition-colors ' +
+                            (p === page
+                              ? 'bg-brand text-white'
+                              : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')
+                          }
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalCouponPages, p + 1))}
+                      disabled={page === totalCouponPages}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Suivant
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -232,35 +335,90 @@ export default function AdminPromosPage() {
       {activeTab === 'promotions' && (
         <div className="space-y-4">
           {!promotions?.length ? (
-            <EmptyState icon={<Gift className="h-8 w-8" />} title="Aucune promotion" description="Aucune promotion active sur la plateforme." />
+            <EmptyState
+              icon={<Gift className="h-8 w-8" />}
+              title="Aucune promotion"
+              description="Aucune promotion active sur la plateforme."
+            />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {promotions.map((promo: any) => (
-                <Card key={promo.id} className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600">
-                      {promo.promotionType === 'PERCENTAGE' ? <Percent className="h-5 w-5" /> : <Gift className="h-5 w-5" />}
+            <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {promotions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((promo: any) => (
+                  <Card key={promo.id} className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600">
+                        {promo.promotionType === 'PERCENTAGE' ? (
+                          <Percent className="h-5 w-5" />
+                        ) : (
+                          <Gift className="h-5 w-5" />
+                        )}
+                      </div>
+                      <Badge variant={promo.isActive ? 'success' : 'default'} size="xs">
+                        {promo.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
                     </div>
-                    <Badge variant={promo.isActive ? 'success' : 'default'} size="xs">
-                      {promo.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                      {promo.title}
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                      {promo.description || '-'}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <span className="font-medium">{promo.business?.name || 'Plateforme'}</span>
+                      {promo.code && <span className="font-mono text-brand">· {promo.code}</span>}
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {promo.discountValue}% de réduc
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {promo.usageCount}/{promo.maxUsageCount || '∞'} utilisations
+                      </span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              {(() => {
+                const promoList = Array.isArray(promotions) ? promotions : [];
+                const totalPromoPages = Math.max(1, Math.ceil(promoList.length / PAGE_SIZE));
+                if (totalPromoPages <= 1) return null;
+                return (
+                  <div className="flex items-center justify-center gap-2 pt-4">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Précédent
+                    </button>
+                    {Array.from({ length: Math.min(totalPromoPages, 10) }, (_, i) => i + 1).map(
+                      (p) => (
+                        <button
+                          key={p}
+                          onClick={() => setPage(p)}
+                          className={
+                            'px-3 py-1.5 text-sm rounded-lg transition-colors ' +
+                            (p === page
+                              ? 'bg-brand text-white'
+                              : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')
+                          }
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPromoPages, p + 1))}
+                      disabled={page === totalPromoPages}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Suivant
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">{promo.title}</h3>
-                  <p className="text-xs text-gray-500 mb-2 line-clamp-2">{promo.description || '-'}</p>
-                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">{promo.business?.name || 'Plateforme'}</span>
-                    {promo.code && <span className="font-mono text-brand">· {promo.code}</span>}
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                      {promo.discountValue}% de réduc
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {promo.usageCount}/{promo.maxUsageCount || '∞'} utilisations
-                    </span>
-                  </div>
-                </Card>
-              ))}
+                );
+              })()}
             </div>
           )}
         </div>

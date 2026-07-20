@@ -1,22 +1,6 @@
-'use client';
-
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
-
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const accessToken = useAuthStore((s) => s.accessToken);
-
-  useEffect(() => {
-    if (accessToken) {
-      router.replace('/dashboard');
-    }
-  }, [accessToken, router]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex flex-col items-center justify-center px-4 py-10">
       {/* Logo AfriBiz - lien vers la page d'accueil */}
@@ -27,9 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </Link>
 
       {/* Card centrée */}
-      <div className="w-full max-w-md">
-        {children}
-      </div>
+      <div className="w-full max-w-md">{children}</div>
 
       {/* Footer */}
       <p className="mt-8 text-xs text-gray-400 dark:text-gray-600">

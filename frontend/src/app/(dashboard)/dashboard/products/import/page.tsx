@@ -3,9 +3,17 @@
 import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, Upload, Download, FileSpreadsheet, FileText,
-  CheckCircle2, AlertCircle, X, Eye,
-  Clock, Info,
+  ArrowLeft,
+  Upload,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Eye,
+  Clock,
+  Info,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -31,15 +39,54 @@ interface ImportHistoryItem {
 }
 
 const IMPORT_HISTORY: ImportHistoryItem[] = [
-  { id: 'i1', date: '2024-06-10 14:30', fileName: 'produits-juin.csv', total: 25, imported: 23, errors: 2, status: 'partial' },
-  { id: 'i2', date: '2024-05-28 09:15', fileName: 'catalogue-complet.csv', total: 50, imported: 50, errors: 0, status: 'success' },
-  { id: 'i3', date: '2024-05-15 16:45', fileName: 'nouveautes.csv', total: 12, imported: 0, errors: 12, status: 'failed' },
+  {
+    id: 'i1',
+    date: '2024-06-10 14:30',
+    fileName: 'produits-juin.csv',
+    total: 25,
+    imported: 23,
+    errors: 2,
+    status: 'partial',
+  },
+  {
+    id: 'i2',
+    date: '2024-05-28 09:15',
+    fileName: 'catalogue-complet.csv',
+    total: 50,
+    imported: 50,
+    errors: 0,
+    status: 'success',
+  },
+  {
+    id: 'i3',
+    date: '2024-05-15 16:45',
+    fileName: 'nouveautes.csv',
+    total: 12,
+    imported: 0,
+    errors: 12,
+    status: 'failed',
+  },
 ];
 
 const CSV_TEMPLATE_COLUMNS = [
-  'name*', 'shortDescription', 'description', 'brand', 'sku', 'barcode',
-  'categoryId', 'tags', 'price*', 'currency', 'stock*', 'minStock', 'unit',
-  'weight', 'dimensions', 'isPromotional', 'promotionalPrice', 'discountPercent',
+  'name*',
+  'shortDescription',
+  'description',
+  'brand',
+  'sku',
+  'barcode',
+  'categoryId',
+  'tags',
+  'price*',
+  'currency',
+  'stock*',
+  'minStock',
+  'unit',
+  'weight',
+  'dimensions',
+  'isPromotional',
+  'promotionalPrice',
+  'discountPercent',
 ];
 
 export default function ImportProductsPage() {
@@ -53,11 +100,46 @@ export default function ImportProductsPage() {
 
   const simulatePreview = useCallback(() => {
     setPreview([
-      { row: 1, name: 'Tissu Wax Africain', price: '5000', stock: '45', category: 'Vêtements', errors: [] },
-      { row: 2, name: 'Huile de coco bio', price: '3500', stock: '3', category: 'Cosmétiques', errors: [] },
-      { row: 3, name: '', price: '8500', stock: '10', category: 'Accessoires', errors: ['Nom manquant'] },
-      { row: 4, name: 'Beurre de karité', price: 'abc', stock: '20', category: 'Cosmétiques', errors: ['Prix invalide'] },
-      { row: 5, name: 'Sac en raphia', price: '8500', stock: '', category: 'Accessoires', errors: ['Stock manquant'] },
+      {
+        row: 1,
+        name: 'Tissu Wax Africain',
+        price: '5000',
+        stock: '45',
+        category: 'Vêtements',
+        errors: [],
+      },
+      {
+        row: 2,
+        name: 'Huile de coco bio',
+        price: '3500',
+        stock: '3',
+        category: 'Cosmétiques',
+        errors: [],
+      },
+      {
+        row: 3,
+        name: '',
+        price: '8500',
+        stock: '10',
+        category: 'Accessoires',
+        errors: ['Nom manquant'],
+      },
+      {
+        row: 4,
+        name: 'Beurre de karité',
+        price: 'abc',
+        stock: '20',
+        category: 'Cosmétiques',
+        errors: ['Prix invalide'],
+      },
+      {
+        row: 5,
+        name: 'Sac en raphia',
+        price: '8500',
+        stock: '',
+        category: 'Accessoires',
+        errors: ['Stock manquant'],
+      },
     ]);
   }, []);
 
@@ -70,17 +152,23 @@ export default function ImportProductsPage() {
     setDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file && (file.name.endsWith('.csv') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
-      setSelectedFile(file);
-      setImportDone(false);
-      setPreview(null);
-      simulatePreview();
-    }
-  }, [simulatePreview]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (
+        file &&
+        (file.name.endsWith('.csv') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))
+      ) {
+        setSelectedFile(file);
+        setImportDone(false);
+        setPreview(null);
+        simulatePreview();
+      }
+    },
+    [simulatePreview]
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -94,7 +182,7 @@ export default function ImportProductsPage() {
 
   const handleImport = async () => {
     setImporting(true);
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
     setImporting(false);
     setImportDone(true);
     setSelectedFile(null);
@@ -104,10 +192,24 @@ export default function ImportProductsPage() {
   const downloadTemplate = () => {
     const header = CSV_TEMPLATE_COLUMNS.join(',');
     const sampleRow = [
-      'Tissu Wax', 'Magnifique tissu', 'Description complète...', 'Wax Africain',
-      'WAX-001', '4901234567890', 'cat-1', 'wax,africain',
-      '5000', 'FCFA', '45', '10', 'pièce', '0.5', '100x150',
-      'false', '', '0',
+      'Tissu Wax',
+      'Magnifique tissu',
+      'Description complète...',
+      'Wax Africain',
+      'WAX-001',
+      '4901234567890',
+      'cat-1',
+      'wax,africain',
+      '5000',
+      'FCFA',
+      '45',
+      '10',
+      'pièce',
+      '0.5',
+      '100x150',
+      'false',
+      '',
+      '0',
     ].join(',');
     const csv = header + '\n' + sampleRow + '\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -122,10 +224,48 @@ export default function ImportProductsPage() {
   const exportProducts = () => {
     const header = CSV_TEMPLATE_COLUMNS.join(',');
     const rows = [
-      ['Tissu Wax Africain', '', 'Description...', 'Wax Africain', 'WAX-001', '', 'Vêtements', 'wax', '5000', 'FCFA', '45', '10', 'pièce', '0.5', '100x150', 'true', '4000', '20'],
-      ['Huile de coco bio', 'Huile naturelle', '', '', 'HUILE-001', '', 'Cosmétiques', 'bio', '3500', 'FCFA', '3', '10', 'pièce', '0.25', '', 'false', '', '0'],
+      [
+        'Tissu Wax Africain',
+        '',
+        'Description...',
+        'Wax Africain',
+        'WAX-001',
+        '',
+        'Vêtements',
+        'wax',
+        '5000',
+        'FCFA',
+        '45',
+        '10',
+        'pièce',
+        '0.5',
+        '100x150',
+        'true',
+        '4000',
+        '20',
+      ],
+      [
+        'Huile de coco bio',
+        'Huile naturelle',
+        '',
+        '',
+        'HUILE-001',
+        '',
+        'Cosmétiques',
+        'bio',
+        '3500',
+        'FCFA',
+        '3',
+        '10',
+        'pièce',
+        '0.25',
+        '',
+        'false',
+        '',
+        '0',
+      ],
     ];
-    const csv = header + '\n' + rows.map(r => r.join(',')).join('\n') + '\n';
+    const csv = header + '\n' + rows.map((r) => r.join(',')).join('\n') + '\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -136,7 +276,7 @@ export default function ImportProductsPage() {
   };
 
   const totalPreviewErrors = preview?.reduce((acc, p) => acc + p.errors.length, 0) || 0;
-  const totalPreviewValid = preview?.filter(p => p.errors.length === 0).length || 0;
+  const totalPreviewValid = preview?.filter((p) => p.errors.length === 0).length || 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -220,7 +360,9 @@ export default function ImportProductsPage() {
                     <FileSpreadsheet className="h-8 w-8 text-brand" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">{selectedFile.name}</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {selectedFile.name}
+                    </p>
                     <p className="text-sm text-gray-500">
                       {(selectedFile.size / 1024).toFixed(1)} Ko
                     </p>
@@ -229,7 +371,10 @@ export default function ImportProductsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => { setSelectedFile(null); setPreview(null); }}
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setPreview(null);
+                      }}
                     >
                       <X className="h-4 w-4 mr-1.5" />
                       Changer
@@ -249,13 +394,9 @@ export default function ImportProductsPage() {
                     <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                       Glissez votre fichier ici
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      ou cliquez pour parcourir
-                    </p>
+                    <p className="text-sm text-gray-500 mt-1">ou cliquez pour parcourir</p>
                   </div>
-                  <p className="text-xs text-gray-400">
-                    Formats supportés : CSV, XLSX, XLS
-                  </p>
+                  <p className="text-xs text-gray-400">Formats supportés : CSV, XLSX, XLS</p>
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                     <Upload className="h-4 w-4 mr-1.5" />
                     Sélectionner un fichier
@@ -285,7 +426,13 @@ export default function ImportProductsPage() {
                 23 produits importés avec succès, 2 erreurs
               </p>
               <div className="flex items-center justify-center gap-3">
-                <Button onClick={() => { setImportDone(false); setSelectedFile(null); setPreview(null); }}>
+                <Button
+                  onClick={() => {
+                    setImportDone(false);
+                    setSelectedFile(null);
+                    setPreview(null);
+                  }}
+                >
                   <Upload className="h-4 w-4 mr-1.5" />
                   Importer un autre fichier
                 </Button>
@@ -304,7 +451,8 @@ export default function ImportProductsPage() {
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  Aperçu ({totalPreviewValid} valide{totalPreviewValid > 1 ? 's' : ''}, {totalPreviewErrors} erreur{totalPreviewErrors > 1 ? 's' : ''})
+                  Aperçu ({totalPreviewValid} valide{totalPreviewValid > 1 ? 's' : ''},{' '}
+                  {totalPreviewErrors} erreur{totalPreviewErrors > 1 ? 's' : ''})
                 </h3>
                 <span className="text-xs text-gray-400">{preview.length} lignes</span>
               </div>
@@ -312,22 +460,62 @@ export default function ImportProductsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">Nom</th>
-                      <th className="p-2 text-right text-xs font-semibold text-gray-500 uppercase">Prix</th>
-                      <th className="p-2 text-right text-xs font-semibold text-gray-500 uppercase">Stock</th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">Catégorie</th>
-                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">Erreurs</th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                        #
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Nom
+                      </th>
+                      <th className="p-2 text-right text-xs font-semibold text-gray-500 uppercase">
+                        Prix
+                      </th>
+                      <th className="p-2 text-right text-xs font-semibold text-gray-500 uppercase">
+                        Stock
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Catégorie
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Erreurs
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                     {preview.map((row) => (
-                      <tr key={row.row} className={cn(row.errors.length > 0 && 'bg-red-50/50 dark:bg-red-900/10')}>
+                      <tr
+                        key={row.row}
+                        className={cn(row.errors.length > 0 && 'bg-red-50/50 dark:bg-red-900/10')}
+                      >
                         <td className="p-2 text-xs text-gray-400">{row.row}</td>
-                        <td className={cn('p-2 font-medium', row.name ? 'text-gray-900 dark:text-gray-100' : 'text-red-500')}>{row.name || '(vide)'}</td>
-                        <td className={cn('p-2 text-right', !isNaN(Number(row.price)) ? 'text-gray-900 dark:text-gray-100' : 'text-red-500')}>{row.price || '-'}</td>
-                        <td className={cn('p-2 text-right', row.stock !== '' ? 'text-gray-900 dark:text-gray-100' : 'text-red-500')}>{row.stock || '-'}</td>
-                        <td className="p-2 text-gray-600 dark:text-gray-300">{row.category || '-'}</td>
+                        <td
+                          className={cn(
+                            'p-2 font-medium',
+                            row.name ? 'text-gray-900 dark:text-gray-100' : 'text-red-500'
+                          )}
+                        >
+                          {row.name || '(vide)'}
+                        </td>
+                        <td
+                          className={cn(
+                            'p-2 text-right',
+                            !isNaN(Number(row.price))
+                              ? 'text-gray-900 dark:text-gray-100'
+                              : 'text-red-500'
+                          )}
+                        >
+                          {row.price || '-'}
+                        </td>
+                        <td
+                          className={cn(
+                            'p-2 text-right',
+                            row.stock !== '' ? 'text-gray-900 dark:text-gray-100' : 'text-red-500'
+                          )}
+                        >
+                          {row.stock || '-'}
+                        </td>
+                        <td className="p-2 text-gray-600 dark:text-gray-300">
+                          {row.category || '-'}
+                        </td>
                         <td className="p-2">
                           {row.errors.length > 0 && (
                             <div className="flex items-center gap-1">
@@ -360,12 +548,21 @@ export default function ImportProductsPage() {
               Instructions
             </h3>
             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-              <p>1. Téléchargez le <button onClick={downloadTemplate} className="text-brand hover:underline font-medium">template CSV</button></p>
+              <p>
+                1. Téléchargez le{' '}
+                <button
+                  onClick={downloadTemplate}
+                  className="text-brand hover:underline font-medium"
+                >
+                  template CSV
+                </button>
+              </p>
               <p>2. Remplissez les colonnes (les champs marqués * sont obligatoires)</p>
               <p>3. Glissez-déposez votre fichier ou cliquez pour sélectionner</p>
               <p>4. Vérifiez l'aperçu avant d'importer</p>
               <p className="text-xs text-gray-400 mt-2">
-                Colonnes obligatoires : <code className="text-brand">name</code>, <code className="text-brand">price</code>, <code className="text-brand">stock</code>
+                Colonnes obligatoires : <code className="text-brand">name</code>,{' '}
+                <code className="text-brand">price</code>, <code className="text-brand">stock</code>
               </p>
             </div>
           </Card>
@@ -378,25 +575,41 @@ export default function ImportProductsPage() {
           {IMPORT_HISTORY.length === 0 ? (
             <div className="text-center py-12">
               <Clock className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Aucun import</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Aucun import
+              </h3>
               <p className="text-sm text-gray-500">Vous n'avez pas encore importé de produits</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {IMPORT_HISTORY.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+              {IMPORT_HISTORY.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                >
                   <div className="flex items-center gap-4">
-                    <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', {
-                      'bg-emerald-50 text-emerald-600': item.status === 'success',
-                      'bg-amber-50 text-amber-600': item.status === 'partial',
-                      'bg-red-50 text-red-600': item.status === 'failed',
-                    })}>
-                      {item.status === 'success' ? <CheckCircle2 className="h-5 w-5" /> :
-                       item.status === 'partial' ? <AlertCircle className="h-5 w-5" /> :
-                       <X className="h-5 w-5" />}
+                    <div
+                      className={cn(
+                        'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                        {
+                          'bg-emerald-50 text-emerald-600': item.status === 'success',
+                          'bg-amber-50 text-amber-600': item.status === 'partial',
+                          'bg-red-50 text-red-600': item.status === 'failed',
+                        }
+                      )}
+                    >
+                      {item.status === 'success' ? (
+                        <CheckCircle2 className="h-5 w-5" />
+                      ) : item.status === 'partial' ? (
+                        <AlertCircle className="h-5 w-5" />
+                      ) : (
+                        <X className="h-5 w-5" />
+                      )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.fileName}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {item.fileName}
+                      </p>
                       <p className="text-xs text-gray-500">{item.date}</p>
                     </div>
                   </div>
@@ -405,7 +618,9 @@ export default function ImportProductsPage() {
                       {item.imported}/{item.total} importés
                     </p>
                     {item.errors > 0 && (
-                      <p className="text-xs text-red-500">{item.errors} erreur{item.errors > 1 ? 's' : ''}</p>
+                      <p className="text-xs text-red-500">
+                        {item.errors} erreur{item.errors > 1 ? 's' : ''}
+                      </p>
                     )}
                   </div>
                 </div>

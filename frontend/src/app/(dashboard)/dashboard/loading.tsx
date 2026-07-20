@@ -6,7 +6,10 @@ export default function DashboardLoading() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+          <div
+            key={i}
+            className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 space-y-3"
+          >
             <div className="flex items-center justify-between">
               <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
               <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-lg" />

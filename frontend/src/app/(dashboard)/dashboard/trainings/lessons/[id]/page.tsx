@@ -11,7 +11,16 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { ArrowLeft, Play, CheckCircle, XCircle, HelpCircle, AlertTriangle } from 'lucide-react';
+import TrainingCertificate from '@/components/TrainingCertificate';
+import {
+  ArrowLeft,
+  Play,
+  CheckCircle,
+  XCircle,
+  HelpCircle,
+  AlertTriangle,
+  Award,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function LessonPage() {
@@ -22,6 +31,8 @@ export default function LessonPage() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizResult, setQuizResult] = useState<any>(null);
+  const [showCert, setShowCert] = useState(false);
+  const [certData, setCertData] = useState<any>(null);
 
   const { data: lesson, isLoading } = useQuery({
     queryKey: ['lesson', lessonId],
@@ -32,9 +43,35 @@ export default function LessonPage() {
     enabled: !!lessonId,
   });
 
+  const trainingId = lesson?.training?.id;
+
+  const { data: trainingProgress } = useQuery({
+    queryKey: ['training-progress', trainingId],
+    queryFn: async () => {
+      const res = await apiClient.get(`/trainings/advanced/${trainingId}/progress`);
+      return res.data.data;
+    },
+    enabled: !!trainingId,
+  });
+
+  const trainingStatus = trainingProgress?.status;
+
+  const generateCert = useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.post(`/trainings/${trainingId}/certificate`);
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      setCertData(data);
+      setShowCert(true);
+    },
+  });
+
   const submitQuiz = useMutation({
     mutationFn: async () => {
-      const res = await apiClient.post(`/trainings/advanced/quiz/${lesson?.quiz?.id}/attempt`, { answers });
+      const res = await apiClient.post(`/trainings/advanced/quiz/${lesson?.quiz?.id}/attempt`, {
+        answers,
+      });
       return res.data.data;
     },
     onSuccess: (data) => {
@@ -52,13 +89,13 @@ export default function LessonPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center gap-4">
-        <Link href={`/dashboard/trainings/${lesson.training?.id}`} className="text-gray-400 hover:text-gray-600">
+        <Link
+          href={`/dashboard/trainings/${lesson.training?.id}`}
+          className="text-gray-400 hover:text-gray-600"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <PageHeader
-          title={lesson.title}
-          description={lesson.training?.title}
-        />
+        <PageHeader title={lesson.title} description={lesson.training?.title} />
       </div>
 
       {/* Content */}
@@ -71,7 +108,9 @@ export default function LessonPage() {
         {lesson.content ? (
           <div className="prose prose-sm dark:prose-invert max-w-none">
             {lesson.content.split('\n').map((p: string, i: number) => (
-              <p key={i} className="text-gray-700 dark:text-gray-300 mb-2">{p}</p>
+              <p key={i} className="text-gray-700 dark:text-gray-300 mb-2">
+                {p}
+              </p>
             ))}
           </div>
         ) : (
@@ -84,10 +123,10 @@ export default function LessonPage() {
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <HelpCircle className="h-5 w-5 text-brand" />
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{quiz.title || 'Quiz'}</h3>
-            {quiz.timeLimit && (
-              <Badge variant="warning">{quiz.timeLimit} min</Badge>
-            )}
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+              {quiz.title || 'Quiz'}
+            </h3>
+            {quiz.timeLimit && <Badge variant="warning">{quiz.timeLimit} min</Badge>}
             <Badge variant="default">Note requise: {quiz.passingScore}%</Badge>
           </div>
           {quiz.description && <p className="text-sm text-gray-500 mb-4">{quiz.description}</p>}
@@ -141,25 +180,71 @@ export default function LessonPage() {
             ) : (
               <XCircle className="h-16 w-16 text-red-500 mx-auto mb-3" />
             )}
-            <h3 className={cn('text-xl font-bold mb-1', quizResult.passed ? 'text-emerald-600' : 'text-red-600')}>
+            <h3
+              className={cn(
+                'text-xl font-bold mb-1',
+                quizResult.passed ? 'text-emerald-600' : 'text-red-600'
+              )}
+            >
               {quizResult.passed ? 'Quiz réussi ! 🎉' : 'Quiz échoué'}
             </h3>
             <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              {quizResult.score}% <span className="text-sm font-normal text-gray-400">({quizResult.totalQuestions} questions)</span>
+              {quizResult.score}%{' '}
+              <span className="text-sm font-normal text-gray-400">
+                ({quizResult.totalQuestions} questions)
+              </span>
             </p>
             {!quizResult.passed && (
-              <Button variant="outline" className="mt-4" onClick={() => { setQuizSubmitted(false); setQuizResult(null); setAnswers([]); }}>
-                <AlertTriangle className="h-4 w-4 mr-1.5" />Réessayer
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => {
+                  setQuizSubmitted(false);
+                  setQuizResult(null);
+                  setAnswers([]);
+                }}
+              >
+                <AlertTriangle className="h-4 w-4 mr-1.5" />
+                Réessayer
               </Button>
             )}
           </div>
         </Card>
       )}
 
+      {/* Certificate */}
+      {trainingStatus === 'COMPLETED' && (
+        <Card>
+          <div className="text-center py-6">
+            <Award className="h-16 w-16 text-amber-500 mx-auto mb-3" />
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+              Formation terminée
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Félicitations ! Téléchargez votre certificat.
+            </p>
+            <Button onClick={() => generateCert.mutate()} disabled={generateCert.isPending}>
+              <Award className="h-4 w-4 mr-1.5" />
+              {generateCert.isPending ? 'Génération...' : 'Télécharger le certificat'}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {showCert && certData && (
+        <TrainingCertificate
+          userName={certData.userName}
+          trainingTitle={certData.trainingTitle}
+          businessName={certData.businessName}
+          onClose={() => setShowCert(false)}
+        />
+      )}
+
       {/* Back button */}
       <div className="flex justify-center pb-8">
         <Button variant="outline" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-1.5" />Retour à la formation
+          <ArrowLeft className="h-4 w-4 mr-1.5" />
+          Retour à la formation
         </Button>
       </div>
     </div>

@@ -1,10 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  Camera, Film, Radio, TrendingUp, ArrowRight,
-  Play, Plus,
-} from 'lucide-react';
+import { Camera, Film, Radio, TrendingUp, ArrowRight, Play, Plus } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 
@@ -40,7 +37,9 @@ export default function DeveloperMediaPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white">Shorts</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Vidéos verticales 30s-2min</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Vidéos verticales 30s-2min
+                </p>
               </div>
             </div>
             <ArrowRight className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-brand-500 transition-colors" />
@@ -55,7 +54,9 @@ export default function DeveloperMediaPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white">Lives</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Démos et formations en direct</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Démos et formations en direct
+                </p>
               </div>
             </div>
             <ArrowRight className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-brand-500 transition-colors" />
@@ -64,7 +65,9 @@ export default function DeveloperMediaPage() {
       </div>
 
       <Card padding="lg">
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Pourquoi publier du contenu vidéo ?</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+          Pourquoi publier du contenu vidéo ?
+        </h3>
         <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
           <li className="flex items-start gap-2">
             <Play className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />

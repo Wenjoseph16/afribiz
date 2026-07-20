@@ -5,12 +5,17 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const variantStyles = {
-  primary: 'bg-brand text-white hover:bg-brand-700 active:bg-brand-800 shadow-md hover:shadow-lg hover:shadow-brand/20',
-  secondary: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100',
+  primary:
+    'bg-brand text-white hover:bg-brand-700 active:bg-brand-800 shadow-md hover:shadow-lg hover:shadow-brand/20',
+  secondary:
+    'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100',
   ghost: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200',
-  danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg hover:shadow-red-600/20',
-  outline: 'bg-transparent border-2 border-brand text-brand hover:bg-brand hover:text-white active:bg-brand-700',
-  'gradient': 'bg-gradient-to-r from-brand to-emerald-400 text-white hover:from-brand-700 hover:to-emerald-500 shadow-md hover:shadow-lg hover:shadow-brand/20',
+  danger:
+    'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg hover:shadow-red-600/20',
+  outline:
+    'bg-transparent border-2 border-brand text-brand hover:bg-brand hover:text-white active:bg-brand-700',
+  gradient:
+    'bg-gradient-to-r from-brand to-emerald-400 text-white hover:from-brand-700 hover:to-emerald-500 shadow-md hover:shadow-lg hover:shadow-brand/20',
 };
 
 const sizeStyles = {
@@ -29,7 +34,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', isLoading, fullWidth, disabled, children, ...props }, ref) => {
+  (
+    {
+      className,
+      variant = 'primary',
+      size = 'md',
+      isLoading,
+      fullWidth,
+      disabled,
+      children,
+      ...props
+    },
+    ref
+  ) => {
     return (
       <button
         ref={ref}

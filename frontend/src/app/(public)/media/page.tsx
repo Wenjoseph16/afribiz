@@ -11,13 +11,21 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       'Explorez AfriBiz Media : stories, shorts, lives commerce, offres flash. Découvrez des produits et services en vidéo, achetez et réservez directement depuis le contenu.',
     keywords: [
-      'AfriBiz media', 'stories business', 'shorts commerce', 'live shopping',
-      'live commerce afrique', 'offres flash', 'vidéo produit', 'achat vidéo',
-      'marketplace vidéo', 'réserver en ligne',
+      'AfriBiz media',
+      'stories business',
+      'shorts commerce',
+      'live shopping',
+      'live commerce afrique',
+      'offres flash',
+      'vidéo produit',
+      'achat vidéo',
+      'marketplace vidéo',
+      'réserver en ligne',
     ],
     openGraph: {
       title: 'AfriBiz Media — Le commerce vidéo en Afrique',
-      description: 'Découvrez des produits et services en vidéo. Stories, shorts, lives et offres flash.',
+      description:
+        'Découvrez des produits et services en vidéo. Stories, shorts, lives et offres flash.',
       url: `${BASE_URL}/media`,
       siteName: 'AfriBiz',
       type: 'website',

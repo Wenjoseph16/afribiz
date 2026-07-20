@@ -15,10 +15,13 @@ export function StoryRing({ onStoryOpen, className }: StoryRingProps) {
   const { data: groups, isLoading } = useActiveStories();
   const [viewerGroup, setViewerGroup] = useState<StoryGroup | null>(null);
 
-  const handleGroupClick = useCallback((group: StoryGroup) => {
-    setViewerGroup(group);
-    onStoryOpen?.(group);
-  }, [onStoryOpen]);
+  const handleGroupClick = useCallback(
+    (group: StoryGroup) => {
+      setViewerGroup(group);
+      onStoryOpen?.(group);
+    },
+    [onStoryOpen]
+  );
 
   if (isLoading) {
     return (
@@ -39,7 +42,12 @@ export function StoryRing({ onStoryOpen, className }: StoryRingProps) {
 
   return (
     <>
-      <div className={cn('flex gap-4 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory', className)}>
+      <div
+        className={cn(
+          'flex gap-4 overflow-x-auto pb-3 scrollbar-none snap-x snap-mandatory',
+          className
+        )}
+      >
         {groups.map((group, idx) => (
           <button
             key={group.business.id}
@@ -47,12 +55,14 @@ export function StoryRing({ onStoryOpen, className }: StoryRingProps) {
             className="flex flex-col items-center gap-1.5 flex-shrink-0 group cursor-pointer snap-start animate-fade-in-up"
             style={{ animationDelay: `${idx * 60}ms` }}
           >
-            <div className={cn(
-              'relative w-16 h-16 rounded-full p-[3px] transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 group-active:scale-95',
-              group.allViewed
-                ? 'bg-gray-300/60 dark:bg-gray-600/60 ring-1 ring-white/10'
-                : 'bg-gradient-to-br from-brand-400 via-purple-500 to-pink-500 shadow-lg shadow-brand-500/20'
-            )}>
+            <div
+              className={cn(
+                'relative w-16 h-16 rounded-full p-[3px] transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 group-active:scale-95',
+                group.allViewed
+                  ? 'bg-gray-300/60 dark:bg-gray-600/60 ring-1 ring-white/10'
+                  : 'bg-gradient-to-br from-brand-400 via-purple-500 to-pink-500 shadow-lg shadow-brand-500/20'
+              )}
+            >
               {/* Pulse ring for unviewed stories */}
               {!group.allViewed && (
                 <span className="absolute inset-0 rounded-full animate-ping bg-brand-400/30 opacity-75" />

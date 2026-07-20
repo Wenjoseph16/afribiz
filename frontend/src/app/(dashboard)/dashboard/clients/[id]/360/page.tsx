@@ -2,8 +2,16 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Activity, Eye, MousePointerClick, ShoppingBag, Calendar,
-  MessageCircle, Star, Award, ExternalLink,
+  ArrowLeft,
+  Activity,
+  Eye,
+  MousePointerClick,
+  ShoppingBag,
+  Calendar,
+  MessageCircle,
+  Star,
+  Award,
+  ExternalLink,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Loader } from '@/components/ui/Loader';
@@ -30,7 +38,13 @@ const activityIcons: Record<string, React.ElementType<{ className?: string }>> =
 
 function CheckIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M20 6L9 17l-5-5" />
     </svg>
   );
@@ -49,7 +63,10 @@ function TimelineItem({ activity }: { activity: any }) {
         <p className="text-sm text-foreground">{activity.description || activity.type}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           {new Date(activity.createdAt).toLocaleDateString('fr-FR', {
-            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
           })}
         </p>
       </div>
@@ -65,11 +82,19 @@ export default function Customer360Page() {
   const { data: data360, isLoading, error } = useCustomer360(clientId);
 
   if (isLoading) return <Loader variant="spinner" size="lg" fullScreen />;
-  if (error) return <ErrorState title="Erreur" message="Impossible de charger les données 360°" onRetry={() => router.refresh()} />;
+  if (error)
+    return (
+      <ErrorState
+        title="Erreur"
+        message="Impossible de charger les données 360°"
+        onRetry={() => router.refresh()}
+      />
+    );
   if (!data360) return <ErrorState title="Client non trouvé" message="Ce client n'existe pas" />;
 
   const bc = data360;
-  const clientName = bc.client?.fullName || `${bc.firstName || ''} ${bc.lastName || ''}`.trim() || 'Client';
+  const clientName =
+    bc.client?.fullName || `${bc.firstName || ''} ${bc.lastName || ''}`.trim() || 'Client';
   const timeline = Array.isArray(bc.activityTimeline) ? bc.activityTimeline : [];
   const pageViews = Array.isArray(bc.pageViews) ? bc.pageViews : [];
   const productViews = Array.isArray(bc.productViews) ? bc.productViews : [];
@@ -79,7 +104,10 @@ export default function Customer360Page() {
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={() => router.push(`/dashboard/clients/${clientId}`)} className="p-2 rounded-xl hover:bg-muted transition-colors">
+        <button
+          onClick={() => router.push(`/dashboard/clients/${clientId}`)}
+          className="p-2 rounded-xl hover:bg-muted transition-colors"
+        >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
@@ -117,7 +145,11 @@ export default function Customer360Page() {
               <h3 className="text-sm font-semibold text-foreground">Timeline d'activité</h3>
             </div>
             {timeline.length === 0 ? (
-              <EmptyState icon={<Activity className="h-8 w-8" />} title="Aucune activité" description="Le client n'a pas encore d'activité enregistrée." />
+              <EmptyState
+                icon={<Activity className="h-8 w-8" />}
+                title="Aucune activité"
+                description="Le client n'a pas encore d'activité enregistrée."
+              />
             ) : (
               <div className="divide-y divide-border/50">
                 {timeline.map((a: any) => (
@@ -144,7 +176,13 @@ export default function Customer360Page() {
                   <div key={v.id} className="flex items-center gap-2.5 text-sm">
                     <div className="w-8 h-8 rounded-lg bg-muted flex-shrink-0 overflow-hidden">
                       {v.product?.image ? (
-                        <Image src={v.product.image} alt="" width={32} height={32} className="w-full h-full object-cover" unoptimized />
+                        <Image
+                          src={v.product.image}
+                          alt=""
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[10px]">
                           {v.product?.name?.[0] || '?'}
@@ -152,7 +190,9 @@ export default function Customer360Page() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{v.product?.name || 'Produit'}</p>
+                      <p className="text-xs font-medium text-foreground truncate">
+                        {v.product?.name || 'Produit'}
+                      </p>
                       <p className="text-[11px] text-muted-foreground">
                         {v.product?.price?.toLocaleString()} FCFA
                       </p>
@@ -177,7 +217,13 @@ export default function Customer360Page() {
                   <div key={c.id} className="flex items-center gap-2.5 text-sm">
                     <div className="w-8 h-8 rounded-lg bg-muted flex-shrink-0 overflow-hidden">
                       {c.product?.image ? (
-                        <Image src={c.product.image} alt="" width={32} height={32} className="w-full h-full object-cover" unoptimized />
+                        <Image
+                          src={c.product.image}
+                          alt=""
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[10px]">
                           {c.product?.name?.[0] || '?'}
@@ -185,9 +231,12 @@ export default function Customer360Page() {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-foreground">{c.product?.name || 'Produit'}</p>
+                      <p className="text-xs font-medium text-foreground">
+                        {c.product?.name || 'Produit'}
+                      </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {c.source || 'marketplace'} · {new Date(c.clickedAt).toLocaleDateString('fr-FR')}
+                        {c.source || 'marketplace'} ·{' '}
+                        {new Date(c.clickedAt).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
                   </div>
@@ -210,11 +259,16 @@ export default function Customer360Page() {
               <div key={v.id} className="p-3 rounded-xl bg-muted/50 text-xs">
                 <p className="text-muted-foreground">
                   {new Date(v.viewedAt).toLocaleDateString('fr-FR', {
-                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </p>
                 {v.referrer && <p className="text-foreground mt-0.5 truncate">Via: {v.referrer}</p>}
-                {v.duration ? <p className="text-muted-foreground mt-0.5">{v.duration}s passées</p> : null}
+                {v.duration ? (
+                  <p className="text-muted-foreground mt-0.5">{v.duration}s passées</p>
+                ) : null}
               </div>
             ))}
           </div>

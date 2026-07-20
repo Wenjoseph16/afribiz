@@ -3,10 +3,22 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  Play, Calendar, Clock, Users, ShoppingBag, 
-  Shield, ChevronRight, Sparkles, Plus,
-  Radio, Tv, Eye, MessageCircle, X, Loader2
+import {
+  Play,
+  Calendar,
+  Clock,
+  Users,
+  ShoppingBag,
+  Shield,
+  ChevronRight,
+  Sparkles,
+  Plus,
+  Radio,
+  Tv,
+  Eye,
+  MessageCircle,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
@@ -50,9 +62,7 @@ export default function LivesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Lives Commerciaux
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Lives Commerciaux</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Diffusez en direct et vendez vos produits en temps réel
           </p>
@@ -68,31 +78,75 @@ export default function LivesPage() {
 
       {/* Create Live Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Planifier un live</h2>
-              <button onClick={() => setShowCreateModal(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><X className="w-5 h-5" /></button>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Planifier un live
+              </h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titre *</label>
-                <input type="text" value={liveForm.title} onChange={(e) => setLiveForm(p => ({ ...p, title: e.target.value }))} placeholder="Soirée spéciale..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Titre *
+                </label>
+                <input
+                  type="text"
+                  value={liveForm.title}
+                  onChange={(e) => setLiveForm((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="Soirée spéciale..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                <textarea value={liveForm.description} onChange={(e) => setLiveForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="Décrivez votre live..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 resize-none" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={liveForm.description}
+                  onChange={(e) => setLiveForm((p) => ({ ...p, description: e.target.value }))}
+                  rows={3}
+                  placeholder="Décrivez votre live..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 resize-none"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date et heure *</label>
-                <input type="datetime-local" value={liveForm.scheduledAt} onChange={(e) => setLiveForm(p => ({ ...p, scheduledAt: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Date et heure *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={liveForm.scheduledAt}
+                  onChange={(e) => setLiveForm((p) => ({ ...p, scheduledAt: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+                />
               </div>
               <button
                 onClick={handleCreateLive}
                 disabled={!liveForm.title || !liveForm.scheduledAt || createLive.isPending}
                 className="w-full h-11 text-sm font-semibold rounded-xl bg-gradient-to-r from-brand to-emerald-400 text-white shadow-lg hover:shadow-xl disabled:opacity-50 transition-all flex items-center justify-center gap-2"
               >
-                {createLive.isPending ? <><Loader2 className="animate-spin h-4 w-4" /> Création...</> : <><Radio className="w-4 h-4" /> Créer le live</>}
+                {createLive.isPending ? (
+                  <>
+                    <Loader2 className="animate-spin h-4 w-4" /> Création...
+                  </>
+                ) : (
+                  <>
+                    <Radio className="w-4 h-4" /> Créer le live
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -133,7 +187,10 @@ export default function LivesPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse">
+            <div
+              key={i}
+              className="rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse"
+            >
               <div className="aspect-video bg-gray-200 dark:bg-gray-700" />
               <div className="p-4 space-y-2">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
@@ -147,8 +204,11 @@ export default function LivesPage() {
           <div className="flex flex-col items-center gap-3">
             <Tv className="w-12 h-12 text-gray-300 dark:text-gray-600" />
             <p className="text-gray-500 dark:text-gray-400">
-              {activeTab === 'LIVE' ? 'Aucun live en ce moment' : 
-               activeTab === 'SCHEDULED' ? 'Aucun live planifié' : 'Aucun live terminé'}
+              {activeTab === 'LIVE'
+                ? 'Aucun live en ce moment'
+                : activeTab === 'SCHEDULED'
+                  ? 'Aucun live planifié'
+                  : 'Aucun live terminé'}
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-500">
               Créez votre premier live pour commencer à vendre en direct
@@ -158,11 +218,7 @@ export default function LivesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {lives.map((live: any) => (
-            <button
-              key={live.id}
-              onClick={() => setSelectedLive(live)}
-              className="group text-left"
-            >
+            <button key={live.id} onClick={() => setSelectedLive(live)} className="group text-left">
               <div className="rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
                 {/* Thumbnail */}
                 <div className="aspect-video relative bg-gray-100 dark:bg-gray-900 overflow-hidden">
@@ -195,9 +251,7 @@ export default function LivesPage() {
                         Planifié
                       </Badge>
                     )}
-                    {live.status === 'ENDED' && (
-                      <Badge variant="default">Terminé</Badge>
-                    )}
+                    {live.status === 'ENDED' && <Badge variant="default">Terminé</Badge>}
                     {live.hasEscrow && (
                       <Badge variant="brand">
                         <Shield className="w-3 h-3 mr-0.5" />
@@ -210,7 +264,9 @@ export default function LivesPage() {
                   <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
                     <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm">
                       <Users className="w-3 h-3 text-white" />
-                      <span className="text-white text-xs">{live.viewerCount || live._count?.participants || 0}</span>
+                      <span className="text-white text-xs">
+                        {live.viewerCount || live._count?.participants || 0}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm">
                       <ShoppingBag className="w-3 h-3 text-white" />
@@ -232,11 +288,19 @@ export default function LivesPage() {
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2">
                       {live.business?.logo ? (
-                        <Image src={live.business.logo} alt="" width={20} height={20} className="rounded-full" />
+                        <Image
+                          src={live.business.logo}
+                          alt=""
+                          width={20}
+                          height={20}
+                          className="rounded-full"
+                        />
                       ) : (
                         <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700" />
                       )}
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{live.business?.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {live.business?.name}
+                      </span>
                     </div>
                     <span className="text-xs text-brand-600 dark:text-brand-400 font-medium flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       Voir <ChevronRight className="w-3 h-3" />

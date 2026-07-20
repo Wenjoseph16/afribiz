@@ -3,9 +3,19 @@
 import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Shield, ShieldAlert, ShieldCheck, Users,
-  AlertTriangle, Search, Loader, Ban,
-  CheckCircle2, DollarSign, TrendingUp,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Users,
+  AlertTriangle,
+  Search,
+  Loader,
+  Ban,
+  CheckCircle2,
+  DollarSign,
+  TrendingUp,
+  X,
+  Zap,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card } from '@/components/ui/Card';
@@ -31,10 +41,22 @@ interface ClientRisk {
 }
 
 const riskLevelConfig: Record<string, { label: string; class: string }> = {
-  LOW: { label: 'Faible', class: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  MEDIUM: { label: 'Moyen', class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  HIGH: { label: 'Élevé', class: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-  CRITICAL: { label: 'Critique', class: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  LOW: {
+    label: 'Faible',
+    class: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  MEDIUM: {
+    label: 'Moyen',
+    class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  HIGH: {
+    label: 'Élevé',
+    class: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  },
+  CRITICAL: {
+    label: 'Critique',
+    class: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
 };
 
 function getScoreColor(score: number): string {
@@ -55,18 +77,25 @@ export default function ClientRisksPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterLevel, setFilterLevel] = useState<string>('all');
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [showAutoScore, setShowAutoScore] = useState(false);
+  const [autoScoreClientId, setAutoScoreClientId] = useState('');
+  const [autoScoring, setAutoScoring] = useState(false);
 
   const { data: risksData, isLoading, error, refetch } = useClientRisks();
   const updateRisk = useUpdateClientRisk();
 
   const risks: ClientRisk[] = useMemo(() => {
-    return Array.isArray(risksData) ? risksData : (Array.isArray(risksData?.data) ? risksData.data : []);
+    return Array.isArray(risksData)
+      ? risksData
+      : Array.isArray(risksData?.data)
+        ? risksData.data
+        : [];
   }, [risksData]);
 
   const stats = useMemo(() => {
     const total = risks.length;
-    const eleves = risks.filter(r => r.riskLevel === 'HIGH' || r.riskLevel === 'CRITICAL').length;
-    const blacklistes = risks.filter(r => r.blackliste).length;
+    const eleves = risks.filter((r) => r.riskLevel === 'HIGH' || r.riskLevel === 'CRITICAL').length;
+    const blacklistes = risks.filter((r) => r.blackliste).length;
     const avgScore = total > 0 ? Math.round(risks.reduce((a, r) => a + r.score, 0) / total) : 0;
     return { total, eleves, blacklistes, avgScore };
   }, [risks]);
@@ -74,38 +103,50 @@ export default function ClientRisksPage() {
   const filtered = useMemo(() => {
     let f = [...risks];
     if (filterLevel !== 'all') {
-      f = f.filter(r => r.riskLevel === filterLevel);
+      f = f.filter((r) => r.riskLevel === filterLevel);
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      f = f.filter(r => r.clientName?.toLowerCase().includes(q) || r.clientEmail?.toLowerCase().includes(q));
+      f = f.filter(
+        (r) => r.clientName?.toLowerCase().includes(q) || r.clientEmail?.toLowerCase().includes(q)
+      );
     }
     return f;
   }, [risks, filterLevel, searchQuery]);
 
-  const handleToggleAcompte = useCallback(async (clientId: string, current: boolean) => {
-    setTogglingId(`acompte-${clientId}`);
-    try {
-      await apiClient.patch(`/business/finance/client-risks/${clientId}`, { acompteRequis: !current });
-      refetch();
-    } catch {
-      // silent
-    } finally {
-      setTogglingId(null);
-    }
-  }, [refetch]);
+  const handleToggleAcompte = useCallback(
+    async (clientId: string, current: boolean) => {
+      setTogglingId(`acompte-${clientId}`);
+      try {
+        await apiClient.patch(`/business/finance/client-risks/${clientId}`, {
+          acompteRequis: !current,
+        });
+        refetch();
+      } catch {
+        // silent
+      } finally {
+        setTogglingId(null);
+      }
+    },
+    [refetch]
+  );
 
-  const handleToggleBlacklist = useCallback(async (clientId: string, current: boolean) => {
-    setTogglingId(`blacklist-${clientId}`);
-    try {
-      await apiClient.patch(`/business/finance/client-risks/${clientId}`, { blackliste: !current });
-      refetch();
-    } catch {
-      // silent
-    } finally {
-      setTogglingId(null);
-    }
-  }, [refetch]);
+  const handleToggleBlacklist = useCallback(
+    async (clientId: string, current: boolean) => {
+      setTogglingId(`blacklist-${clientId}`);
+      try {
+        await apiClient.patch(`/business/finance/client-risks/${clientId}`, {
+          blackliste: !current,
+        });
+        refetch();
+      } catch {
+        // silent
+      } finally {
+        setTogglingId(null);
+      }
+    },
+    [refetch]
+  );
 
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
@@ -127,6 +168,12 @@ export default function ClientRisksPage() {
           { label: 'Dettes & Paiements', href: '/dashboard/debts-payments' },
           { label: 'Risques Clients' },
         ]}
+        actions={
+          <Button size="sm" variant="outline" onClick={() => setShowAutoScore(true)}>
+            <Zap className="h-4 w-4 mr-1.5" />
+            Auto-score
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -198,7 +245,9 @@ export default function ClientRisksPage() {
               Aucun risque client enregistré
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {searchQuery || filterLevel !== 'all' ? 'Essayez d\'autres filtres' : 'Les risques clients apparaîtront ici'}
+              {searchQuery || filterLevel !== 'all'
+                ? "Essayez d'autres filtres"
+                : 'Les risques clients apparaîtront ici'}
             </p>
           </div>
         ) : (
@@ -206,16 +255,36 @@ export default function ClientRisksPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400">Client</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">Niveau de risque</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">Score</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">Retards</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">Litiges</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">Dette totale</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">Max crédit</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">Acompte</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">Blacklisté</th>
-                  <th className="text-right px-5 py-3 font-semibold text-gray-600 dark:text-gray-400">Action</th>
+                  <th className="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Client
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Niveau de risque
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Score
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Retards
+                  </th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Litiges
+                  </th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Dette totale
+                  </th>
+                  <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Max crédit
+                  </th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Acompte
+                  </th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Blacklisté
+                  </th>
+                  <th className="text-right px-5 py-3 font-semibold text-gray-600 dark:text-gray-400">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -230,18 +299,24 @@ export default function ClientRisksPage() {
                           <Users className="h-4 w-4 text-brand" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">{risk.clientName}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            {risk.clientName}
+                          </p>
                           {risk.clientEmail && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{risk.clientEmail}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {risk.clientEmail}
+                            </p>
                           )}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <span className={cn(
-                        'inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full',
-                        riskLevelConfig[risk.riskLevel]?.class || ''
-                      )}>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full',
+                          riskLevelConfig[risk.riskLevel]?.class || ''
+                        )}
+                      >
                         {risk.riskLevel === 'LOW' && <ShieldCheck className="h-3 w-3" />}
                         {risk.riskLevel === 'MEDIUM' && <Shield className="h-3 w-3" />}
                         {risk.riskLevel === 'HIGH' && <ShieldAlert className="h-3 w-3" />}
@@ -250,15 +325,19 @@ export default function ClientRisksPage() {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <span className={cn(
-                        'inline-flex items-center justify-center text-xs font-bold px-2 py-1 rounded-lg min-w-[40px]',
-                        getScoreBg(risk.score),
-                        getScoreColor(risk.score)
-                      )}>
+                      <span
+                        className={cn(
+                          'inline-flex items-center justify-center text-xs font-bold px-2 py-1 rounded-lg min-w-[40px]',
+                          getScoreBg(risk.score),
+                          getScoreColor(risk.score)
+                        )}
+                      >
                         {risk.score}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-gray-700 dark:text-gray-300">{risk.retardsPaiement}</td>
+                    <td className="px-4 py-4 text-gray-700 dark:text-gray-300">
+                      {risk.retardsPaiement}
+                    </td>
                     <td className="px-4 py-4 text-gray-700 dark:text-gray-300">{risk.litiges}</td>
                     <td className="px-4 py-4 text-right font-medium text-gray-900 dark:text-gray-100">
                       {risk.detteTotale.toLocaleString()} FCFA
@@ -304,7 +383,9 @@ export default function ClientRisksPage() {
                     </td>
                     <td className="px-5 py-4 text-right">
                       <Link href={`/dashboard/debts-payments/risks/${risk.id}`}>
-                        <Button variant="ghost" size="xs">Modifier</Button>
+                        <Button variant="ghost" size="xs">
+                          Modifier
+                        </Button>
                       </Link>
                     </td>
                   </tr>
@@ -314,6 +395,67 @@ export default function ClientRisksPage() {
           </div>
         )}
       </Card>
+
+      {showAutoScore && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full mx-4 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Auto-score</h3>
+              <button
+                onClick={() => {
+                  setShowAutoScore(false);
+                  setAutoScoreClientId('');
+                }}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500">Calculez le score de risque d'un client.</p>
+            <input
+              type="text"
+              placeholder="ID du client"
+              value={autoScoreClientId}
+              onChange={(e) => setAutoScoreClientId(e.target.value)}
+              className="w-full px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none bg-transparent dark:text-gray-100"
+            />
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowAutoScore(false);
+                  setAutoScoreClientId('');
+                }}
+              >
+                Annuler
+              </Button>
+              <Button
+                size="sm"
+                disabled={!autoScoreClientId.trim() || autoScoring}
+                onClick={async () => {
+                  setAutoScoring(true);
+                  try {
+                    const res = await apiClient.post('/business/debts/auto-score', {
+                      clientId: autoScoreClientId.trim(),
+                    });
+                    alert(`Score calculé : ${(res.data as any)?.score ?? 'OK'}`);
+                    setShowAutoScore(false);
+                    setAutoScoreClientId('');
+                    refetch();
+                  } catch {
+                    alert('Erreur lors du calcul du score');
+                  } finally {
+                    setAutoScoring(false);
+                  }
+                }}
+              >
+                {autoScoring ? 'Calcul...' : 'Calculer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,17 @@
 
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
-import { Download, TrendingUp, TrendingDown, Users, Calendar, CheckCircle, XCircle, ToggleLeft, ToggleRight } from 'lucide-react';
+import {
+  Download,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  ToggleLeft,
+  ToggleRight,
+} from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -35,19 +45,40 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function DeveloperInstallationsPage() {
   const [filter, setFilter] = useState<string | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
   const { data: installationsData, isLoading, error, refetch } = useDeveloperInstallations(filter);
 
   const installations = useMemo(() => {
     if (!installationsData) return [];
-    return Array.isArray(installationsData) ? installationsData : (installationsData.installations || installationsData.data || []);
+    return Array.isArray(installationsData)
+      ? installationsData
+      : installationsData.installations || installationsData.data || [];
   }, [installationsData]);
+
+  const paginatedInstallations = installations.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+  const totalPages = Math.max(1, Math.ceil(installations.length / PAGE_SIZE));
 
   const stats = useMemo(() => {
     const active = installations.filter((i: DeveloperModuleInstallation) => i.status === 'ACTIVE');
-    const disabled = installations.filter((i: DeveloperModuleInstallation) => i.status === 'DISABLED');
-    const uninstalled = installations.filter((i: DeveloperModuleInstallation) => i.status === 'UNINSTALLED');
-    const retention = installations.length > 0 ? Math.round((active.length / installations.length) * 100) : 0;
-    return { total: installations.length, active: active.length, disabled: disabled.length, uninstalled: uninstalled.length, retention };
+    const disabled = installations.filter(
+      (i: DeveloperModuleInstallation) => i.status === 'DISABLED'
+    );
+    const uninstalled = installations.filter(
+      (i: DeveloperModuleInstallation) => i.status === 'UNINSTALLED'
+    );
+    const retention =
+      installations.length > 0 ? Math.round((active.length / installations.length) * 100) : 0;
+    return {
+      total: installations.length,
+      active: active.length,
+      disabled: disabled.length,
+      uninstalled: uninstalled.length,
+      retention,
+    };
   }, [installations]);
 
   if (error) return <ErrorState message={error.message} onRetry={() => refetch()} />;
@@ -98,7 +129,9 @@ export default function DeveloperInstallationsPage() {
 
       <Card padding="lg">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Liste des installations</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            Liste des installations
+          </h3>
           <div className="flex items-center gap-1">
             {TABS.map((tab) => (
               <button
@@ -106,7 +139,9 @@ export default function DeveloperInstallationsPage() {
                 onClick={() => setFilter(tab.id)}
                 className={cn(
                   'px-2.5 py-1 text-xs font-medium rounded-lg transition-colors',
-                  filter === tab.id ? 'bg-brand text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+                  filter === tab.id
+                    ? 'bg-brand text-white'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                 )}
               >
                 {tab.label}
@@ -126,33 +161,62 @@ export default function DeveloperInstallationsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Business</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Module</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Version</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Installé le</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Statut</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">MàJ auto</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Business
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Module
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Version
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Installé le
+                  </th>
+                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Statut
+                  </th>
+                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    MàJ auto
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {installations.map((inst: DeveloperModuleInstallation) => (
-                  <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                {paginatedInstallations.map((inst: DeveloperModuleInstallation) => (
+                  <tr
+                    key={inst.id}
+                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-2">
                         {inst.business?.logo ? (
-                          <Image src={inst.business.logo ?? ''} alt="" width={28} height={28} className="rounded-lg object-cover" unoptimized />
+                          <Image
+                            src={inst.business.logo ?? ''}
+                            alt=""
+                            width={28}
+                            height={28}
+                            className="rounded-lg object-cover"
+                          />
                         ) : (
                           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-50 to-purple-50 dark:from-brand-900/30 dark:to-purple-900/30 flex items-center justify-center text-[10px] font-bold text-brand">
                             {(inst.business?.name || 'B')[0]}
                           </div>
                         )}
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{inst.business?.name || '—'}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {inst.business?.name || '—'}
+                        </span>
                       </div>
                     </td>
-                    <td className="py-3 px-2 text-gray-600 dark:text-gray-400">{inst.module?.name || '—'}</td>
-                    <td className="py-3 px-2 text-gray-600 dark:text-gray-400 font-mono text-xs">v{inst.version || '—'}</td>
+                    <td className="py-3 px-2 text-gray-600 dark:text-gray-400">
+                      {inst.module?.name || '—'}
+                    </td>
+                    <td className="py-3 px-2 text-gray-600 dark:text-gray-400 font-mono text-xs">
+                      v{inst.version || '—'}
+                    </td>
                     <td className="py-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                      {inst.installedAt ? new Date(inst.installedAt).toLocaleDateString('fr-FR') : '—'}
+                      {inst.installedAt
+                        ? new Date(inst.installedAt).toLocaleDateString('fr-FR')
+                        : '—'}
                     </td>
                     <td className="py-3 px-2 text-center">
                       <Badge variant={STATUS_VARIANTS[inst.status] || 'default'} size="xs">
@@ -174,6 +238,38 @@ export default function DeveloperInstallationsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Précédent
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={cn(
+                  'px-3 py-1.5 text-sm rounded-lg transition-colors',
+                  page === currentPage
+                    ? 'bg-brand text-white'
+                    : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                )}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Suivant
+            </button>
           </div>
         )}
       </Card>

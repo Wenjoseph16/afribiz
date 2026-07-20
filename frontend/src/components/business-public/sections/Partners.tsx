@@ -14,7 +14,9 @@ export function Partners({ partners }: PartnersProps) {
   return (
     <section id="section-partners" className="scroll-mt-32 bg-gray-50 dark:bg-gray-800/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-8">Nos Partenaires</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-8">
+          Nos Partenaires
+        </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {partners.map((partner) => (
             <a
@@ -36,7 +38,11 @@ export function Partners({ partners }: PartnersProps) {
                   {partner.name}
                   {partner.website && <ExternalLink className="w-3 h-3 text-gray-400" />}
                 </h3>
-                {partner.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{partner.description}</p>}
+                {partner.description && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                    {partner.description}
+                  </p>
+                )}
               </div>
             </a>
           ))}

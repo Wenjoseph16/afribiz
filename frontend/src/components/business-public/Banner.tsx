@@ -4,31 +4,68 @@ import Image from 'next/image';
 import { Business } from '@/types/business';
 import { MapPin, Star, ShieldCheck, Crown, Zap, Award, BadgeCheck, TrendingUp } from 'lucide-react';
 import { getBusinessTypeLabel } from '@/utils/helpers';
+import { LiveVisitorCounter } from './LiveVisitorCounter';
 
 interface BannerProps {
   business: Business;
+  slug?: string;
 }
 
-export function Banner({ business }: BannerProps) {
+export function Banner({ business, slug }: BannerProps) {
   const badges: { label: string; icon: React.ReactNode; className: string }[] = [];
 
   if (business.isVerified) {
-    badges.push({ label: 'Vérifié', icon: <ShieldCheck className="w-3 h-3" />, className: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' });
+    badges.push({
+      label: 'Vérifié',
+      icon: <ShieldCheck className="w-3 h-3" />,
+      className: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300',
+    });
+  }
+  const vl = (business as any).verificationLevel;
+  if (vl && vl !== 'ARGENT') {
+    const levelLabel = vl === 'OR' ? 'Or' : vl === 'PLATINE' ? 'Platine' : vl;
+    const levelClass =
+      vl === 'OR' ? 'bg-yellow-100 text-yellow-700' : 'bg-indigo-100 text-indigo-700';
+    badges.push({
+      label: levelLabel,
+      icon: <Crown className="w-3 h-3" />,
+      className: levelClass,
+    });
   }
   if (business.isPremium) {
-    badges.push({ label: 'Premium', icon: <Crown className="w-3 h-3" />, className: 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' });
+    badges.push({
+      label: 'Premium',
+      icon: <Crown className="w-3 h-3" />,
+      className: 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300',
+    });
   }
   if (business.isNew) {
-    badges.push({ label: 'Nouveau', icon: <Zap className="w-3 h-3" />, className: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' });
+    badges.push({
+      label: 'Nouveau',
+      icon: <Zap className="w-3 h-3" />,
+      className: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300',
+    });
   }
   if (business.isTopSeller) {
-    badges.push({ label: 'Top vendeur', icon: <TrendingUp className="w-3 h-3" />, className: 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' });
+    badges.push({
+      label: 'Top vendeur',
+      icon: <TrendingUp className="w-3 h-3" />,
+      className: 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300',
+    });
   }
   if (business.isTopProvider) {
-    badges.push({ label: 'Top prestataire', icon: <Award className="w-3 h-3" />, className: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' });
+    badges.push({
+      label: 'Top prestataire',
+      icon: <Award className="w-3 h-3" />,
+      className: 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300',
+    });
   }
   if (business.isRecommended) {
-    badges.push({ label: 'Recommandé', icon: <BadgeCheck className="w-3 h-3" />, className: 'bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300' });
+    badges.push({
+      label: 'Recommandé',
+      icon: <BadgeCheck className="w-3 h-3" />,
+      className: 'bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300',
+    });
   }
 
   return (
@@ -37,8 +74,9 @@ export function Banner({ business }: BannerProps) {
         {business.coverImage && (
           <Image
             src={business.coverImage}
-            alt={business.name}
+            alt={`Couverture ${business.name}`}
             fill
+            priority
             className="object-cover"
           />
         )}
@@ -48,7 +86,13 @@ export function Banner({ business }: BannerProps) {
         <div className="relative -mt-20 sm:-mt-24 flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6 pb-6">
           <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-800 shadow-lg overflow-hidden flex-shrink-0">
             {business.logo ? (
-              <Image src={business.logo} alt={business.name} fill className="object-cover" />
+              <Image
+                src={business.logo}
+                alt={`Logo ${business.name}`}
+                fill
+                priority
+                className="object-cover"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-brand-100 dark:bg-brand-900 text-brand-600 dark:text-brand-300 text-2xl sm:text-3xl font-bold">
                 {business.name.charAt(0)}
@@ -61,7 +105,10 @@ export function Banner({ business }: BannerProps) {
                 {getBusinessTypeLabel(business.type)}
               </span>
               {badges.map((badge, i) => (
-                <span key={i} className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
+                <span
+                  key={i}
+                  className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.className}`}
+                >
                   {badge.icon} {badge.label}
                 </span>
               ))}
@@ -77,15 +124,22 @@ export function Banner({ business }: BannerProps) {
               </span>
             </div>
             {(business.shortDescription || business.city) && (
-              <p className="mt-1 text-sm sm:text-base text-white/80 flex items-center gap-1">
+              <p className="mt-1 text-sm sm:text-base text-white/80 flex items-center gap-2 flex-wrap">
                 {business.city && (
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" /> {business.city}
+                    <MapPin className="w-3.5 h-3.5 shrink-0" /> {business.city}
                     {business.country && `, ${business.country}`}
                   </span>
                 )}
-                {business.shortDescription && !business.city && business.shortDescription}
+                {business.shortDescription && (
+                  <span className="text-white/70 truncate">{business.shortDescription}</span>
+                )}
               </p>
+            )}
+            {slug && (
+              <div className="mt-2 sm:mt-3">
+                <LiveVisitorCounter slug={slug} variant="banner" />
+              </div>
             )}
           </div>
         </div>

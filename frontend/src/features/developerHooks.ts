@@ -77,9 +77,15 @@ export function useDeveloperDashboard() {
   return useQuery({
     queryKey: developerKeys.dashboard,
     queryFn: async () => {
-      const res = await apiClient.getDeveloperDashboard();
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperDashboard();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement dashboard developpeur:', error);
+        return null;
+      }
     },
+    retry: false,
   });
 }
 
@@ -87,9 +93,16 @@ export function useDeveloperModules(status?: string) {
   return useQuery({
     queryKey: [...developerKeys.modules.all, status],
     queryFn: async () => {
-      const res = await apiClient.get('/developer/modules', { params: { status } });
-      return res.data.data;
+      try {
+        const params = status ? { status } : undefined;
+        const res = await apiClient.getDeveloperModules(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement modules developpeur:', error);
+        return null;
+      }
     },
+    retry: false,
   });
 }
 
@@ -97,10 +110,16 @@ export function useDeveloperModule(id: string) {
   return useQuery({
     queryKey: developerKeys.modules.detail(id),
     queryFn: async () => {
-      const res = await apiClient.getDeveloperModule(id);
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperModule(id);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement module developpeur:', error);
+        return null;
+      }
     },
     enabled: !!id,
+    retry: false,
   });
 }
 
@@ -117,7 +136,8 @@ export function useCreateDeveloperModule() {
 export function useUpdateDeveloperModule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiClient.updateDeveloperModule(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiClient.updateDeveloperModule(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: developerKeys.modules.all });
     },
@@ -150,17 +170,24 @@ export function useGetModuleVersions(moduleId: string) {
   return useQuery({
     queryKey: developerKeys.modules.versions(moduleId),
     queryFn: async () => {
-      const res = await apiClient.getModuleVersions(moduleId);
-      return res.data.data;
+      try {
+        const res = await apiClient.getModuleVersions(moduleId);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement versions module:', error);
+        return [];
+      }
     },
     enabled: !!moduleId,
+    retry: false,
   });
 }
 
 export function useCreateModuleVersion() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ moduleId, data }: { moduleId: string; data: any }) => apiClient.createModuleVersion(moduleId, data),
+    mutationFn: ({ moduleId, data }: { moduleId: string; data: any }) =>
+      apiClient.createModuleVersion(moduleId, data),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: developerKeys.modules.all });
       qc.invalidateQueries({ queryKey: developerKeys.modules.versions(variables.moduleId) });
@@ -168,13 +195,46 @@ export function useCreateModuleVersion() {
   });
 }
 
-export function useMarketplaceModules(params?: { category?: string; search?: string; sort?: string; page?: number }) {
+export function useUploadModuleVersionFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      moduleId,
+      versionId,
+      file,
+    }: {
+      moduleId: string;
+      versionId: string;
+      file: File;
+    }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiClient.uploadModuleVersionFile(moduleId, versionId, formData);
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: developerKeys.modules.versions(variables.moduleId) });
+    },
+  });
+}
+
+export function useMarketplaceModules(params?: {
+  category?: string;
+  search?: string;
+  sort?: string;
+  page?: number;
+}) {
   return useQuery({
     queryKey: [...developerKeys.marketplace.all, params],
     queryFn: async () => {
-      const res = await apiClient.getMarketplaceModules(params);
-      return res.data.data;
+      try {
+        const res = await apiClient.getMarketplaceModules(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement marketplace modules:', error);
+        return null;
+      }
     },
+    retry: false,
   });
 }
 
@@ -182,18 +242,29 @@ export function useMarketplaceModule(slug: string) {
   return useQuery({
     queryKey: developerKeys.marketplace.detail(slug),
     queryFn: async () => {
-      const res = await apiClient.getMarketplaceModule(slug);
-      return res.data.data;
+      try {
+        const res = await apiClient.getMarketplaceModule(slug);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement module marketplace:', error);
+        return null;
+      }
     },
     enabled: !!slug,
+    retry: false,
   });
 }
 
 export function usePurchaseMarketplaceModule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ moduleId, data }: { moduleId: string; data: { provider: string; phone: string } }) =>
-      apiClient.purchaseMarketplaceModule(moduleId, data),
+    mutationFn: ({
+      moduleId,
+      data,
+    }: {
+      moduleId: string;
+      data: { provider: string; phone: string };
+    }) => apiClient.purchaseMarketplaceModule(moduleId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: developerKeys.modules.all });
       qc.invalidateQueries({ queryKey: ['myBusiness'] });
@@ -216,8 +287,34 @@ export function useBusinessInstalledModules() {
   return useQuery({
     queryKey: ['business-installed-modules'],
     queryFn: async () => {
-      const res = await apiClient.getBusinessInstalledModules();
-      return res.data.data;
+      try {
+        const res = await apiClient.getBusinessInstalledModules();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement modules installes:', error);
+        return [];
+      }
+    },
+    retry: false,
+  });
+}
+
+export function useConfirmModuleUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (installationId: string) => apiClient.confirmModuleUpdate(installationId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['business-modules', 'installed'] });
+    },
+  });
+}
+
+export function useReinstallModule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (moduleId: string) => apiClient.reinstallModule(moduleId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['business-modules', 'installed'] });
     },
   });
 }
@@ -225,8 +322,7 @@ export function useBusinessInstalledModules() {
 export function useConfirmMarketplaceModulePayment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { providerRef: string }) =>
-      apiClient.confirmMarketplaceModulePayment(data),
+    mutationFn: (data: { providerRef: string }) => apiClient.confirmMarketplaceModulePayment(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: developerKeys.modules.all });
       qc.invalidateQueries({ queryKey: ['myBusiness'] });
@@ -249,17 +345,24 @@ export function useModuleReviews(moduleId: string) {
   return useQuery({
     queryKey: developerKeys.modules.reviews(moduleId),
     queryFn: async () => {
-      const res = await apiClient.getModuleReviews(moduleId);
-      return res.data.data;
+      try {
+        const res = await apiClient.getModuleReviews(moduleId);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement avis module:', error);
+        return [];
+      }
     },
     enabled: !!moduleId,
+    retry: false,
   });
 }
 
 export function useCreateModuleReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ moduleId, data }: { moduleId: string; data: any }) => apiClient.createModuleReview(moduleId, data),
+    mutationFn: ({ moduleId, data }: { moduleId: string; data: any }) =>
+      apiClient.createModuleReview(moduleId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: developerKeys.modules.all });
     },
@@ -269,7 +372,8 @@ export function useCreateModuleReview() {
 export function useRespondToReview() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ reviewId, response }: { reviewId: string; response: string }) => apiClient.respondToReview(reviewId, response),
+    mutationFn: ({ reviewId, response }: { reviewId: string; response: string }) =>
+      apiClient.respondToReview(reviewId, response),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: developerKeys.modules.all });
     },
@@ -280,9 +384,15 @@ export function useDeveloperTickets() {
   return useQuery({
     queryKey: developerKeys.tickets.all,
     queryFn: async () => {
-      const res = await apiClient.getDeveloperTickets();
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperTickets();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement tickets:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -290,10 +400,16 @@ export function useDeveloperTicket(id: string) {
   return useQuery({
     queryKey: developerKeys.tickets.detail(id),
     queryFn: async () => {
-      const res = await apiClient.getDeveloperTicket(id);
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperTicket(id);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement ticket:', error);
+        return null;
+      }
     },
     enabled: !!id,
+    retry: false,
   });
 }
 
@@ -310,7 +426,8 @@ export function useCreateDeveloperTicket() {
 export function useReplyToTicket() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ ticketId, content }: { ticketId: string; content: string }) => apiClient.replyToTicket(ticketId, { content }),
+    mutationFn: ({ ticketId, content }: { ticketId: string; content: string }) =>
+      apiClient.replyToTicket(ticketId, { content }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: developerKeys.tickets.all });
     },
@@ -320,7 +437,8 @@ export function useReplyToTicket() {
 export function useUpdateTicketStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ ticketId, status }: { ticketId: string; status: string }) => apiClient.updateTicketStatus(ticketId, status),
+    mutationFn: ({ ticketId, status }: { ticketId: string; status: string }) =>
+      apiClient.updateTicketStatus(ticketId, status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: developerKeys.tickets.all });
     },
@@ -331,9 +449,15 @@ export function useDeveloperInstallations(status?: string) {
   return useQuery({
     queryKey: ['developer-installations', status],
     queryFn: async () => {
-      const res = await apiClient.get('/developer/installations', { params: { status } });
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperInstallations();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement installations:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -341,9 +465,15 @@ export function useDeveloperOrders(params?: { type?: string; page?: number; limi
   return useQuery({
     queryKey: ['developer-orders', params],
     queryFn: async () => {
-      const res = await apiClient.get('/developer/orders', { params });
-      return res.data;
+      try {
+        const res = await apiClient.getDeveloperOrders();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement commandes dev:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -351,9 +481,15 @@ export function useDeveloperSubscriptions() {
   return useQuery({
     queryKey: ['developer-subscriptions'],
     queryFn: async () => {
-      const res = await apiClient.getDeveloperSubscriptions();
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperSubscriptions();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement abonnements dev:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -361,9 +497,15 @@ export function useDeveloperRevenues() {
   return useQuery({
     queryKey: developerKeys.revenues.all,
     queryFn: async () => {
-      const res = await apiClient.getDeveloperRevenues();
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperRevenues();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement revenus:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 
@@ -371,9 +513,15 @@ export function useDeveloperRevenueSummary() {
   return useQuery({
     queryKey: developerKeys.revenues.summary,
     queryFn: async () => {
-      const res = await apiClient.getDeveloperRevenueSummary();
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperRevenueSummary();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement resume revenus:', error);
+        return null;
+      }
     },
+    retry: false,
   });
 }
 
@@ -381,9 +529,15 @@ export function useDeveloperPayouts() {
   return useQuery({
     queryKey: developerKeys.payouts,
     queryFn: async () => {
-      const res = await apiClient.getDeveloperPayouts();
-      return res.data.data;
+      try {
+        const res = await apiClient.getDeveloperPayouts();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement retraits:', error);
+        return [];
+      }
     },
+    retry: false,
   });
 }
 

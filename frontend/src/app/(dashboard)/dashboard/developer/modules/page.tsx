@@ -4,9 +4,20 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Package, Search, Star, Download, DollarSign, Plus,
-  Eye, Edit3, Send, Archive, XCircle, Clock,
+  Package,
+  Search,
+  Star,
+  Download,
+  DollarSign,
+  Plus,
+  Eye,
+  Edit3,
+  Send,
+  Archive,
+  XCircle,
+  Clock,
 } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -15,11 +26,18 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
-import { useDeveloperModules, usePublishDeveloperModule, useUpdateDeveloperModule } from '@/features/developerHooks';
+import {
+  useDeveloperModules,
+  usePublishDeveloperModule,
+  useUpdateDeveloperModule,
+} from '@/features/developerHooks';
 import type { DeveloperModule } from '@/types/developer';
 import { MODULE_STATUS_LABELS, PRICING_LABELS } from '@/types/developer';
 
-const STATUS_VARIANT: Record<string, 'default' | 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'purple'> = {
+const STATUS_VARIANT: Record<
+  string,
+  'default' | 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'purple'
+> = {
   DRAFT: 'default',
   PENDING_REVIEW: 'warning',
   PUBLISHED: 'success',
@@ -44,36 +62,49 @@ export default function DeveloperModulesPage() {
 
   const moduleList = useMemo(() => {
     if (!modules) return [];
-    let list = Array.isArray(modules) ? modules : (modules.modules || modules.data || []);
+    let list = Array.isArray(modules) ? modules : modules.modules || modules.data || [];
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter((m: DeveloperModule) =>
-        m.name.toLowerCase().includes(q) ||
-        (m.category || '').toLowerCase().includes(q) ||
-        (m.shortDescription || '').toLowerCase().includes(q)
+      list = list.filter(
+        (m: DeveloperModule) =>
+          m.name.toLowerCase().includes(q) ||
+          (m.category || '').toLowerCase().includes(q) ||
+          (m.shortDescription || '').toLowerCase().includes(q)
       );
     }
     return list;
   }, [modules, search]);
 
-  const stats = useMemo(() => ({
-    total: moduleList.length,
-    published: moduleList.filter((m: DeveloperModule) => m.status === 'PUBLISHED').length,
-    pending: moduleList.filter((m: DeveloperModule) => m.status === 'PENDING_REVIEW' || m.status === 'DRAFT').length,
-    totalInstalls: moduleList.reduce((sum: number, m: DeveloperModule) => sum + (m.totalInstalls || 0), 0),
-  }), [moduleList]);
+  const stats = useMemo(
+    () => ({
+      total: moduleList.length,
+      published: moduleList.filter((m: DeveloperModule) => m.status === 'PUBLISHED').length,
+      pending: moduleList.filter(
+        (m: DeveloperModule) => m.status === 'PENDING_REVIEW' || m.status === 'DRAFT'
+      ).length,
+      totalInstalls: moduleList.reduce(
+        (sum: number, m: DeveloperModule) => sum + (m.totalInstalls || 0),
+        0
+      ),
+    }),
+    [moduleList]
+  );
 
   const handlePublish = async (id: string) => {
     try {
       await publishModule.mutateAsync(id);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleArchiveToggle = async (mod: DeveloperModule) => {
     try {
       const newStatus = mod.status === 'ARCHIVED' ? 'DRAFT' : 'ARCHIVED';
       await updateModule.mutateAsync({ id: mod.id, data: { status: newStatus } });
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -84,7 +115,9 @@ export default function DeveloperModulesPage() {
             key={star}
             className={cn(
               'h-3 w-3',
-              star <= Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-300 dark:text-gray-600'
+              star <= Math.round(rating)
+                ? 'text-amber-400 fill-amber-400'
+                : 'text-gray-300 dark:text-gray-600'
             )}
           />
         ))}
@@ -130,23 +163,21 @@ export default function DeveloperModulesPage() {
           ))}
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher un module..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none bg-transparent dark:text-gray-100"
-          />
-        </div>
+        <Input
+          icon={<Search className="h-4 w-4" />}
+          placeholder="Rechercher un module..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand"><Package className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand">
+              <Package className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
@@ -155,16 +186,22 @@ export default function DeveloperModulesPage() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600"><Package className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
+              <Package className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Publiés</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.published}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.published}
+              </p>
             </div>
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600"><Clock className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600">
+              <Clock className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">En attente</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.pending}</p>
@@ -173,10 +210,14 @@ export default function DeveloperModulesPage() {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600"><Download className="h-5 w-5" /></div>
+            <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600">
+              <Download className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Installations totales</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.totalInstalls}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.totalInstalls}
+              </p>
             </div>
           </div>
         </Card>
@@ -187,7 +228,9 @@ export default function DeveloperModulesPage() {
         <EmptyState
           icon={<Package className="h-12 w-12" />}
           title="Aucun module trouvé"
-          description={search ? 'Essayez une autre recherche.' : "Vous n'avez pas encore créé de module."}
+          description={
+            search ? 'Essayez une autre recherche.' : "Vous n'avez pas encore créé de module."
+          }
           action={
             !search ? (
               <Link href="/dashboard/developer/modules/publish">
@@ -204,17 +247,27 @@ export default function DeveloperModulesPage() {
           {moduleList.map((mod: DeveloperModule) => (
             <Card key={mod.id} padding="md" hoverable>
               <div className="flex items-start gap-3 mb-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-50 to-purple-50 dark:from-brand-900/30 dark:to-purple-900/30 border border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-brand-50 to-purple-50 dark:from-brand-900/30 dark:to-purple-900/30 border border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden shrink-0">
                   {mod.logo ? (
-                    <Image src={mod.logo ?? ''} alt={mod.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                    <Image
+                      src={mod.logo ?? ''}
+                      alt={mod.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
                   ) : (
                     <Package className="h-6 w-6 text-brand" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{mod.name}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    {mod.name}
+                  </h3>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">{mod.category || 'Non catégorisé'}</span>
+                    <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                      {mod.category || 'Non catégorisé'}
+                    </span>
                     <Badge variant={STATUS_VARIANT[mod.status] || 'default'} size="xs">
                       {MODULE_STATUS_LABELS[mod.status] || mod.status}
                     </Badge>
@@ -223,16 +276,26 @@ export default function DeveloperModulesPage() {
               </div>
 
               <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
-                <span className="flex items-center gap-1"><Download className="h-3 w-3" />{mod.totalInstalls || 0}</span>
+                <span className="flex items-center gap-1">
+                  <Download className="h-3 w-3" />
+                  {mod.totalInstalls || 0}
+                </span>
                 <span className="flex items-center gap-1">{renderStars(mod.rating || 0)}</span>
                 <span className="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300">
                   <DollarSign className="h-3 w-3" />
-                  {mod.price ? `${mod.price.toLocaleString()} FCFA` : PRICING_LABELS[mod.pricingType] || 'Gratuit'}
+                  {mod.price
+                    ? `${mod.price.toLocaleString()} FCFA`
+                    : PRICING_LABELS[mod.pricingType] || 'Gratuit'}
                 </span>
               </div>
 
               <p className="text-xs text-gray-400 mb-3">
-                Créé le {new Date(mod.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                Créé le{' '}
+                {new Date(mod.createdAt).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
               </p>
 
               <div className="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -269,11 +332,7 @@ export default function DeveloperModulesPage() {
                     Archiver
                   </Button>
                 ) : mod.status === 'ARCHIVED' ? (
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={() => handleArchiveToggle(mod)}
-                  >
+                  <Button variant="ghost" size="xs" onClick={() => handleArchiveToggle(mod)}>
                     <Package className="h-3 w-3 mr-1" />
                     Restaurer
                   </Button>

@@ -3,11 +3,19 @@
 import { useState } from 'react';
 
 import Link from 'next/link';
-import { 
-  RefreshCw, Package, Calendar, 
-  TrendingUp, Clock, MapPin, Star,
-  ShoppingBag, Megaphone, Film,
-  Sparkles, ArrowRight
+import {
+  RefreshCw,
+  Package,
+  Calendar,
+  TrendingUp,
+  Clock,
+  MapPin,
+  Star,
+  ShoppingBag,
+  Megaphone,
+  Film,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
@@ -24,7 +32,10 @@ const FEED_TABS = [
   { label: 'Réalisations', value: 'PORTFOLIO', icon: Film },
 ];
 
-const typeConfig: Record<string, { label: string; variant: 'brand' | 'success' | 'warning' | 'info' | 'purple' | 'default' }> = {
+const typeConfig: Record<
+  string,
+  { label: string; variant: 'brand' | 'success' | 'warning' | 'info' | 'purple' | 'default' }
+> = {
   PRODUCT: { label: 'Produit', variant: 'brand' },
   SERVICE: { label: 'Service', variant: 'info' },
   PROMOTION: { label: 'Promotion', variant: 'warning' },
@@ -38,7 +49,11 @@ export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data: feedData, isLoading, isFetching } = useFeedItems({
+  const {
+    data: feedData,
+    isLoading,
+    isFetching,
+  } = useFeedItems({
     types: activeTab || undefined,
     page,
     limit: 12,
@@ -76,7 +91,10 @@ export default function ExplorePage() {
           return (
             <button
               key={tab.value}
-              onClick={() => { setActiveTab(tab.value); setPage(1); }}
+              onClick={() => {
+                setActiveTab(tab.value);
+                setPage(1);
+              }}
               className={cn(
                 'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200',
                 isActive
@@ -95,7 +113,10 @@ export default function ExplorePage() {
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 overflow-hidden animate-pulse">
+            <div
+              key={i}
+              className="rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 overflow-hidden animate-pulse"
+            >
               <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700" />
               <div className="p-4 space-y-2">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
@@ -110,7 +131,9 @@ export default function ExplorePage() {
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
               <RefreshCw className="w-8 h-8 text-gray-300 dark:text-gray-600" />
             </div>
-            <p className="text-gray-500 dark:text-gray-400">Aucun contenu dans le feed pour le moment</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              Aucun contenu dans le feed pour le moment
+            </p>
             <p className="text-sm text-gray-400 dark:text-gray-500 max-w-md">
               Suivez des businesses pour voir leurs publications ici
             </p>
@@ -124,7 +147,9 @@ export default function ExplorePage() {
               return (
                 <Link
                   key={item.id}
-                  href={item.linkUrl || `/business/${item.business?.slug || item.businessId || item.id}`}
+                  href={
+                    item.linkUrl || `/business/${item.business?.slug || item.businessId || item.id}`
+                  }
                   className="group block animate-fade-in-up"
                   style={{ animationDelay: `${idx * 80}ms` }}
                 >
@@ -138,7 +163,6 @@ export default function ExplorePage() {
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                           sizes="(max-width: 768px) 100vw, 33vw"
-                          unoptimized
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -163,7 +187,6 @@ export default function ExplorePage() {
                                   width={24}
                                   height={24}
                                   className="object-cover"
-                                  unoptimized
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
@@ -221,7 +244,7 @@ export default function ExplorePage() {
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-6">
               <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
                 className="px-4 py-2 text-sm rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 disabled:opacity-50 hover:border-brand-300 transition-colors"
               >
@@ -231,7 +254,7 @@ export default function ExplorePage() {
                 Page {page} / {totalPages}
               </span>
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
                 className="px-4 py-2 text-sm rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 disabled:opacity-50 hover:border-brand-300 transition-colors"
               >

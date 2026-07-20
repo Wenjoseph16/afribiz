@@ -25,7 +25,12 @@ export default function SimilarBusinesses({ businessId, className }: SimilarBusi
 
   if (isLoading) {
     return (
-      <section className={cn('bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm', className)}>
+      <section
+        className={cn(
+          'bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm',
+          className
+        )}
+      >
         <div className="animate-pulse space-y-3">
           <div className="h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -41,7 +46,12 @@ export default function SimilarBusinesses({ businessId, className }: SimilarBusi
   if (!similar || similar.length === 0) return null;
 
   return (
-    <section className={cn('bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm', className)}>
+    <section
+      className={cn(
+        'bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm',
+        className
+      )}
+    >
       <div className="flex items-center gap-2 mb-4">
         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
           <Sparkles className="h-3.5 w-3.5 text-white" />
@@ -58,7 +68,13 @@ export default function SimilarBusinesses({ businessId, className }: SimilarBusi
           >
             <div className="relative w-10 h-10 rounded-lg bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/30 flex items-center justify-center text-sm font-bold text-brand shrink-0 overflow-hidden">
               {biz.logo ? (
-                <Image src={biz.logo ?? ''} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                <Image
+                  src={biz.logo ?? ''}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
               ) : (
                 (biz.name || 'B')[0]
               )}

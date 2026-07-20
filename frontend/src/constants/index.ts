@@ -2,19 +2,24 @@ export const APP_NAME = 'AfriBiz';
 export const APP_VERSION = '1.0.0';
 export const BRAND_COLOR = '#2D8A5B';
 
-export const USER_ROLES = {
-  CLIENT: 'client',
-  BUSINESS: 'business',
-  DEVELOPER: 'developer',
-  ADMIN: 'admin',
-} as const;
+export type NavItem = {
+  label: string;
+  href: string;
+  icon: string;
+  roles?: string[];
+  module?: string;
+};
 
-export const NAV_GROUPS = [
+export type NavGroup = {
+  label: string;
+  items: NavItem[];
+  roles?: string[];
+};
+
+export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Général',
-    items: [
-      { label: 'Tableau de bord', href: '/dashboard', icon: 'LayoutDashboard' },
-    ],
+    items: [{ label: 'Tableau de bord', href: '/dashboard', icon: 'LayoutDashboard' }],
   },
   {
     label: 'Activités',
@@ -30,7 +35,9 @@ export const NAV_GROUPS = [
   {
     label: 'Finances',
     items: [
-      { label: 'Paiements', href: '/dashboard/payments', icon: 'Wallet' },
+      { label: 'Portefeuille', href: '/dashboard/wallet', icon: 'Wallet' },
+      { label: 'Paiements', href: '/dashboard/payments', icon: 'CreditCard' },
+      { label: 'Factures & Devis', href: '/dashboard/invoices', icon: 'FileText' },
       { label: 'Escrow', href: '/dashboard/escrow', icon: 'Shield' },
     ],
   },
@@ -38,8 +45,13 @@ export const NAV_GROUPS = [
     label: 'Découverte',
     items: [
       { label: 'Marketplace', href: '/dashboard/explore', icon: 'Store' },
+      { label: 'Recherche intelligente', href: '/dashboard/smart-search', icon: 'Search' },
+      { label: 'Matching', href: '/dashboard/matching', icon: 'Layers' },
       { label: 'Favoris', href: '/dashboard/favorites', icon: 'Heart' },
       { label: 'Mes avis', href: '/dashboard/reviews', icon: 'Star' },
+      { label: 'Stories', href: '/dashboard/stories', icon: 'Sparkles' },
+      { label: 'Shorts', href: '/dashboard/shorts', icon: 'Film' },
+      { label: 'Lives', href: '/dashboard/lives', icon: 'Radio' },
     ],
   },
   {
@@ -71,4 +83,4 @@ export const NAV_GROUPS = [
       { label: 'Devenir Développeur', href: '/dashboard/become-developer', icon: 'Code' },
     ],
   },
-] as const;
+];

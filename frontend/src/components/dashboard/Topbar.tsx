@@ -4,14 +4,24 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Menu, Bell, LogOut, User, Settings, ChevronDown, Search, Moon, Sun, Command, ShoppingCart,
+  Menu,
+  LogOut,
+  User,
+  Settings,
+  ChevronDown,
+  Search,
+  Moon,
+  Sun,
+  Command,
+  ShoppingCart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/index';
 import { useAuthStore } from '@/stores/authStore';
 import { useTheme } from '@/components/ThemeProvider';
 import { Avatar } from '@/components/ui/Avatar';
-import { useUnreadCount, useCart } from '@/features/hooks';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { useCart } from '@/features/hooks';
 
 export function CartIconWithCount() {
   const { data: cartData, isLoading } = useCart();
@@ -19,7 +29,10 @@ export function CartIconWithCount() {
   const itemCount = cartItems.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
 
   return (
-    <Link href="/dashboard/cart" className="relative p-2.5 rounded-xl hover:bg-muted text-muted-foreground transition-colors">
+    <Link
+      href="/dashboard/cart"
+      className="relative p-2.5 rounded-xl hover:bg-muted text-muted-foreground transition-colors"
+    >
       <ShoppingCart className="h-4 w-4" />
       {!isLoading && itemCount > 0 && (
         <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-brand rounded-full ring-2 ring-background">
@@ -36,6 +49,7 @@ export function Topbar() {
   const { user, logout } = useAuthStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme, toggle: toggleTheme } = useTheme();
 
@@ -50,19 +64,31 @@ export function Topbar() {
   }, []);
 
   const handleLogout = async () => {
+    if (loggingOut) return; // Éviter les doubles clics
+    setLoggingOut(true);
     try {
-      const { apiClient } = await import('@/services/apiClient');
-      await apiClient.logout();
-    } catch (e) { console.error(e); }
+      await Promise.race([
+        fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+      ]);
+    } catch {
+      // Timeout ou erreur : on continue quand même
+    }
     logout();
-    router.replace('/login');
+    window.location.href = '/login';
   };
 
-  const { data: unreadData } = useUnreadCount();
-  const unreadCount = (unreadData as { count?: number } | undefined)?.count ?? 0;
-
   const initials = user
-    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'
+    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() ||
+      user.email?.[0]?.toUpperCase() ||
+      '?'
     : '?';
 
   return (
@@ -78,7 +104,9 @@ export function Topbar() {
           </button>
 
           <Link href="/" className="flex items-center gap-2">
-            <span className="font-bold text-lg text-brand dark:text-brand-400 hidden sm:block">AfriBiz</span>
+            <span className="font-bold text-lg text-brand dark:text-brand-400 hidden sm:block">
+              AfriBiz
+            </span>
           </Link>
 
           {/* Search bar */}
@@ -116,17 +144,7 @@ export function Topbar() {
           <CartIconWithCount />
 
           {/* Notifications */}
-          <Link
-            href="/dashboard/notifications"
-            className="relative p-2.5 rounded-xl hover:bg-muted text-muted-foreground transition-colors"
-          >
-            <Bell className="h-4 w-4" />
-            {unreadCount > 0 ? (
-              <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-destructive rounded-full ring-2 ring-background">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            ) : null}
-          </Link>
+          <NotificationBell />
 
           {/* User menu */}
           <div className="relative" ref={menuRef}>
@@ -134,18 +152,19 @@ export function Topbar() {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2.5 p-1.5 pl-2.5 rounded-xl hover:bg-muted transition-colors ml-1"
             >
-              <Avatar
-                initials={initials}
-                size="sm"
-                status="online"
-              />
+              <Avatar initials={initials} size="sm" status="online" />
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-foreground leading-tight">
                   {user ? `${user.firstName} ${user.lastName}` : 'Client'}
                 </p>
                 <p className="text-[11px] text-muted-foreground">{user?.email || ''}</p>
               </div>
-              <ChevronDown className={cn('hidden md:block h-4 w-4 text-muted-foreground transition-transform duration-200', showUserMenu && 'rotate-180')} />
+              <ChevronDown
+                className={cn(
+                  'hidden md:block h-4 w-4 text-muted-foreground transition-transform duration-200',
+                  showUserMenu && 'rotate-180'
+                )}
+              />
             </button>
 
             {showUserMenu && (
@@ -180,10 +199,11 @@ export function Topbar() {
                 <div className="border-t border-border mt-1 pt-1">
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    disabled={loggingOut}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <LogOut className="h-4 w-4" />
-                    Déconnexion
+                    {loggingOut ? 'Déconnexion...' : 'Déconnexion'}
                   </button>
                 </div>
               </div>

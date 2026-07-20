@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
     } catch (error: any) {
       notify({
         title: 'Erreur',
-        description: error?.response?.data?.error || 'Impossible d\'envoyer l\'email.',
+        description: error?.response?.data?.error || "Impossible d'envoyer l'email.",
         variant: 'error',
       });
     } finally {
@@ -95,9 +95,12 @@ export default function ForgotPasswordPage() {
                   <Send className="w-7 h-7 text-brand" />
                 </div>
                 <div>
-                  <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg">Email envoyé !</p>
+                  <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg">
+                    Email envoyé !
+                  </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-                    Vérifiez votre boîte de réception et suivez les instructions. Si vous ne trouvez pas l&apos;email, vérifiez vos spams.
+                    Vérifiez votre boîte de réception et suivez les instructions. Si vous ne trouvez
+                    pas l&apos;email, vérifiez vos spams.
                   </p>
                 </div>
                 <Link

@@ -33,7 +33,8 @@ export default function PerformancePage() {
   if (!metrics) return null;
 
   const avgPerModule = metrics.totalModules > 0 ? metrics.totalRevenue / metrics.totalModules : 0;
-  const formatCFA = (v: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v) + ' FCFA';
+  const formatCFA = (v: number) =>
+    new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v) + ' FCFA';
 
   const cards = [
     {
@@ -82,13 +83,21 @@ export default function PerformancePage() {
         {cards.map((c) => (
           <Card key={c.label} padding="md">
             <div className="flex items-center justify-between mb-3">
-              <div className={cn('p-2.5 rounded-lg', c.color)}><c.icon className="h-5 w-5" /></div>
+              <div className={cn('p-2.5 rounded-lg', c.color)}>
+                <c.icon className="h-5 w-5" />
+              </div>
               {c.trend && (
-                <span className={cn(
-                  'inline-flex items-center gap-0.5 text-xs font-semibold',
-                  c.trend.positive ? 'text-emerald-600' : 'text-red-600',
-                )}>
-                  {c.trend.positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-0.5 text-xs font-semibold',
+                    c.trend.positive ? 'text-emerald-600' : 'text-red-600'
+                  )}
+                >
+                  {c.trend.positive ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
                   {c.trend.value}
                 </span>
               )}
@@ -101,23 +110,50 @@ export default function PerformancePage() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card padding="lg">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Vue d&apos;ensemble</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Vue d&apos;ensemble
+          </h3>
           <div className="space-y-4">
             {[
-              { label: 'Modules publiés', value: metrics.publishedModules, max: Math.max(metrics.totalModules, 1), color: 'bg-brand' },
-              { label: 'Modules total', value: metrics.totalModules, max: Math.max(metrics.totalModules, 1), color: 'bg-gray-400' },
-              { label: 'Revenu du mois', value: metrics.thisMonthRevenue, max: Math.max(metrics.totalRevenue, 1), color: 'bg-emerald-400' },
-              { label: 'Note moyenne', value: metrics.averageRating, max: 5, color: 'bg-amber-400' },
+              {
+                label: 'Modules publiés',
+                value: metrics.publishedModules,
+                max: Math.max(metrics.totalModules, 1),
+                color: 'bg-brand',
+              },
+              {
+                label: 'Modules total',
+                value: metrics.totalModules,
+                max: Math.max(metrics.totalModules, 1),
+                color: 'bg-gray-400',
+              },
+              {
+                label: 'Revenu du mois',
+                value: metrics.thisMonthRevenue,
+                max: Math.max(metrics.totalRevenue, 1),
+                color: 'bg-emerald-400',
+              },
+              {
+                label: 'Note moyenne',
+                value: metrics.averageRating,
+                max: 5,
+                color: 'bg-amber-400',
+              },
             ].map((m) => (
               <div key={m.label}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-500 dark:text-gray-400">{m.label}</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {typeof m.value === 'number' && m.label === 'Revenu du mois' ? formatCFA(m.value) : m.value}
+                    {typeof m.value === 'number' && m.label === 'Revenu du mois'
+                      ? formatCFA(m.value)
+                      : m.value}
                   </span>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div className={cn('h-full rounded-full', m.color)} style={{ width: `${(Number(m.value) / m.max) * 100}%` }} />
+                  <div
+                    className={cn('h-full rounded-full', m.color)}
+                    style={{ width: `${(Number(m.value) / m.max) * 100}%` }}
+                  />
                 </div>
               </div>
             ))}
@@ -125,7 +161,9 @@ export default function PerformancePage() {
         </Card>
 
         <Card padding="lg">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Répartition des revenus</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Répartition des revenus
+          </h3>
           <div className="space-y-4">
             {[
               { label: 'Ventes uniques', value: 60, color: 'bg-brand' },
@@ -136,10 +174,15 @@ export default function PerformancePage() {
               <div key={item.label}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-500 dark:text-gray-400">{item.label}</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{item.value}%</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {item.value}%
+                  </span>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div className={cn('h-full rounded-full', item.color)} style={{ width: `${item.value}%` }} />
+                  <div
+                    className={cn('h-full rounded-full', item.color)}
+                    style={{ width: `${item.value}%` }}
+                  />
                 </div>
               </div>
             ))}
@@ -147,15 +190,22 @@ export default function PerformancePage() {
         </Card>
 
         <Card padding="lg">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Note par étoiles</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            Note par étoiles
+          </h3>
           <div className="space-y-2">
             {[5, 4, 3, 2, 1].map((star) => {
               const pct = star === 5 ? 55 : star === 4 ? 25 : star === 3 ? 12 : star === 2 ? 5 : 3;
               return (
                 <div key={star} className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500 dark:text-gray-400 w-12">{star} étoile{star > 1 ? 's' : ''}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400 w-12">
+                    {star} étoile{star > 1 ? 's' : ''}
+                  </span>
                   <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} />
+                    <div
+                      className="h-full bg-amber-400 rounded-full"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                   <span className="text-xs text-gray-400 w-8 text-right">{pct}%</span>
                 </div>
@@ -169,7 +219,11 @@ export default function PerformancePage() {
           <div className="space-y-4">
             {[
               { label: 'Atteindre 100 installations', current: metrics.totalInstalls, target: 100 },
-              { label: 'Note moyenne ≥ 4.5', current: Math.round(metrics.averageRating * 10), target: 45 },
+              {
+                label: 'Note moyenne ≥ 4.5',
+                current: Math.round(metrics.averageRating * 10),
+                target: 45,
+              },
               { label: 'Générer 1 000 000 FCFA', current: metrics.totalRevenue, target: 1000000 },
             ].map((o) => {
               const pct = Math.min(100, Math.round((o.current / o.target) * 100));
@@ -177,12 +231,23 @@ export default function PerformancePage() {
                 <div key={o.label}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-500 dark:text-gray-400">{o.label}</span>
-                    <span className={cn('font-semibold', pct >= 100 ? 'text-emerald-600' : 'text-gray-700 dark:text-gray-300')}>
+                    <span
+                      className={cn(
+                        'font-semibold',
+                        pct >= 100 ? 'text-emerald-600' : 'text-gray-700 dark:text-gray-300'
+                      )}
+                    >
                       {pct}%
                     </span>
                   </div>
                   <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                    <div className={cn('h-full rounded-full transition-all', pct >= 100 ? 'bg-emerald-400' : 'bg-brand')} style={{ width: `${pct}%` }} />
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all',
+                        pct >= 100 ? 'bg-emerald-400' : 'bg-brand'
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                 </div>
               );

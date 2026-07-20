@@ -4,8 +4,16 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import {
-  Trophy, Star, Award, RefreshCw, ScrollText,
-  History, ShieldAlert, Edit3, Save, X,
+  Trophy,
+  Star,
+  Award,
+  RefreshCw,
+  ScrollText,
+  History,
+  ShieldAlert,
+  Edit3,
+  Save,
+  X,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -56,7 +64,9 @@ export default function AdminAfriScorePage() {
   const { data: badgesData, isLoading: badgesLoading } = useQuery({
     queryKey: ['admin', 'afriscore', 'badges', badgePage],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/afriscore/badges', { params: { page: badgePage, limit } });
+      const res = await apiClient.get('/admin/afriscore/badges', {
+        params: { page: badgePage, limit },
+      });
       return res.data.data;
     },
   });
@@ -64,7 +74,9 @@ export default function AdminAfriScorePage() {
   const { data: historyData, isLoading: historyLoading } = useQuery({
     queryKey: ['admin', 'afriscore', 'history', historyPage],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/afriscore/history', { params: { page: historyPage, limit } });
+      const res = await apiClient.get('/admin/afriscore/history', {
+        params: { page: historyPage, limit },
+      });
       return res.data.data;
     },
   });
@@ -72,7 +84,9 @@ export default function AdminAfriScorePage() {
   const { data: auditData, isLoading: auditLoading } = useQuery({
     queryKey: ['admin', 'afriscore', 'audit', auditPage],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/afriscore/audit', { params: { page: auditPage, limit } });
+      const res = await apiClient.get('/admin/afriscore/audit', {
+        params: { page: auditPage, limit },
+      });
       return res.data.data;
     },
   });
@@ -92,16 +106,20 @@ export default function AdminAfriScorePage() {
     },
   });
 
-  const rules = Array.isArray(rulesData) ? rulesData : rulesData?.rules ?? [];
-  const badges = Array.isArray(badgesData) ? badgesData : badgesData?.badges ?? badgesData?.data ?? [];
+  const rules = Array.isArray(rulesData) ? rulesData : (rulesData?.rules ?? []);
+  const badges = Array.isArray(badgesData)
+    ? badgesData
+    : (badgesData?.badges ?? badgesData?.data ?? []);
   const totalBadges = badgesData?.total ?? badgesData?.count ?? badges.length;
   const totalBadgePages = Math.ceil(totalBadges / limit) || 1;
 
-  const history = Array.isArray(historyData) ? historyData : historyData?.history ?? historyData?.data ?? [];
+  const history = Array.isArray(historyData)
+    ? historyData
+    : (historyData?.history ?? historyData?.data ?? []);
   const totalHistory = historyData?.total ?? historyData?.count ?? history.length;
   const totalHistoryPages = Math.ceil(totalHistory / limit) || 1;
 
-  const audit = Array.isArray(auditData) ? auditData : auditData?.audit ?? auditData?.data ?? [];
+  const audit = Array.isArray(auditData) ? auditData : (auditData?.audit ?? auditData?.data ?? []);
   const totalAudit = auditData?.total ?? auditData?.count ?? audit.length;
   const totalAuditPages = Math.ceil(totalAudit / limit) || 1;
 
@@ -253,7 +271,12 @@ export default function AdminAfriScorePage() {
                     <X className="h-3.5 w-3.5" />
                     Annuler
                   </Button>
-                  <Button variant="primary" size="xs" onClick={handleSaveWeights} isLoading={saveWeightsMutation.isPending}>
+                  <Button
+                    variant="primary"
+                    size="xs"
+                    onClick={handleSaveWeights}
+                    isLoading={saveWeightsMutation.isPending}
+                  >
                     <Save className="h-3.5 w-3.5" />
                     Enregistrer
                   </Button>
@@ -280,11 +303,15 @@ export default function AdminAfriScorePage() {
                         {component.label}
                       </h3>
                       <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand">
-                        {editingWeights ? weights[key] ?? component.defaultWeight ?? component.weight : component.weight ?? component.defaultWeight} pts
+                        {editingWeights
+                          ? (weights[key] ?? component.defaultWeight ?? component.weight)
+                          : (component.weight ?? component.defaultWeight)}{' '}
+                        pts
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                      {component.description || `Score basé sur la ${component.label.toLowerCase()}`}
+                      {component.description ||
+                        `Score basé sur la ${component.label.toLowerCase()}`}
                     </p>
                     {editingWeights && (
                       <div className="flex items-center gap-2">
@@ -293,7 +320,12 @@ export default function AdminAfriScorePage() {
                           min={0}
                           max={1000}
                           value={weights[key] ?? component.defaultWeight ?? component.weight ?? 0}
-                          onChange={(e) => setWeights((prev) => ({ ...prev, [key]: parseInt(e.target.value) || 0 }))}
+                          onChange={(e) =>
+                            setWeights((prev) => ({
+                              ...prev,
+                              [key]: parseInt(e.target.value) || 0,
+                            }))
+                          }
                           className="w-full px-3 py-1.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all"
                         />
                       </div>
@@ -302,7 +334,9 @@ export default function AdminAfriScorePage() {
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div
                           className="h-2 rounded-full bg-brand transition-all"
-                          style={{ width: `${((component.weight ?? component.defaultWeight ?? 200) / 1000) * 100}%` }}
+                          style={{
+                            width: `${((component.weight ?? component.defaultWeight ?? 200) / 1000) * 100}%`,
+                          }}
                         />
                       </div>
                     )}
@@ -332,8 +366,12 @@ export default function AdminAfriScorePage() {
                   <div className="flex items-start gap-3">
                     <div className="text-2xl">{badge.icon || '🏆'}</div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{badge.name}</h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{badge.description || '-'}</p>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {badge.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {badge.description || '-'}
+                      </p>
                       <div className="flex items-center gap-3 mt-2">
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
                           Seuil: {badge.threshold ?? badge.minScore ?? '-'}
@@ -355,10 +393,20 @@ export default function AdminAfriScorePage() {
                 Page {badgePage} sur {totalBadgePages}
               </p>
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" disabled={badgePage <= 1} onClick={() => setBadgePage((p) => Math.max(1, p - 1))}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={badgePage <= 1}
+                  onClick={() => setBadgePage((p) => Math.max(1, p - 1))}
+                >
                   Précédent
                 </Button>
-                <Button variant="secondary" size="sm" disabled={badgePage >= totalBadgePages} onClick={() => setBadgePage((p) => p + 1)}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={badgePage >= totalBadgePages}
+                  onClick={() => setBadgePage((p) => p + 1)}
+                >
                   Suivant
                 </Button>
               </div>
@@ -393,11 +441,18 @@ export default function AdminAfriScorePage() {
                 </thead>
                 <tbody>
                   {history.map((entry: any) => {
-                    const diff = (entry.newScore ?? entry.new_value ?? 0) - (entry.oldScore ?? entry.old_value ?? 0);
+                    const diff =
+                      (entry.newScore ?? entry.new_value ?? 0) -
+                      (entry.oldScore ?? entry.old_value ?? 0);
                     return (
-                      <tr key={entry.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                      <tr
+                        key={entry.id}
+                        className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                      >
                         <td className="p-3 text-gray-900 dark:text-gray-100">
-                          {entry.createdAt ? new Date(entry.createdAt).toLocaleString('fr-FR') : '-'}
+                          {entry.createdAt
+                            ? new Date(entry.createdAt).toLocaleString('fr-FR')
+                            : '-'}
                         </td>
                         <td className="p-3 font-medium text-gray-900 dark:text-gray-100">
                           {entry.business?.name || entry.businessId?.slice(0, 12) || '-'}
@@ -405,11 +460,16 @@ export default function AdminAfriScorePage() {
                         <td className="p-3">{entry.oldScore ?? entry.old_value ?? '-'}</td>
                         <td className="p-3">{entry.newScore ?? entry.new_value ?? '-'}</td>
                         <td className="p-3">
-                          <span className={`text-xs font-medium ${diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                            {diff > 0 ? '+' : ''}{diff}
+                          <span
+                            className={`text-xs font-medium ${diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-600' : 'text-gray-400'}`}
+                          >
+                            {diff > 0 ? '+' : ''}
+                            {diff}
                           </span>
                         </td>
-                        <td className="p-3 text-gray-500 dark:text-gray-400">{entry.reason || entry.changedBy || '-'}</td>
+                        <td className="p-3 text-gray-500 dark:text-gray-400">
+                          {entry.reason || entry.changedBy || '-'}
+                        </td>
                       </tr>
                     );
                   })}
@@ -424,10 +484,20 @@ export default function AdminAfriScorePage() {
                 Page {historyPage} sur {totalHistoryPages}
               </p>
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" disabled={historyPage <= 1} onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={historyPage <= 1}
+                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                >
                   Précédent
                 </Button>
-                <Button variant="secondary" size="sm" disabled={historyPage >= totalHistoryPages} onClick={() => setHistoryPage((p) => p + 1)}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={historyPage >= totalHistoryPages}
+                  onClick={() => setHistoryPage((p) => p + 1)}
+                >
                   Suivant
                 </Button>
               </div>
@@ -461,7 +531,10 @@ export default function AdminAfriScorePage() {
                 </thead>
                 <tbody>
                   {audit.map((entry: any) => (
-                    <tr key={entry.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                    <tr
+                      key={entry.id}
+                      className="border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                    >
                       <td className="p-3 text-gray-900 dark:text-gray-100">
                         {entry.createdAt ? new Date(entry.createdAt).toLocaleString('fr-FR') : '-'}
                       </td>
@@ -473,8 +546,12 @@ export default function AdminAfriScorePage() {
                       <td className="p-3 text-gray-700 dark:text-gray-300">
                         {entry.user?.name || entry.user?.email || entry.userId?.slice(0, 8) || '-'}
                       </td>
-                      <td className="p-3 text-gray-500 dark:text-gray-400">{entry.target || entry.businessId?.slice(0, 8) || '-'}</td>
-                      <td className="p-3 text-gray-500 dark:text-gray-400 max-w-[200px] truncate">{entry.details || entry.description || '-'}</td>
+                      <td className="p-3 text-gray-500 dark:text-gray-400">
+                        {entry.target || entry.businessId?.slice(0, 8) || '-'}
+                      </td>
+                      <td className="p-3 text-gray-500 dark:text-gray-400 max-w-[200px] truncate">
+                        {entry.details || entry.description || '-'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -488,10 +565,20 @@ export default function AdminAfriScorePage() {
                 Page {auditPage} sur {totalAuditPages}
               </p>
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" disabled={auditPage <= 1} onClick={() => setAuditPage((p) => Math.max(1, p - 1))}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={auditPage <= 1}
+                  onClick={() => setAuditPage((p) => Math.max(1, p - 1))}
+                >
                   Précédent
                 </Button>
-                <Button variant="secondary" size="sm" disabled={auditPage >= totalAuditPages} onClick={() => setAuditPage((p) => p + 1)}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={auditPage >= totalAuditPages}
+                  onClick={() => setAuditPage((p) => p + 1)}
+                >
                   Suivant
                 </Button>
               </div>

@@ -13,8 +13,13 @@ export function useSimulationEnvironments() {
 
 export function useTestEndpoint() {
   return useMutation({
-    mutationFn: ({ moduleSlug, data }: { moduleSlug: string; data: { endpoint: string; method: string; body?: any } }) =>
-      apiClient.testSimulationEndpoint(moduleSlug, data),
+    mutationFn: ({
+      moduleSlug,
+      data,
+    }: {
+      moduleSlug: string;
+      data: { endpoint: string; method: string; body?: any };
+    }) => apiClient.testSimulationEndpoint(moduleSlug, data),
   });
 }
 

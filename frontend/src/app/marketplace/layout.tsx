@@ -4,8 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Menu, X, Search, Bell, User, ChevronDown,
-  ShoppingBag, Store, MessageCircle, LogIn, Plus,
+  Menu,
+  X,
+  Search,
+  Bell,
+  User,
+  ChevronDown,
+  ShoppingBag,
+  Store,
+  MessageCircle,
+  LogIn,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -33,17 +42,21 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <header className={cn(
-        'sticky top-0 z-50 transition-all duration-300',
-        scrolled
-          ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-sm border-b border-gray-200/50 dark:border-gray-800/50'
-          : 'bg-white dark:bg-gray-900'
-      )}>
+      <header
+        className={cn(
+          'sticky top-0 z-50 transition-all duration-300',
+          scrolled
+            ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-sm border-b border-gray-200/50 dark:border-gray-800/50'
+            : 'bg-white dark:bg-gray-900'
+        )}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-8">
               <Link href="/" className="flex items-center gap-2.5">
-                <span className="font-bold text-lg text-gray-900 dark:text-white tracking-tight">AfriBiz</span>
+                <span className="font-bold text-lg text-gray-900 dark:text-white tracking-tight">
+                  AfriBiz
+                </span>
               </Link>
 
               <nav className="hidden lg:flex items-center gap-1">
@@ -71,7 +84,9 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
               >
                 <Search className="h-4 w-4 shrink-0" />
                 <span className="truncate">Rechercher...</span>
-                <span className="ml-auto text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">⌘K</span>
+                <span className="ml-auto text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                  ⌘K
+                </span>
               </Link>
 
               <ThemeToggle />
@@ -82,19 +97,28 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
               </button>
 
               {user ? (
-                <Link href="/dashboard" className={cn(
-                  'hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all',
-                  'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'
-                )}>
+                <Link
+                  href="/dashboard"
+                  className={cn(
+                    'hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all',
+                    'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30'
+                  )}
+                >
                   <User className="h-4 w-4" />
                   Dashboard
                 </Link>
               ) : (
                 <div className="hidden sm:flex items-center gap-2">
-                  <Link href="/auth/login" className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                  <Link
+                    href="/auth/login"
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
                     Connexion
                   </Link>
-                  <Link href="/auth/signup" className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30">
+                  <Link
+                    href="/auth/signup"
+                    className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30"
+                  >
                     Créer mon business
                   </Link>
                 </div>
@@ -111,7 +135,7 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
         </div>
 
         {mobileOpen && (
-          <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-fadeIn">
+          <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 animate-fade-in">
             <div className="px-4 py-3 space-y-1">
               {NAV_LINKS.map((link) => (
                 <Link
@@ -130,17 +154,29 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
               ))}
               <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
                 {user ? (
-                  <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium bg-emerald-600 text-white">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium bg-emerald-600 text-white"
+                  >
                     <Store className="h-4 w-4" />
                     Dashboard
                   </Link>
                 ) : (
                   <>
-                    <Link href="/auth/login" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <Link
+                      href="/auth/login"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
                       <LogIn className="h-4 w-4" />
                       Connexion
                     </Link>
-                    <Link href="/auth/signup" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium bg-emerald-600 text-white mt-1">
+                    <Link
+                      href="/auth/signup"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium bg-emerald-600 text-white mt-1"
+                    >
                       <Plus className="h-4 w-4" />
                       Créer mon business
                     </Link>
@@ -162,16 +198,28 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
                 <span className="font-bold text-base text-white">AfriBiz</span>
               </div>
               <p className="text-sm leading-relaxed">
-                La plateforme qui connecte les professionnels africains à leurs clients. 
-                Découvrez, commandez et réservez localement.
+                La plateforme qui connecte les professionnels africains à leurs clients. Découvrez,
+                commandez et réservez localement.
               </p>
             </div>
 
             <div>
               <h4 className="text-sm font-semibold text-white mb-4">Plateforme</h4>
               <div className="space-y-2.5">
-                {['Marketplace', 'Tarifs', 'Pour les business', 'Devenir développeur', 'API'].map((item) => (
-                  <Link key={item} href="#" className="block text-sm hover:text-white transition-colors">{item}</Link>
+                {[
+                  { label: 'Marketplace', href: '/marketplace' },
+                  { label: 'Tarifs', href: '/pricing' },
+                  { label: 'Pour les business', href: '/dashboard/become-business' },
+                  { label: 'Devenir développeur', href: '/dashboard/become-developer' },
+                  { label: 'API', href: '/developers' },
+                ].map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="block text-sm hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
                 ))}
               </div>
             </div>
@@ -179,8 +227,20 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
             <div>
               <h4 className="text-sm font-semibold text-white mb-4">Support</h4>
               <div className="space-y-2.5">
-                {['Aide', 'Contact', 'FAQ', 'Conditions d\'utilisation', 'Politique de confidentialité'].map((item) => (
-                  <Link key={item} href="#" className="block text-sm hover:text-white transition-colors">{item}</Link>
+                {[
+                  { label: 'Aide', href: '/contact' },
+                  { label: 'Contact', href: '/contact' },
+                  { label: 'FAQ', href: '/faq' },
+                  { label: "Conditions d'utilisation", href: '/terms' },
+                  { label: 'Politique de confidentialité', href: '/privacy' },
+                ].map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="block text-sm hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
                 ))}
               </div>
             </div>
@@ -196,18 +256,32 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
                   { name: 'Sénégal', code: '/sn/marketplace' },
                   { name: 'Nigeria', code: '/ng/marketplace' },
                 ].map((item) => (
-                  <Link key={item.name} href={item.code} className="block text-sm hover:text-white transition-colors">{item.name}</Link>
+                  <Link
+                    key={item.name}
+                    href={item.code}
+                    className="block text-sm hover:text-white transition-colors"
+                  >
+                    {item.name}
+                  </Link>
                 ))}
               </div>
             </div>
           </div>
 
           <div className="mt-10 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs">&copy; {new Date().getFullYear()} AfriBiz. Tous droits réservés.</p>
+            <p className="text-xs">
+              &copy; {new Date().getFullYear()} AfriBiz. Tous droits réservés.
+            </p>
             <div className="flex items-center gap-4 text-xs">
-              <Link href="#" className="hover:text-white transition-colors">Confidentialité</Link>
-              <Link href="#" className="hover:text-white transition-colors">CGU</Link>
-              <Link href="#" className="hover:text-white transition-colors">Cookies</Link>
+              <Link href="/privacy" className="hover:text-white transition-colors">
+                Confidentialité
+              </Link>
+              <Link href="/terms" className="hover:text-white transition-colors">
+                CGU
+              </Link>
+              <Link href="/legal" className="hover:text-white transition-colors">
+                Cookies
+              </Link>
             </div>
           </div>
         </div>

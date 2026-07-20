@@ -3,9 +3,20 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Plus, Search, Columns, List, CalendarDays, Clock, Loader,
-  AlertTriangle, CheckCircle2, Users, BarChart3, TrendingUp,
-  Timer, GanttChartSquare,
+  Plus,
+  Search,
+  Columns,
+  List,
+  CalendarDays,
+  Clock,
+  Loader,
+  AlertTriangle,
+  CheckCircle2,
+  Users,
+  BarChart3,
+  TrendingUp,
+  Timer,
+  GanttChartSquare,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -18,7 +29,15 @@ import { apiClient } from '@/services/apiClient';
 
 type ViewMode = 'kanban' | 'list' | 'calendar' | 'timeline';
 
-const columnOrder = ['TODO', 'IN_PROGRESS', 'ON_HOLD', 'VALIDATION', 'DONE', 'BLOCKED', 'CANCELLED'];
+const columnOrder = [
+  'TODO',
+  'IN_PROGRESS',
+  'ON_HOLD',
+  'VALIDATION',
+  'DONE',
+  'BLOCKED',
+  'CANCELLED',
+];
 
 const columnLabels: Record<string, string> = {
   TODO: 'À faire',
@@ -94,7 +113,11 @@ function getMonthGrid(year: number, month: number) {
 }
 
 function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function isOverdue(dueDate: string) {
@@ -109,7 +132,9 @@ export default function TasksPage() {
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
-  const { data: kanbanData, isLoading: kanbanLoading } = useKanbanBoard(debouncedSearch);
+  const { data: kanbanData, isLoading: kanbanLoading } = useKanbanBoard({
+    search: debouncedSearch || undefined,
+  });
   const { data: statsData, isLoading: statsLoading } = useTaskStats();
 
   const columns = (kanbanData as any)?.columns || {};
@@ -127,17 +152,27 @@ export default function TasksPage() {
     setTimeout(() => setDebouncedSearch(val), 300);
   };
 
-  const monthGrid = useMemo(() => getMonthGrid(calendarYear, calendarMonth), [calendarYear, calendarMonth]);
-  const monthLabel = new Date(calendarYear, calendarMonth).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const monthGrid = useMemo(
+    () => getMonthGrid(calendarYear, calendarMonth),
+    [calendarYear, calendarMonth]
+  );
+  const monthLabel = new Date(calendarYear, calendarMonth).toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric',
+  });
 
   const prevMonth = () => {
-    if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear((y) => y - 1); }
-    else setCalendarMonth((m) => m - 1);
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear((y) => y - 1);
+    } else setCalendarMonth((m) => m - 1);
     setSelectedDay(null);
   };
   const nextMonth = () => {
-    if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear((y) => y + 1); }
-    else setCalendarMonth((m) => m + 1);
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear((y) => y + 1);
+    } else setCalendarMonth((m) => m + 1);
     setSelectedDay(null);
   };
 
@@ -149,13 +184,18 @@ export default function TasksPage() {
     return allTasks.filter((t: any) => t.dueDate && isSameDay(new Date(t.dueDate), selectedDay));
   }, [selectedDay, allTasks]);
 
-  const getTasksForDay = (day: Date) => allTasks.filter((t: any) => t.dueDate && isSameDay(new Date(t.dueDate), day));
+  const getTasksForDay = (day: Date) =>
+    allTasks.filter((t: any) => t.dueDate && isSameDay(new Date(t.dueDate), day));
 
   const todayDate = new Date().toDateString();
-  const tasksToday = allTasks.filter((t: any) => t.dueDate && new Date(t.dueDate).toDateString() === todayDate).length;
+  const tasksToday = allTasks.filter(
+    (t: any) => t.dueDate && new Date(t.dueDate).toDateString() === todayDate
+  ).length;
   const urgentCount = allTasks.filter((t: any) => t.priority === 'URGENT').length;
   const doneCount = allTasks.filter((t: any) => t.status === 'DONE').length;
-  const overdueCount = allTasks.filter((t: any) => t.status !== 'DONE' && t.dueDate && isOverdue(t.dueDate)).length;
+  const overdueCount = allTasks.filter(
+    (t: any) => t.status !== 'DONE' && t.dueDate && isOverdue(t.dueDate)
+  ).length;
   const completionRate = allTasks.length > 0 ? Math.round((doneCount / allTasks.length) * 100) : 0;
 
   const isLoading = kanbanLoading || statsLoading;
@@ -168,8 +208,6 @@ export default function TasksPage() {
     );
   }
 
-
-
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
@@ -178,7 +216,9 @@ export default function TasksPage() {
         gradient
         actions={
           <Link href="/dashboard/tasks/new">
-            <Button><Plus className="h-4 w-4" /> Nouvelle tâche</Button>
+            <Button>
+              <Plus className="h-4 w-4" /> Nouvelle tâche
+            </Button>
           </Link>
         }
       />
@@ -248,7 +288,15 @@ export default function TasksPage() {
                       ? 'bg-white dark:bg-gray-700 shadow-sm text-brand'
                       : 'text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                   )}
-                  title={m === 'kanban' ? 'Kanban' : m === 'list' ? 'Liste' : m === 'calendar' ? 'Calendrier' : 'Timeline'}
+                  title={
+                    m === 'kanban'
+                      ? 'Kanban'
+                      : m === 'list'
+                        ? 'Liste'
+                        : m === 'calendar'
+                          ? 'Calendrier'
+                          : 'Timeline'
+                  }
                 >
                   <Icon className="h-4 w-4" />
                 </button>
@@ -256,7 +304,9 @@ export default function TasksPage() {
             })}
           </div>
           <Link href="/dashboard/tasks/new">
-            <Button size="sm"><Plus className="h-4 w-4" /> Nouvelle tâche</Button>
+            <Button size="sm">
+              <Plus className="h-4 w-4" /> Nouvelle tâche
+            </Button>
           </Link>
         </div>
       </div>
@@ -303,8 +353,12 @@ function KanbanView({ columns, allTasks }: { columns: Record<string, any>; allTa
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center">
             <Columns className="h-8 w-8 text-gray-300 dark:text-gray-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Aucune tâche</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Commencez par créer une nouvelle tâche.</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+            Aucune tâche
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Commencez par créer une nouvelle tâche.
+          </p>
         </div>
       </Card>
     );
@@ -318,8 +372,12 @@ function KanbanView({ columns, allTasks }: { columns: Record<string, any>; allTa
         return (
           <div key={colId} className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{columnLabels[colId]}</h3>
-              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{colTasks.length}</span>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {columnLabels[colId]}
+              </h3>
+              <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                {colTasks.length}
+              </span>
             </div>
             <div className="space-y-2 min-h-[200px]">
               {colTasks.map((task: any) => (
@@ -351,20 +409,30 @@ function TaskCard({ task }: { task: any }) {
       )}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">{task.title}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">
+          {task.title}
+        </p>
         {task.priority && (
-          <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0', priorityBadge[task.priority] || '')}>
+          <span
+            className={cn(
+              'text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0',
+              priorityBadge[task.priority] || ''
+            )}
+          >
             {task.priority}
           </span>
         )}
       </div>
       {task.description && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
+          {task.description}
+        </p>
       )}
       <div className="flex items-center justify-between text-[11px] text-gray-400">
         <span>
           {task.assignee
-            ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() || 'Non assigné'
+            ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() ||
+              'Non assigné'
             : 'Non assigné'}
         </span>
         {task.dueDate && (
@@ -386,7 +454,9 @@ function ListView({ tasks }: { tasks: any[] }) {
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center">
             <List className="h-8 w-8 text-gray-300 dark:text-gray-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Aucune tâche</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+            Aucune tâche
+          </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">Aucune tâche trouvée.</p>
         </div>
       </Card>
@@ -399,47 +469,84 @@ function ListView({ tasks }: { tasks: any[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Tâche</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Priorité</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Statut</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Assigné à</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Échéance</th>
-              <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">Actions</th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">
+                Tâche
+              </th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">
+                Priorité
+              </th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">
+                Statut
+              </th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">
+                Assigné à
+              </th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">
+                Échéance
+              </th>
+              <th className="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {tasks.map((task: any) => {
               const isPastDue = task.dueDate && task.status !== 'DONE' && isOverdue(task.dueDate);
               return (
-                <tr key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                <tr
+                  key={task.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors"
+                >
                   <td className="px-4 py-3">
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-gray-100">{task.title}</p>
                       {task.description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">{task.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                          {task.description}
+                        </p>
                       )}
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     {task.priority && (
-                      <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded', priorityBadge[task.priority])}>
+                      <span
+                        className={cn(
+                          'text-[11px] font-semibold px-2 py-0.5 rounded',
+                          priorityBadge[task.priority]
+                        )}
+                      >
                         {task.priority}
                       </span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded', statusBadge[task.status] || '')}>
+                    <span
+                      className={cn(
+                        'text-[11px] font-semibold px-2 py-0.5 rounded',
+                        statusBadge[task.status] || ''
+                      )}
+                    >
                       {columnLabels[task.status] || task.status}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
                     {task.assignee
-                      ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() || 'Non assigné'
+                      ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() ||
+                        'Non assigné'
                       : 'Non assigné'}
                   </td>
-                  <td className={cn('px-4 py-3', isPastDue ? 'text-red-500 font-semibold' : 'text-gray-600 dark:text-gray-400')}>
+                  <td
+                    className={cn(
+                      'px-4 py-3',
+                      isPastDue ? 'text-red-500 font-semibold' : 'text-gray-600 dark:text-gray-400'
+                    )}
+                  >
                     {task.dueDate
-                      ? new Date(task.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+                      ? new Date(task.dueDate).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })
                       : '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -495,7 +602,9 @@ function CalendarView({
           >
             <Clock className="h-4 w-4 rotate-180" />
           </button>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 capitalize">{monthLabel}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 capitalize">
+            {monthLabel}
+          </h3>
           <button
             onClick={onNextMonth}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500"
@@ -507,7 +616,10 @@ function CalendarView({
         {/* Day headers */}
         <div className="grid grid-cols-7 mb-2">
           {dayNames.map((d) => (
-            <div key={d} className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 py-2">
+            <div
+              key={d}
+              className="text-center text-xs font-semibold text-gray-500 dark:text-gray-400 py-2"
+            >
               {d}
             </div>
           ))}
@@ -555,7 +667,9 @@ function CalendarView({
                             />
                           ))
                         ) : (
-                          <span className="text-[10px] font-semibold text-brand">{dayTasks.length}</span>
+                          <span className="text-[10px] font-semibold text-brand">
+                            {dayTasks.length}
+                          </span>
                         )}
                       </div>
                     )}
@@ -571,7 +685,12 @@ function CalendarView({
       {selectedDay && (
         <Card padding="md">
           <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Tâches du {selectedDay.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            Tâches du{' '}
+            {selectedDay.toLocaleDateString('fr-FR', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
           </h4>
           {selectedDayTasks.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">Aucune tâche pour ce jour.</p>
@@ -588,15 +707,23 @@ function CalendarView({
                   )}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      {task.title}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {task.assignee
-                        ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() || 'Non assigné'
+                        ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() ||
+                          'Non assigné'
                         : 'Non assigné'}
                     </p>
                   </div>
                   {task.priority && (
-                    <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0', priorityBadge[task.priority])}>
+                    <span
+                      className={cn(
+                        'text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0',
+                        priorityBadge[task.priority]
+                      )}
+                    >
                       {task.priority}
                     </span>
                   )}
@@ -651,7 +778,8 @@ function TimelineView({
                   <p className="text-[11px] text-gray-400 text-center pt-4">Aucune tâche</p>
                 ) : (
                   dayTasks.slice(0, 4).map((task: any) => {
-                    const isPastDue = task.dueDate && task.status !== 'DONE' && isOverdue(task.dueDate);
+                    const isPastDue =
+                      task.dueDate && task.status !== 'DONE' && isOverdue(task.dueDate);
                     return (
                       <Link
                         key={task.id}

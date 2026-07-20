@@ -18,11 +18,14 @@ export default function DeveloperInvoicesPage() {
 
   const revenueList = useMemo(() => {
     if (!revenues) return [];
-    return Array.isArray(revenues) ? revenues : (revenues.revenues || revenues.data || []);
+    return Array.isArray(revenues) ? revenues : revenues.revenues || revenues.data || [];
   }, [revenues]);
 
   const invoices = useMemo(() => {
-    const grouped: Record<string, { period: string; amount: number; netAmount: number; count: number; status: string }> = {};
+    const grouped: Record<
+      string,
+      { period: string; amount: number; netAmount: number; count: number; status: string }
+    > = {};
     revenueList.forEach((r: DeveloperRevenue) => {
       const d = new Date(r.createdAt);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -43,12 +46,16 @@ export default function DeveloperInvoicesPage() {
       }));
   }, [revenueList]);
 
-  const filtered = filterType === 'all' ? invoices : invoices.filter((i) => i.status === filterType);
-  const stats = useMemo(() => ({
-    total: invoices.length,
-    paid: invoices.filter((i) => i.status === 'COMPLETED').length,
-    pending: invoices.filter((i) => i.status === 'PENDING').length,
-  }), [invoices]);
+  const filtered =
+    filterType === 'all' ? invoices : invoices.filter((i) => i.status === filterType);
+  const stats = useMemo(
+    () => ({
+      total: invoices.length,
+      paid: invoices.filter((i) => i.status === 'COMPLETED').length,
+      pending: invoices.filter((i) => i.status === 'PENDING').length,
+    }),
+    [invoices]
+  );
 
   if (error) return <ErrorState message={error.message} onRetry={() => refetch()} />;
   if (isLoading) return <Loader size="lg" label="Chargement des factures..." />;
@@ -92,7 +99,9 @@ export default function DeveloperInvoicesPage() {
 
       <Card padding="lg">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Factures de commission</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            Factures de commission
+          </h3>
           <div className="flex items-center gap-1">
             {(['all', 'COMPLETED', 'PENDING'] as const).map((f) => (
               <button
@@ -100,7 +109,9 @@ export default function DeveloperInvoicesPage() {
                 onClick={() => setFilterType(f)}
                 className={cn(
                   'px-2.5 py-1 text-xs font-medium rounded-lg transition-colors',
-                  filterType === f ? 'bg-brand text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+                  filterType === f
+                    ? 'bg-brand text-white'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                 )}
               >
                 {f === 'all' ? 'Toutes' : f === 'COMPLETED' ? 'Payées' : 'En attente'}
@@ -120,29 +131,54 @@ export default function DeveloperInvoicesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Facture</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Période</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Transactions</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Montant brut</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Net</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Statut</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Facture
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Période
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Transactions
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Montant brut
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Net
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Statut
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((inv) => (
-                  <tr key={inv.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="py-3 px-2 font-medium text-gray-900 dark:text-gray-100">{inv.id}</td>
-                    <td className="py-3 px-2 text-gray-600 dark:text-gray-400 capitalize">{inv.period}</td>
+                  <tr
+                    key={inv.id}
+                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <td className="py-3 px-2 font-medium text-gray-900 dark:text-gray-100">
+                      {inv.id}
+                    </td>
+                    <td className="py-3 px-2 text-gray-600 dark:text-gray-400 capitalize">
+                      {inv.period}
+                    </td>
                     <td className="py-3 px-2 text-gray-600 dark:text-gray-400">{inv.count}</td>
-                    <td className="py-3 px-2 font-semibold text-gray-900 dark:text-gray-100">{inv.amount.toLocaleString()} FCFA</td>
-                    <td className="py-3 px-2 font-semibold text-emerald-600">{inv.netAmount.toLocaleString()} FCFA</td>
+                    <td className="py-3 px-2 font-semibold text-gray-900 dark:text-gray-100">
+                      {inv.amount.toLocaleString()} FCFA
+                    </td>
+                    <td className="py-3 px-2 font-semibold text-emerald-600">
+                      {inv.netAmount.toLocaleString()} FCFA
+                    </td>
                     <td className="py-3 px-2">
-                      <span className={cn(
-                        'inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full',
-                        inv.status === 'COMPLETED'
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-                      )}>
+                      <span
+                        className={cn(
+                          'inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full',
+                          inv.status === 'COMPLETED'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                            : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                        )}
+                      >
                         {inv.status === 'COMPLETED' ? 'Payée' : 'En attente'}
                       </span>
                     </td>

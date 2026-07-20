@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { logger } from '@/utils/logger';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL
   ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '')
@@ -21,15 +22,15 @@ export function connectSocket(token: string): Socket {
   });
 
   socket.on('connect', () => {
-    console.log('[Socket] Connected');
+    logger.info('Socket connected');
   });
 
   socket.on('disconnect', (reason) => {
-    console.log('[Socket] Disconnected:', reason);
+    logger.info('Socket disconnected:', reason);
   });
 
   socket.on('connect_error', (err) => {
-    console.error('[Socket] Connection error:', err.message);
+    logger.error('Socket connection error:', err.message);
   });
 
   return socket;

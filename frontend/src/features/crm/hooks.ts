@@ -117,7 +117,13 @@ export function useCrmSegments() {
 export function useCrmCreateSegment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { name: string; description?: string; color?: string; conditions?: any; isDynamic?: boolean }) => {
+    mutationFn: async (data: {
+      name: string;
+      description?: string;
+      color?: string;
+      conditions?: any;
+      isDynamic?: boolean;
+    }) => {
       const res = await apiClient.createCrmSegment(data);
       return res.data.data;
     },

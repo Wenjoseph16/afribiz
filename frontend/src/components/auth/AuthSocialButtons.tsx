@@ -19,15 +19,30 @@ export const AuthSocialButtons = () => {
 
   return (
     <div className="grid gap-3">
-      <Button type="button" variant="outline" className="justify-center py-3" onClick={handleSocialClick('Google')}>
+      <Button
+        type="button"
+        variant="outline"
+        className="justify-center py-3"
+        onClick={handleSocialClick('Google')}
+      >
         <Globe className="w-4 h-4" />
         Continuer avec Google
       </Button>
-      <Button type="button" variant="outline" className="justify-center py-3" onClick={handleSocialClick('Facebook')}>
+      <Button
+        type="button"
+        variant="outline"
+        className="justify-center py-3"
+        onClick={handleSocialClick('Facebook')}
+      >
         <Share2 className="w-4 h-4" />
         Continuer avec Facebook
       </Button>
-      <Button type="button" variant="outline" className="justify-center py-3" onClick={handleSocialClick('Apple')}>
+      <Button
+        type="button"
+        variant="outline"
+        className="justify-center py-3"
+        onClick={handleSocialClick('Apple')}
+      >
         <Smartphone className="w-4 h-4" />
         Continuer avec Apple
       </Button>

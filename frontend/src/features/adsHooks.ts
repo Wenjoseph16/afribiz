@@ -21,21 +21,29 @@ export function useCreateAdCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => apiClient.createAdCampaign(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: adsKeys.myCampaigns }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adsKeys.myCampaigns });
+    },
   });
 }
 
 export function useMyAdCampaigns() {
   return useQuery({
     queryKey: adsKeys.myCampaigns,
-    queryFn: async () => { const res = await apiClient.getMyAdCampaigns(); return res.data.data; },
+    queryFn: async () => {
+      const res = await apiClient.getMyAdCampaigns();
+      return res.data.data;
+    },
   });
 }
 
 export function useAdCampaign(id: string) {
   return useQuery({
     queryKey: adsKeys.campaign(id),
-    queryFn: async () => { const res = await apiClient.getAdCampaignById(id); return res.data.data; },
+    queryFn: async () => {
+      const res = await apiClient.getAdCampaignById(id);
+      return res.data.data;
+    },
     enabled: !!id,
   });
 }
@@ -43,7 +51,10 @@ export function useAdCampaign(id: string) {
 export function useAdCampaignStats(id: string) {
   return useQuery({
     queryKey: adsKeys.campaignStats(id),
-    queryFn: async () => { const res = await apiClient.getAdCampaignStats(id); return res.data.data; },
+    queryFn: async () => {
+      const res = await apiClient.getAdCampaignStats(id);
+      return res.data.data;
+    },
     enabled: !!id,
   });
 }
@@ -51,7 +62,10 @@ export function useAdCampaignStats(id: string) {
 export function useActiveAds(params?: { page?: string; position?: string }) {
   return useQuery({
     queryKey: adsKeys.active(params),
-    queryFn: async () => { const res = await apiClient.getActiveAds(params); return res.data.data; },
+    queryFn: async () => {
+      const res = await apiClient.getActiveAds(params);
+      return res.data.data;
+    },
   });
 }
 
@@ -59,7 +73,10 @@ export function useActiveAds(params?: { page?: string; position?: string }) {
 export function useAdminAdCampaigns(params?: { status?: string; page?: number; limit?: number }) {
   return useQuery({
     queryKey: adsKeys.admin.campaigns(params),
-    queryFn: async () => { const res = await apiClient.adminGetAllAdCampaigns(params); return res.data; },
+    queryFn: async () => {
+      const res = await apiClient.adminGetAllAdCampaigns(params);
+      return res.data;
+    },
   });
 }
 
@@ -67,37 +84,51 @@ export function useAdminValidateAdCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.adminValidateAdCampaign(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ads', 'admin'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ads', 'admin'] });
+    },
   });
 }
 
 export function useAdminRejectAdCampaign() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) => apiClient.adminRejectAdCampaign(id, reason),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ads', 'admin'] }); },
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      apiClient.adminRejectAdCampaign(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ads', 'admin'] });
+    },
   });
 }
 
 export function useAdminSuspendAdCampaign() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) => apiClient.adminSuspendAdCampaign(id, reason),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ads', 'admin'] }); },
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      apiClient.adminSuspendAdCampaign(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ads', 'admin'] });
+    },
   });
 }
 
 export function useAdminAdRevenue() {
   return useQuery({
     queryKey: adsKeys.admin.revenue,
-    queryFn: async () => { const res = await apiClient.adminGetAdRevenue(); return res.data.data; },
+    queryFn: async () => {
+      const res = await apiClient.adminGetAdRevenue();
+      return res.data.data;
+    },
   });
 }
 
 export function useAdminAdPackages() {
   return useQuery({
     queryKey: adsKeys.admin.packages,
-    queryFn: async () => { const res = await apiClient.adminGetAdPackages(); return res.data.data; },
+    queryFn: async () => {
+      const res = await apiClient.adminGetAdPackages();
+      return res.data.data;
+    },
   });
 }
 
@@ -105,14 +136,19 @@ export function useAdminCreateAdPackage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => apiClient.adminCreateAdPackage(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: adsKeys.admin.packages }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adsKeys.admin.packages });
+    },
   });
 }
 
 export function useAdminAdStats() {
   return useQuery({
     queryKey: adsKeys.admin.stats,
-    queryFn: async () => { const res = await apiClient.adminGetAdStats(); return res.data.data; },
+    queryFn: async () => {
+      const res = await apiClient.adminGetAdStats();
+      return res.data.data;
+    },
   });
 }
 
@@ -121,7 +157,9 @@ export function usePauseAdCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.pauseAdCampaign(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: adsKeys.myCampaigns }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adsKeys.myCampaigns });
+    },
   });
 }
 
@@ -129,7 +167,9 @@ export function useResumeAdCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.resumeAdCampaign(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: adsKeys.myCampaigns }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adsKeys.myCampaigns });
+    },
   });
 }
 
@@ -137,6 +177,8 @@ export function useDeleteAdCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.deleteAdCampaign(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: adsKeys.myCampaigns }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adsKeys.myCampaigns });
+    },
   });
 }

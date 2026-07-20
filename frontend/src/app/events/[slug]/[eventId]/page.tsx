@@ -6,9 +6,20 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  Calendar, MapPin, Clock, Users, Ticket, ArrowRight,
-  ChevronLeft, AlertCircle, CalendarDays, X, Image as ImageIcon,
-  CheckCircle, Handshake, Loader,
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
+  Ticket,
+  ArrowRight,
+  ChevronLeft,
+  AlertCircle,
+  CalendarDays,
+  X,
+  Image as ImageIcon,
+  CheckCircle,
+  Handshake,
+  Loader,
 } from 'lucide-react';
 import { apiClient } from '@/services/apiClient';
 import { cn } from '@/lib/utils';
@@ -79,14 +90,24 @@ function BookingModal({
     onSuccess: () => setSuccess(true),
   });
 
+  const [ticketData, setTicketData] = useState<any>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate(form);
+    mutation.mutate(form, {
+      onSuccess: (res: any) => {
+        setSuccess(true);
+        setTicketData(res.data?.data);
+      },
+    });
   };
 
   if (success) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      >
         <div
           className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center relative animate-scale-in"
           onClick={(e) => e.stopPropagation()}
@@ -94,9 +115,23 @@ function BookingModal({
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
             <CheckCircle size={32} className="text-emerald-600" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Inscription confirmée !</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Inscription confirmée !
+          </h3>
+          {ticketData?.qrCode && (
+            <div className="mb-4 p-4 bg-white rounded-2xl inline-block">
+              <Image
+                src={ticketData.qrCode}
+                alt="QR Code"
+                width={192}
+                height={192}
+                className="mx-auto"
+              />
+              <p className="text-xs text-gray-500 mt-2 font-mono">{ticketData.ticketRef}</p>
+            </div>
+          )}
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            Votre inscription pour <strong>{ticket.name}</strong> a bien été enregistrée. Vous recevrez un email de confirmation.
+            Votre inscription pour <strong>{ticket.name}</strong> a bien été enregistrée.
           </p>
           <button
             onClick={onClose}
@@ -110,7 +145,10 @@ function BookingModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
         className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative animate-scale-in max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -124,13 +162,16 @@ function BookingModal({
 
         <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Réserver</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          {ticket.name} — {ticket.price > 0 ? `${Number(ticket.price).toLocaleString()} FCFA` : 'Gratuit'}
+          {ticket.name} —{' '}
+          {ticket.price > 0 ? `${Number(ticket.price).toLocaleString()} FCFA` : 'Gratuit'}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Prénom</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Prénom
+              </label>
               <input
                 type="text"
                 required
@@ -141,7 +182,9 @@ function BookingModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nom</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Nom
+              </label>
               <input
                 type="text"
                 required
@@ -154,7 +197,9 @@ function BookingModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Email
+            </label>
             <input
               type="email"
               required
@@ -166,7 +211,9 @@ function BookingModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Téléphone</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Téléphone
+            </label>
             <input
               type="tel"
               required
@@ -179,13 +226,17 @@ function BookingModal({
 
           {(ticket.quantity > 1 || !ticket.quantity) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombre de places</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Nombre de places
+              </label>
               <input
                 type="number"
                 min={1}
                 max={ticket.quantity || 10}
                 value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                onChange={(e) =>
+                  setForm({ ...form, quantity: Math.max(1, parseInt(e.target.value) || 1) })
+                }
                 className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500/20 transition-all outline-none"
               />
             </div>
@@ -201,12 +252,14 @@ function BookingModal({
             ) : (
               <Ticket size={18} />
             )}
-            {mutation.isPending ? 'Inscription...' : `Réserver${form.quantity > 1 ? ` (${form.quantity} places)` : ''}`}
+            {mutation.isPending
+              ? 'Inscription...'
+              : `Réserver${form.quantity > 1 ? ` (${form.quantity} places)` : ''}`}
           </button>
 
           {mutation.error && (
             <p className="text-sm text-red-600 text-center">
-              {mutation.error instanceof Error ? mutation.error.message : "Une erreur est survenue"}
+              {mutation.error instanceof Error ? mutation.error.message : 'Une erreur est survenue'}
             </p>
           )}
         </form>
@@ -220,7 +273,11 @@ export default function EventDetailPage() {
   const slug = params?.slug;
   const eventId = params?.eventId;
 
-  const { data: event, isLoading, error } = useQuery({
+  const {
+    data: event,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['public-event', slug, eventId],
     queryFn: async () => {
       if (!slug || !eventId) throw new Error('Paramètres manquants');
@@ -259,7 +316,9 @@ export default function EventDetailPage() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
             <AlertCircle size={28} className="text-red-500" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Événement introuvable</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Événement introuvable
+          </h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6">
             Cet événement n&apos;existe pas ou a été retiré.
           </p>
@@ -289,7 +348,13 @@ export default function EventDetailPage() {
       <div className="relative">
         {e.image ? (
           <div className="h-72 sm:h-96 relative">
-            <Image src={e.image ?? ''} alt={e.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+            <Image
+              src={e.image ?? ''}
+              alt={e.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 33vw"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
           </div>
         ) : (
@@ -307,13 +372,22 @@ export default function EventDetailPage() {
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
           <div className="max-w-5xl mx-auto">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium border', {
-                'text-emerald-200 bg-emerald-500/20 border-emerald-500/30': isUpcoming || e.status === 'PUBLISHED',
-                'text-blue-200 bg-blue-500/20 border-blue-500/30': e.status === 'ONGOING',
-                'text-gray-300 bg-gray-500/20 border-gray-500/30': isPast,
-                'text-red-200 bg-red-500/20 border-red-500/30': e.status === 'CANCELLED',
-              })}>
-                {e.status === 'CANCELLED' ? 'Annulé' : isPast ? 'Terminé' : e.status === 'ONGOING' ? 'En cours' : 'À venir'}
+              <span
+                className={cn('px-2.5 py-1 rounded-full text-xs font-medium border', {
+                  'text-emerald-200 bg-emerald-500/20 border-emerald-500/30':
+                    isUpcoming || e.status === 'PUBLISHED',
+                  'text-blue-200 bg-blue-500/20 border-blue-500/30': e.status === 'ONGOING',
+                  'text-gray-300 bg-gray-500/20 border-gray-500/30': isPast,
+                  'text-red-200 bg-red-500/20 border-red-500/30': e.status === 'CANCELLED',
+                })}
+              >
+                {e.status === 'CANCELLED'
+                  ? 'Annulé'
+                  : isPast
+                    ? 'Terminé'
+                    : e.status === 'ONGOING'
+                      ? 'En cours'
+                      : 'À venir'}
               </span>
               {e.category && (
                 <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
@@ -332,11 +406,19 @@ export default function EventDetailPage() {
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-white/80 text-sm">
               <div className="flex items-center gap-1.5">
                 <Calendar size={16} />
-                <span>{startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                <span>
+                  {startDate.toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock size={16} />
-                <span>{startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>
+                  {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </div>
               {e.location && (
                 <div className="flex items-center gap-1.5">
@@ -346,7 +428,9 @@ export default function EventDetailPage() {
               )}
               <div className="flex items-center gap-1.5">
                 <Users size={16} />
-                <span>{e.participantCount || 0} participant{e.participantCount !== 1 ? 's' : ''}</span>
+                <span>
+                  {e.participantCount || 0} participant{e.participantCount !== 1 ? 's' : ''}
+                </span>
               </div>
             </div>
           </div>
@@ -371,15 +455,21 @@ export default function EventDetailPage() {
             {/* Description */}
             {e.description && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Description</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">{e.description}</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                  Description
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                  {e.description}
+                </p>
               </div>
             )}
 
             {/* Organizer Info */}
             {e.organizer && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Organisateur</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Organisateur
+                </h2>
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center">
                     <Users size={24} className="text-indigo-600 dark:text-indigo-400" />
@@ -389,10 +479,14 @@ export default function EventDetailPage() {
                       {e.organizer.name || e.organizer.companyName || 'Organisateur'}
                     </p>
                     {e.organizer.email && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{e.organizer.email}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {e.organizer.email}
+                      </p>
                     )}
                     {e.organizer.phone && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{e.organizer.phone}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {e.organizer.phone}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -402,7 +496,9 @@ export default function EventDetailPage() {
             {/* Gallery */}
             {gallery.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Galerie</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Galerie
+                </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {gallery.map((item: any, i: number) => (
                     <div
@@ -418,7 +514,6 @@ export default function EventDetailPage() {
                           fill
                           className="object-cover hover:scale-105 transition-transform duration-300"
                           sizes="(max-width: 768px) 100vw, 33vw"
-                          unoptimized
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -439,16 +534,24 @@ export default function EventDetailPage() {
             {/* Partners */}
             {partners.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Partenaires & Sponsors</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Partenaires & Sponsors
+                </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {partners.map((partner: any, i: number) => (
                     <div
                       key={partner.id || i}
                       className="flex flex-col items-center gap-2 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600"
                     >
-                      <div                       className="w-16 h-16 rounded-xl bg-white dark:bg-gray-700 flex items-center justify-center overflow-hidden relative">
+                      <div className="w-16 h-16 rounded-xl bg-white dark:bg-gray-700 flex items-center justify-center overflow-hidden relative">
                         {partner.logoUrl ? (
-                          <Image src={partner.logoUrl ?? ''} alt={partner.name} fill className="object-contain" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                          <Image
+                            src={partner.logoUrl ?? ''}
+                            alt={partner.name}
+                            fill
+                            className="object-contain"
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                          />
                         ) : (
                           <Handshake size={24} className="text-gray-400" />
                         )}
@@ -471,11 +574,15 @@ export default function EventDetailPage() {
           {/* Sidebar — Ticket Types */}
           <div className="space-y-4">
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm sticky top-24">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Billets</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Billets
+              </h3>
               {tickets.length === 0 ? (
                 <div className="text-center py-6">
                   <Ticket size={32} className="text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Aucun billet disponible</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Aucun billet disponible
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -497,7 +604,9 @@ export default function EventDetailPage() {
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{ticket.name}</h4>
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                              {ticket.name}
+                            </h4>
                             {ticket.type && (
                               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                                 {ticket.type}
@@ -505,21 +614,36 @@ export default function EventDetailPage() {
                             )}
                           </div>
                           <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                            {ticket.price > 0 ? `${Number(ticket.price).toLocaleString()} FCFA` : 'Gratuit'}
+                            {ticket.price > 0
+                              ? `${Number(ticket.price).toLocaleString()} FCFA`
+                              : 'Gratuit'}
                           </span>
                         </div>
 
                         {total > 0 && (
                           <div className="flex items-center justify-between text-xs mb-3">
-                            <span className={cn('font-medium', remaining > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-                              {isSoldOut ? 'Épuisé' : `${remaining} restante${remaining > 1 ? 's' : ''}`}
+                            <span
+                              className={cn(
+                                'font-medium',
+                                remaining > 0
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-red-600 dark:text-red-400'
+                              )}
+                            >
+                              {isSoldOut
+                                ? 'Épuisé'
+                                : `${remaining} restante${remaining > 1 ? 's' : ''}`}
                             </span>
-                            <span className="text-gray-400">{sold}/{total} vendus</span>
+                            <span className="text-gray-400">
+                              {sold}/{total} vendus
+                            </span>
                           </div>
                         )}
 
                         {ticket.benefits && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{ticket.benefits}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
+                            {ticket.benefits}
+                          </p>
                         )}
 
                         <button
@@ -544,7 +668,9 @@ export default function EventDetailPage() {
 
             {/* Info Card */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Informations</h3>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                Informations
+              </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center shrink-0">
@@ -553,7 +679,11 @@ export default function EventDetailPage() {
                   <div>
                     <p className="text-xs text-gray-500">Date</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100">
-                      {startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {startDate.toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
                     </p>
                   </div>
                 </div>
@@ -564,8 +694,12 @@ export default function EventDetailPage() {
                   <div>
                     <p className="text-xs text-gray-500">Horaire</p>
                     <p className="font-medium text-gray-900 dark:text-gray-100">
-                      {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      {endDate && ` - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+                      {startDate.toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                      {endDate &&
+                        ` - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
                     </p>
                   </div>
                 </div>
@@ -586,7 +720,9 @@ export default function EventDetailPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Participants</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{e.participantCount || 0}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      {e.participantCount || 0}
+                    </p>
                   </div>
                 </div>
                 {e.capacity && (

@@ -1,8 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  History, Shield, Search, AlertTriangle, CheckCircle,
+  History,
+  Shield,
+  Search,
+  AlertTriangle,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -20,8 +26,11 @@ const ACTION_STYLES: Record<string, string> = {
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('fr-FR', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -38,8 +47,14 @@ export default function MonetizationAuditPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.roles?.includes('ADMIN');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
-  const { data: logsData, isLoading, error } = useQuery({
+  const {
+    data: logsData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['admin', 'monetization', 'audit'],
     queryFn: async () => {
       const res = await apiClient.get('/admin/monetization/audit');
@@ -50,21 +65,36 @@ export default function MonetizationAuditPage() {
 
   const logs = Array.isArray(logsData) ? logsData : [];
 
-  const filteredLogs = logs.filter((log: any) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      log.details?.key?.toLowerCase().includes(q) ||
-      log.createdBy?.toLowerCase().includes(q) ||
-      log.details?.action?.toLowerCase().includes(q)
-    );
-  });
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log: any) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        log.details?.key?.toLowerCase().includes(q) ||
+        log.createdBy?.toLowerCase().includes(q) ||
+        log.details?.action?.toLowerCase().includes(q)
+      );
+    });
+  }, [logs, search]);
+
+  const paginatedLogs = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredLogs.slice(start, start + PAGE_SIZE);
+  }, [filteredLogs, page]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
 
   if (!isAdmin) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Audit de monétisation</h1>
-        <EmptyState icon={<Shield className="h-8 w-8" />} title="Accès réservé" description="Vous devez être administrateur." />
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+          Audit de monétisation
+        </h1>
+        <EmptyState
+          icon={<Shield className="h-8 w-8" />}
+          title="Accès réservé"
+          description="Vous devez être administrateur."
+        />
       </div>
     );
   }
@@ -115,43 +145,66 @@ export default function MonetizationAuditPage() {
         />
       ) : (
         <div className="space-y-3">
-          {filteredLogs.map((log: any) => {
+          {paginatedLogs.map((log: any) => {
             const details = log.details || {};
             const actionType = details.action || 'UPDATE';
             return (
               <Card key={log.id} padding="md">
                 <div className="flex items-start gap-4">
-                  <div className={`mt-0.5 p-1.5 rounded-full ${
-                    actionType === 'CREATE' ? 'bg-emerald-100 dark:bg-emerald-900/30' :
-                    actionType === 'DELETE' ? 'bg-red-100 dark:bg-red-900/30' :
-                    'bg-blue-100 dark:bg-blue-900/30'
-                  }`}>
-                    <CheckCircle className={`h-4 w-4 ${
-                      actionType === 'CREATE' ? 'text-emerald-600' :
-                      actionType === 'DELETE' ? 'text-red-600' :
-                      'text-blue-600'
-                    }`} />
+                  <div
+                    className={`mt-0.5 p-1.5 rounded-full ${
+                      actionType === 'CREATE'
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                        : actionType === 'DELETE'
+                          ? 'bg-red-100 dark:bg-red-900/30'
+                          : 'bg-blue-100 dark:bg-blue-900/30'
+                    }`}
+                  >
+                    <CheckCircle
+                      className={`h-4 w-4 ${
+                        actionType === 'CREATE'
+                          ? 'text-emerald-600'
+                          : actionType === 'DELETE'
+                            ? 'text-red-600'
+                            : 'text-blue-600'
+                      }`}
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant={actionType === 'CREATE' ? 'success' : actionType === 'DELETE' ? 'danger' : 'info'} size="xs">
+                      <Badge
+                        variant={
+                          actionType === 'CREATE'
+                            ? 'success'
+                            : actionType === 'DELETE'
+                              ? 'danger'
+                              : 'info'
+                        }
+                        size="xs"
+                      >
                         {actionType}
                       </Badge>
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {details.key || 'Paramètre'}
                       </span>
                       <span className="text-xs text-gray-400">par</span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{log.createdBy}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {log.createdBy}
+                      </span>
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Ancienne valeur</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Ancienne valeur
+                        </span>
                         <p className="font-mono text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 mt-0.5">
                           {formatValue(details.oldValue)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Nouvelle valeur</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Nouvelle valeur
+                        </span>
                         <p className="font-mono text-brand font-medium bg-brand/5 rounded px-2 py-1 mt-0.5">
                           {formatValue(details.newValue)}
                         </p>
@@ -163,6 +216,40 @@ export default function MonetizationAuditPage() {
               </Card>
             );
           })}
+        </div>
+      )}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Précédent
+          </button>
+          {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPage(p)}
+              className={
+                'px-3 py-1.5 text-sm rounded-lg transition-colors ' +
+                (p === page
+                  ? 'bg-brand text-white'
+                  : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')
+              }
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Suivant
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       )}
     </div>

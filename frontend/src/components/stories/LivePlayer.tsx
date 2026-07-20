@@ -3,10 +3,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  X, Play, Pause, Heart, MessageCircle, ShoppingBag, 
-  Users, Send, Eye, ChevronLeft, ChevronRight,
-  Shield, ExternalLink, ThumbsUp, Sparkles, Loader2, Check
+import {
+  X,
+  Play,
+  Pause,
+  Heart,
+  MessageCircle,
+  ShoppingBag,
+  Users,
+  Send,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  ExternalLink,
+  ThumbsUp,
+  Sparkles,
+  Loader2,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -52,12 +66,12 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
     });
 
     s.on('live:chat-message', (msg: any) => {
-      setChatMessages(prev => [msg, ...prev].slice(0, 100));
+      setChatMessages((prev) => [msg, ...prev].slice(0, 100));
     });
 
     s.on('live:reaction', (r: any) => {
-      setReactions(prev => [...prev, r].slice(-20));
-      setTimeout(() => setReactions(prev => prev.slice(1)), 2000);
+      setReactions((prev) => [...prev, r].slice(-20));
+      setTimeout(() => setReactions((prev) => prev.slice(1)), 2000);
     });
 
     s.on('live:viewer-count-update', (data: any) => {
@@ -85,10 +99,13 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
     setMessageInput('');
   }, [messageInput, live.id]);
 
-  const sendReaction = useCallback((emoji: string) => {
-    if (!socketRef.current) return;
-    socketRef.current.emit('live:reaction', { liveId: live.id, emoji });
-  }, [live.id]);
+  const sendReaction = useCallback(
+    (emoji: string) => {
+      if (!socketRef.current) return;
+      socketRef.current.emit('live:reaction', { liveId: live.id, emoji });
+    },
+    [live.id]
+  );
 
   const products = live?.products || [];
 
@@ -97,10 +114,12 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
       {/* Main player */}
       <div className="flex-1 flex flex-col gap-4">
         {/* Video zone */}
-        <div className={cn(
-          'relative bg-black rounded-2xl overflow-hidden',
-          compact ? 'aspect-video' : 'aspect-video lg:aspect-[16/9]'
-        )}>
+        <div
+          className={cn(
+            'relative bg-black rounded-2xl overflow-hidden',
+            compact ? 'aspect-video' : 'aspect-video lg:aspect-[16/9]'
+          )}
+        >
           {live.streamUrl ? (
             <iframe
               src={live.streamUrl}
@@ -123,8 +142,12 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
                 )}
                 {live.status === 'SCHEDULED' && live.scheduledAt && (
                   <p className="text-white/60 text-sm mt-2">
-                    Planifié le {new Date(live.scheduledAt).toLocaleDateString('fr-FR', {
-                      day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+                    Planifié le{' '}
+                    {new Date(live.scheduledAt).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'long',
+                      hour: '2-digit',
+                      minute: '2-digit',
                     })}
                   </p>
                 )}
@@ -141,7 +164,9 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
                   </span>
-                  <span className="text-red-300 text-xs font-bold uppercase tracking-wider drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">EN DIRECT</span>
+                  <span className="text-red-300 text-xs font-bold uppercase tracking-wider drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">
+                    EN DIRECT
+                  </span>
                 </div>
               ) : live.status === 'SCHEDULED' ? (
                 <div className="px-3 py-1.5 rounded-full bg-amber-500/15 backdrop-blur-md border border-amber-400/20">
@@ -164,7 +189,10 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
               )}
             </div>
             {onClose && (
-              <button onClick={onClose} className="p-1.5 rounded-full bg-black/40 text-white hover:bg-black/60">
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-full bg-black/40 text-white hover:bg-black/60"
+              >
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -176,7 +204,13 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
           <Link href={'/business/' + live.business?.slug} className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
               {live.business?.logo ? (
-                <Image src={live.business.logo} alt={live.business.name} width={40} height={40} className="object-cover w-full h-full" />
+                <Image
+                  src={live.business.logo}
+                  alt={live.business.name}
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
                   {live.business?.name?.charAt(0)}
@@ -187,16 +221,20 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                 {live.business?.name}
               </p>
-              {live.business?.city && (
-                <p className="text-xs text-gray-400">{live.business.city}</p>
-              )}
+              {live.business?.city && <p className="text-xs text-gray-400">{live.business.city}</p>}
             </div>
           </Link>
           <div className="flex items-center gap-1 ml-auto">
-            <button onClick={() => sendReaction('❤️')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <button
+              onClick={() => sendReaction('❤️')}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
               <Heart className="w-5 h-5 text-gray-400 hover:text-red-500 transition-colors" />
             </button>
-            <button onClick={() => setActiveTab('chat')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors lg:hidden">
+            <button
+              onClick={() => setActiveTab('chat')}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors lg:hidden"
+            >
               <MessageCircle className="w-5 h-5 text-gray-400" />
             </button>
           </div>
@@ -222,7 +260,12 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
                   <div className="rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/60 overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
                     <div className="aspect-square bg-gray-100 dark:bg-gray-900 relative overflow-hidden">
                       {p.image ? (
-                        <Image src={p.image} alt={p.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <Image
+                          src={p.image}
+                          alt={p.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
                           <ShoppingBag className="w-8 h-8 text-gray-300 dark:text-gray-600" />
@@ -230,7 +273,9 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
                       )}
                       {p.remainingStock === 0 && (
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                          <span className="text-white text-xs font-medium px-3 py-1 rounded-full bg-white/10 border border-white/20">Rupture</span>
+                          <span className="text-white text-xs font-medium px-3 py-1 rounded-full bg-white/10 border border-white/20">
+                            Rupture
+                          </span>
                         </div>
                       )}
                       {p.remainingStock > 0 && p.remainingStock <= 5 && (
@@ -240,13 +285,17 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
                       )}
                     </div>
                     <div className="p-3">
-                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{p.name}</p>
+                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {p.name}
+                      </p>
                       <div className="flex items-center justify-between mt-1.5">
                         <p className="text-sm font-bold bg-gradient-to-r from-brand-600 to-brand-500 dark:from-brand-400 dark:to-brand-300 bg-clip-text text-transparent">
                           {Number(p.price).toLocaleString()} FCFA
                         </p>
                         {p.remainingStock > 0 && (
-                          <span className="text-[10px] text-gray-400">{p.remainingStock} restants</span>
+                          <span className="text-[10px] text-gray-400">
+                            {p.remainingStock} restants
+                          </span>
                         )}
                       </div>
                     </div>
@@ -259,19 +308,34 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
       </div>
 
       {/* Sidebar (Chat + Products) */}
-      <div className={cn('w-full lg:w-80 flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden', compact ? 'h-96' : 'h-[600px]')}>
+      <div
+        className={cn(
+          'w-full lg:w-80 flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden',
+          compact ? 'h-96' : 'h-[600px]'
+        )}
+      >
         {/* Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setActiveTab('chat')}
-            className={cn('flex-1 py-3 text-sm font-medium transition-colors', activeTab === 'chat' ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300')}
+            className={cn(
+              'flex-1 py-3 text-sm font-medium transition-colors',
+              activeTab === 'chat'
+                ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            )}
           >
             <MessageCircle className="w-4 h-4 inline mr-1" />
             Chat
           </button>
           <button
             onClick={() => setActiveTab('products')}
-            className={cn('flex-1 py-3 text-sm font-medium transition-colors', activeTab === 'products' ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300')}
+            className={cn(
+              'flex-1 py-3 text-sm font-medium transition-colors',
+              activeTab === 'products'
+                ? 'text-brand-600 dark:text-brand-400 border-b-2 border-brand-500'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            )}
           >
             <ShoppingBag className="w-4 h-4 inline mr-1" />
             Produits ({products.length})
@@ -297,12 +361,21 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{msg.userName}</span>
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {msg.userName}
+                      </span>
                       <span className="text-[10px] text-gray-400">
-                        {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        {msg.createdAt
+                          ? new Date(msg.createdAt).toLocaleTimeString('fr-FR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : ''}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 break-words">{msg.message}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 break-words">
+                      {msg.message}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -312,7 +385,11 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
             {/* Reactions floating */}
             <div className="absolute bottom-20 left-4 space-y-1 pointer-events-none">
               {reactions.map((r: any, idx: number) => (
-                <div key={idx} className="text-2xl animate-bounce" style={{ animationDelay: `${idx * 0.1}s` }}>
+                <div
+                  key={idx}
+                  className="text-2xl animate-bounce"
+                  style={{ animationDelay: `${idx * 0.1}s` }}
+                >
                   {r.emoji}
                 </div>
               ))}
@@ -358,64 +435,73 @@ export function LivePlayer({ live, onClose, compact }: LivePlayerProps) {
                 <ShoppingBag className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 Aucun produit pour ce live
               </div>
-            ) : products.map((p: any) => (
-              <div key={p.id} className="flex gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700">
-                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 relative">
-                  {p.image ? (
-                    <Image src={p.image} alt={p.name} fill className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ShoppingBag className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.name}</p>
-                  {p.description && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{p.description}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm font-bold text-brand-600 dark:text-brand-400">
-                      {Number(p.price).toLocaleString()} FCFA
-                    </span>
-                    {p.remainingStock > 0 && p.remainingStock <= 5 && (
-                      <span className="text-[10px] text-red-500 font-medium">
-                        Plus que {p.remainingStock} !
-                      </span>
+            ) : (
+              products.map((p: any) => (
+                <div
+                  key={p.id}
+                  className="flex gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700"
+                >
+                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 relative">
+                    {p.image ? (
+                      <Image src={p.image} alt={p.name} fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ShoppingBag className="w-6 h-6 text-gray-400" />
+                      </div>
                     )}
                   </div>
-                  <button
-                    onClick={async () => {
-                      if (!live?.business?.id) return;
-                      setBuyingProduct(p.id);
-                      setBoughtProduct(null);
-                      try {
-                        await createOrder.mutateAsync({
-                          productId: p.productId || p.id,
-                          businessId: live.business.id
-                        });
-                        setBoughtProduct(p.id);
-                        setTimeout(() => setBoughtProduct(null), 2000);
-                      } catch (err) {
-                        console.error('Échec achat live:', err);
-                      } finally {
-                        setBuyingProduct(null);
-                      }
-                    }}
-                    disabled={buyingProduct === p.id || boughtProduct === p.id}
-                    className="mt-2 w-full py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700 transition-all disabled:opacity-70 active:scale-95"
-                  >
-                    {buyingProduct === p.id ? (
-                      <Loader2 className="w-3 h-3 mx-auto animate-spin" />
-                    ) : boughtProduct === p.id ? (
-                      <span className="flex items-center justify-center gap-1"><Check className="w-3 h-3" /> Acheté !</span>
-                    ) : (
-                      'Acheter'
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{p.name}</p>
+                    {p.description && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                        {p.description}
+                      </p>
                     )}
-                  </button>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-sm font-bold text-brand-600 dark:text-brand-400">
+                        {Number(p.price).toLocaleString()} FCFA
+                      </span>
+                      {p.remainingStock > 0 && p.remainingStock <= 5 && (
+                        <span className="text-[10px] text-red-500 font-medium">
+                          Plus que {p.remainingStock} !
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!live?.business?.id) return;
+                        setBuyingProduct(p.id);
+                        setBoughtProduct(null);
+                        try {
+                          await createOrder.mutateAsync({
+                            productId: p.productId || p.id,
+                            businessId: live.business.id,
+                          });
+                          setBoughtProduct(p.id);
+                          setTimeout(() => setBoughtProduct(null), 2000);
+                        } catch (err) {
+                          console.error('Échec achat live:', err);
+                        } finally {
+                          setBuyingProduct(null);
+                        }
+                      }}
+                      disabled={buyingProduct === p.id || boughtProduct === p.id}
+                      className="mt-2 w-full py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700 transition-all disabled:opacity-70 active:scale-95"
+                    >
+                      {buyingProduct === p.id ? (
+                        <Loader2 className="w-3 h-3 mx-auto animate-spin" />
+                      ) : boughtProduct === p.id ? (
+                        <span className="flex items-center justify-center gap-1">
+                          <Check className="w-3 h-3" /> Acheté !
+                        </span>
+                      ) : (
+                        'Acheter'
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>

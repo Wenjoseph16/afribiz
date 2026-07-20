@@ -12,7 +12,7 @@ interface ToastMessage {
 
 interface ToastContextValue {
   notify: (message: ToastMessage) => void;
-  addToast: (title: string, variant?: 'success' | 'error', description?: string) => void;
+  addToast: (message: ToastMessage) => void;
 }
 
 const ToastContext = React.createContext<ToastContextValue | undefined>(undefined);
@@ -27,12 +27,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     window.requestAnimationFrame(() => setOpen(true));
   }, []);
 
-  const addToast = React.useCallback((title: string, variant: 'success' | 'error' = 'success', description?: string) => {
-    notify({ title, variant, description });
-  }, [notify]);
-
   return (
-    <ToastContext.Provider value={{ notify, addToast }}>
+    <ToastContext.Provider value={{ notify, addToast: notify }}>
       <ToastPrimitive.Provider swipeDirection="right">
         {children}
         <ToastPrimitive.Viewport className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 p-2 outline-none" />
@@ -51,7 +47,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 )}
               </div>
               <div className="space-y-1 text-sm">
-                <ToastPrimitive.Title className="font-semibold text-slate-900">{toast.title}</ToastPrimitive.Title>
+                <ToastPrimitive.Title className="font-semibold text-slate-900">
+                  {toast.title}
+                </ToastPrimitive.Title>
                 {toast.description && (
                   <ToastPrimitive.Description className="text-slate-600">
                     {toast.description}
@@ -59,7 +57,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 )}
               </div>
             </div>
-            <ToastPrimitive.Close className="absolute right-3 top-3 rounded-full p-1 text-slate-400 hover:text-slate-600 transition" aria-label="Close">
+            <ToastPrimitive.Close
+              className="absolute right-3 top-3 rounded-full p-1 text-slate-400 hover:text-slate-600 transition"
+              aria-label="Close"
+            >
               ×
             </ToastPrimitive.Close>
           </ToastPrimitive.Root>

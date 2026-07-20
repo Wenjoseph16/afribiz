@@ -3,9 +3,21 @@
 import Image from 'next/image';
 import { Room } from '@/types/business';
 import {
-  Bed, Users, Wifi, Snowflake, Tv, Bath, Calendar,
-  Star, Clock, Coffee, Ruler, ChevronRight, BadgePercent,
-  MessageCircle, Car,
+  Bed,
+  Users,
+  Wifi,
+  Snowflake,
+  Tv,
+  Bath,
+  Calendar,
+  Star,
+  Clock,
+  Coffee,
+  Ruler,
+  ChevronRight,
+  BadgePercent,
+  MessageCircle,
+  Car,
 } from 'lucide-react';
 import { formatPrice } from '@/utils/helpers';
 import { cn } from '@/lib/utils';
@@ -15,10 +27,18 @@ interface RoomsProps {
 }
 
 const ROOM_TYPE_LABELS: Record<string, string> = {
-  STANDARD: 'Standard', VIP: 'VIP', SUITE: 'Suite', STUDIO: 'Studio',
-  APARTMENT: 'Appartement', VILLA: 'Villa', DORMITORY: 'Dortoir',
-  FAMILY: 'Familiale', DOUBLE: 'Double', SINGLE: 'Single',
-  DELUXE: 'Deluxe', BUNGALOW: 'Bungalow',
+  STANDARD: 'Standard',
+  VIP: 'VIP',
+  SUITE: 'Suite',
+  STUDIO: 'Studio',
+  APARTMENT: 'Appartement',
+  VILLA: 'Villa',
+  DORMITORY: 'Dortoir',
+  FAMILY: 'Familiale',
+  DOUBLE: 'Double',
+  SINGLE: 'Single',
+  DELUXE: 'Deluxe',
+  BUNGALOW: 'Bungalow',
 };
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -45,7 +65,9 @@ export function Rooms({ rooms }: RoomsProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Nos Logements</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              Nos Logements
+            </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {rooms.length} {rooms.length > 1 ? 'hébergements' : 'hébergement'} disponibles
             </p>
@@ -84,7 +106,12 @@ function RoomCard({ room }: { room: Room }) {
       {/* Image */}
       <div className="h-48 bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
         {room.images?.[0] ? (
-          <Image src={room.images[0]} alt={room.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+          <Image
+            src={room.images[0]}
+            alt={room.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-600">
             <Bed className="w-16 h-16" />
@@ -125,8 +152,18 @@ function RoomCard({ room }: { room: Room }) {
               {statusStyle.label}
             </span>
           ) : (
-            <span className={cn('flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-sm', room.isAvailable ? 'bg-emerald-50/90 text-emerald-700' : 'bg-red-50/90 text-red-600')}>
-              <span className={cn('w-1.5 h-1.5 rounded-full', room.isAvailable ? 'bg-emerald-500' : 'bg-red-500')} />
+            <span
+              className={cn(
+                'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium backdrop-blur-sm',
+                room.isAvailable ? 'bg-emerald-50/90 text-emerald-700' : 'bg-red-50/90 text-red-600'
+              )}
+            >
+              <span
+                className={cn(
+                  'w-1.5 h-1.5 rounded-full',
+                  room.isAvailable ? 'bg-emerald-500' : 'bg-red-500'
+                )}
+              />
               {room.isAvailable ? 'Disponible' : 'Indisponible'}
             </span>
           )}
@@ -140,36 +177,57 @@ function RoomCard({ room }: { room: Room }) {
           {room.rating && (
             <div className="flex items-center gap-0.5 text-amber-500 shrink-0">
               <Star className="w-3.5 h-3.5 fill-amber-400" />
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{room.rating}</span>
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                {room.rating}
+              </span>
             </div>
           )}
         </div>
 
         {room.shortDescription && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{room.shortDescription}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
+            {room.shortDescription}
+          </p>
         )}
         {!room.shortDescription && room.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{room.description}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
+            {room.description}
+          </p>
         )}
 
         {/* Capacity, beds, size */}
         <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-3">
-          <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {room.capacity} pers.</span>
-          {room.beds && <span className="flex items-center gap-1"><Bed className="w-3.5 h-3.5" /> {room.beds} lit{room.beds > 1 ? 's' : ''}</span>}
-          {room.size && <span className="flex items-center gap-1"><Ruler className="w-3.5 h-3.5" /> {room.size}m²</span>}
+          <span className="flex items-center gap-1">
+            <Users className="w-3.5 h-3.5" /> {room.capacity} pers.
+          </span>
+          {room.beds && (
+            <span className="flex items-center gap-1">
+              <Bed className="w-3.5 h-3.5" /> {room.beds} lit{room.beds > 1 ? 's' : ''}
+            </span>
+          )}
+          {room.size && (
+            <span className="flex items-center gap-1">
+              <Ruler className="w-3.5 h-3.5" /> {room.size}m²
+            </span>
+          )}
         </div>
 
         {/* Amenities */}
         {room.amenities?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {room.amenities.slice(0, 5).map((amenity) => (
-              <span key={amenity} className="flex items-center gap-0.5 text-[10px] bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-md border border-gray-100 dark:border-gray-700">
+              <span
+                key={amenity}
+                className="flex items-center gap-0.5 text-[10px] bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-md border border-gray-100 dark:border-gray-700"
+              >
                 {AMENITY_ICONS[amenity.toLowerCase()] || null}
                 {amenity}
               </span>
             ))}
             {room.amenities.length > 5 && (
-              <span className="text-[10px] text-gray-400 px-1.5 py-0.5">+{room.amenities.length - 5}</span>
+              <span className="text-[10px] text-gray-400 px-1.5 py-0.5">
+                +{room.amenities.length - 5}
+              </span>
             )}
           </div>
         )}
@@ -177,10 +235,14 @@ function RoomCard({ room }: { room: Room }) {
         {/* Breakfast & check-in/out */}
         <div className="flex items-center gap-3 mb-3 text-[10px] text-gray-400">
           {room.breakfastIncluded && (
-            <span className="flex items-center gap-1"><Coffee className="w-3 h-3" /> Petit-déjeuner inclus</span>
+            <span className="flex items-center gap-1">
+              <Coffee className="w-3 h-3" /> Petit-déjeuner inclus
+            </span>
           )}
           {room.checkInTime && (
-            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Check-in {room.checkInTime}</span>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" /> Check-in {room.checkInTime}
+            </span>
           )}
         </div>
 
@@ -190,7 +252,9 @@ function RoomCard({ room }: { room: Room }) {
             <div className="flex items-baseline gap-1.5">
               {hasPromo ? (
                 <>
-                  <span className="text-lg font-bold text-red-500">{fmtPrice(room.promotionalPrice!)}</span>
+                  <span className="text-lg font-bold text-red-500">
+                    {fmtPrice(room.promotionalPrice!)}
+                  </span>
                   <span className="text-xs text-gray-400 line-through">{fmtPrice(room.price)}</span>
                 </>
               ) : (
@@ -199,7 +263,9 @@ function RoomCard({ room }: { room: Room }) {
               <span className="text-[10px] text-gray-400">/nuit</span>
             </div>
             {room.priceWeekend && (
-              <p className="text-[10px] text-gray-400 mt-0.5">Week-end: {fmtPrice(room.priceWeekend)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                Week-end: {fmtPrice(room.priceWeekend)}
+              </p>
             )}
           </div>
 

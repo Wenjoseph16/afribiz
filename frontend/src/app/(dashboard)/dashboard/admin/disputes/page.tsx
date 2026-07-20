@@ -2,14 +2,25 @@
 
 import { useState } from 'react';
 import {
-  Scale, AlertTriangle, DollarSign, Package, Code2, Hotel, Shield,
-  Eye, Gavel, X, ChevronLeft, ChevronRight,
+  Scale,
+  AlertTriangle,
+  DollarSign,
+  Package,
+  Code2,
+  Hotel,
+  Shield,
+  Eye,
+  Gavel,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -60,9 +71,15 @@ function useAdminDisputes(params?: any) {
   return useQuery({
     queryKey: ['admin', 'disputes', params],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/disputes', { params });
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetDisputes2(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement litiges:', error);
+        return { disputes: [], totalPages: 1 };
+      }
     },
+    retry: false,
   });
 }
 
@@ -70,9 +87,15 @@ function useAdminDisputeStats() {
   return useQuery({
     queryKey: ['admin', 'disputes', 'stats'],
     queryFn: async () => {
-      const res = await apiClient.get('/admin/disputes/stats');
-      return res.data.data;
+      try {
+        const res = await apiClient.adminGetDisputeStats2();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement stats litiges:', error);
+        return { open: 0, inProgress: 0, resolved: 0, resolutionRate: null };
+      }
     },
+    retry: false,
   });
 }
 
@@ -80,7 +103,7 @@ function useAdminDisputeAction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: string }) =>
-      apiClient.put(`/admin/disputes/${id}/${action}`),
+      apiClient.adminUpdateDisputeStatus(id, action),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'disputes'] });
     },
@@ -105,18 +128,31 @@ export default function AdminDisputesPage() {
 
   const disputes: Dispute[] = Array.isArray(disputesData)
     ? disputesData
-    : disputesData?.disputes ?? [];
+    : (disputesData?.disputes ?? []);
   const totalPages = disputesData?.totalPages ?? 1;
 
-  const handleAction = async (id: string, action: string, label: string) => {
-    const confirmed = window.confirm(`Confirmer l'action « ${label} » sur ce litige ?`);
-    if (!confirmed) return;
+  const [actionTarget, setActionTarget] = useState<{
+    id: string;
+    action: string;
+    label: string;
+  } | null>(null);
+
+  const confirmAction = async () => {
+    if (!actionTarget) return;
     try {
-      await actionMutation.mutateAsync({ id, action });
-      setToast({ message: `Litige ${label.toLowerCase()} avec succès`, type: 'success' });
+      await actionMutation.mutateAsync({ id: actionTarget.id, action: actionTarget.action });
+      setToast({
+        message: `Litige ${actionTarget.label.toLowerCase()} avec succès`,
+        type: 'success',
+      });
     } catch {
-      setToast({ message: `Erreur lors de « ${label} »`, type: 'error' });
+      setToast({ message: `Erreur lors de « ${actionTarget.label} »`, type: 'error' });
     }
+    setActionTarget(null);
+  };
+
+  const handleAction = async (id: string, action: string, label: string) => {
+    setActionTarget({ id, action, label });
   };
 
   if (!isAdmin) {
@@ -137,13 +173,17 @@ export default function AdminDisputesPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -167,7 +207,9 @@ export default function AdminDisputesPage() {
               <Scale className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.open ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats?.open ?? '-'}
+              </p>
               <p className="text-xs text-gray-500">Ouverts</p>
             </div>
           </div>
@@ -178,7 +220,9 @@ export default function AdminDisputesPage() {
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.inProgress ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats?.inProgress ?? '-'}
+              </p>
               <p className="text-xs text-gray-500">En cours</p>
             </div>
           </div>
@@ -189,7 +233,9 @@ export default function AdminDisputesPage() {
               <Scale className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.resolved ?? '-'}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {stats?.resolved ?? '-'}
+              </p>
               <p className="text-xs text-gray-500">Résolus</p>
             </div>
           </div>
@@ -216,7 +262,10 @@ export default function AdminDisputesPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setPage(1); }}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setPage(1);
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
                   ? 'border-brand text-brand'
@@ -250,9 +299,14 @@ export default function AdminDisputesPage() {
               </thead>
               <tbody>
                 {disputes.map((dispute) => (
-                  <tr key={dispute.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={dispute.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4 text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                      {dispute.createdAt ? new Date(dispute.createdAt).toLocaleDateString('fr-FR') : '-'}
+                      {dispute.createdAt
+                        ? new Date(dispute.createdAt).toLocaleDateString('fr-FR')
+                        : '-'}
                     </td>
                     <td className="p-4">
                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -262,12 +316,16 @@ export default function AdminDisputesPage() {
                     <td className="p-4 text-gray-500">{dispute.partieA || '-'}</td>
                     <td className="p-4 text-gray-500">{dispute.partieB || '-'}</td>
                     <td className="p-4 text-gray-900 dark:text-gray-100 font-medium">
-                      {dispute.montant != null ? `${Number(dispute.montant).toLocaleString()} FCFA` : '-'}
+                      {dispute.montant != null
+                        ? `${Number(dispute.montant).toLocaleString()} FCFA`
+                        : '-'}
                     </td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                        STATUS_STYLES[dispute.status] || 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          STATUS_STYLES[dispute.status] || 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
                         {STATUS_LABELS[dispute.status] || dispute.status}
                       </span>
                     </td>

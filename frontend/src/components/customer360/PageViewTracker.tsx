@@ -18,12 +18,14 @@ export function PageViewTracker({ businessId }: Props) {
 
     const duration = 0;
 
-    apiClient.trackPageView({
-      userId: user?.id,
-      visitorId: !user ? `anon-${crypto.randomUUID?.() || Date.now()}` : undefined,
-      referrer: document.referrer || undefined,
-      duration,
-    }).catch(() => {});
+    apiClient
+      .trackPageView({
+        userId: user?.id,
+        visitorId: !user ? `anon-${crypto.randomUUID?.() || Date.now()}` : undefined,
+        referrer: document.referrer || undefined,
+        duration,
+      })
+      .catch(() => {});
   }, [businessId, user?.id]);
 
   return null;

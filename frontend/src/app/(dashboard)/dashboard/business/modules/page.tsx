@@ -1,24 +1,46 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import {
-  Package, ExternalLink, Settings, Star, AlertCircle,
-  CheckCircle2, Clock, Ban, Loader2, Trash2, Sparkles,
-  ShoppingCart, Calendar, Info,
+  Package,
+  ExternalLink,
+  Star,
+  Clock,
+  Loader2,
+  Sparkles,
+  Calendar,
+  RefreshCw,
+  X,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { CopilotTips } from '@/components/copilot/CopilotTips';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { useBusinessInstalledModules } from '@/features/developerHooks';
+import Link from 'next/link';
+import {
+  useBusinessInstalledModules,
+  useConfirmModuleUpdate,
+  useReinstallModule,
+} from '@/features/developerHooks';
+
+interface UpdateModalData {
+  installationId: string;
+  moduleName: string;
+  latestVersion: string;
+  hasUpdate: boolean;
+}
 
 export default function BusinessModulesPage() {
   const { data: installations, isLoading } = useBusinessInstalledModules();
+  const confirmUpdate = useConfirmModuleUpdate();
+  const reinstallModule = useReinstallModule();
   const [filter, setFilter] = useState<'all' | 'active' | 'trial' | 'expired'>('all');
+  const [updateModal, setUpdateModal] = useState<UpdateModalData | null>(null);
 
   if (isLoading) return <Loader variant="spinner" size="md" fullScreen />;
 
@@ -32,162 +54,252 @@ export default function BusinessModulesPage() {
   });
 
   const getStatusBadge = (inst: any) => {
-    if (inst.status === 'UNINSTALLED') return <Badge variant="danger" size="sm">Désinstallé</Badge>;
-    if (inst.trialExpired) return <Badge variant="danger" size="sm">Essai expiré</Badge>;
-    if (inst.isTrial) return <Badge variant="warning" size="sm">{inst.trialDaysLeft}j restants</Badge>;
-    if (inst.status === 'ACTIVE') return <Badge variant="success" size="sm">Actif</Badge>;
-    return <Badge variant="default" size="sm">{inst.status}</Badge>;
+    if (inst.status === 'UNINSTALLED')
+      return (
+        <Badge variant="danger" size="sm">
+          Désinstallé
+        </Badge>
+      );
+    if (inst.trialExpired)
+      return (
+        <Badge variant="danger" size="sm">
+          Essai expiré
+        </Badge>
+      );
+    if (inst.isTrial)
+      return (
+        <Badge variant="warning" size="sm">
+          {inst.trialDaysLeft > 0 ? `Essai J-${inst.trialDaysLeft}` : 'Essai'}
+        </Badge>
+      );
+    if (inst.status === 'ACTIVE')
+      return (
+        <Badge variant="success" size="sm">
+          Actif
+        </Badge>
+      );
+    return <Badge size="sm">{inst.status}</Badge>;
   };
 
-  const getStatusIcon = (inst: any) => {
-    if (inst.status === 'UNINSTALLED') return <Ban className="h-5 w-5 text-red-400" />;
-    if (inst.trialExpired) return <AlertCircle className="h-5 w-5 text-red-400" />;
-    if (inst.isTrial) return <Sparkles className="h-5 w-5 text-amber-400" />;
-    if (inst.status === 'ACTIVE') return <CheckCircle2 className="h-5 w-5 text-emerald-400" />;
-    return <Package className="h-5 w-5 text-gray-400" />;
+  const handleConfirmUpdate = async () => {
+    if (!updateModal) return;
+    try {
+      await confirmUpdate.mutateAsync(updateModal.installationId);
+      setUpdateModal(null);
+    } catch (e) {
+      // error handled by mutation
+    }
   };
-
-  const filters = [
-    { key: 'all' as const, label: 'Tous', count: modules.length },
-    { key: 'active' as const, label: 'Actifs', count: modules.filter((i: any) => i.status === 'ACTIVE' && !i.isTrial).length },
-    { key: 'trial' as const, label: 'Essai', count: modules.filter((i: any) => i.isTrial && !i.trialExpired).length },
-    { key: 'expired' as const, label: 'Expirés', count: modules.filter((i: any) => i.trialExpired || i.status === 'UNINSTALLED').length },
-  ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mes modules installés</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez les modules que vous avez installés depuis le marketplace
-          </p>
-        </div>
-        <Link href="/dashboard/marketplace">
-          <Button>
-            <ShoppingCart className="h-4 w-4 mr-1.5" />
-            Marketplace
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Mes modules installés"
+        description="Gérez les modules que vous avez installés sur votre business"
+        breadcrumbs={[{ label: 'Business', href: '/dashboard/business' }, { label: 'Modules' }]}
+        actions={
+          <Link href="/dashboard/business/modules/demands">
+            <Button variant="secondary" size="sm">
+              <Package className="w-4 h-4 mr-1.5" />
+              Demander un module
+            </Button>
+          </Link>
+        }
+      />
 
-      {/* Filtres */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {filters.map((f) => (
+      <CopilotTips moduleKey="MODULES" />
+
+      {/* Filter tabs */}
+      <div className="flex gap-2">
+        {[
+          { value: 'all', label: 'Tous' },
+          { value: 'active', label: 'Actifs' },
+          { value: 'trial', label: 'Essais' },
+          { value: 'expired', label: 'Expirés' },
+        ].map((tab) => (
           <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
+            key={tab.value}
+            onClick={() => setFilter(tab.value as any)}
             className={cn(
-              'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-              filter === f.key
-                ? 'bg-brand text-white shadow-sm'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+              filter === tab.value
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             )}
           >
-            {f.label} ({f.count})
+            {tab.label}
           </button>
         ))}
       </div>
 
       {filteredModules.length === 0 ? (
         <EmptyState
-          icon={<Package className="h-12 w-12" />}
-          title="Aucun module installé"
-          description="Parcourez le marketplace pour découvrir des modules qui peuvent améliorer votre business."
+          icon={<Package className="w-12 h-12 text-gray-400" />}
+          title={
+            modules.length === 0 ? 'Aucun module installé' : 'Aucun module dans cette catégorie'
+          }
+          description="Explorez le marketplace pour trouver des modules adaptés à votre business."
           action={
-            <Link href="/dashboard/marketplace">
-              <Button><ShoppingCart className="h-4 w-4 mr-1.5" />Découvrir le marketplace</Button>
+            <Link href="/marketplace/modules">
+              <Button>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Explorer le marketplace
+              </Button>
             </Link>
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredModules.map((inst: any) => {
-            const mod = inst.module;
-            const devName = mod?.developer?.companyName ||
-              (mod?.developer?.user ? `${mod.developer.user.firstName} ${mod.developer.user.lastName}` : 'Développeur');
-            const isPaid = !mod?.isFree && Number(mod?.price || 0) > 0;
-
-            return (
-              <Card key={inst.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-5 sm:p-6">
-                  <div className="flex items-start gap-4">
-                    <div className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 relative',
-                      inst.isTrial ? 'bg-gradient-to-br from-amber-400 to-amber-600' :
-                      inst.status === 'ACTIVE' ? 'bg-gradient-to-br from-emerald-400 to-emerald-600' :
-                      'bg-gradient-to-br from-gray-400 to-gray-600'
-                    )}>
-                      {mod?.logo ? (
-                        <Image src={mod.logo} alt="" fill className="object-cover rounded-xl" sizes="48px" unoptimized />
-                      ) : (
-                        getStatusIcon(inst)
+        <div className="grid gap-4">
+          {filteredModules.map((inst: any) => (
+            <Card key={inst.id} className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <div className="relative w-14 h-14 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                    {inst.module?.logo ? (
+                      <Image
+                        src={inst.module.logo}
+                        alt={inst.module.name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <Package className="w-6 h-6" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-lg truncate">
+                        {inst.module?.name || 'Module'}
+                      </h3>
+                      {inst.hasUpdate && (
+                        <Badge variant="info" size="sm" className="animate-pulse">
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Nouvelle version dispo
+                        </Badge>
                       )}
+                      {getStatusBadge(inst)}
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                          {mod?.name || 'Module'}
-                        </h3>
-                        {getStatusBadge(inst)}
-                      </div>
+                    <p className="text-sm text-gray-500 mt-1 line-clamp-1">
+                      {inst.module?.description || 'Aucune description'}
+                    </p>
 
-                      {mod?.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mb-3">
-                          {mod.description}
-                        </p>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                      {inst.module?.developer && (
+                        <span>Par {inst.module.developer.companyName || 'Développeur'}</span>
                       )}
-
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-500">
-                        <span>v{mod?.version || '1.0.0'}</span>
-                        <span>{mod?.category || '-'}</span>
-                        <span>Par {devName}</span>
-                        {mod?.rating > 0 && (
-                          <span className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                            {mod.rating.toFixed(1)}
-                          </span>
-                        )}
-                        <span>Installé le {new Date(inst.installedAt).toLocaleDateString('fr-FR')}</span>
-                      </div>
-
-                      {inst.isTrial && inst.trialEndsAt && (
-                        <div className={cn(
-                          'mt-3 flex items-center gap-2 text-xs p-2 rounded-lg',
-                          inst.trialDaysLeft <= 2
-                            ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-                            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
-                        )}>
-                          <Clock className="h-3.5 w-3.5 shrink-0" />
-                          <span>
-                            {inst.trialDaysLeft > 0
-                              ? `Essai gratuit : ${inst.trialDaysLeft} jour${inst.trialDaysLeft > 1 ? 's' : ''} restant${inst.trialDaysLeft > 1 ? 's' : ''}`
-                              : 'Essai expiré'}
-                          </span>
-                        </div>
+                      {inst.module?.rating != null && (
+                        <span className="flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          {Number(inst.module.rating).toFixed(1)}
+                        </span>
                       )}
-
-                      <div className="flex items-center gap-2 mt-3">
-                        <Link href={`/dashboard/marketplace/${mod?.slug || ''}`}>
-                          <Button variant="ghost" size="xs">
-                            <ExternalLink className="h-3.5 w-3.5 mr-1" />Détails
-                          </Button>
-                        </Link>
-                        {isPaid && inst.isTrial && !inst.trialExpired && (
-                          <Link href={`/dashboard/marketplace/${mod?.slug || ''}/checkout`}>
-                            <Button size="xs">
-                              <ShoppingCart className="h-3.5 w-3.5 mr-1" />Acheter maintenant
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
+                      {inst.module?.version && <span>v{inst.module.version}</span>}
+                      {inst.latestVersion && inst.latestVersion !== inst.module?.version && (
+                        <span className="text-purple-600 font-medium">→ v{inst.latestVersion}</span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Installé le {new Date(inst.installedAt).toLocaleDateString()}
+                      </span>
+                      {inst.subscription && (
+                        <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                          <Clock className="w-3 h-3" />
+                          Échéance le{' '}
+                          {new Date(inst.subscription.currentPeriodEnd).toLocaleDateString()}
+                          {inst.subscription.autoRenew && ' (auto)'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
-              </Card>
-            );
-          })}
+
+                <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                  {inst.status === 'UNINSTALLED' && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => reinstallModule.mutate(inst.moduleId)}
+                      isLoading={reinstallModule.isPending}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                      Réinstaller
+                    </Button>
+                  )}
+                  {inst.hasUpdate && inst.status === 'ACTIVE' && (
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        setUpdateModal({
+                          installationId: inst.id,
+                          moduleName: inst.module?.name || 'Module',
+                          latestVersion: inst.latestVersion || inst.module?.version,
+                          hasUpdate: inst.hasUpdate,
+                        })
+                      }
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                      Mettre à jour
+                    </Button>
+                  )}
+                  <Link href={`/marketplace/${inst.module?.slug}`}>
+                    <Button variant="secondary" size="sm">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Update Modal */}
+      {updateModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Mise à jour disponible</h2>
+              <button
+                onClick={() => setUpdateModal(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                <RefreshCw className="w-5 h-5 text-purple-600" />
+                <div>
+                  <p className="font-medium text-sm">{updateModal.moduleName}</p>
+                  <p className="text-xs text-gray-500">
+                    Nouvelle version : v{updateModal.latestVersion}
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                Une nouvelle version de ce module est disponible. Confirmez la mise à jour pour
+                appliquer les dernières améliorations et correctifs.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="secondary" onClick={() => setUpdateModal(null)}>
+                Annuler
+              </Button>
+              <Button onClick={handleConfirmUpdate} disabled={confirmUpdate.isPending}>
+                {confirmUpdate.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Confirmer la mise à jour
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
     </div>

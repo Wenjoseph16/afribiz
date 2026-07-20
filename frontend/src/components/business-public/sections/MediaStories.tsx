@@ -13,14 +13,25 @@ interface MediaStoriesProps {
   businessLogo?: string | null;
 }
 
-export function MediaStories({ businessId, businessName, businessSlug, businessLogo }: MediaStoriesProps) {
+export function MediaStories({
+  businessId,
+  businessName,
+  businessSlug,
+  businessLogo,
+}: MediaStoriesProps) {
   const { data: stories, isLoading } = useBusinessStories(businessId);
   const [viewingStory, setViewingStory] = useState<any>(null);
 
   if (isLoading || !stories?.length) return null;
 
   const storyGroup = {
-    business: { id: businessId, name: businessName, slug: businessSlug, logo: businessLogo || null, type: '' },
+    business: {
+      id: businessId,
+      name: businessName,
+      slug: businessSlug,
+      logo: businessLogo || null,
+      type: '',
+    },
     stories: stories,
     allViewed: false,
   };

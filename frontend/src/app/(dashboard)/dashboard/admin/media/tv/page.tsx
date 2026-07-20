@@ -2,10 +2,23 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Tv, Video, Upload, Eye, Star, Trash2, CheckCircle, XCircle,
-  Film, Clock, PlayCircle, Plus, Search, Edit,
+  Tv,
+  Video,
+  Upload,
+  Eye,
+  Star,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Film,
+  Clock,
+  PlayCircle,
+  Plus,
+  Search,
+  Edit,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -25,11 +38,66 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const MOCK_VIDEOS = [
-  { id: '1', title: 'Lancement AfriBiz 2025', description: 'Vidéo de lancement officiel', videoUrl: 'https://youtube.com/watch?v=abc123', thumbnail: '', category: 'Événement', status: 'PUBLIÉ', views: 1280, featured: true, createdAt: '2025-01-15' },
-  { id: '2', title: 'Tutoriel : Créer une boutique', description: 'Guide pas à pas', videoUrl: 'https://youtube.com/watch?v=def456', thumbnail: '', category: 'Tutoriel', status: 'PUBLIÉ', views: 3420, featured: false, createdAt: '2025-02-10' },
-  { id: '3', title: 'Interview CEO', description: 'Interview exclusive', videoUrl: 'https://youtube.com/watch?v=ghi789', thumbnail: '', category: 'Interview', status: 'EN_ATTENTE', views: 0, featured: false, createdAt: '2025-03-01' },
-  { id: '4', title: 'Webinaire Marketing Digital', description: 'Webinaire complet', videoUrl: 'https://vimeo.com/123456', thumbnail: '', category: 'Webinaire', status: 'BROUILLON', views: 0, featured: false, createdAt: '2025-03-05' },
-  { id: '5', title: 'Témoignages clients', description: 'Retours d\'expérience', videoUrl: 'https://youtube.com/watch?v=jkl012', thumbnail: '', category: 'Témoignage', status: 'PUBLIÉ', views: 890, featured: true, createdAt: '2025-03-20' },
+  {
+    id: '1',
+    title: 'Lancement AfriBiz 2025',
+    description: 'Vidéo de lancement officiel',
+    videoUrl: 'https://youtube.com/watch?v=abc123',
+    thumbnail: '',
+    category: 'Événement',
+    status: 'PUBLIÉ',
+    views: 1280,
+    featured: true,
+    createdAt: '2025-01-15',
+  },
+  {
+    id: '2',
+    title: 'Tutoriel : Créer une boutique',
+    description: 'Guide pas à pas',
+    videoUrl: 'https://youtube.com/watch?v=def456',
+    thumbnail: '',
+    category: 'Tutoriel',
+    status: 'PUBLIÉ',
+    views: 3420,
+    featured: false,
+    createdAt: '2025-02-10',
+  },
+  {
+    id: '3',
+    title: 'Interview CEO',
+    description: 'Interview exclusive',
+    videoUrl: 'https://youtube.com/watch?v=ghi789',
+    thumbnail: '',
+    category: 'Interview',
+    status: 'EN_ATTENTE',
+    views: 0,
+    featured: false,
+    createdAt: '2025-03-01',
+  },
+  {
+    id: '4',
+    title: 'Webinaire Marketing Digital',
+    description: 'Webinaire complet',
+    videoUrl: 'https://vimeo.com/123456',
+    thumbnail: '',
+    category: 'Webinaire',
+    status: 'BROUILLON',
+    views: 0,
+    featured: false,
+    createdAt: '2025-03-05',
+  },
+  {
+    id: '5',
+    title: 'Témoignages clients',
+    description: "Retours d'expérience",
+    videoUrl: 'https://youtube.com/watch?v=jkl012',
+    thumbnail: '',
+    category: 'Témoignage',
+    status: 'PUBLIÉ',
+    views: 890,
+    featured: true,
+    createdAt: '2025-03-20',
+  },
 ];
 
 const TAB_LABELS: Record<string, string> = {
@@ -60,8 +128,14 @@ export default function AdminTvPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+  const [deleteVideoTarget, setDeleteVideoTarget] = useState<string | null>(null);
   const [form, setForm] = useState({
-    title: '', description: '', videoUrl: '', thumbnail: '', category: '', featured: false,
+    title: '',
+    description: '',
+    videoUrl: '',
+    thumbnail: '',
+    category: '',
+    featured: false,
   });
 
   const { data: videos, isLoading } = useTvList();
@@ -69,22 +143,31 @@ export default function AdminTvPage() {
 
   const publishMutation = useMutation({
     mutationFn: (id: string) => apiClient.put(`/admin/media/tv/${id}`, { status: 'PUBLIÉ' }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] });
+    },
   });
 
   const unpublishMutation = useMutation({
     mutationFn: (id: string) => apiClient.put(`/admin/media/tv/${id}`, { status: 'EN_ATTENTE' }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] });
+    },
   });
 
   const featureMutation = useMutation({
-    mutationFn: ({ id, featured }: { id: string; featured: boolean }) => apiClient.put(`/admin/media/tv/${id}`, { featured }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] }); },
+    mutationFn: ({ id, featured }: { id: string; featured: boolean }) =>
+      apiClient.put(`/admin/media/tv/${id}`, { featured }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/admin/media/tv/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] });
+    },
   });
 
   const createMutation = useMutation({
@@ -92,25 +175,37 @@ export default function AdminTvPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'media', 'tv'] });
       setShowCreateModal(false);
-      setForm({ title: '', description: '', videoUrl: '', thumbnail: '', category: '', featured: false });
+      setForm({
+        title: '',
+        description: '',
+        videoUrl: '',
+        thumbnail: '',
+        category: '',
+        featured: false,
+      });
       setToast({ message: 'Vidéo créée avec succès', type: 'success' });
     },
     onError: () => setToast({ message: 'Erreur lors de la création', type: 'error' }),
   });
 
-  const stats = useMemo(() => ({
-    total: list.length,
-    published: list.filter((v: any) => v.status === 'PUBLIÉ' || v.status === 'PUBLIE').length,
-    pending: list.filter((v: any) => v.status === 'EN_ATTENTE').length,
-    featured: list.filter((v: any) => v.featured).length,
-  }), [list]);
+  const stats = useMemo(
+    () => ({
+      total: list.length,
+      published: list.filter((v: any) => v.status === 'PUBLIÉ' || v.status === 'PUBLIE').length,
+      pending: list.filter((v: any) => v.status === 'EN_ATTENTE').length,
+      featured: list.filter((v: any) => v.featured).length,
+    }),
+    [list]
+  );
 
   const filtered = useMemo(() => {
     let result = list;
-    if (tab === 'published') result = result.filter((v: any) => v.status === 'PUBLIÉ' || v.status === 'PUBLIE');
+    if (tab === 'published')
+      result = result.filter((v: any) => v.status === 'PUBLIÉ' || v.status === 'PUBLIE');
     if (tab === 'pending') result = result.filter((v: any) => v.status === 'EN_ATTENTE');
     if (tab === 'featured') result = result.filter((v: any) => v.featured);
-    if (search) result = result.filter((v: any) => v.title.toLowerCase().includes(search.toLowerCase()));
+    if (search)
+      result = result.filter((v: any) => v.title.toLowerCase().includes(search.toLowerCase()));
     return result;
   }, [list, tab, search]);
 
@@ -124,13 +219,7 @@ export default function AdminTvPage() {
     };
 
     if (action === 'delete') {
-      if (!window.confirm(`Supprimer la vidéo « ${video.title} » ?`)) return;
-      try {
-        await deleteMutation.mutateAsync(video.id);
-        setToast({ message: 'Vidéo supprimée', type: 'success' });
-      } catch {
-        setToast({ message: 'Erreur lors de la suppression', type: 'error' });
-      }
+      setDeleteVideoTarget(video.id);
       return;
     }
 
@@ -158,7 +247,10 @@ export default function AdminTvPage() {
       const newFeatured = action === 'feature';
       try {
         await featureMutation.mutateAsync({ id: video.id, featured: newFeatured });
-        setToast({ message: newFeatured ? 'Vidéo mise en avant' : 'Vidéo retirée des vedettes', type: 'success' });
+        setToast({
+          message: newFeatured ? 'Vidéo mise en avant' : 'Vidéo retirée des vedettes',
+          type: 'success',
+        });
       } catch {
         setToast({ message: 'Erreur lors de la modification', type: 'error' });
       }
@@ -174,13 +266,17 @@ export default function AdminTvPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {toast && (
-        <div className={`p-3 rounded-xl text-sm font-medium ${
-          toast.type === 'success'
-            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
           {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">&times;</button>
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
         </div>
       )}
 
@@ -221,7 +317,9 @@ export default function AdminTvPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Publiées</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{stats.published}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {stats.published}
+              </p>
             </div>
           </div>
         </Card>
@@ -295,21 +393,36 @@ export default function AdminTvPage() {
               </thead>
               <tbody>
                 {filtered.map((v: any) => (
-                  <tr key={v.id} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={v.id}
+                    className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center shrink-0">
                           <Video className="h-5 w-5 text-brand" />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900 dark:text-gray-100">{v.title}</p>
-                          <p className="text-xs text-gray-400 truncate max-w-[200px]">{v.description}</p>
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            {v.title}
+                          </p>
+                          <p className="text-xs text-gray-400 truncate max-w-[200px]">
+                            {v.description}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_STYLES[v.status] || 'bg-gray-100 text-gray-600'}`}>
-                        {v.status === 'PUBLIE' ? 'Publié' : v.status === 'PUBLIÉ' ? 'Publié' : v.status === 'EN_ATTENTE' ? 'En attente' : 'Brouillon'}
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${STATUS_STYLES[v.status] || 'bg-gray-100 text-gray-600'}`}
+                      >
+                        {v.status === 'PUBLIE'
+                          ? 'Publié'
+                          : v.status === 'PUBLIÉ'
+                            ? 'Publié'
+                            : v.status === 'EN_ATTENTE'
+                              ? 'En attente'
+                              : 'Brouillon'}
                       </span>
                     </td>
                     <td className="p-4 text-gray-500">
@@ -320,7 +433,9 @@ export default function AdminTvPage() {
                     </td>
                     <td className="p-4">
                       {v.featured ? (
-                        <Badge variant="purple" size="xs">À la une</Badge>
+                        <Badge variant="purple" size="xs">
+                          À la une
+                        </Badge>
                       ) : (
                         <span className="text-gray-400 text-xs">—</span>
                       )}
@@ -329,22 +444,44 @@ export default function AdminTvPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {v.status !== 'PUBLIÉ' && v.status !== 'PUBLIE' && (
-                          <Button variant="ghost" size="xs" onClick={() => handleAction('publish', v)} isLoading={publishMutation.isPending}>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => handleAction('publish', v)}
+                            isLoading={publishMutation.isPending}
+                          >
                             <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                             Publier
                           </Button>
                         )}
                         {(v.status === 'PUBLIÉ' || v.status === 'PUBLIE') && (
-                          <Button variant="ghost" size="xs" onClick={() => handleAction('unpublish', v)} isLoading={unpublishMutation.isPending}>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => handleAction('unpublish', v)}
+                            isLoading={unpublishMutation.isPending}
+                          >
                             <XCircle className="h-3.5 w-3.5 text-amber-500" />
                             Dépublier
                           </Button>
                         )}
-                        <Button variant="ghost" size="xs" onClick={() => handleAction(v.featured ? 'unfeature' : 'feature', v)} isLoading={featureMutation.isPending}>
-                          <Star className={`h-3.5 w-3.5 ${v.featured ? 'text-purple-500' : 'text-gray-400'}`} />
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => handleAction(v.featured ? 'unfeature' : 'feature', v)}
+                          isLoading={featureMutation.isPending}
+                        >
+                          <Star
+                            className={`h-3.5 w-3.5 ${v.featured ? 'text-purple-500' : 'text-gray-400'}`}
+                          />
                           {v.featured ? 'Retirer' : 'À la une'}
                         </Button>
-                        <Button variant="ghost" size="xs" onClick={() => handleAction('delete', v)} isLoading={deleteMutation.isPending}>
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => handleAction('delete', v)}
+                          isLoading={deleteMutation.isPending}
+                        >
                           <Trash2 className="h-3.5 w-3.5 text-red-500" />
                         </Button>
                       </div>
@@ -358,8 +495,19 @@ export default function AdminTvPage() {
           <EmptyState
             icon={<Tv className="h-8 w-8" />}
             title="Aucune vidéo"
-            description={search ? 'Aucune vidéo ne correspond à votre recherche.' : 'Commencez par créer une nouvelle vidéo.'}
-            action={!search && <Button onClick={() => setShowCreateModal(true)}><Plus className="h-4 w-4" />Créer une vidéo</Button>}
+            description={
+              search
+                ? 'Aucune vidéo ne correspond à votre recherche.'
+                : 'Commencez par créer une nouvelle vidéo.'
+            }
+            action={
+              !search && (
+                <Button onClick={() => setShowCreateModal(true)}>
+                  <Plus className="h-4 w-4" />
+                  Créer une vidéo
+                </Button>
+              )
+            }
           />
         )}
       </Card>
@@ -380,7 +528,9 @@ export default function AdminTvPage() {
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Description
+            </label>
             <textarea
               placeholder="Description de la vidéo"
               value={form.description}
@@ -415,12 +565,17 @@ export default function AdminTvPage() {
               onChange={(e) => setForm({ ...form, featured: e.target.checked })}
               className="rounded border-gray-300 dark:border-gray-600 text-brand focus:ring-brand/20"
             />
-            <label htmlFor="featured" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="featured"
+              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Mettre en avant (À la une)
             </label>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>Annuler</Button>
+            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+              Annuler
+            </Button>
             <Button
               onClick={() => createMutation.mutate(form)}
               isLoading={createMutation.isPending}
@@ -432,6 +587,25 @@ export default function AdminTvPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmationModal
+        open={!!deleteVideoTarget}
+        onClose={() => setDeleteVideoTarget(null)}
+        onConfirm={async () => {
+          if (!deleteVideoTarget) return;
+          try {
+            await deleteMutation.mutateAsync(deleteVideoTarget);
+            setToast({ message: 'Vidéo supprimée', type: 'success' });
+          } catch {
+            setToast({ message: 'Erreur lors de la suppression', type: 'error' });
+          }
+          setDeleteVideoTarget(null);
+        }}
+        title="Supprimer la vidéo"
+        description="Êtes-vous sûr de vouloir supprimer cette vidéo ? Cette action est irréversible."
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
     </div>
   );
 }

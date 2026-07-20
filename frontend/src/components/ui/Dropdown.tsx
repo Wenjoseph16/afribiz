@@ -23,7 +23,16 @@ interface DropdownProps {
   align?: 'left' | 'right';
 }
 
-export function Dropdown({ items, value, onChange, placeholder = 'Sélectionner...', className, triggerClassName, menuClassName, align = 'left' }: DropdownProps) {
+export function Dropdown({
+  items,
+  value,
+  onChange,
+  placeholder = 'Sélectionner...',
+  className,
+  triggerClassName,
+  menuClassName,
+  align = 'left',
+}: DropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -50,7 +59,12 @@ export function Dropdown({ items, value, onChange, placeholder = 'Sélectionner.
         <span className={cn('truncate', !selected && 'text-gray-400 dark:text-gray-500')}>
           {selected ? selected.label : placeholder}
         </span>
-        <ChevronDown className={cn('h-4 w-4 text-gray-400 shrink-0 ml-2 transition-transform duration-200', open && 'rotate-180')} />
+        <ChevronDown
+          className={cn(
+            'h-4 w-4 text-gray-400 shrink-0 ml-2 transition-transform duration-200',
+            open && 'rotate-180'
+          )}
+        />
       </button>
       {open && (
         <div
@@ -63,7 +77,10 @@ export function Dropdown({ items, value, onChange, placeholder = 'Sélectionner.
           {items.map((item) => (
             <button
               key={item.value}
-              onClick={() => { onChange(item.value); setOpen(false); }}
+              onClick={() => {
+                onChange(item.value);
+                setOpen(false);
+              }}
               disabled={item.disabled}
               className={cn(
                 'flex items-center gap-2.5 w-full px-4 py-2.5 text-sm transition-colors',

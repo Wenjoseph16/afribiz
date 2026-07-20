@@ -17,7 +17,7 @@ export function StepModules({ selected, onChange }: Props) {
 
   const toggle = (key: BusinessModule) => {
     if (selected.includes(key)) {
-      onChange(selected.filter(k => k !== key));
+      onChange(selected.filter((k) => k !== key));
     } else {
       onChange([...selected, key]);
     }
@@ -26,15 +26,17 @@ export function StepModules({ selected, onChange }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Activez vos modules</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Activez vos modules
+        </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Choisissez les fonctionnalités que vous souhaitez activer pour votre business.
-          Vous pourrez les modifier plus tard.
+          Choisissez les fonctionnalités que vous souhaitez activer pour votre business. Vous
+          pourrez les modifier plus tard.
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {BUSINESS_MODULES.map(mod => {
+        {BUSINESS_MODULES.map((mod) => {
           const isSelected = selected.includes(mod.key as BusinessModule);
           const Icon = mod.icon;
           const colorMap: Record<string, string> = {
@@ -69,22 +71,36 @@ export function StepModules({ selected, onChange }: Props) {
                 'relative flex items-start gap-3 p-4 rounded-xl border text-left transition-all',
                 isSelected
                   ? 'border-brand bg-brand/5 ring-1 ring-brand/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800',
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
               )}
             >
-              <div className={cn('p-2 rounded-lg border', isSelected ? activeColor : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700')}>
+              <div
+                className={cn(
+                  'p-2 rounded-lg border',
+                  isSelected
+                    ? activeColor
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700'
+                )}
+              >
                 <Icon className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{mod.label}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {mod.label}
+                  </p>
                   {isSelected && <Check className="h-4 w-4 text-brand shrink-0" />}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{mod.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                  {mod.description}
+                </p>
               </div>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); setDetail(mod); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDetail(mod);
+                }}
                 className="shrink-0 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <Info className="h-4 w-4" />
@@ -98,14 +114,19 @@ export function StepModules({ selected, onChange }: Props) {
       <div className="text-center text-sm text-gray-500 dark:text-gray-400">
         {selected.length === 0
           ? 'Aucun module sélectionné'
-          : `${selected.length} module${selected.length > 1 ? 's' : ''} sélectionné${selected.length > 1 ? 's' : ''}`
-        }
+          : `${selected.length} module${selected.length > 1 ? 's' : ''} sélectionné${selected.length > 1 ? 's' : ''}`}
       </div>
 
       {/* Detail modal */}
       {detail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setDetail(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-6 relative" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          onClick={() => setDetail(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setDetail(null)}
               className="absolute top-4 right-4 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500"
@@ -117,11 +138,15 @@ export function StepModules({ selected, onChange }: Props) {
                 <detail.icon className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{detail.label}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {detail.label}
+                </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{detail.key}</p>
               </div>
             </div>
-            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{detail.description}</p>
+            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+              {detail.description}
+            </p>
             <button
               onClick={() => {
                 toggle(detail.key as BusinessModule);
@@ -131,13 +156,12 @@ export function StepModules({ selected, onChange }: Props) {
                 'mt-5 w-full py-2.5 rounded-lg font-medium text-sm transition-all',
                 selected.includes(detail.key as BusinessModule)
                   ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  : 'bg-brand text-white hover:bg-brand-700',
+                  : 'bg-brand text-white hover:bg-brand-700'
               )}
             >
               {selected.includes(detail.key as BusinessModule)
                 ? 'Désactiver ce module'
-                : 'Activer ce module'
-              }
+                : 'Activer ce module'}
             </button>
           </div>
         </div>

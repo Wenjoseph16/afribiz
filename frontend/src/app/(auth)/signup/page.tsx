@@ -40,7 +40,7 @@ export default function SignupPage() {
     control,
     formState: { errors },
   } = useForm<SignupForm>({
-    resolver: zodResolver(signupSchema as any),
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       fullName: '',
       email: '',
@@ -91,12 +91,16 @@ export default function SignupPage() {
         const payload = response.data.data;
         setTokens(payload.accessToken, payload.refreshToken);
         setUser(payload.user);
-        notify({ title: 'Compte créé', description: 'Vérifiez votre email pour finaliser l\'inscription.', variant: 'success' });
+        notify({
+          title: 'Compte créé',
+          description: "Vérifiez votre email pour finaliser l'inscription.",
+          variant: 'success',
+        });
         router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
       }
     } catch (error: any) {
       notify({
-        title: 'Erreur d\'inscription',
+        title: "Erreur d'inscription",
         description: error?.response?.data?.error || 'Impossible de créer le compte.',
         variant: 'error',
       });
@@ -236,7 +240,11 @@ export default function SignupPage() {
                     tabIndex={-1}
                     aria-label={showConfirmPassword ? 'Masquer' : 'Afficher'}
                   >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
                 {fieldError(errors.confirmPassword?.message)}
@@ -312,15 +320,23 @@ export default function SignupPage() {
               {/* ════════════════════════════════════════════ */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date de naissance</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Date de naissance
+                  </label>
                   <div className="relative">
                     <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
-                    <input type="date" {...register('birthDate')} className={`${inputBase} pl-10`} />
+                    <input
+                      type="date"
+                      {...register('birthDate')}
+                      className={`${inputBase} pl-10`}
+                    />
                   </div>
                   {fieldError(errors.birthDate?.message)}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Genre</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Genre
+                  </label>
                   <select {...register('gender')} className={`${inputBase} cursor-pointer`}>
                     <option value="">Non spécifié</option>
                     <option value="MALE">Masculin</option>
@@ -340,11 +356,17 @@ export default function SignupPage() {
                 />
                 <span className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors leading-5">
                   J&apos;accepte les{' '}
-                  <Link href="/terms" className="text-brand hover:text-brand-600 dark:hover:text-brand-400 font-medium">
+                  <Link
+                    href="/terms"
+                    className="text-brand hover:text-brand-600 dark:hover:text-brand-400 font-medium"
+                  >
                     conditions d&apos;utilisation
                   </Link>{' '}
                   et la{' '}
-                  <Link href="/privacy" className="text-brand hover:text-brand-600 dark:hover:text-brand-400 font-medium">
+                  <Link
+                    href="/privacy"
+                    className="text-brand hover:text-brand-600 dark:hover:text-brand-400 font-medium"
+                  >
                     politique de confidentialité
                   </Link>
                 </span>
@@ -373,7 +395,10 @@ export default function SignupPage() {
               {/* Login link */}
               <p className="text-center text-sm text-gray-500 dark:text-gray-400">
                 Déjà inscrit ?{' '}
-                <Link href="/login" className="font-semibold text-brand hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                <Link
+                  href="/login"
+                  className="font-semibold text-brand hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                >
                   Connectez-vous
                 </Link>
               </p>

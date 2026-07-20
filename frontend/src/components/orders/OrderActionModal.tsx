@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, XCircle, Loader2, ShoppingBag, User, Clock, AlertTriangle } from 'lucide-react';
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  ShoppingBag,
+  User,
+  Clock,
+  AlertTriangle,
+} from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { useUpdateBusinessOrderStatus } from '@/features/hooks';
@@ -22,7 +30,12 @@ interface OrderActionModalProps {
   };
 }
 
-export default function OrderActionModal({ open, onClose, onSuccess, order }: OrderActionModalProps) {
+export default function OrderActionModal({
+  open,
+  onClose,
+  onSuccess,
+  order,
+}: OrderActionModalProps) {
   const [action, setAction] = useState<'accept' | 'refuse' | null>(null);
   const [refuseReason, setRefuseReason] = useState('');
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateBusinessOrderStatus();
@@ -84,7 +97,9 @@ export default function OrderActionModal({ open, onClose, onSuccess, order }: Or
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {order.orderNumber || `#${order.id.slice(0, 8)}`}
                 </p>
-                <p className="text-xs text-gray-500">{itemCount} article{itemCount > 1 ? 's' : ''}</p>
+                <p className="text-xs text-gray-500">
+                  {itemCount} article{itemCount > 1 ? 's' : ''}
+                </p>
               </div>
               <span className="ml-auto text-sm font-bold text-gray-900 dark:text-gray-100">
                 {formatPrice(Number(order.totalAmount || 0))}
@@ -100,7 +115,8 @@ export default function OrderActionModal({ open, onClose, onSuccess, order }: Or
               <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                 <Clock className="h-4 w-4 text-gray-400 shrink-0" />
                 <p className="text-sm text-gray-500">
-                  En attente depuis {elapsed >= 60
+                  En attente depuis{' '}
+                  {elapsed >= 60
                     ? `${Math.floor(elapsed / 60)}h${elapsed % 60 > 0 ? ` ${elapsed % 60}min` : ''}`
                     : `${elapsed} min`}
                 </p>
@@ -109,7 +125,12 @@ export default function OrderActionModal({ open, onClose, onSuccess, order }: Or
           </div>
 
           <div className="flex gap-3">
-            <Button variant="secondary" fullWidth onClick={() => setAction(null)} disabled={isUpdating}>
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => setAction(null)}
+              disabled={isUpdating}
+            >
               Retour
             </Button>
             <Button
@@ -136,8 +157,8 @@ export default function OrderActionModal({ open, onClose, onSuccess, order }: Or
             <XCircle className="h-8 w-8 text-red-600" />
           </div>
           <p className="text-center text-gray-500 text-sm mb-6">
-            Le client sera notifié que sa commande est refusée.
-            Veuillez indiquer un motif pour l&apos;informer.
+            Le client sera notifié que sa commande est refusée. Veuillez indiquer un motif pour
+            l&apos;informer.
           </p>
 
           <div className="space-y-1 mb-6">
@@ -154,7 +175,12 @@ export default function OrderActionModal({ open, onClose, onSuccess, order }: Or
           </div>
 
           <div className="flex gap-3">
-            <Button variant="secondary" fullWidth onClick={() => setAction(null)} disabled={isUpdating}>
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => setAction(null)}
+              disabled={isUpdating}
+            >
               Retour
             </Button>
             <Button
@@ -187,7 +213,9 @@ export default function OrderActionModal({ open, onClose, onSuccess, order }: Or
               {order.orderNumber || `#${order.id.slice(0, 8)}`}
             </p>
             <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
-              <span>{itemCount} article{itemCount > 1 ? 's' : ''}</span>
+              <span>
+                {itemCount} article{itemCount > 1 ? 's' : ''}
+              </span>
               <span className="w-1 h-1 rounded-full bg-gray-300" />
               <span>{formatPrice(Number(order.totalAmount || 0))}</span>
             </div>
@@ -200,17 +228,15 @@ export default function OrderActionModal({ open, onClose, onSuccess, order }: Or
             <User className="h-4 w-4 text-gray-500" />
           </div>
           <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100">{order.contactName || 'Client'}</p>
-            {order.contactPhone && (
-              <p className="text-xs text-gray-500">{order.contactPhone}</p>
-            )}
+            <p className="font-medium text-gray-900 dark:text-gray-100">
+              {order.contactName || 'Client'}
+            </p>
+            {order.contactPhone && <p className="text-xs text-gray-500">{order.contactPhone}</p>}
           </div>
           {elapsed > 15 && (
             <span className="ml-auto flex items-center gap-1 text-xs text-amber-600 font-medium">
               <AlertTriangle className="h-3 w-3" />
-              {elapsed >= 60
-                ? `> 1h d'attente`
-                : `${elapsed} min d'attente`}
+              {elapsed >= 60 ? `> 1h d'attente` : `${elapsed} min d'attente`}
             </span>
           )}
         </div>
@@ -220,11 +246,15 @@ export default function OrderActionModal({ open, onClose, onSuccess, order }: Or
           <div className="max-h-24 overflow-y-auto space-y-1">
             {order.items.slice(0, 5).map((item, i) => (
               <div key={i} className="flex items-center justify-between text-xs text-gray-500">
-                <span className="truncate">{item.quantity || 1}× {item.name}</span>
+                <span className="truncate">
+                  {item.quantity || 1}× {item.name}
+                </span>
               </div>
             ))}
             {order.items.length > 5 && (
-              <p className="text-xs text-gray-400 italic">+{order.items.length - 5} autres articles</p>
+              <p className="text-xs text-gray-400 italic">
+                +{order.items.length - 5} autres articles
+              </p>
             )}
           </div>
         )}

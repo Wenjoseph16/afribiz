@@ -3,8 +3,16 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  Car, Calendar, Clock, MapPin, DollarSign, ChevronRight,
-  Search, AlertCircle, CheckCircle2, XCircle,
+  Car,
+  Calendar,
+  Clock,
+  MapPin,
+  DollarSign,
+  ChevronRight,
+  Search,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -16,7 +24,10 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { useBookings } from '@/features/hooks';
 
-const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default' }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default' }
+> = {
   ACTIVE: { label: 'En cours', variant: 'success' },
   PENDING: { label: 'En attente', variant: 'warning' },
   CONFIRMED: { label: 'Confirmée', variant: 'info' },
@@ -26,7 +37,10 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warni
   RETURNED: { label: 'Retournée', variant: 'default' },
 };
 
-const DEPOSIT_STATUS: Record<string, { label: string; variant: 'success' | 'warning' | 'info' | 'default' }> = {
+const DEPOSIT_STATUS: Record<
+  string,
+  { label: string; variant: 'success' | 'warning' | 'info' | 'default' }
+> = {
   PAID: { label: 'Payée', variant: 'success' },
   PENDING: { label: 'En attente', variant: 'warning' },
   REFUNDED: { label: 'Remboursée', variant: 'default' },
@@ -48,40 +62,63 @@ export default function MyRentalsPage() {
   const { data: bookingsData, isLoading, error, refetch } = useBookings({ limit: 100 });
 
   const allBookings = Array.isArray(bookingsData?.bookings || bookingsData)
-    ? (bookingsData?.bookings || bookingsData) as any[]
+    ? ((bookingsData?.bookings || bookingsData) as any[])
     : [];
 
   // Filter only rental-type bookings
-  const allRentals = useMemo(() =>
-    allBookings.filter((b: any) =>
-      b.type === 'RENTAL' || b.type === 'VEHICLE' || b.type === 'EQUIPMENT' || b.type === 'SPACE'
-    ),
+  const allRentals = useMemo(
+    () =>
+      allBookings.filter(
+        (b: any) =>
+          b.type === 'RENTAL' ||
+          b.type === 'VEHICLE' ||
+          b.type === 'EQUIPMENT' ||
+          b.type === 'SPACE'
+      ),
     [allBookings]
   );
 
-  const stats = useMemo(() => ({
-    total: allRentals.length,
-    active: allRentals.filter((r: any) => r.status === 'ACTIVE' || r.status === 'CONFIRMED').length,
-    completed: allRentals.filter((r: any) => r.status === 'COMPLETED' || r.status === 'RETURNED').length,
-    pending: allRentals.filter((r: any) => r.status === 'PENDING' || r.status === 'RESERVED').length,
-    cancelled: allRentals.filter((r: any) => r.status === 'CANCELLED').length,
-    totalSpent: allRentals.reduce((sum: number, r: any) => sum + Number(r.price || r.totalAmount || 0), 0),
-  }), [allRentals]);
+  const stats = useMemo(
+    () => ({
+      total: allRentals.length,
+      active: allRentals.filter((r: any) => r.status === 'ACTIVE' || r.status === 'CONFIRMED')
+        .length,
+      completed: allRentals.filter((r: any) => r.status === 'COMPLETED' || r.status === 'RETURNED')
+        .length,
+      pending: allRentals.filter((r: any) => r.status === 'PENDING' || r.status === 'RESERVED')
+        .length,
+      cancelled: allRentals.filter((r: any) => r.status === 'CANCELLED').length,
+      totalSpent: allRentals.reduce(
+        (sum: number, r: any) => sum + Number(r.price || r.totalAmount || 0),
+        0
+      ),
+    }),
+    [allRentals]
+  );
 
   const filtered = useMemo(() => {
     let f = [...allRentals];
     switch (activeTab) {
-      case 'active': f = f.filter((r: any) => ['ACTIVE', 'CONFIRMED'].includes(r.status)); break;
-      case 'pending': f = f.filter((r: any) => ['PENDING', 'RESERVED'].includes(r.status)); break;
-      case 'completed': f = f.filter((r: any) => ['COMPLETED', 'RETURNED'].includes(r.status)); break;
-      case 'cancelled': f = f.filter((r: any) => r.status === 'CANCELLED'); break;
+      case 'active':
+        f = f.filter((r: any) => ['ACTIVE', 'CONFIRMED'].includes(r.status));
+        break;
+      case 'pending':
+        f = f.filter((r: any) => ['PENDING', 'RESERVED'].includes(r.status));
+        break;
+      case 'completed':
+        f = f.filter((r: any) => ['COMPLETED', 'RETURNED'].includes(r.status));
+        break;
+      case 'cancelled':
+        f = f.filter((r: any) => r.status === 'CANCELLED');
+        break;
     }
     if (search) {
       const q = search.toLowerCase();
-      f = f.filter((r: any) =>
-        r.title?.toLowerCase().includes(q) ||
-        r.businessName?.toLowerCase().includes(q) ||
-        r.business?.toLowerCase().includes(q)
+      f = f.filter(
+        (r: any) =>
+          r.title?.toLowerCase().includes(q) ||
+          r.businessName?.toLowerCase().includes(q) ||
+          r.business?.toLowerCase().includes(q)
       );
     }
     return f;
@@ -140,7 +177,9 @@ export default function MyRentalsPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Terminées</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.completed}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {stats.completed}
+              </p>
             </div>
           </div>
         </Card>
@@ -176,7 +215,15 @@ export default function MyRentalsPage() {
               {tab.label}
               {tab.key !== 'all' && (
                 <span className="ml-1.5 text-xs opacity-70">
-                  ({tab.key === 'active' ? stats.active : tab.key === 'pending' ? stats.pending : tab.key === 'completed' ? stats.completed : stats.cancelled})
+                  (
+                  {tab.key === 'active'
+                    ? stats.active
+                    : tab.key === 'pending'
+                      ? stats.pending
+                      : tab.key === 'completed'
+                        ? stats.completed
+                        : stats.cancelled}
+                  )
                 </span>
               )}
             </button>
@@ -214,7 +261,10 @@ export default function MyRentalsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((rental: any) => {
-            const statusInfo = STATUS_CONFIG[rental.status] || { label: rental.status, variant: 'default' as const };
+            const statusInfo = STATUS_CONFIG[rental.status] || {
+              label: rental.status,
+              variant: 'default' as const,
+            };
             const depositStatus = DEPOSIT_STATUS[rental.depositStatus] || null;
             const startDate = new Date(rental.startDate || rental.date);
             const endDate = rental.endDate ? new Date(rental.endDate) : null;
@@ -254,7 +304,15 @@ export default function MyRentalsPage() {
                           </p>
                           {depositStatus && (
                             <p className="text-[10px] text-gray-400 mt-0.5">
-                              Caution : <span className={cn('font-medium', depositStatus.variant === 'success' ? 'text-emerald-600' : 'text-amber-600')}>
+                              Caution :{' '}
+                              <span
+                                className={cn(
+                                  'font-medium',
+                                  depositStatus.variant === 'success'
+                                    ? 'text-emerald-600'
+                                    : 'text-amber-600'
+                                )}
+                              >
                                 {depositStatus.label}
                               </span>
                             </p>
@@ -266,12 +324,20 @@ export default function MyRentalsPage() {
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
-                          {startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {startDate.toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
                         </span>
                         {endDate && (
                           <span className="flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
-                            {endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {endDate.toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
                           </span>
                         )}
                         {duration && (

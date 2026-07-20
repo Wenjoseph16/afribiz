@@ -18,8 +18,7 @@ export function useNotifyError() {
 
   const notifyError = useCallback(
     (error: unknown, title = 'Erreur', description?: string) => {
-      const message =
-        error instanceof Error ? error.message : String(error || 'Erreur inconnue');
+      const message = error instanceof Error ? error.message : String(error || 'Erreur inconnue');
 
       // Toujours logger l'erreur complète en console
       console.error(`[${title}]`, error);

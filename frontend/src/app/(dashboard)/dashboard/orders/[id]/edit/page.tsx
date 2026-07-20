@@ -68,9 +68,7 @@ export default function OrderEditPage() {
 
   if (!order) {
     return (
-      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-        Commande introuvable
-      </div>
+      <div className="text-center py-12 text-gray-500 dark:text-gray-400">Commande introuvable</div>
     );
   }
 
@@ -120,9 +118,7 @@ export default function OrderEditPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
         <Card padding="lg">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Informations
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Informations</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -167,9 +163,7 @@ export default function OrderEditPage() {
         </Card>
 
         <Card padding="lg">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Montant
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Montant</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -213,9 +207,7 @@ export default function OrderEditPage() {
         </Card>
 
         <Card padding="lg">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Livraison
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Livraison</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

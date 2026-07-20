@@ -20,7 +20,7 @@ export function useActiveOffers(params?: {
   return useQuery({
     queryKey: offerKeys.active(params),
     queryFn: async () => {
-      const res = await apiClient.get('/offers', { params });
+      const res = await apiClient.getActiveOffers(params);
       return res.data.data as {
         items: any[];
         total: number;
@@ -37,7 +37,7 @@ export function useOffer(id: string) {
   return useQuery({
     queryKey: offerKeys.detail(id),
     queryFn: async () => {
-      const res = await apiClient.get('/offers/' + id);
+      const res = await apiClient.getOffer(id);
       return res.data.data;
     },
     enabled: !!id,
@@ -47,7 +47,7 @@ export function useOffer(id: string) {
 export function useCreateOffer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => apiClient.post('/offers', data),
+    mutationFn: (data: any) => apiClient.createOffer(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: offerKeys.all }),
   });
 }
@@ -55,7 +55,7 @@ export function useCreateOffer() {
 export function useUpdateOffer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiClient.put('/offers/' + id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiClient.updateOffer(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: offerKeys.all }),
   });
 }
@@ -63,7 +63,7 @@ export function useUpdateOffer() {
 export function useDeleteOffer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.delete('/offers/' + id),
+    mutationFn: (id: string) => apiClient.deleteOffer(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: offerKeys.all }),
   });
 }
@@ -71,7 +71,7 @@ export function useDeleteOffer() {
 export function useClaimOffer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.post('/offers/' + id + '/claim'),
+    mutationFn: (id: string) => apiClient.claimOffer(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: offerKeys.all }),
   });
 }
@@ -87,7 +87,7 @@ export function useNearbyBusinesses(params: {
   return useQuery({
     queryKey: offerKeys.nearby(params),
     queryFn: async () => {
-      const res = await apiClient.get('/businesses/nearby', { params });
+      const res = await apiClient.getNearbyBusinesses(params);
       return res.data.data as {
         items: any[];
         total: number;
@@ -99,4 +99,3 @@ export function useNearbyBusinesses(params: {
     enabled: !!params.latitude && !!params.longitude,
   });
 }
-

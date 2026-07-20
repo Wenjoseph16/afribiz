@@ -47,11 +47,13 @@ export default function PendingOrdersAlert() {
       }`}
     >
       <div className="flex items-start gap-3">
-        <div className={`mt-1 rounded-lg p-2 ${
-          isUrgent
-            ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
-            : 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400'
-        }`}>
+        <div
+          className={`mt-1 rounded-lg p-2 ${
+            isUrgent
+              ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
+              : 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400'
+          }`}
+        >
           {isUrgent ? <AlertTriangle className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
         </div>
         <div className="flex-1">
@@ -59,11 +61,13 @@ export default function PendingOrdersAlert() {
             <h3 className="font-semibold text-gray-900 dark:text-white">
               {count} commande{count > 1 ? 's' : ''} en attente
             </h3>
-            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              isUrgent
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-            }`}>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                isUrgent
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+              }`}
+            >
               <Clock className="h-3 w-3" />
               {isUrgent ? 'Urgent' : 'En attente'}
             </span>

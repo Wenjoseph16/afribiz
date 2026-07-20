@@ -44,7 +44,7 @@ export default function SalesPage() {
   const orders = useMemo(() => {
     if (!ordersData) return [];
     const d = (ordersData as any)?.data || ordersData;
-    const list = Array.isArray(d) ? d : (d.orders || d.items || []);
+    const list = Array.isArray(d) ? d : d.orders || d.items || [];
     return list;
   }, [ordersData]);
 
@@ -55,10 +55,11 @@ export default function SalesPage() {
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list.filter((o: any) =>
-        (o.orderId || o.id || '').toLowerCase().includes(q) ||
-        (o.module?.name || '').toLowerCase().includes(q) ||
-        (o.client?.name || o.business?.name || '').toLowerCase().includes(q)
+      list = list.filter(
+        (o: any) =>
+          (o.orderId || o.id || '').toLowerCase().includes(q) ||
+          (o.module?.name || '').toLowerCase().includes(q) ||
+          (o.client?.name || o.business?.name || '').toLowerCase().includes(q)
       );
     }
     return list;
@@ -70,9 +71,13 @@ export default function SalesPage() {
       total: orders.length,
       completed: completed.length,
       totalAmount: completed.reduce((s: number, o: any) => s + Number(o.amount || 0), 0),
-      avgAmount: completed.length > 0
-        ? Math.round(completed.reduce((s: number, o: any) => s + Number(o.amount || 0), 0) / completed.length)
-        : 0,
+      avgAmount:
+        completed.length > 0
+          ? Math.round(
+              completed.reduce((s: number, o: any) => s + Number(o.amount || 0), 0) /
+                completed.length
+            )
+          : 0,
     };
   }, [orders]);
 
@@ -100,12 +105,16 @@ export default function SalesPage() {
         </Card>
         <Card padding="md" hoverable>
           <DollarSign className="h-5 w-5 text-emerald-600 mb-2" />
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalAmount.toLocaleString()} FCFA</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {stats.totalAmount.toLocaleString()} FCFA
+          </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Revenu total</p>
         </Card>
         <Card padding="md" hoverable>
           <TrendingUp className="h-5 w-5 text-purple-600 mb-2" />
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.avgAmount.toLocaleString()} FCFA</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {stats.avgAmount.toLocaleString()} FCFA
+          </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Prix moyen</p>
         </Card>
         <Card padding="md" hoverable>
@@ -125,7 +134,9 @@ export default function SalesPage() {
                 onClick={() => setStatusFilter(f.value)}
                 className={cn(
                   'px-2.5 py-1 text-xs font-medium rounded-lg transition-colors',
-                  statusFilter === f.value ? 'bg-brand text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+                  statusFilter === f.value
+                    ? 'bg-brand text-white'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                 )}
               >
                 {f.label}
@@ -145,24 +156,41 @@ export default function SalesPage() {
           <EmptyState
             icon={<ShoppingBag className="h-10 w-10" />}
             title="Aucune vente"
-            description={searchQuery ? 'Aucun résultat pour votre recherche.' : 'Aucune vente pour le moment.'}
+            description={
+              searchQuery ? 'Aucun résultat pour votre recherche.' : 'Aucune vente pour le moment.'
+            }
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">ID Commande</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Module</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Client</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Date</th>
-                  <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Montant</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">Statut</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    ID Commande
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Module
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Client
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Date
+                  </th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Montant
+                  </th>
+                  <th className="text-center py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Statut
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredOrders.map((order: any) => (
-                  <tr key={order.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                  <tr
+                    key={order.id}
+                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <td className="py-3 px-2 font-mono text-xs text-gray-500 dark:text-gray-400">
                       #{order.orderId || order.id?.slice(0, 8) || '—'}
                     </td>
@@ -173,7 +201,9 @@ export default function SalesPage() {
                       {order.client?.name || order.business?.name || order.clientName || '—'}
                     </td>
                     <td className="py-3 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR') : '—'}
+                      {order.createdAt
+                        ? new Date(order.createdAt).toLocaleDateString('fr-FR')
+                        : '—'}
                     </td>
                     <td className="py-3 px-2 text-right font-semibold text-gray-900 dark:text-gray-100">
                       {order.amount ? `${Number(order.amount).toLocaleString()} FCFA` : '—'}

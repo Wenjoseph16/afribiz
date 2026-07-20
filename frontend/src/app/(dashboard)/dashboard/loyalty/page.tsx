@@ -3,8 +3,18 @@
 import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Award, Gift, Star, TrendingUp, Ticket, Percent, CheckCircle,
-  ChevronRight, Clock, Sparkles, Zap, ShoppingBag,
+  Award,
+  Gift,
+  Star,
+  TrendingUp,
+  Ticket,
+  Percent,
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  Sparkles,
+  Zap,
+  ShoppingBag,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -46,22 +56,33 @@ export default function LoyaltyPage() {
   const redeemMutation = useMutation({
     mutationFn: (data: { businessId: string; points: number; rewardTitle?: string }) =>
       apiClient.redeemLoyaltyPoints(data),
-    onSuccess: (res) => {
+    onSuccess: (res: any) => {
       setRedeemMsg(res.data.data.message || 'Points échangés avec succès !');
       qc.invalidateQueries({ queryKey: ['client-loyalty'] });
       setTimeout(() => setRedeemMsg(null), 5000);
     },
     onError: (err: any) => {
-      setRedeemMsg(err?.response?.data?.error || 'Erreur lors de l\'échange');
+      setRedeemMsg(err?.response?.data?.error || "Erreur lors de l'échange");
       setTimeout(() => setRedeemMsg(null), 5000);
     },
   });
 
-  const handleRedeem = useCallback((reward: any) => {
-    const businessId = reward.businessId || loyaltyData?.businessId;
-    if (!businessId) { setRedeemMsg('Impossible d\'identifier le commerce'); setTimeout(() => setRedeemMsg(null), 5000); return; }
-    redeemMutation.mutate({ businessId, points: reward.pointsCost || reward.cost || 100, rewardTitle: reward.title });
-  }, [redeemMutation, loyaltyData]);
+  const handleRedeem = useCallback(
+    (reward: any) => {
+      const businessId = reward.businessId || loyaltyData?.businessId;
+      if (!businessId) {
+        setRedeemMsg("Impossible d'identifier le commerce");
+        setTimeout(() => setRedeemMsg(null), 5000);
+        return;
+      }
+      redeemMutation.mutate({
+        businessId,
+        points: reward.pointsCost || reward.cost || 100,
+        rewardTitle: reward.title,
+      });
+    },
+    [redeemMutation, loyaltyData]
+  );
 
   const { data: promosData } = useQuery({
     queryKey: ['client-available-promotions'],
@@ -71,10 +92,13 @@ export default function LoyaltyPage() {
     },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const loyalty = (loyaltyData || {}) as any;
   const promotions = useMemo(() => {
-    const p = Array.isArray(promosData) ? promosData : (promosData?.promotions || promosData?.items || []);
-    return p as any[];
+    const p = Array.isArray(promosData)
+      ? promosData
+      : promosData?.promotions || promosData?.items || [];
+    return Array.isArray(p) ? p : [];
   }, [promosData]);
 
   const points = loyalty.points || 0;
@@ -85,12 +109,35 @@ export default function LoyaltyPage() {
   const rewards = loyalty.rewards || [];
   const history = loyalty.history || [];
 
-  const TIER_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<any> }> = {
-    BRONZE: { label: 'Bronze', color: 'text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400', icon: Award },
-    SILVER: { label: 'Argent', color: 'text-gray-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-300', icon: Award },
-    GOLD: { label: 'Or', color: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Star },
-    PLATINUM: { label: 'Platine', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400', icon: Sparkles },
-    DIAMOND: { label: 'Diamant', color: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/30 dark:text-cyan-400', icon: Zap },
+  const TIER_CONFIG: Record<
+    string,
+    { label: string; color: string; icon: React.ComponentType<any> }
+  > = {
+    BRONZE: {
+      label: 'Bronze',
+      color: 'text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400',
+      icon: Award,
+    },
+    SILVER: {
+      label: 'Argent',
+      color: 'text-gray-500 bg-gray-50 dark:bg-gray-800 dark:text-gray-300',
+      icon: Award,
+    },
+    GOLD: {
+      label: 'Or',
+      color: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 dark:text-yellow-400',
+      icon: Star,
+    },
+    PLATINUM: {
+      label: 'Platine',
+      color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400',
+      icon: Sparkles,
+    },
+    DIAMOND: {
+      label: 'Diamant',
+      color: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/30 dark:text-cyan-400',
+      icon: Zap,
+    },
   };
 
   const currentTier = TIER_CONFIG[tier] || TIER_CONFIG.BRONZE;
@@ -125,7 +172,12 @@ export default function LoyaltyPage() {
                 <div className={cn('p-2 rounded-lg', currentTier.color)}>
                   <TierIcon className="h-5 w-5" />
                 </div>
-                <span className={cn('px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider', currentTier.color)}>
+                <span
+                  className={cn(
+                    'px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider',
+                    currentTier.color
+                  )}
+                >
                   {currentTier.label}
                 </span>
               </div>
@@ -133,18 +185,15 @@ export default function LoyaltyPage() {
                 {points.toLocaleString()}
                 <span className="text-lg font-medium text-emerald-200/80 ml-2">points</span>
               </p>
-              <p className="text-emerald-100/70 text-sm mt-1">
-                Points de fidélité cumulés
-              </p>
+              <p className="text-emerald-100/70 text-sm mt-1">Points de fidélité cumulés</p>
             </div>
 
             {nextTierPoints > 0 && (
               <div className="text-right">
-                <p className="text-emerald-100/60 text-xs mb-1">
-                  Prochain palier
-                </p>
+                <p className="text-emerald-100/60 text-xs mb-1">Prochain palier</p>
                 <p className="text-white font-bold text-lg">
-                  {TIER_CONFIG[Object.keys(TIER_CONFIG)[Object.keys(TIER_CONFIG).indexOf(tier) + 1]]?.label || 'Maximum'}
+                  {TIER_CONFIG[Object.keys(TIER_CONFIG)[Object.keys(TIER_CONFIG).indexOf(tier) + 1]]
+                    ?.label || 'Maximum'}
                 </p>
                 <p className="text-emerald-100/60 text-xs mt-1">
                   {Math.max(0, nextTierPoints - points).toLocaleString()} points restants
@@ -180,7 +229,9 @@ export default function LoyaltyPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Points à vie</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{lifetimePoints.toLocaleString()}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {lifetimePoints.toLocaleString()}
+              </p>
             </div>
           </div>
         </Card>
@@ -202,7 +253,9 @@ export default function LoyaltyPage() {
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Promotions</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{promotions.length}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {promotions.length}
+              </p>
             </div>
           </div>
         </Card>
@@ -240,16 +293,25 @@ export default function LoyaltyPage() {
                     className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={cn('p-2 rounded-lg', REWARD_COLORS[reward.type] || 'bg-gray-100 text-gray-600')}>
+                      <div
+                        className={cn(
+                          'p-2 rounded-lg',
+                          REWARD_COLORS[reward.type] || 'bg-gray-100 text-gray-600'
+                        )}
+                      >
                         <Icon className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{reward.title}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {reward.title}
+                        </p>
                         <p className="text-xs text-gray-500">{reward.description}</p>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-brand">{reward.pointsCost || reward.cost} pts</p>
+                      <p className="text-sm font-bold text-brand">
+                        {reward.pointsCost || reward.cost} pts
+                      </p>
                       <Button
                         variant={reward.claimed ? 'ghost' : 'outline'}
                         size="xs"
@@ -278,7 +340,9 @@ export default function LoyaltyPage() {
           ) : (
             <div className="space-y-3">
               {promotions.slice(0, 10).map((promo: any, i: number) => {
-                const isExpiring = promo.endDate && new Date(promo.endDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                const isExpiring =
+                  promo.endDate &&
+                  new Date(promo.endDate) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
                 return (
                   <div
                     key={promo.id || i}
@@ -289,25 +353,32 @@ export default function LoyaltyPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{promo.title}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {promo.title}
+                        </p>
                         {isExpiring && (
                           <span className="text-[10px] font-medium text-red-600 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded-full shrink-0">
-            Bientôt expiré
-          </span>
+                            Bientôt expiré
+                          </span>
                         )}
                       </div>
                       {promo.description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{promo.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {promo.description}
+                        </p>
                       )}
                       {promo.code && (
                         <div className="inline-flex items-center gap-1.5 mt-1.5 px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600">
-                          <span className="text-xs font-mono font-bold text-gray-900 dark:text-gray-100">{promo.code}</span>
+                          <span className="text-xs font-mono font-bold text-gray-900 dark:text-gray-100">
+                            {promo.code}
+                          </span>
                         </div>
                       )}
                       {promo.endDate && (
                         <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Valable jusqu&apos;au {new Date(promo.endDate).toLocaleDateString('fr-FR')}
+                          Valable jusqu&apos;au{' '}
+                          {new Date(promo.endDate).toLocaleDateString('fr-FR')}
                         </p>
                       )}
                     </div>
@@ -330,10 +401,14 @@ export default function LoyaltyPage() {
                 className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    'p-1.5 rounded-lg',
-                    entry.type === 'EARNED' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-                  )}>
+                  <div
+                    className={cn(
+                      'p-1.5 rounded-lg',
+                      entry.type === 'EARNED'
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : 'bg-red-50 text-red-600'
+                    )}
+                  >
                     {entry.type === 'EARNED' ? (
                       <TrendingUp className="h-4 w-4" />
                     ) : (
@@ -341,19 +416,28 @@ export default function LoyaltyPage() {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{entry.label || entry.description}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {entry.label || entry.description}
+                    </p>
                     <p className="text-xs text-gray-500">
-                      {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('fr-FR', {
-                        day: 'numeric', month: 'short', year: 'numeric'
-                      }) : ''}
+                      {entry.createdAt
+                        ? new Date(entry.createdAt).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : ''}
                     </p>
                   </div>
                 </div>
-                <span className={cn(
-                  'text-sm font-bold',
-                  entry.type === 'EARNED' ? 'text-emerald-600' : 'text-red-600'
-                )}>
-                  {entry.type === 'EARNED' ? '+' : '-'}{entry.points || entry.amount} pts
+                <span
+                  className={cn(
+                    'text-sm font-bold',
+                    entry.type === 'EARNED' ? 'text-emerald-600' : 'text-red-600'
+                  )}
+                >
+                  {entry.type === 'EARNED' ? '+' : '-'}
+                  {entry.points || entry.amount} pts
                 </span>
               </div>
             ))}

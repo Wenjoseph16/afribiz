@@ -8,8 +8,14 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import {
-  Shield, CheckCircle, Lock, Unlock, Clock,
-  Layers, DollarSign, AlertTriangle,
+  Shield,
+  CheckCircle,
+  Lock,
+  Unlock,
+  Clock,
+  Layers,
+  DollarSign,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,14 +29,14 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
   const { data: progress, isLoading } = useQuery({
     queryKey: ['escrow-steps', escrowId],
     queryFn: async () => {
-      const res = await apiClient.get(`/escrow/${escrowId}/steps`);
+      const res = await apiClient.getEscrowSteps(escrowId);
       return res.data.data;
     },
     enabled: !!escrowId,
   });
 
   const releaseStepMutation = useMutation({
-    mutationFn: (stepNumber: number) => apiClient.post(`/escrow/${escrowId}/release-step/${stepNumber}`),
+    mutationFn: (stepNumber: number) => apiClient.releaseEscrowStep(escrowId, stepNumber),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['escrow-steps', escrowId] });
     },
@@ -71,9 +77,13 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-amber-600" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Escrow standard</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Escrow standard
+            </h3>
           </div>
-          <Badge variant={isDisputed ? 'danger' : isReleased ? 'success' : isActive ? 'warning' : 'info'}>
+          <Badge
+            variant={isDisputed ? 'danger' : isReleased ? 'success' : isActive ? 'warning' : 'info'}
+          >
             {statusLabels[progress.status] || progress.status}
           </Badge>
         </div>
@@ -102,7 +112,14 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
   }
 
   // Stepped escrow
-  const { steps = [], totalSteps = 0, currentStep = 0, progress: progressPercent = 0, totalReleased = 0, totalAmount = 0 } = progress;
+  const {
+    steps = [],
+    totalSteps = 0,
+    currentStep = 0,
+    progress: progressPercent = 0,
+    totalReleased = 0,
+    totalAmount = 0,
+  } = progress;
 
   return (
     <Card padding="md">
@@ -110,11 +127,17 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Layers className="h-5 w-5 text-brand" />
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Escrow par étapes</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            Escrow par étapes
+          </h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400">{currentStep}/{totalSteps} étapes</span>
-          <Badge variant={isDisputed ? 'danger' : isReleased ? 'success' : isActive ? 'warning' : 'info'}>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {currentStep}/{totalSteps} étapes
+          </span>
+          <Badge
+            variant={isDisputed ? 'danger' : isReleased ? 'success' : isActive ? 'warning' : 'info'}
+          >
             {statusLabels[progress.status] || progress.status}
           </Badge>
         </div>
@@ -124,7 +147,9 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs text-gray-500 dark:text-gray-400">Progression</span>
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{progressPercent}%</span>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            {progressPercent}%
+          </span>
         </div>
         <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
           <div
@@ -138,12 +163,16 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
       <div className="flex items-center justify-between mb-4 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400">Libéré</p>
-          <p className="text-sm font-bold text-emerald-600">{Number(totalReleased).toLocaleString()} FCFA</p>
+          <p className="text-sm font-bold text-emerald-600">
+            {Number(totalReleased).toLocaleString()} FCFA
+          </p>
         </div>
         <DollarSign className="h-4 w-4 text-gray-300" />
         <div className="text-right">
           <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
-          <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{Number(totalAmount).toLocaleString()} FCFA</p>
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+            {Number(totalAmount).toLocaleString()} FCFA
+          </p>
         </div>
       </div>
 
@@ -152,7 +181,12 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
         <div className="p-3 mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
           <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">×</button>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto text-red-400 hover:text-red-600"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -160,7 +194,8 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
       <div className="relative">
         {steps.map((step: any, index: number) => {
           const isReleased = step.status === 'RELEASED';
-          const isCurrent = step.status === 'PENDING' && (index === 0 || steps[index - 1]?.status === 'RELEASED');
+          const isCurrent =
+            step.status === 'PENDING' && (index === 0 || steps[index - 1]?.status === 'RELEASED');
           const isLocked = !isReleased && !isCurrent;
           const canRelease = isCurrent && isActive;
 
@@ -168,21 +203,27 @@ export function EscrowSteps({ escrowId }: EscrowStepsProps) {
             <div key={step.step} className="relative flex gap-4 pb-6 last:pb-0">
               {/* Timeline line */}
               {index < steps.length - 1 && (
-                <div className={cn(
-                  'absolute left-[15px] top-8 w-0.5 h-[calc(100%-32px)]',
-                  isReleased ? 'bg-emerald-300 dark:bg-emerald-600' : 'bg-gray-200 dark:bg-gray-700'
-                )} />
+                <div
+                  className={cn(
+                    'absolute left-[15px] top-8 w-0.5 h-[calc(100%-32px)]',
+                    isReleased
+                      ? 'bg-emerald-300 dark:bg-emerald-600'
+                      : 'bg-gray-200 dark:bg-gray-700'
+                  )}
+                />
               )}
 
               {/* Step circle */}
-              <div className={cn(
-                'relative z-10 mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 transition-all',
-                isReleased
-                  ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-500 text-emerald-600'
-                  : isCurrent
-                    ? 'bg-brand/10 dark:bg-brand/20 border-brand text-brand animate-pulse'
-                    : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
-              )}>
+              <div
+                className={cn(
+                  'relative z-10 mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 transition-all',
+                  isReleased
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-500 text-emerald-600'
+                    : isCurrent
+                      ? 'bg-brand/10 dark:bg-brand/20 border-brand text-brand animate-pulse'
+                      : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
+                )}
+              >
                 {isReleased ? (
                   <CheckCircle className="h-4 w-4" />
                 ) : isCurrent ? (

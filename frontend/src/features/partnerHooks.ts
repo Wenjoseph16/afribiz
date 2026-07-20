@@ -42,7 +42,10 @@ export function useCreatePartner() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => apiClient.createPartner(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['partners'] }); qc.invalidateQueries({ queryKey: ['partner-stats'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['partners'] });
+      qc.invalidateQueries({ queryKey: ['partner-stats'] });
+    },
   });
 }
 
@@ -50,7 +53,10 @@ export function useUpdatePartner() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => apiClient.updatePartner(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['partners'] }); qc.invalidateQueries({ queryKey: ['partner-stats'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['partners'] });
+      qc.invalidateQueries({ queryKey: ['partner-stats'] });
+    },
   });
 }
 
@@ -58,7 +64,10 @@ export function useDeletePartner() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.deletePartner(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['partners'] }); qc.invalidateQueries({ queryKey: ['partner-stats'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['partners'] });
+      qc.invalidateQueries({ queryKey: ['partner-stats'] });
+    },
   });
 }
 
@@ -80,10 +89,20 @@ export function useCreatePartnerContract() {
   });
 }
 
+export function useUpdatePartnerContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiClient.updatePartnerContract(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['partner-contracts'] }),
+  });
+}
+
 export function useSignPartnerContract() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, byBusiness }: { id: string; byBusiness: boolean }) => apiClient.signPartnerContract(id, byBusiness),
+    mutationFn: ({ id, byBusiness }: { id: string; byBusiness: boolean }) =>
+      apiClient.signPartnerContract(id, byBusiness),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['partner-contracts'] }),
   });
 }
@@ -120,6 +139,15 @@ export function useCreatePartnerAssignment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => apiClient.createPartnerAssignment(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['partner-assignments'] }),
+  });
+}
+
+export function useUpdatePartnerAssignment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiClient.updatePartnerAssignment(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['partner-assignments'] }),
   });
 }
@@ -182,6 +210,15 @@ export function useCreatePartnerPermission() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => apiClient.createPartnerPermission(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['partner-permissions'] }),
+  });
+}
+
+export function useUpdatePartnerPermission() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiClient.updatePartnerPermission(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['partner-permissions'] }),
   });
 }
