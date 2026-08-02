@@ -16,6 +16,7 @@ import {
   rejectAdCampaignSchema as rejectAdSchema,
   suspendAdCampaignSchema as suspendAdSchema,
 } from '../validators/admin';
+import { recalculateBusinessRating } from '../services/business';
 import {
   getDashboardStats,
   getUsers,
@@ -607,6 +608,9 @@ router.put(
   '/admin/reviews/:id/:action',
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const { id, action } = req.params;
+    const review = await prisma.businessReview
+      .findUnique({ where: { id }, select: { businessId: true } })
+      .catch(() => null);
     if (action === 'approve') {
       await prisma.businessReview
         .update({ where: { id }, data: { isActive: true } })
@@ -622,6 +626,7 @@ router.put(
         .update({ where: { id }, data: { isActive: false } })
         .catch(() => {});
     }
+    if (review?.businessId) await recalculateBusinessRating(review.businessId);
     res.json(successResponse(null, 'Avis mis à jour'));
   })
 );
@@ -629,8 +634,12 @@ router.put(
 router.delete(
   '/admin/reviews/:id',
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+    const review = await prisma.businessReview
+      .findUnique({ where: { id: req.params.id }, select: { businessId: true } })
+      .catch(() => null);
     await prisma.businessReview.delete({ where: { id: req.params.id } }).catch(() => {});
     await prisma.developerModuleReview.delete({ where: { id: req.params.id } }).catch(() => {});
+    if (review?.businessId) await recalculateBusinessRating(review.businessId);
     res.json(successResponse(null, 'Avis supprimé'));
   })
 );

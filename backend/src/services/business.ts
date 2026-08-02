@@ -138,6 +138,23 @@ export async function getBusinessReviews(slug: string) {
   });
 }
 
+export async function recalculateBusinessRating(businessId: string) {
+  try {
+    const stats = await prisma.businessReview.aggregate({
+      where: { businessId, isActive: true },
+      _avg: { rating: true },
+      _count: true,
+    });
+    await prisma.business.update({
+      where: { id: businessId },
+      data: { rating: stats._avg.rating || 0, reviewCount: stats._count },
+    });
+  } catch (error) {
+    // Recalcul non bloquant : un échec ne doit pas casser l'action d'administration
+    console.warn(`[recalculateBusinessRating] Échec pour ${businessId}`, error);
+  }
+}
+
 function slugify(text: string): string {
   return text
     .toString()

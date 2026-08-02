@@ -65,10 +65,32 @@ export async function createReview(
   });
   if (data.productId) await recalculateProductRating(data.productId);
   if (data.serviceId) await recalculateServiceRating(data.serviceId);
+  // Résoudre le vrai businessId (le produit/service appartient à un commerce)
+  let targetBusinessId = '';
+  let targetBusinessName = '';
+  try {
+    if (data.productId) {
+      const p = await prisma.product.findUnique({
+        where: { id: data.productId },
+        select: { businessId: true, business: { select: { name: true } } },
+      });
+      targetBusinessId = p?.businessId || '';
+      targetBusinessName = p?.business?.name || '';
+    } else if (data.serviceId) {
+      const s = await prisma.service.findUnique({
+        where: { id: data.serviceId },
+        select: { businessId: true, business: { select: { name: true } } },
+      });
+      targetBusinessId = s?.businessId || '';
+      targetBusinessName = s?.business?.name || '';
+    }
+  } catch {
+    // silencieux : la résolution ne doit jamais bloquer la publication de l'avis
+  }
   publishReviewPublished({
     userId,
-    businessId: data.productId || data.serviceId || '',
-    businessName: review.title || 'Avis',
+    businessId: targetBusinessId || data.productId || data.serviceId || '',
+    businessName: targetBusinessName || review.title || 'Avis',
     rating: data.rating,
   });
   return review;
