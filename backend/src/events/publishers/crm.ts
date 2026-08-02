@@ -242,6 +242,36 @@ export const publishUnfollowed = def<{
   }),
   (p) => ({ businessId: p.businessId, businessName: p.businessName, link: '/dashboard/followers' })
 );
+export const publishFavoriteAdded = def<{
+  userId: string;
+  referenceId: string;
+  type: string;
+  businessId?: string;
+  businessName?: string;
+}>(
+  DomainEventType.FAVORITE_ADDED,
+  (p) => ({ referenceId: p.referenceId, type: p.type }),
+  (p) => ({
+    businessId: p.businessId,
+    businessName: p.businessName,
+    link: '/dashboard/favorites',
+  })
+);
+export const publishFavoriteRemoved = def<{
+  userId: string;
+  referenceId: string;
+  type: string;
+  businessId?: string;
+  businessName?: string;
+}>(
+  DomainEventType.FAVORITE_REMOVED,
+  (p) => ({ referenceId: p.referenceId, type: p.type }),
+  (p) => ({
+    businessId: p.businessId,
+    businessName: p.businessName,
+    link: '/dashboard/favorites',
+  })
+);
 export const publishBookingCreated = def<{
   userId: string;
   bookingId: string;

@@ -46,6 +46,9 @@ describe('Favorite Service', () => {
   test('addFavorite creates if not existing', async () => {
     jest.spyOn(mockPrisma.favorite, 'findUnique').mockResolvedValue(null);
     jest.spyOn(mockPrisma.favorite, 'create').mockResolvedValue(mockFav as any);
+    jest
+      .spyOn(mockPrisma.product, 'findUnique')
+      .mockResolvedValue({ businessId: 'b1', business: { name: 'Boutique' } } as any);
     await expect(addFavorite('u1', 'PRODUCT', 'p1')).resolves.not.toThrow();
   });
 
@@ -57,11 +60,28 @@ describe('Favorite Service', () => {
   test('removeFavorite removes existing favorite', async () => {
     jest.spyOn(mockPrisma.favorite, 'findFirst').mockResolvedValue(mockFav as any);
     jest.spyOn(mockPrisma.favorite, 'delete').mockResolvedValue(mockFav as any);
+    jest
+      .spyOn(mockPrisma.product, 'findUnique')
+      .mockResolvedValue({ businessId: 'b1', business: { name: 'Boutique' } } as any);
     await expect(removeFavorite('u1', 'fav-1')).resolves.not.toThrow();
   });
 
   test('removeFavorite throws 404 if not found', async () => {
     jest.spyOn(mockPrisma.favorite, 'findFirst').mockResolvedValue(null);
     await expect(removeFavorite('u1', 'fav-x')).rejects.toThrow('Favorite not found');
+  });
+
+  test('addFavorite publishes FAVORITE_ADDED event', async () => {
+    const { eventBus } = jest.requireActual('../../events/EventBus');
+    const spy = jest.spyOn(eventBus, 'publish');
+    jest.spyOn(mockPrisma.favorite, 'findUnique').mockResolvedValue(null);
+    jest.spyOn(mockPrisma.favorite, 'create').mockResolvedValue(mockFav as any);
+    jest
+      .spyOn(mockPrisma.product, 'findUnique')
+      .mockResolvedValue({ businessId: 'b1', business: { name: 'Boutique' } } as any);
+    await addFavorite('u1', 'PRODUCT', 'p1');
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'FAVORITE_ADDED', userId: 'u1' })
+    );
   });
 });

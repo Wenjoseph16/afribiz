@@ -39,6 +39,8 @@ export {
   publishReviewPublished,
   publishReviewResponse,
   publishNewMessage,
+  publishFavoriteAdded,
+  publishFavoriteRemoved,
   publishLoyaltyPointsEarned,
   publishLoyaltyTierChanged,
   publishCampaignScheduled,
