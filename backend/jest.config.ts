@@ -10,6 +10,8 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   clearMocks: true,
+  // Machine locale lente : 5000ms causait des timeouts sous charge (2724 tests)
+  testTimeout: 30000,
   collectCoverageFrom: [
     'src/services/**/*.ts',
     'src/lib/**/*.ts',

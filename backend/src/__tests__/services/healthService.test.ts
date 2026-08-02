@@ -12,6 +12,11 @@ jest.mock('../../lib/db', () => ({ prisma: { $queryRaw: mockQueryRaw } }));
 jest.mock('../../lib/cache', () => ({ cache: { get: mockCacheGet } }));
 
 describe('healthService', () => {
+  beforeAll(() => {
+    const fs = require('fs');
+    if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads', { recursive: true });
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
