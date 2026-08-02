@@ -11,6 +11,7 @@ const eventToFeedType: Partial<Record<DomainEventType, FeedItemType>> = {
   [DomainEventType.FLASH_SALE_STARTED]: FeedItemType.OFFER_FLASH,
   [DomainEventType.UPCOMING_EVENT]: FeedItemType.EVENT,
   [DomainEventType.RENTAL_CREATED]: FeedItemType.RENTAL,
+  [DomainEventType.BUSINESS_ACTIVATED]: FeedItemType.BUSINESS_UPDATE,
 };
 
 export function registerFeedHandlers(): void {
@@ -66,6 +67,13 @@ export function registerFeedHandlers(): void {
           referenceId = p.rentalId as string;
           title = p.businessName as string;
           description = `Nouvelle location disponible`;
+          break;
+        }
+        case DomainEventType.BUSINESS_ACTIVATED: {
+          const p = event.payload;
+          referenceId = p.businessId as string;
+          title = (p.businessName as string) || 'Nouvelle entreprise';
+          description = `Rejoint la communauté AfriBiz`;
           break;
         }
       }

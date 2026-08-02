@@ -66,5 +66,24 @@ describe('RuleEngineService', () => {
       await RuleEngineService.processEvent(mockEvent);
       expect(mockPrisma.automationRule.update).not.toHaveBeenCalled();
     });
+
+    it('should map expanded events to enum triggers (signup -> NEW_CLIENT)', async () => {
+      (mockPrisma.automationRule.findMany as jest.Mock).mockResolvedValue([]);
+      await RuleEngineService.processEvent({
+        ...mockEvent,
+        type: DomainEventType.USER_SIGNED_UP,
+      });
+      expect(mockPrisma.automationRule.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { trigger: 'NEW_CLIENT', status: 'ACTIVE' } })
+      );
+    });
+
+    it('should map INVOICE_PAID to PAYMENT_RECEIVED trigger', async () => {
+      (mockPrisma.automationRule.findMany as jest.Mock).mockResolvedValue([]);
+      await RuleEngineService.processEvent({ ...mockEvent, type: DomainEventType.INVOICE_PAID });
+      expect(mockPrisma.automationRule.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { trigger: 'PAYMENT_RECEIVED', status: 'ACTIVE' } })
+      );
+    });
   });
 });

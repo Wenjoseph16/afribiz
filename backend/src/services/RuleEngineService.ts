@@ -28,6 +28,14 @@ const EVENT_TO_TRIGGER: Record<string, string> = {
   [DomainEventType.DEBT_OVERDUE]: 'DEBT_OVERDUE',
   [DomainEventType.DISPUTE_OPENED]: 'DISPUTE_OPENED',
   [DomainEventType.AD_COMPLETED]: 'AD_COMPLETED',
+  // Couverture élargie : ces événements déclenchent aussi des règles existantes.
+  // Les triggers sont une colonne enum (AutomationTrigger) : chaque mapping
+  // pointe vers une valeur valide de l'enum pour que les règles se déclenchent.
+  [DomainEventType.USER_SIGNED_UP]: 'NEW_CLIENT',
+  [DomainEventType.ORDER_ACCEPTED]: 'ORDER_CONFIRMED',
+  [DomainEventType.ORDER_REFUSED]: 'ORDER_CANCELLED',
+  [DomainEventType.INVOICE_PAID]: 'PAYMENT_RECEIVED',
+  [DomainEventType.UPCOMING_EVENT]: 'EVENT_SCHEDULED',
 };
 
 export class RuleEngineService {

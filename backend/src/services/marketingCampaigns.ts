@@ -2,8 +2,7 @@ import { NotificationType } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
-// Event publishers à décommenter quand les fonctions seront ajoutées
-// import { publishCampaignStarted, publishCampaignCompleted } from '../events/publishers';
+import { publishCampaignSent } from '../events/publishers';
 
 // ── Birthday Campaign ──
 export async function sendBirthdayCampaigns() {
@@ -30,6 +29,7 @@ export async function sendBirthdayCampaigns() {
   if (birthdayUsers.length === 0) return { sent: 0 };
 
   // Find businesses these users have ordered from
+  const affectedBusinessIds = new Set<string>();
   let sent = 0;
   for (const user of birthdayUsers) {
     const businesses = await prisma.order.findMany({
@@ -39,6 +39,7 @@ export async function sendBirthdayCampaigns() {
     });
 
     for (const { businessId } of businesses) {
+      if (businessId) affectedBusinessIds.add(businessId);
       // Create notification for birthday
       await prisma.notification.create({
         data: {
@@ -53,6 +54,9 @@ export async function sendBirthdayCampaigns() {
       sent++;
     }
   }
+
+  // Un événement CAMPAIGN_SENT par business concerné (pas de doublon par client)
+  await publishCampaignSends(affectedBusinessIds, 'birthday');
 
   logger.info(`Birthday campaigns sent: ${sent}`);
   return { sent };
@@ -76,6 +80,7 @@ export async function detectInactiveClients(daysInactive: number = 30) {
     select: { id: true, firstName: true, email: true },
   });
 
+  const affectedBusinessIds = new Set<string>();
   let sent = 0;
   for (const client of inactiveClients) {
     const businessOrders = await prisma.order.findMany({
@@ -85,6 +90,7 @@ export async function detectInactiveClients(daysInactive: number = 30) {
     });
 
     for (const { businessId } of businessOrders) {
+      if (businessId) affectedBusinessIds.add(businessId);
       await prisma.notification.create({
         data: {
           userId: client.id,
@@ -99,8 +105,35 @@ export async function detectInactiveClients(daysInactive: number = 30) {
     }
   }
 
+  // Un événement CAMPAIGN_SENT par business concerné
+  await publishCampaignSends(affectedBusinessIds, 'inactive-reactivation');
+
   logger.info(`Inactive client reminders sent: ${sent}`);
   return { sent, totalInactive: inactiveClients.length };
+}
+
+// ── Event publishers (CAMPAIGN_SENT) ──
+// Publie un événement par business concerné pour alimenter le tableau de bord
+// marketing du propriétaire en temps réel (room business:{id}).
+async function publishCampaignSends(businessIds: Set<string>, campaignId: string) {
+  if (businessIds.size === 0) return;
+  const owners = await prisma.business.findMany({
+    where: { id: { in: [...businessIds] } },
+    select: { id: true, ownerId: true },
+  });
+  for (const b of owners) {
+    if (!b.ownerId) continue;
+    try {
+      await publishCampaignSent({
+        userId: b.ownerId,
+        businessId: b.id,
+        campaignId,
+        channel: 'IN_APP',
+      });
+    } catch (err) {
+      logger.warn('Campaign event publish failed', { error: (err as Error).message });
+    }
+  }
 }
 
 // ── Campaign Stats ──
