@@ -8043,3 +8043,138 @@ model VoiceCommand {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ============================================
+// ANALYTICS & REPORTS (TOME-24/25)
+// ============================================
+
+model AnalyticsEvent {
+  id         String    @id @default(uuid())
+  businessId String?
+  userId     String?
+  type       String
+  category   String?
+  eventName  String
+  properties Json?
+  value      Float?
+  occurredAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+
+  @@index([businessId, occurredAt])
+  @@index([type, occurredAt])
+  @@index([userId, occurredAt])
+}
+
+model ScheduledReport {
+  id         String    @id @default(uuid())
+  businessId String?
+  userId     String?
+  title      String
+  type       String
+  frequency  String
+  format     String    @default("PDF")
+  recipients String[]
+  isActive   Boolean   @default(true)
+  lastRunAt  DateTime?
+  nextRunAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt   DateTime @updatedAt
+  deliveries ReportDeliveryLog[]
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([isActive])
+}
+
+model ReportDeliveryLog {
+  id        String           @id @default(uuid())
+  reportId  String
+  report    ScheduledReport  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  channel   String
+  status    String
+  error     String?
+  sentAt    DateTime         @default(now())
+  createdAt DateTime         @default(now())
+
+  @@index([reportId])
+  @@index([status])
+}
+
+// ============================================
+// PUBLIC PLATFORM MODELS (CMS dynamique)
+// ============================================
+
+model FaqEntry {
+  id          String      @id @default(uuid())
+  question    String
+  answer      String
+  categoryId  String?
+  categoryRel FaqCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sortOrder   Int         @default(0)
+  isPublished Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([isPublished])
+  @@index([categoryId, sortOrder])
+}
+
+model FaqCategory {
+  id          String      @id @default(uuid())
+  slug        String      @unique
+  name        String
+  description String?
+  sortOrder   Int         @default(0)
+  entries     FaqEntry[]
+  createdAt   DateTime    @default(now())
+
+  @@index([sortOrder])
+}
+
+model Testimonial {
+  id          String   @id @default(uuid())
+  name        String
+  title       String?
+  company     String?
+  avatar      String?
+  content     String
+  rating      Int      @default(5)
+  isFeatured  Boolean  @default(false)
+  isPublished Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isFeatured])
+  @@index([isPublished])
+}
+
+model TeamMember {
+  id          String   @id @default(uuid())
+  name        String
+  role        String
+  bio         String?
+  avatar      String?
+  email       String?
+  socialLinks Json?    @default("{}")
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+model SiteStat {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  label       String
+  value       String
+  prefix      String?  @default("")
+  suffix      String?  @default("")
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
