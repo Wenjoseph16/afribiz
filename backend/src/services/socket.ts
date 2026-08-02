@@ -62,6 +62,16 @@ export function initSocket(httpServer: HttpServer): Server | null {
       socket.leave(`conversation:${conversationId}`);
     });
 
+    // Tableau de bord business : rejoindre/quitter la room temps réel du commerce
+    socket.on('join:business', (businessId: string) => {
+      socket.join(`business:${businessId}`);
+      logger.debug(`Socket joined business room: ${businessId} (${user.email})`);
+    });
+
+    socket.on('leave:business', (businessId: string) => {
+      socket.leave(`business:${businessId}`);
+    });
+
     socket.on('typing:start', (conversationId: string) => {
       socket.to(`conversation:${conversationId}`).emit('typing:start', {
         conversationId,

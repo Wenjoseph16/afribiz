@@ -137,6 +137,7 @@ import {
 } from './routes';
 import { registerNotificationHandlers } from './events/handlers/notificationHandler';
 import { registerFeedHandlers } from './events/handlers/feedHandler';
+import { registerBusinessRoomHandlers } from './events/handlers/businessRoomHandler';
 import { registerAutomationHandlers } from './services/advancedTasks';
 import { registerLoyaltyAutomation } from './services/LoyaltyAutomation';
 import { CronService } from './services/CronService';
@@ -479,6 +480,9 @@ registerNotificationHandlers();
 
 // Register feed auto-population handlers
 registerFeedHandlers();
+
+// Register realtime business dashboard push (socket room business:{id})
+registerBusinessRoomHandlers();
 
 // Register task automation handlers
 registerAutomationHandlers();
