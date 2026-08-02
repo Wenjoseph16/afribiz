@@ -42,7 +42,9 @@ export function registerBusinessRoomHandlers(): void {
     if (!BUSINESS_EVENTS.includes(event.type)) return;
 
     const metadata = event.metadata || {};
-    const businessId = metadata.businessId as string | undefined;
+    const payload = (event.payload || {}) as Record<string, unknown>;
+    const businessId =
+      (metadata.businessId as string | undefined) || (payload.businessId as string | undefined);
     if (!businessId) return;
 
     const io = getIO();

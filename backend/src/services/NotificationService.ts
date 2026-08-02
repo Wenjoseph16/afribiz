@@ -420,6 +420,10 @@ function buildDescription(event: DomainEvent): string {
       return `${event.payload?.businessName || "Quelqu'un"} a commencé à vous suivre !`;
     case DomainEventType.UNFOLLOWED:
       return `${event.payload?.businessName || "Quelqu'un"} ne vous suit plus.`;
+    case DomainEventType.FAVORITE_ADDED:
+      return `Un client a ajouté ${event.payload?.itemName || 'un de vos articles'} en favori.`;
+    case DomainEventType.FAVORITE_REMOVED:
+      return `Un client a retiré ${event.payload?.itemName || 'un de vos articles'} de ses favoris.`;
     case DomainEventType.COMMENT_CREATED:
       return `${event.payload?.targetType || "Quelqu'un"} a commenté : ${event.payload?.content || ''}`;
     case DomainEventType.COMMENT_DELETED:

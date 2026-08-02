@@ -248,9 +248,10 @@ export const publishFavoriteAdded = def<{
   type: string;
   businessId?: string;
   businessName?: string;
+  itemName?: string;
 }>(
   DomainEventType.FAVORITE_ADDED,
-  (p) => ({ referenceId: p.referenceId, type: p.type }),
+  (p) => ({ referenceId: p.referenceId, type: p.type, itemName: p.itemName || '' }),
   (p) => ({
     businessId: p.businessId,
     businessName: p.businessName,
@@ -263,9 +264,10 @@ export const publishFavoriteRemoved = def<{
   type: string;
   businessId?: string;
   businessName?: string;
+  itemName?: string;
 }>(
   DomainEventType.FAVORITE_REMOVED,
-  (p) => ({ referenceId: p.referenceId, type: p.type }),
+  (p) => ({ referenceId: p.referenceId, type: p.type, itemName: p.itemName || '' }),
   (p) => ({
     businessId: p.businessId,
     businessName: p.businessName,
