@@ -7,7 +7,6 @@ model Business {
   type                BusinessType
   modules             BusinessModule[]           @default([]) // @deprecated: use moduleAssignments
   moduleAssignments   BusinessModuleAssignment[]
-  demands             ModuleDemand[]
   description         String?
   shortDescription    String?
   email               String?
@@ -40,6 +39,7 @@ model Business {
   employeeCount       Int?
   rating              Float                      @default(0)
   reviewCount         Int                        @default(0)
+  favoriteCount       Int                        @default(0)
   isActive            Boolean                    @default(true)
   isVerified          Boolean                    @default(false)
   isPremium           Boolean                    @default(false)
@@ -59,13 +59,13 @@ model Business {
   onboardingCompleted Boolean                    @default(false)
   onboardedAt         DateTime?
 
-  verificationLevel  BusinessVerificationLevel  @default(ARGENT)
   verificationStatus BusinessVerificationStatus @default(PENDING)
   identityDocument   String?
   companyDocument    String?
   taxDocument        String?
   responsiblePhoto   String?
   verifiedAt         DateTime?
+  verificationLevel  BusinessVerificationLevel  @default(ARGENT)
   verifiedBy         String?
   rejectionReason    String?
 
@@ -104,7 +104,6 @@ model Business {
   products              Product[]
   productCategories     ProductCategory[]
   moduleInstallations   DeveloperModuleInstallation[]
-  moduleLicenses        ModuleLicense[]
   supportTickets        DeveloperSupportTicket[]
   adCampaigns           AdCampaign[]
   orders                Order[]
@@ -119,8 +118,6 @@ model Business {
   employeeDocuments     EmployeeDocument[]
   employeePerformances  EmployeePerformance[]
   employeeActivities    EmployeeActivity[]
-  employeeLeaves        Leave[]
-  employeePayrolls      Payroll[]
   drivers               Driver[]
   deliveries            Delivery[]
   deliveryTracking      DeliveryTracking[]
@@ -150,7 +147,6 @@ model Business {
   businessTags          BusinessTag[]
   clientSegments        ClientSegment[]
   notificationTemplates BusinessNotificationTemplate[]
-  faqs                  BusinessFaq[]
   stories               Story[]
   feedItems             FeedItem[]
   lives                 Live[]
@@ -165,31 +161,35 @@ model Business {
   marketNeeds           MarketNeed[]
   marketIdeas           MarketIdea[]
   posts                 Post[]
-  pipelineStages        PipelineStage[]
-  deals                 Deal[]
-  automationRules       AutomationRule[]
 
-  copilotConfig       CopilotConfiguration?
-  copilotOnboardingLogs CopilotOnboardingLog[]
-  wallet              Wallet?
-  createdAt           DateTime                      @default(now())
-  updatedAt           DateTime                      @updatedAt
-  deletedAt           DateTime?
-  TaskCategory        TaskCategory[]
-  PaymentTransaction  PaymentTransaction[]
-  Expense             Expense[]
-  ModuleConfiguration ModuleConfiguration[]
-  ModuleActivityLog   ModuleActivityLog[]
-  payments            Payment[]
-  pageViews           PageView[]
-  businessDailyStats  BusinessDailyStats[]
-  productDailyStats   ProductDailyStats[]
-  clientDailyStats    ClientDailyStats[]
-  quests              Quest[]
-  streaks             Streak[]
-  leaderboards        Leaderboard[]
-  challenges          Challenge[]
-  moduleSubscriptions DeveloperModuleSubscription[]
+  copilotConfig               CopilotConfiguration?
+  wallet                      Wallet?
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+  deletedAt                   DateTime?
+  TaskCategory                TaskCategory[]
+  PaymentTransaction          PaymentTransaction[]
+  Expense                     Expense[]
+  ModuleConfiguration         ModuleConfiguration[]
+  ModuleActivityLog           ModuleActivityLog[]
+  payments                    Payment[]
+  pageViews                   PageView[]
+  businessDailyStats          BusinessDailyStats[]
+  productDailyStats           ProductDailyStats[]
+  clientDailyStats            ClientDailyStats[]
+  quests                      Quest[]
+  streaks                     Streak[]
+  leaderboards                Leaderboard[]
+  challenges                  Challenge[]
+  CopilotOnboardingLog        CopilotOnboardingLog[]
+  Payroll                     Payroll[]
+  BusinessFaq                 BusinessFaq[]
+  PipelineStage               PipelineStage[]
+  Deal                        Deal[]
+  Leave                       Leave[]
+  DeveloperModuleSubscription DeveloperModuleSubscription[]
+  ModuleLicense               ModuleLicense[]
+  AutomationRule              AutomationRule[]
 
   @@index([slug])
   @@index([ownerId])
@@ -252,7 +252,6 @@ model Favorite {
   @@unique([userId, referenceId])
   @@index([userId])
   @@index([referenceId])
-  @@index([productId])
 }
 
 // ============================================

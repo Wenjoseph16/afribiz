@@ -42,66 +42,62 @@ model DeveloperProfile {
   updatedAt              DateTime                    @updatedAt
   DeveloperBadge         DeveloperBadge[]
   followers              Follow[]
-  approvedDemands        ModuleDemand[]
-  moduleMatches          ModuleMatch[]
 
   @@index([userId])
 }
 
 
 model DeveloperModule {
-  id                  String                        @id @default(uuid())
-  developerId         String
-  developer           DeveloperProfile              @relation(fields: [developerId], references: [id], onDelete: Cascade)
-  name                String
-  slug                String                        @unique
-  description         String?
-  fullDescription     String?
-  logo                String?
-  images              String[]
-  price               Decimal?                      @db.Decimal(12, 2)
-  currency            String                        @default("FCFA")
-  isFree              Boolean                       @default(false)
-  isActive            Boolean                       @default(true)
-  isPublished         Boolean                       @default(false)
-  status              ModuleStatus                  @default(DRAFT)
-  isVerified          Boolean                       @default(false)
-  isFeatured          Boolean                       @default(false)
-  category            String?
-  subcategory         String?
-  tags                String[]
-  features            String[]
-  requirements        String?
-  setupGuide          String?
-  version             String                        @default("1.0.0")
-  rating              Float                         @default(0)
-  reviewCount         Int                           @default(0)
-  totalInstalls       Int                           @default(0)
-  totalSales          Int                           @default(0)
-  totalRevenue        Decimal                       @default(0) @db.Decimal(12, 2)
-  publishedAt         DateTime?
-  archivedAt          DateTime?
-  pricingType         ModulePricingType?
-  businessModule      String? // Maps to BusinessModule enum value if this module extends a native module
-  installations       DeveloperModuleInstallation[]
-  reviews             DeveloperModuleReview[]
-  revenues            DeveloperRevenue[]
-  supportTickets      DeveloperSupportTicket[]
-  versions            DeveloperModuleVersion[]
-  webhooks            ModuleWebhook[]
-  createdAt           DateTime                      @default(now())
-  updatedAt           DateTime                      @updatedAt
-  ModulePermission    ModulePermission[]
-  ModuleConfiguration ModuleConfiguration[]
-  ModuleActivityLog   ModuleActivityLog[]
-  ModuleManifest      ModuleManifest?
-  ModuleCommission    ModuleCommission[]
-  ModuleLicense       ModuleLicense[]
-  ModuleAnalytics     ModuleAnalytics[]
-  ModuleErrorLog      ModuleErrorLog[]
-  ModuleValidation    ModuleValidation[]
-  moduleSubscriptions DeveloperModuleSubscription[]
-  moduleMatches       ModuleMatch[]
+  id                          String                        @id @default(uuid())
+  developerId                 String
+  developer                   DeveloperProfile              @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  name                        String
+  slug                        String                        @unique
+  description                 String?
+  fullDescription             String?
+  logo                        String?
+  images                      String[]
+  price                       Decimal?                      @db.Decimal(12, 2)
+  currency                    String                        @default("FCFA")
+  isFree                      Boolean                       @default(false)
+  isActive                    Boolean                       @default(true)
+  isPublished                 Boolean                       @default(false)
+  status                      ModuleStatus                  @default(DRAFT)
+  isVerified                  Boolean                       @default(false)
+  isFeatured                  Boolean                       @default(false)
+  category                    String?
+  subcategory                 String?
+  tags                        String[]
+  features                    String[]
+  requirements                String?
+  setupGuide                  String?
+  version                     String                        @default("1.0.0")
+  rating                      Float                         @default(0)
+  reviewCount                 Int                           @default(0)
+  totalInstalls               Int                           @default(0)
+  totalSales                  Int                           @default(0)
+  totalRevenue                Decimal                       @default(0) @db.Decimal(12, 2)
+  publishedAt                 DateTime?
+  archivedAt                  DateTime?
+  pricingType                 ModulePricingType?
+  installations               DeveloperModuleInstallation[]
+  reviews                     DeveloperModuleReview[]
+  revenues                    DeveloperRevenue[]
+  supportTickets              DeveloperSupportTicket[]
+  versions                    DeveloperModuleVersion[]
+  webhooks                    ModuleWebhook[]
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+  ModulePermission            ModulePermission[]
+  ModuleConfiguration         ModuleConfiguration[]
+  ModuleActivityLog           ModuleActivityLog[]
+  ModuleManifest              ModuleManifest?
+  ModuleCommission            ModuleCommission[]
+  DeveloperModuleSubscription DeveloperModuleSubscription[]
+  ModuleLicense               ModuleLicense[]
+  ModuleAnalytics             ModuleAnalytics[]
+  ModuleErrorLog              ModuleErrorLog[]
+  ModuleValidation            ModuleValidation[]
 
   @@index([developerId])
   @@index([slug])
@@ -111,21 +107,16 @@ model DeveloperModule {
 
 
 model DeveloperModuleVersion {
-  id               String                        @id @default(uuid())
+  id               String             @id @default(uuid())
   moduleId         String
-  module           DeveloperModule               @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module           DeveloperModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   version          String
   releaseNotes     String?
   changelog        String?
-  fileUrl          String?
-  fileSize         Int?
-  checksum         String?
-  downloadCount    Int                           @default(0)
-  createdAt        DateTime                      @default(now())
-  updatedAt        DateTime                      @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   ModuleManifest   ModuleManifest[]
   ModuleValidation ModuleValidation[]
-  Installations    DeveloperModuleInstallation[]
 
   @@unique([moduleId, version])
   @@index([moduleId])
@@ -169,7 +160,6 @@ model DeveloperPayout {
   notes            String?
   requestedAt      DateTime         @default(now())
   processedAt      DateTime?
-  processedBy      String?
   transactionId    String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt

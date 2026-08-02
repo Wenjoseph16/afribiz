@@ -101,5 +101,3 @@ model CopilotOnboardingLog {
   updatedAt    DateTime  @updatedAt
 }
 
-
-// Enums

@@ -15,6 +15,7 @@ model Notification {
 
   @@index([userId])
   @@index([userId, read])
+  @@index([userId, read, createdAt])
   @@index([type])
   @@index([createdAt])
 }
@@ -103,28 +104,32 @@ model Conversation {
 
   @@index([type])
   @@index([participants])
+  @@index([lastMessageAt])
 }
 
 
 model Message {
-  id             String       @id @default(uuid())
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderId       String
-  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  content        String
-  attachment     String?
-  attachmentType String?
-  read           Boolean      @default(false)
-  readAt         DateTime?
-  createdAt      DateTime     @default(now())
-
-  reactions MessageReaction[]
+  id              String            @id @default(uuid())
+  conversationId  String
+  conversation    Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String
+  sender          User              @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  content         String
+  attachment      String?
+  read            Boolean           @default(false)
+  readAt          DateTime?
+  createdAt       DateTime          @default(now())
+  MessageReaction MessageReaction[]
 
   @@index([conversationId])
+  @@index([conversationId, createdAt])
   @@index([senderId])
   @@index([createdAt])
 }
+
+// ============================================
+// FAVORITE MODELS
+// ============================================
 
 
 model NotificationTemplate {

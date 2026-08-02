@@ -94,7 +94,7 @@ model OfferFlash {
   isFeatured      Boolean        @default(false)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-  claimedOffers   ClaimedOffer[]
+  ClaimedOffer    ClaimedOffer[]
 
   @@index([businessId])
   @@index([endAt])
@@ -103,21 +103,8 @@ model OfferFlash {
   @@index([createdAt])
 }
 
-
-model ClaimedOffer {
-  id        String     @id @default(uuid())
-  offerId   String
-  offer     OfferFlash @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  userId    String
-  createdAt DateTime   @default(now())
-
-  @@index([offerId])
-  @@index([userId])
-  @@index([offerId, userId])
-}
-
 // ============================================
-// SHORTS BUSINESS MODELSLS (Phase 3 — Shorts Business)
+// SHORTS BUSINESS MODELS (Phase 3 — Shorts Business)
 // ============================================
 
 
@@ -398,7 +385,6 @@ model ContentReport {
   @@index([type, referenceId])
   @@index([reporterId])
   @@index([status])
-  @@index([reviewedById])
 }
 
 // ============================================
@@ -406,10 +392,18 @@ model ContentReport {
 // ============================================
 
 
+model ClaimedOffer {
+  id        String     @id @default(uuid())
+  offerId   String
+  offer     OfferFlash @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime   @default(now())
 
-// ============================================
-// PUBLIC PLATFORM MODELS (CMS dynamique)
-// ============================================
+  @@index([offerId])
+  @@index([userId])
+  @@index([offerId, userId])
+}
+
 
 model FaqEntry {
   id          String      @id @default(uuid())
@@ -427,6 +421,7 @@ model FaqEntry {
   @@index([categoryId, sortOrder])
 }
 
+
 model FaqCategory {
   id          String      @id @default(uuid())
   slug        String      @unique
@@ -438,6 +433,7 @@ model FaqCategory {
 
   @@index([sortOrder])
 }
+
 
 model Testimonial {
   id          String   @id @default(uuid())
@@ -457,6 +453,7 @@ model Testimonial {
   @@index([isPublished])
 }
 
+
 model TeamMember {
   id          String   @id @default(uuid())
   name        String
@@ -473,6 +470,7 @@ model TeamMember {
   @@index([sortOrder])
 }
 
+
 model SiteStat {
   id          String   @id @default(uuid())
   key         String   @unique
@@ -485,3 +483,80 @@ model SiteStat {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// ============================================
+// PLATFORM MODELS (AdSlots, Localisation, i18n, Metriques, Dashboards)
+// ============================================
+
+
+model Region {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  countries Country[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model Country {
+  id           String    @id @default(uuid())
+  code         String    @unique
+  name         String
+  regionId     String
+  region       Region    @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  currency     String
+  currencyCode String
+  mobileMoney  String[]
+  phoneCode    String?
+  locales      String[]  @default(["fr"])
+  isActive     Boolean   @default(true)
+  cities       City[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([regionId])
+  @@index([isActive])
+}
+
+
+model City {
+  id        String   @id @default(uuid())
+  countryId String
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([countryId, name])
+  @@index([countryId, isActive])
+}
+
+
+model TranslationKey {
+  id           String        @id @default(uuid())
+  key          String        @unique
+  namespace    String        @default("common")
+  description  String?
+  translations Translation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([namespace])
+}
+
+
+model Translation {
+  id        String         @id @default(uuid())
+  keyId     String
+  key       TranslationKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  locale    String
+  value     String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([keyId, locale])
+  @@index([locale])
+}
+

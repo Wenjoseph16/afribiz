@@ -662,6 +662,8 @@ export async function subscribeToPlan(
   ]);
   if (!plan) throw new AppError('Plan introuvable', 404);
   if (!plan.isActive) throw new AppError("Ce plan n'est plus actif", 400);
+  if (!plan.businessId)
+    throw new AppError("Ce plan plateforme n'est pas souscriptible pour le moment", 400);
   if (existing) throw new AppError('Vous avez deja un abonnement actif', 409);
 
   const now = new Date();

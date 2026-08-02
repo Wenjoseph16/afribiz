@@ -223,6 +223,7 @@ model Product {
   sortOrder              Int              @default(0)
   rating                 Float            @default(0)
   reviewCount            Int              @default(0)
+  favoriteCount           Int              @default(0)
   orderCount             Int              @default(0)
   seoTitle               String?
   seoDescription         String?
@@ -281,7 +282,6 @@ model Cart {
   updatedAt DateTime   @updatedAt
 
   @@index([userId])
-  @@index([couponId])
 }
 
 
@@ -306,8 +306,6 @@ model CartItem {
 
   @@index([cartId])
   @@index([productId])
-  @@index([variantId])
-  @@index([serviceId])
 }
 
 // ============================================
@@ -353,6 +351,7 @@ model Room {
   isAvailable       Boolean   @default(true)
   sortOrder         Int       @default(0)
   bookings          Booking[]
+  blockedDates      RoomBlockedDate[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
@@ -431,5 +430,21 @@ model Coupon {
   @@index([clientId])
   @@index([code])
   @@index([status])
+}
+
+
+model RoomBlockedDate {
+  id        String   @id @default(uuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([startDate, endDate])
 }
 

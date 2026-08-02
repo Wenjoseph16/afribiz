@@ -97,20 +97,22 @@ model User {
   postLikes                PostLike[]
   adminKyc                 AdminKyc?
   adminAuditLogs           AdminAuditLog[]
-  escrows                  Escrow[]
-  pushSubscriptions        PushSubscription[]
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  deletedAt       DateTime?
-  TaskComment     TaskComment[]
-  UserQuizAttempt UserQuizAttempt[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+  TaskComment      TaskComment[]
+  UserQuizAttempt  UserQuizAttempt[]
+  PushSubscription PushSubscription[]
+  Wallet           Wallet[]
+  userMetadata     UserMetadata?
 
   @@index([email])
   @@index([phone])
   @@index([primaryRole])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([email, isActive])
 }
 
 
@@ -131,7 +133,6 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@index([isActive])
-  @@index([deviceId])
 }
 
 
@@ -306,5 +307,17 @@ model RevokedToken {
   @@index([jti])
   @@index([userId])
   @@index([exp])
+}
+
+
+model UserMetadata {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 

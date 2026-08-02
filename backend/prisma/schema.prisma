@@ -58,6 +58,8 @@ enum SecurityLogAction {
   AUTOMATION_RULE_CHANGED
   CMS_PAGE_CHANGED
   FORM_TEMPLATE_CHANGED
+  KYC_CHECK
+  AML_BLOCK
 }
 
 enum NotificationType {
@@ -105,6 +107,7 @@ enum NotificationChannel {
   EMAIL
   SMS
   WHATSAPP
+  PUSH
 }
 
 enum BusinessType {
@@ -196,6 +199,13 @@ enum BusinessModule {
   MODULE_MARKETPLACE
   ADVANCED_TASKS
   TRAINING
+  SAVINGS
+  CRM
+  MARKETING
+  MEDIA
+  AFRISCORE
+  GROUP_BUY
+  VOICE
 }
 
 enum DeveloperVerificationStatus {
@@ -372,6 +382,7 @@ enum DebtSourceType {
   SUBSCRIPTION
   PROJECT
   PHYSICAL_SALE
+  MANUAL
 }
 
 enum ClientRiskLevel {
@@ -644,6 +655,14 @@ enum AdPlacementPage {
   EVENT_PAGE
   NOTIFICATION_CENTER
   BUSINESS_PUBLIC_PAGE
+  ABOUT
+  PRICING
+  CONTACT
+  DEVELOPERS
+  BLOG
+  MEDIA
+  BLOG_ARTICLE
+  LEGAL
 }
 
 enum AdPlacementPosition {
@@ -910,6 +929,7 @@ model User {
   UserQuizAttempt  UserQuizAttempt[]
   PushSubscription PushSubscription[]
   Wallet           Wallet[]
+  userMetadata     UserMetadata?
 
   @@index([email])
   @@index([phone])
@@ -1580,6 +1600,7 @@ model Business {
   employeeCount       Int?
   rating              Float                      @default(0)
   reviewCount         Int                        @default(0)
+  favoriteCount       Int                        @default(0)
   isActive            Boolean                    @default(true)
   isVerified          Boolean                    @default(false)
   isPremium           Boolean                    @default(false)
@@ -2153,6 +2174,7 @@ model Product {
   sortOrder              Int              @default(0)
   rating                 Float            @default(0)
   reviewCount            Int              @default(0)
+  favoriteCount           Int              @default(0)
   orderCount             Int              @default(0)
   seoTitle               String?
   seoDescription         String?
@@ -2555,6 +2577,7 @@ model Room {
   isAvailable       Boolean   @default(true)
   sortOrder         Int       @default(0)
   bookings          Booking[]
+  blockedDates      RoomBlockedDate[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
@@ -2996,6 +3019,8 @@ model Review {
   rating    Int      @default(5)
   title     String?
   comment   String?
+  response  String?
+  responseAt DateTime?
   images    String[]
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -4272,8 +4297,8 @@ model PortfolioTestimonial {
 
 model SubscriptionPlan {
   id           String                  @id @default(uuid())
-  businessId   String
-  business     Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId   String?
+  business     Business?               @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name         String
   description  String?
   type         SubscriptionPlanType    @default(STANDARD)
@@ -4535,6 +4560,10 @@ model AdCampaign {
   id              String         @id @default(uuid())
   packageId       String?
   package         AdPackage?     @relation(fields: [packageId], references: [id])
+  slotId          String?
+  slot            AdSlot?        @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  targetPages     String[]
+  targetPositions String[]
   advertiserType  AdvertiserType
   businessId      String?
   business        Business?      @relation(fields: [businessId], references: [id])
@@ -4574,6 +4603,7 @@ model AdCampaign {
   @@index([status])
   @@index([startDate, endDate])
   @@index([businessId])
+  @@index([slotId])
 }
 
 model AdCreative {
@@ -6151,6 +6181,8 @@ model CmsPage {
   title       String
   content     String
   excerpt     String?
+  coverImage  String?
+  type        CmsPageType @default(PAGE)
   category    String        @default("general")
   tags        String[]      @default([])
   status      CmsPageStatus @default(DRAFT)
@@ -6163,6 +6195,8 @@ model CmsPage {
   @@index([slug])
   @@index([category])
   @@index([status])
+  @@index([type])
+  @@index([type, status])
 }
 
 model CmsCategory {
@@ -6227,6 +6261,7 @@ enum NotificationTemplateChannel {
   SMS
   WHATSAPP
   IN_APP
+  PUSH
 }
 
 model NotificationTemplate {
@@ -8177,4 +8212,182 @@ model SiteStat {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ============================================
+// PLATFORM MODELS (AdSlots, Localisation, i18n, Metriques, Dashboards)
+// ============================================
+
+enum CmsPageType {
+  PAGE
+  ARTICLE
+}
+
+model AdSlot {
+  id        String       @id @default(uuid())
+  page      String
+  position  String
+  label     String
+  width     Int          @default(0)
+  height    Int          @default(0)
+  isActive  Boolean      @default(true)
+  campaigns AdCampaign[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([page, position])
+  @@index([page, position, isActive])
+}
+
+model Region {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  countries Country[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Country {
+  id           String    @id @default(uuid())
+  code         String    @unique
+  name         String
+  regionId     String
+  region       Region    @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  currency     String
+  currencyCode String
+  mobileMoney  String[]
+  phoneCode    String?
+  locales      String[]  @default(["fr"])
+  isActive     Boolean   @default(true)
+  cities       City[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([regionId])
+  @@index([isActive])
+}
+
+model City {
+  id        String   @id @default(uuid())
+  countryId String
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([countryId, name])
+  @@index([countryId, isActive])
+}
+
+model TranslationKey {
+  id           String        @id @default(uuid())
+  key          String        @unique
+  namespace    String        @default("common")
+  description  String?
+  translations Translation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([namespace])
+}
+
+model Translation {
+  id        String         @id @default(uuid())
+  keyId     String
+  key       TranslationKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  locale    String
+  value     String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([keyId, locale])
+  @@index([locale])
+}
+
+model UserMetadata {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model MetricSnapshot {
+  id         String   @id @default(uuid())
+  businessId String?
+  metric     String
+  value      Float    @default(0)
+  period     String
+  snapshotAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, metric])
+  @@index([businessId, snapshotAt])
+}
+
+model PeriodAggregation {
+  id         String   @id @default(uuid())
+  businessId String?
+  period     String
+  metric     String
+  value      Float    @default(0)
+  date       DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([businessId, period, metric, date])
+  @@index([businessId, period, date])
+}
+
+model DashboardLayout {
+  id         String   @id @default(uuid())
+  userId     String?
+  businessId String?
+  role       String   @default("BUSINESS")
+  layout     Json     @default("[]")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, businessId, role])
+}
+
+model DashboardWidget {
+  id         String   @id @default(uuid())
+  userId     String?
+  businessId String?
+  role       String   @default("BUSINESS")
+  title      String
+  type       String
+  config     Json?    @default("{}")
+  position   Int      @default(0)
+  width      Int      @default(1)
+  height     Int      @default(1)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([role])
+}
+
+model RoomBlockedDate {
+  id        String   @id @default(uuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([startDate, endDate])
 }

@@ -39,7 +39,6 @@ model Referral {
   @@index([referrerId])
   @@index([code])
   @@index([status])
-  @@index([refereeId])
 }
 
 
@@ -68,25 +67,25 @@ model ReferralReward {
 
 
 model SavingsGroup {
-  id              String            @id @default(uuid())
-  businessId      String
-  name            String
-  description     String?
-  type            SavingsGroupType  @default(ROTATING)
-  currency        String            @default("FCFA")
-  contributionAmount Decimal?        @db.Decimal(12, 2)
-  frequency       String            @default("weekly")
-  maxMembers      Int               @default(10)
-  startDate       DateTime?
-  endDate         DateTime?
-  status          SavingsGroupStatus @default(ACTIVE)
-  rules           Json?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id                 String             @id @default(uuid())
+  businessId         String
+  name               String
+  description        String?
+  type               SavingsGroupType   @default(ROTATING)
+  currency           String             @default("FCFA")
+  contributionAmount Decimal?           @db.Decimal(12, 2)
+  frequency          String             @default("weekly")
+  maxMembers         Int                @default(10)
+  startDate          DateTime?
+  endDate            DateTime?
+  status             SavingsGroupStatus @default(ACTIVE)
+  rules              Json?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
-  members     SavingsMember[]
-  cycles      SavingsCycle[]
-  escrows     Escrow[]
+  members SavingsMember[]
+  cycles  SavingsCycle[]
+  escrows Escrow[]
 
   @@index([businessId])
   @@index([status])
@@ -94,65 +93,65 @@ model SavingsGroup {
 
 
 model SavingsCycle {
-  id            String       @id @default(uuid())
-  groupId       String
-  cycleNumber   Int
-  startDate     DateTime
-  endDate       DateTime?
-  totalAmount   Decimal?     @db.Decimal(12, 2)
-  status        String       @default("ACTIVE")
-  payoutDate    DateTime?
-  completedAt   DateTime?
-  releaseAt     DateTime?
-  totalCollected Decimal?    @default(0) @db.Decimal(12, 2)
+  id               String    @id @default(uuid())
+  groupId          String
+  cycleNumber      Int
+  startDate        DateTime
+  endDate          DateTime?
+  totalAmount      Decimal?  @db.Decimal(12, 2)
+  status           String    @default("ACTIVE")
+  payoutDate       DateTime?
+  completedAt      DateTime?
+  releaseAt        DateTime?
+  totalCollected   Decimal?  @default(0) @db.Decimal(12, 2)
   totalDistributed Decimal?  @default(0) @db.Decimal(12, 2)
-  createdAt     DateTime     @default(now())
+  createdAt        DateTime  @default(now())
 
   contributions SavingsContribution[]
   escrows       Escrow[]
+  group         SavingsGroup          @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([groupId])
   @@index([cycleNumber])
-  group SavingsGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 
 model SavingsContribution {
-  id            String                    @id @default(uuid())
-  cycleId       String
-  memberId      String
-  amount        Decimal                   @db.Decimal(12, 2)
-  currency      String                    @default("FCFA")
-  status        SavingsContributionStatus @default(PENDING)
-  paidAt        DateTime?
-  method        String?
-  reference     String?
-  notes         String?
-  createdAt     DateTime                  @default(now())
+  id        String                    @id @default(uuid())
+  cycleId   String
+  memberId  String
+  amount    Decimal                   @db.Decimal(12, 2)
+  currency  String                    @default("FCFA")
+  status    SavingsContributionStatus @default(PENDING)
+  paidAt    DateTime?
+  method    String?
+  reference String?
+  notes     String?
+  createdAt DateTime                  @default(now())
+  cycle     SavingsCycle              @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  member    SavingsMember             @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([cycleId])
   @@index([memberId])
-  cycle SavingsCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
-  member SavingsMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 }
 
 
 model SavingsLoan {
-  id             String             @id @default(uuid())
+  id             String            @id @default(uuid())
   groupId        String
   memberId       String?
-  amount         Decimal            @db.Decimal(12, 2)
-  interestRate   Decimal            @default(0) @db.Decimal(5, 2)
-  totalRepay     Decimal            @db.Decimal(12, 2)
-  durationMonths Int                @default(1)
+  amount         Decimal           @db.Decimal(12, 2)
+  interestRate   Decimal           @default(0) @db.Decimal(5, 2)
+  totalRepay     Decimal           @db.Decimal(12, 2)
+  durationMonths Int               @default(1)
   purpose        String?
-  status         SavingsLoanStatus  @default(PENDING)
+  status         SavingsLoanStatus @default(PENDING)
   approvedAt     DateTime?
   disbursedAt    DateTime?
   repaidAt       DateTime?
   notes          String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   repayments SavingsLoanRepayment[]
 
@@ -163,27 +162,27 @@ model SavingsLoan {
 
 
 model GroupBuy {
-  id              String        @id @default(uuid())
+  id              String         @id @default(uuid())
   businessId      String
   productId       String?
   title           String
   description     String?
   image           String?
-  price           Decimal       @db.Decimal(12, 2)
-  groupPrice      Decimal       @db.Decimal(12, 2)
-  currency        String        @default("FCFA")
-  minParticipants Int           @default(5)
+  price           Decimal        @db.Decimal(12, 2)
+  groupPrice      Decimal        @db.Decimal(12, 2)
+  currency        String         @default("FCFA")
+  minParticipants Int            @default(5)
   maxParticipants Int?
-  currentCount    Int           @default(0)
-  discountPercent Float         @default(0)
-  savings         Decimal?      @db.Decimal(12, 2)
+  currentCount    Int            @default(0)
+  discountPercent Float          @default(0)
+  savings         Decimal?       @db.Decimal(12, 2)
   startAt         DateTime?
   endAt           DateTime?
   status          GroupBuyStatus @default(DRAFT)
   whatsappGroup   String?
-  isActive        Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   participants GroupBuyParticipant[]
 
@@ -194,25 +193,21 @@ model GroupBuy {
 
 
 model GroupBuyParticipant {
-  id          String   @id @default(uuid())
-  groupBuyId  String
-  userId      String?
-  name        String
-  phone       String?
-  email       String?
-  quantity    Int      @default(1)
-  amount      Decimal  @db.Decimal(12, 2)
-  status      String   @default("PENDING")
-  paidAt      DateTime?
-  paymentRef  String?
-  createdAt   DateTime @default(now())
+  id         String    @id @default(uuid())
+  groupBuyId String
+  userId     String?
+  name       String
+  phone      String?
+  email      String?
+  quantity   Int       @default(1)
+  amount     Decimal   @db.Decimal(12, 2)
+  status     String    @default("PENDING")
+  paidAt     DateTime?
+  paymentRef String?
+  createdAt  DateTime  @default(now())
+  groupBuy   GroupBuy  @relation(fields: [groupBuyId], references: [id], onDelete: Cascade)
 
   @@index([groupBuyId])
   @@index([userId])
-  groupBuy GroupBuy @relation(fields: [groupBuyId], references: [id], onDelete: Cascade)
 }
-
-// ============================================
-// 4.5 — TAXES MULTI-PAYS (ZLECAF)
-// ============================================
 

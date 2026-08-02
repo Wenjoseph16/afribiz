@@ -70,7 +70,7 @@ model Booking {
   @@index([startDate])
   @@index([createdAt])
   @@index([businessId, startDate, status])
-  @@index([rentalId])
+  @@index([clientId, status, startDate])
   @@index([deletedAt])
 }
 
@@ -273,35 +273,33 @@ model PlanningTask {
   @@index([priority])
   @@index([categoryId])
   @@index([startDate])
-  @@index([partnerId])
 }
 
 
 model Training {
-  id          String         @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   description String?
   category    String?
   duration    String?
-  lessons     Int            @default(0)
-  price       Decimal?       @db.Decimal(12, 2)
-  currency    String         @default("FCFA")
+  lessons     Int       @default(0)
   businessId  String?
-  business    Business?      @relation(fields: [businessId], references: [id])
-  users       UserTraining[]
+  business    Business? @relation(fields: [businessId], references: [id])
+  // ============================================
+  // TRAINING LESSON & QUIZ MODELS
+  // ============================================
+
+  users UserTraining[]
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   deletedAt      DateTime?
   TrainingLesson TrainingLesson[]
+  price          Decimal?         @db.Decimal(12, 2)
 
   @@index([businessId])
   @@index([category])
 }
-
-// ============================================
-// TRAINING LESSON & QUIZ MODELS
-// ============================================
 
 
 model TrainingLesson {

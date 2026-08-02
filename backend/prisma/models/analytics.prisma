@@ -53,11 +53,6 @@ model PageView {
 }
 
 
-
-// ============================================
-// ANALYTICS EVENTS & REPORTS (TOME-24/25)
-// ============================================
-
 model AnalyticsEvent {
   id         String    @id @default(uuid())
   businessId String?
@@ -74,6 +69,7 @@ model AnalyticsEvent {
   @@index([type, occurredAt])
   @@index([userId, occurredAt])
 }
+
 
 model ScheduledReport {
   id         String    @id @default(uuid())
@@ -96,6 +92,7 @@ model ScheduledReport {
   @@index([isActive])
 }
 
+
 model ReportDeliveryLog {
   id        String           @id @default(uuid())
   reportId  String
@@ -109,3 +106,72 @@ model ReportDeliveryLog {
   @@index([reportId])
   @@index([status])
 }
+
+// ============================================
+// PUBLIC PLATFORM MODELS (CMS dynamique)
+// ============================================
+
+
+model MetricSnapshot {
+  id         String   @id @default(uuid())
+  businessId String?
+  metric     String
+  value      Float    @default(0)
+  period     String
+  snapshotAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, metric])
+  @@index([businessId, snapshotAt])
+}
+
+
+model PeriodAggregation {
+  id         String   @id @default(uuid())
+  businessId String?
+  period     String
+  metric     String
+  value      Float    @default(0)
+  date       DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([businessId, period, metric, date])
+  @@index([businessId, period, date])
+}
+
+
+model DashboardLayout {
+  id         String   @id @default(uuid())
+  userId     String?
+  businessId String?
+  role       String   @default("BUSINESS")
+  layout     Json     @default("[]")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, businessId, role])
+}
+
+
+model DashboardWidget {
+  id         String   @id @default(uuid())
+  userId     String?
+  businessId String?
+  role       String   @default("BUSINESS")
+  title      String
+  type       String
+  config     Json?    @default("{}")
+  position   Int      @default(0)
+  width      Int      @default(1)
+  height     Int      @default(1)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([role])
+}
+

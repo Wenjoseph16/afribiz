@@ -20,7 +20,6 @@ enum SecurityLogAction {
   PASSWORD_CHANGE
   PASSWORD_RESET
   EMAIL_VERIFICATION
-  EMAIL_VERIFIED
   OTP_VERIFICATION
   DEVICE_ADDED
   DEVICE_REMOVED
@@ -48,6 +47,8 @@ enum SecurityLogAction {
   AUTOMATION_RULE_CHANGED
   CMS_PAGE_CHANGED
   FORM_TEMPLATE_CHANGED
+  KYC_CHECK
+  AML_BLOCK
 }
 
 
@@ -189,8 +190,15 @@ enum BusinessModule {
   PARTNERS
   DISPUTES
   MODULE_MARKETPLACE
-  TRAINING
   ADVANCED_TASKS
+  TRAINING
+  SAVINGS
+  CRM
+  MARKETING
+  MEDIA
+  AFRISCORE
+  GROUP_BUY
+  VOICE
 }
 
 
@@ -205,13 +213,6 @@ enum BusinessVerificationStatus {
   PENDING
   VERIFIED
   REJECTED
-}
-
-
-enum BusinessVerificationLevel {
-  ARGENT
-  OR
-  PLATINE
 }
 
 
@@ -394,6 +395,7 @@ enum DebtSourceType {
   SUBSCRIPTION
   PROJECT
   PHYSICAL_SALE
+  MANUAL
 }
 
 
@@ -441,7 +443,6 @@ enum TaskRecurrence {
   CUSTOM
 }
 
-// DEPRECATED — not used by any model field (kept for backward compatibility)
 
 enum ShiftType {
   MORNING
@@ -451,7 +452,6 @@ enum ShiftType {
   CUSTOM
 }
 
-// DEPRECATED — not used by any model field (kept for backward compatibility)
 
 enum CalendarEventType {
   APPOINTMENT
@@ -521,21 +521,6 @@ enum PerformanceRating {
   AVERAGE
   BELOW_AVERAGE
   POOR
-}
-
-
-enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-
-
-enum PayrollStatus {
-  DRAFT
-  PAID
-  CANCELLED
 }
 
 
@@ -714,6 +699,14 @@ enum AdPlacementPage {
   EVENT_PAGE
   NOTIFICATION_CENTER
   BUSINESS_PUBLIC_PAGE
+  ABOUT
+  PRICING
+  CONTACT
+  DEVELOPERS
+  BLOG
+  MEDIA
+  BLOG_ARTICLE
+  LEGAL
 }
 
 
@@ -860,9 +853,6 @@ enum FinancialLogAction {
   ESCROW_REFUNDED
   REFUND_ISSUED
   MANUAL_ADJUSTMENT
-  ESCALATED_CRITICAL
-  AUTO_REMINDER_SENT
-  RISK_UPDATED
 }
 
 
@@ -871,7 +861,6 @@ enum DebtReminderType {
   OVERDUE
   PAYMENT_CONFIRMATION
   CRITICAL_DEBT
-  AUTO
 }
 
 
@@ -1015,18 +1004,6 @@ enum TicketSaleStatus {
 }
 
 
-enum DealSource {
-  WEBSITE
-  REFERRAL
-  SOCIAL_MEDIA
-  COLD_CALL
-  EMAIL
-  DIRECT
-  MARKETPLACE
-  OTHER
-}
-
-
 enum ActivityType {
   PAGE_VIEW
   PRODUCT_VIEW
@@ -1042,14 +1019,6 @@ enum ActivityType {
   MESSAGE_SENT
   MESSAGE_RECEIVED
   PROMOTION_CLICKED
-}
-
-
-enum ModuleSubscriptionPeriod {
-  MONTHLY
-  QUARTERLY
-  SEMESTRIAL
-  YEARLY
 }
 
 
@@ -1149,7 +1118,6 @@ enum WebhookEventType {
   TICKET_RESOLVED
 }
 
-// DEPRECATED — not used by any model field (kept for backward compatibility)
 
 enum WebhookDeliveryStatus {
   PENDING
@@ -1158,7 +1126,6 @@ enum WebhookDeliveryStatus {
   RETRYING
 }
 
-// DEPRECATED — not used by any model field (kept for backward compatibility)
 
 enum ModuleSubscriptionStatus {
   ACTIVE
@@ -1297,6 +1264,7 @@ enum NotificationTemplateChannel {
   SMS
   WHATSAPP
   IN_APP
+  PUSH
 }
 
 
@@ -1400,12 +1368,6 @@ enum ModuleDemandStatus {
 }
 
 
-enum ProposalType {
-  EXISTING
-  CUSTOM_BUILD
-}
-
-
 enum MatchStatus {
   PENDING
   ACCEPTED
@@ -1439,6 +1401,54 @@ enum StreakType {
   DAILY_STORY
   DAILY_SHORT
   DAILY_LIVE
+}
+
+
+enum BusinessVerificationLevel {
+  ARGENT
+  OR
+  PLATINE
+}
+
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+
+enum PayrollStatus {
+  DRAFT
+  PAID
+  CANCELLED
+}
+
+
+enum DealSource {
+  WEBSITE
+  REFERRAL
+  SOCIAL_MEDIA
+  COLD_CALL
+  EMAIL
+  DIRECT
+  MARKETPLACE
+  OTHER
+}
+
+
+enum ModuleSubscriptionPeriod {
+  MONTHLY
+  QUARTERLY
+  SEMESTRIAL
+  YEARLY
+}
+
+
+enum ProposalType {
+  EXISTING
+  CUSTOM_BUILD
 }
 
 
@@ -1504,5 +1514,11 @@ enum VoiceQueryStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+
+enum CmsPageType {
+  PAGE
+  ARTICLE
 }
 
