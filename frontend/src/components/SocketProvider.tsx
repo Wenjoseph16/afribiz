@@ -3,6 +3,7 @@
 import { useCallback, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
+import { useBusinessStore } from '@/stores/businessStore';
 import { connectSocket, disconnectSocket, getSocket } from '@/services/socket';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useNotificationStore } from '@/store/notificationStore';
@@ -15,6 +16,7 @@ export function useSocket() {
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const businessId = useBusinessStore((s) => s.business?.id);
   const queryClient = useQueryClient();
   const { notify } = useToast();
 
@@ -29,6 +31,24 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries({ queryKey: ['messages', 'conversations'] });
     queryClient.invalidateQueries({ queryKey: ['business-conversations'] });
   }, [queryClient]);
+
+  // Événements métier poussés par le backend vers la room business:{id}
+  // (nouvelles commandes, réservations, avis, stocks, factures, livraisons...)
+  const handleBusinessEvent = useCallback(
+    (data?: { type?: string; payload?: Record<string, unknown> }) => {
+      queryClient.invalidateQueries();
+      const t = data?.type || '';
+      if (t.includes('ORDER_') || t.includes('BOOKING_') || t === 'NEW_CLIENT') {
+        const isBooking = t.includes('BOOKING_');
+        notify({
+          title: isBooking ? 'Nouvelle réservation' : 'Nouvelle commande',
+          description: "Une mise à jour vient d'arriver sur votre tableau de bord.",
+          variant: 'success',
+        });
+      }
+    },
+    [queryClient, notify]
+  );
 
   const { addNotification, fetchUnreadCount } = useNotificationStore();
 
@@ -76,6 +96,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socket.on('message:sent', handleNewMessage);
     socket.on('conversation:new', handleNewConversation);
     socket.on('notification:new', handleNewNotification);
+    socket.on('business:event', handleBusinessEvent);
+    if (businessId) socket.emit('join:business', businessId);
 
     return () => {
       socket.off('connect');
@@ -83,8 +105,20 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       socket.off('message:sent', handleNewMessage);
       socket.off('conversation:new', handleNewConversation);
       socket.off('notification:new', handleNewNotification);
+      socket.off('business:event', handleBusinessEvent);
     };
-  }, [accessToken, handleNewMessage, handleNewNotification, handleNewConversation]);
+  }, [accessToken, businessId, handleNewMessage, handleNewNotification, handleNewConversation, handleBusinessEvent]);
+
+  // Rejoindre/quitter la room business quand le businessId change (chargé par la Sidebar)
+  useEffect(() => {
+    if (!businessId) return;
+    const socket = getSocket();
+    if (socket?.connected) socket.emit('join:business', businessId);
+    return () => {
+      const s = getSocket();
+      if (s?.connected) s.emit('leave:business', businessId);
+    };
+  }, [businessId]);
 
   const isConnected = getSocket()?.connected ?? false;
 
