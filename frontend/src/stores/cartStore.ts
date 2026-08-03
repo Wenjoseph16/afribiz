@@ -19,11 +19,14 @@ function compositeKey(item: { productId: string; businessId: string }): string {
 
 interface CartStore {
   items: CartItem[];
+  open: boolean;
   addItem: (item: CartItem) => void;
   addMultipleItems: (items: CartItem[]) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  openDrawer: () => void;
+  closeDrawer: () => void;
   totalItems: () => number;
   totalAmount: () => number;
 }
@@ -32,6 +35,7 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      open: false,
       addItem: (item) => {
         const currentItems = get().items;
         const key = compositeKey(item);
@@ -79,11 +83,14 @@ export const useCartStore = create<CartStore>()(
         });
       },
       clearCart: () => set({ items: [] }),
+      openDrawer: () => set({ open: true }),
+      closeDrawer: () => set({ open: false }),
       totalItems: () => get().items.reduce((acc, item) => acc + item.quantity, 0),
       totalAmount: () => get().items.reduce((acc, item) => acc + item.price * item.quantity, 0),
     }),
     {
       name: 'afribiz-cart',
+      partialize: (state) => ({ items: state.items }),
     }
   )
 );

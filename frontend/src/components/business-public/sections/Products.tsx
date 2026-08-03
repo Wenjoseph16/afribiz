@@ -30,6 +30,7 @@ type ProductFilter = 'all' | 'featured' | 'popular' | 'recent' | 'sale';
 export function Products({ businessId, businessName, products }: ProductsProps) {
   const trackClick = useProductClick();
   const addItem = useCartStore((s) => s.addItem);
+  const openDrawer = useCartStore((s) => s.openDrawer);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<ProductFilter>('all');
@@ -109,6 +110,7 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
     setAddingId(null);
     setJustAddedId(product.id);
     setTimeout(() => setJustAddedId(null), 2000);
+    openDrawer();
   };
 
   return (

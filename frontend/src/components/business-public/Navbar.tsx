@@ -5,6 +5,7 @@ import { Store, Menu, X, Sun, Moon, ShoppingCart } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useCartStore } from '@/stores/cartStore';
+import { CartDrawer } from '@/components/cart/CartDrawer';
 
 const navLinks = [
   { href: '/', label: 'Accueil' },
@@ -18,7 +19,9 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
+  const cartOpen = useCartStore((s) => s.open);
+  const openCart = useCartStore((s) => s.openDrawer);
+  const closeCart = useCartStore((s) => s.closeDrawer);
   const totalItems = useCartStore((s) => s.totalItems());
 
   useEffect(() => setMounted(true), []);
@@ -47,7 +50,7 @@ export function Navbar() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setCartOpen(true)}
+                onClick={() => openCart()}
                 className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
                 aria-label="Voir le panier"
               >
@@ -127,6 +130,7 @@ export function Navbar() {
           </div>
         </div>
       )}
+      <CartDrawer isOpen={cartOpen} onClose={closeCart} />
     </>
   );
 }
