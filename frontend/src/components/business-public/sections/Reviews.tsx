@@ -33,7 +33,7 @@ function BusinessReviewForm({ slug, onSuccess }: { slug: string; onSuccess: () =
       } else if (status === 400) {
         alert(err?.response?.data?.message || 'Impossible de publier cet avis.');
       } else {
-        alert('Erreur lors de la publication de l\'avis');
+        alert("Erreur lors de la publication de l'avis");
       }
     }
   };
@@ -180,37 +180,37 @@ export function Reviews({ reviews, slug }: ReviewsProps) {
         )}
 
         {reviews.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-8 mb-10 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-          <div className="text-center flex-shrink-0">
-            <div className="text-5xl font-bold text-gray-900 dark:text-white">
-              {averageRating.toFixed(1)}
+          <div className="flex flex-col sm:flex-row gap-8 mb-10 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="text-center flex-shrink-0">
+              <div className="text-5xl font-bold text-gray-900 dark:text-white">
+                {averageRating.toFixed(1)}
+              </div>
+              <div className="flex items-center justify-center gap-0.5 mt-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`w-5 h-5 ${i < Math.round(averageRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reviews.length} avis</p>
             </div>
-            <div className="flex items-center justify-center gap-0.5 mt-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-5 h-5 ${i < Math.round(averageRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
-                />
+            <div className="flex-1 space-y-1.5">
+              {distribution.map((d) => (
+                <div key={d.star} className="flex items-center gap-2 text-sm">
+                  <span className="w-8 text-right text-gray-600 dark:text-gray-300">{d.star}</span>
+                  <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                  <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-yellow-400 rounded-full"
+                      style={{ width: `${d.percentage}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-xs text-gray-400">{d.count}</span>
+                </div>
               ))}
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reviews.length} avis</p>
           </div>
-          <div className="flex-1 space-y-1.5">
-            {distribution.map((d) => (
-              <div key={d.star} className="flex items-center gap-2 text-sm">
-                <span className="w-8 text-right text-gray-600 dark:text-gray-300">{d.star}</span>
-                <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
-                <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-yellow-400 rounded-full"
-                    style={{ width: `${d.percentage}%` }}
-                  />
-                </div>
-                <span className="w-8 text-xs text-gray-400">{d.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
         )}
 
         <div className="relative">

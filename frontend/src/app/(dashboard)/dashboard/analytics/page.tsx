@@ -44,8 +44,7 @@ export default function AnalyticsPage() {
   const cohorts = useRetentionCohorts();
   const recommendations = useProductRecommendations(5);
 
-  const loading =
-    health.isLoading || engagement.isLoading || funnel.isLoading || trends.isLoading;
+  const loading = health.isLoading || engagement.isLoading || funnel.isLoading || trends.isLoading;
 
   const healthData = (health.data ?? {}) as any;
   const engagementData = (engagement.data ?? {}) as any;
@@ -116,9 +115,7 @@ export default function AnalyticsPage() {
     ? Math.max(...funnelStages.map((s: any) => s.count ?? 0), 1)
     : 1;
 
-  const maxTrend = trendsData.length
-    ? Math.max(...trendsData.map((t: any) => t.count ?? 0), 1)
-    : 1;
+  const maxTrend = trendsData.length ? Math.max(...trendsData.map((t: any) => t.count ?? 0), 1) : 1;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -201,9 +198,7 @@ export default function AnalyticsPage() {
                           <div
                             className={cn(
                               'h-full rounded-full transition-all',
-                              i === funnelStages.length - 1
-                                ? 'bg-emerald-500'
-                                : 'bg-brand'
+                              i === funnelStages.length - 1 ? 'bg-emerald-500' : 'bg-brand'
                             )}
                             style={{ width: `${Math.max((stage.count / maxStage) * 100, 2)}%` }}
                           />
