@@ -81,7 +81,9 @@ describe('analyticsService', () => {
       expect(r.total).toBe(1);
       expect(r.totalPages).toBe(1);
       expect(mockPrisma.analyticsEvent.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ businessId: 'b1', type: 'order' }) })
+        expect.objectContaining({
+          where: expect.objectContaining({ businessId: 'b1', type: 'order' }),
+        })
       );
     });
 

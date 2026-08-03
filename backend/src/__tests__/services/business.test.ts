@@ -274,9 +274,7 @@ describe('business', () => {
         name: 'Biz',
         ownerId: 'u1',
       } as any);
-      jest
-        .spyOn(mockPrisma.businessReview, 'findFirst')
-        .mockResolvedValue({ id: 'r1' } as any);
+      jest.spyOn(mockPrisma.businessReview, 'findFirst').mockResolvedValue({ id: 'r1' } as any);
       await expect(createBusinessReview('biz', 'u2', { rating: 4 })).rejects.toThrow('déjà évalué');
     });
 

@@ -5,9 +5,7 @@ import * as analyticsService from '../services/analyticsService';
 import { prisma } from '../lib/db';
 
 function isAdminUser(req: AuthenticatedRequest): boolean {
-  return (
-    req.user!.primaryRole === 'ADMIN' || (req.user!.roles || []).includes('ADMIN')
-  );
+  return req.user!.primaryRole === 'ADMIN' || (req.user!.roles || []).includes('ADMIN');
 }
 
 /**
@@ -27,27 +25,27 @@ async function requireBusinessScope(req: AuthenticatedRequest): Promise<string |
 }
 
 /** GET /api/analytics/events — flux temps réel (filtres : type, category, search, from, to, page, limit) */
-export const getEventsFeed = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {    const businessId = await requireBusinessScope(req);
+export const getEventsFeed = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const businessId = await requireBusinessScope(req);
 
-    const result = await analyticsService.getAnalyticsEvents({
-      businessId,
-      type: req.query.type as string | undefined,
-      category: req.query.category as string | undefined,
-      search: req.query.search as string | undefined,
-      from: req.query.from as string | undefined,
-      to: req.query.to as string | undefined,
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
-    });
+  const result = await analyticsService.getAnalyticsEvents({
+    businessId,
+    type: req.query.type as string | undefined,
+    category: req.query.category as string | undefined,
+    search: req.query.search as string | undefined,
+    from: req.query.from as string | undefined,
+    to: req.query.to as string | undefined,
+    page: req.query.page ? parseInt(req.query.page as string) : 1,
+    limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
+  });
 
-    res.json({ success: true, data: result });
-  }
-);
+  res.json({ success: true, data: result });
+});
 
 /** GET /api/analytics/events/breakdown — répartition par type */
 export const getEventsByType = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {    const businessId = await requireBusinessScope(req);
+  async (req: AuthenticatedRequest, res: Response) => {
+    const businessId = await requireBusinessScope(req);
     const days = parseInt(req.query.days as string) || 30;
 
     const breakdown = await analyticsService.getEventBreakdownByType(businessId, days);
@@ -57,7 +55,8 @@ export const getEventsByType = catchAsyncErrors(
 
 /** GET /api/analytics/events/breakdown/category — répartition par catégorie d'interaction */
 export const getEventsByCategory = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {    const businessId = await requireBusinessScope(req);
+  async (req: AuthenticatedRequest, res: Response) => {
+    const businessId = await requireBusinessScope(req);
     const days = parseInt(req.query.days as string) || 30;
 
     const breakdown = await analyticsService.getEventBreakdownByCategory(businessId, days);
@@ -67,7 +66,8 @@ export const getEventsByCategory = catchAsyncErrors(
 
 /** GET /api/analytics/events/summary — totaux de la période (total, today, byType, byCategory) */
 export const getEventsSummary = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {    const businessId = await requireBusinessScope(req);
+  async (req: AuthenticatedRequest, res: Response) => {
+    const businessId = await requireBusinessScope(req);
     const days = parseInt(req.query.days as string) || 30;
 
     const summary = await analyticsService.getAnalyticsSummary(businessId, days);
@@ -77,7 +77,8 @@ export const getEventsSummary = catchAsyncErrors(
 
 /** GET /api/analytics/events/counters — compteurs agrégés business (totals par type + revenue) */
 export const getEventsCounters = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {    const businessId = await requireBusinessScope(req);
+  async (req: AuthenticatedRequest, res: Response) => {
+    const businessId = await requireBusinessScope(req);
     if (!businessId) throw new AppError('Aucun business associé au compte', 404);
     const days = parseInt(req.query.days as string) || 30;
 

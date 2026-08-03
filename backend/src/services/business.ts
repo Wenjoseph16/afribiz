@@ -2,7 +2,11 @@ import { Prisma, BusinessType, BusinessModule, BusinessVerificationStatus } from
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { getPublicPortfolio } from './portfolio';
-import { publishOnboardingCompleted, publishReviewResponse, publishReviewPublished } from '../events/publishers';
+import {
+  publishOnboardingCompleted,
+  publishReviewResponse,
+  publishReviewPublished,
+} from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
 
 export async function getPublicBusiness(slug: string) {
@@ -161,7 +165,8 @@ export async function createBusinessReview(
   });
   if (!business) throw new AppError('Business non trouvé', 404);
   // Un propriétaire ne peut pas noter son propre business
-  if (business.ownerId === userId) throw new AppError('Vous ne pouvez pas noter votre propre business', 400);
+  if (business.ownerId === userId)
+    throw new AppError('Vous ne pouvez pas noter votre propre business', 400);
 
   const existing = await prisma.businessReview.findFirst({
     where: { businessId: business.id, userId },
