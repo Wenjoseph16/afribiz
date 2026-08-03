@@ -55,9 +55,7 @@ export function EventDonut({
       )}
     >
       <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        {total} événements au total
-      </p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{total} événements au total</p>
 
       {chartData.length === 0 ? (
         <div className="h-44 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">

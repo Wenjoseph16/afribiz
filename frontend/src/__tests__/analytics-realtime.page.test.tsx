@@ -88,9 +88,7 @@ describe('AnalyticsRealtimePage', () => {
 
   it('provides filters (search, type, category)', () => {
     render(<AnalyticsRealtimePage />);
-    expect(
-      screen.getByPlaceholderText(/Rechercher un événement/)
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Rechercher un événement/)).toBeInTheDocument();
     expect(screen.getByText('Tous les types')).toBeInTheDocument();
     expect(screen.getByText('Toutes les catégories')).toBeInTheDocument();
   });

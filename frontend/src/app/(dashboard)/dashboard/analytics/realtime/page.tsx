@@ -121,7 +121,10 @@ export default function AnalyticsRealtimePage() {
 
   const loading = feed.isLoading || summary.isLoading;
 
-  const events = useMemo(() => (Array.isArray(feed.data?.events) ? feed.data.events : []), [feed.data]);
+  const events = useMemo(
+    () => (Array.isArray(feed.data?.events) ? feed.data.events : []),
+    [feed.data]
+  );
   const total = feed.data?.total ?? 0;
   const totalPages = Math.max(feed.data?.totalPages ?? 1, 1);
 
@@ -177,7 +180,12 @@ export default function AnalyticsRealtimePage() {
           Auto {autoRefresh ? 'ON' : 'OFF'} · 30s
         </button>
 
-        <Button variant="outline" size="sm" onClick={() => feed.refetch()} disabled={feed.isFetching}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => feed.refetch()}
+          disabled={feed.isFetching}
+        >
           <RefreshCw className={cn('h-3.5 w-3.5 mr-1', feed.isFetching && 'animate-spin')} />
           Rafraîchir
         </Button>
@@ -306,7 +314,10 @@ export default function AnalyticsRealtimePage() {
           <>
             <ul className="divide-y divide-gray-100 dark:divide-gray-800">
               {events.map((ev: any) => {
-                const meta = TYPE_META[ev.type] ?? { icon: Activity, color: 'bg-gray-50 text-gray-500' };
+                const meta = TYPE_META[ev.type] ?? {
+                  icon: Activity,
+                  color: 'bg-gray-50 text-gray-500',
+                };
                 const Icon = meta.icon;
                 const valueNode = formatEventValue(ev);
                 const props = (ev.properties ?? {}) as Record<string, unknown>;
@@ -337,7 +348,8 @@ export default function AnalyticsRealtimePage() {
                         <span
                           className={cn(
                             'text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize',
-                            CATEGORY_COLORS[ev.category] ?? 'bg-gray-100 text-gray-500 dark:bg-gray-800'
+                            CATEGORY_COLORS[ev.category] ??
+                              'bg-gray-100 text-gray-500 dark:bg-gray-800'
                           )}
                         >
                           {ev.category ?? ev.type}

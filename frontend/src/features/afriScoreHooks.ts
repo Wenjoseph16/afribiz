@@ -622,7 +622,8 @@ export const analyticsEventKeys = {
   events: (params?: any) => ['analytics-events', 'feed', params] as const,
   summary: (days?: number) => ['analytics-events', 'summary', days] as const,
   breakdownType: (days?: number) => ['analytics-events', 'breakdown', 'type', days] as const,
-  breakdownCategory: (days?: number) => ['analytics-events', 'breakdown', 'category', days] as const,
+  breakdownCategory: (days?: number) =>
+    ['analytics-events', 'breakdown', 'category', days] as const,
   counters: (days?: number) => ['analytics-events', 'counters', days] as const,
 };
 
