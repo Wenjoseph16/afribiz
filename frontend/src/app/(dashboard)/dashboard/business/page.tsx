@@ -40,6 +40,7 @@ import { apiClient } from '@/services/apiClient';
 import { cn } from '@/lib/utils';
 import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
 import AdSlot from '@/components/ads/AdSlot';
+import { buildLaunchChecklistState } from '@/lib/launchChecklist';
 
 // ─── Dynamic imports for heavy components ───
 const SetupAssistant = dynamic(
@@ -443,6 +444,19 @@ export default function BusinessDashboardPage() {
     (completionFields.filter(Boolean).length / completionFields.length) * 100
   );
 
+  const launchChecklistState = useMemo(
+    () =>
+      buildLaunchChecklistState({
+        hasPublicPage: !!biz?.slug && biz?.isActive,
+        hasProducts: (biz as any)?.products?.length > 0,
+        hasPayments: !!(biz as any)?.paymentConfig,
+        hasBookings: !!(biz as any)?.bookingConfig,
+        hasPromotions: !!(biz as any)?.promotions?.length,
+        hasProfile: !!(biz?.description && biz?.phone && biz?.address),
+      }),
+    [biz]
+  );
+
   if (bizLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -565,6 +579,50 @@ export default function BusinessDashboardPage() {
 
       {/* Setup Assistant */}
       <SetupAssistant completionScore={score} business={biz} />
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              Checklist de lancement
+            </p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">
+              {launchChecklistState.progressScore}% prêt à accueillir vos premiers clients
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+              {launchChecklistState.primaryAction.description}
+            </p>
+          </div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <span className="font-semibold">Prochaine étape :</span>{' '}
+            {launchChecklistState.primaryAction.title}
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {launchChecklistState.steps.map((step) => (
+            <div
+              key={step.id}
+              className={`rounded-xl border p-3 ${step.done ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-800 dark:bg-emerald-950/30' : 'border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/70'}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {step.title}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    {step.description}
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${step.done ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 dark:bg-slate-700 dark:text-slate-200'}`}
+                >
+                  {step.done ? 'Fait' : 'À faire'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Growth Cockpit — Actions + Recommendations Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

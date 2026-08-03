@@ -33,7 +33,7 @@ export default function EscrowPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['payments', 'escrow'],
     queryFn: async () => {
-      const res = await apiClient.get('/payments/escrow?limit=50');
+      const res = await apiClient.get('/payments/escrow/client', { params: { limit: 50 } });
       return res.data.data;
     },
   });

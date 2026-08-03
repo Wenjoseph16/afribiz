@@ -29,6 +29,17 @@ export function useOrder(id: string) {
   });
 }
 
+export function useOrderTimeline(id: string) {
+  return useQuery({
+    queryKey: [...orderKeys.detail(id), 'timeline'] as const,
+    queryFn: async () => {
+      const res = await apiClient.getOrderTimeline(id);
+      return res.data.data;
+    },
+    enabled: !!id,
+  });
+}
+
 export function useUpdateOrder() {
   const qc = useQueryClient();
   return useMutation({

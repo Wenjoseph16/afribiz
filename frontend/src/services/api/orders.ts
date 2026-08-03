@@ -7,6 +7,9 @@ export function injectOrders(api: ApiClientMethods) {
   api.getOrder = function (id: string) {
     return this.get(`/orders/${id}`);
   };
+  api.getOrderTimeline = function (id: string) {
+    return this.get(`/orders/${id}/timeline`);
+  };
   api.updateOrder = function (id: string, data: any) {
     return this.put(`/orders/${id}`, data);
   };

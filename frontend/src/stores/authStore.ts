@@ -12,6 +12,7 @@ export interface User {
   emailVerified: boolean;
   roles: string[];
   primaryRole: string;
+  businessId?: string;
 }
 
 export interface AuthState {

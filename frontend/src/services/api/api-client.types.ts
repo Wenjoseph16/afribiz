@@ -87,6 +87,7 @@ export interface ApiClientMethods {
   // ============================================
   getOrders(params?: any): Promise<any>;
   getOrder(id: string): Promise<any>;
+  getOrderTimeline(id: string): Promise<any>;
   updateOrder(id: string, data: any): Promise<any>;
   getMyBusinessOrders(params?: any): Promise<any>;
   getMyBusinessOrder(id: string): Promise<any>;

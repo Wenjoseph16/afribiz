@@ -12,6 +12,7 @@ export {
   orderKeys,
   useOrders,
   useOrder,
+  useOrderTimeline,
   useUpdateOrder,
   bizOrderKeys,
   useMyBusinessOrders,

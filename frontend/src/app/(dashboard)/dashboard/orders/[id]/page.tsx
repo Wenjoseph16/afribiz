@@ -17,17 +17,21 @@ import {
   TrendingUp,
   Activity,
   Wallet,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 import { useOrder } from '@/features/hooks';
+import { useOrderTimeline } from '@/features/hooks/orders';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/services/apiClient';
 import { formatPrice } from '@/utils/helpers';
 import { HybridPaymentSectionDynamic as HybridPaymentSection } from '@/components/payments/HybridPaymentSectionDynamic';
 import OrderActionModal from '@/components/orders/OrderActionModal';
+import ReviewForm from '@/components/reviews/ReviewForm';
+import OrderTimeline from '@/components/order/OrderTimeline';
 
 const STATUS_CONFIG: Record<
   string,
@@ -61,6 +65,7 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const id = params?.id as string;
   const { data: orderData, isLoading, refetch } = useOrder(id);
+  const { data: timelineData } = useOrderTimeline(id);
 
   const { user } = useAuthStore();
   const isBusiness = user?.roles?.includes('BUSINESS') || user?.primaryRole === 'BUSINESS';
@@ -69,6 +74,12 @@ export default function OrderDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [reviewTarget, setReviewTarget] = useState<{
+    productId?: string;
+    serviceId?: string;
+    name: string;
+  } | null>(null);
+  const [reviewed, setReviewed] = useState(false);
 
   const order = orderData?.order || orderData?.data || orderData;
 
@@ -97,6 +108,10 @@ export default function OrderDetailPage() {
   const s = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
   const canCancel = CANCELLABLE_STATUSES.includes(order.status);
   const businessName = order.business?.name || order.businessName || '—';
+  const canReview =
+    !isBusiness &&
+    (order.status === 'DELIVERED' || order.status === 'COMPLETED') &&
+    (order.items || []).some((item: any) => item.productId || item.serviceId);
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -241,6 +256,65 @@ export default function OrderDetailPage() {
               ))}
             </div>
           </Card>{' '}
+          {/* Laisser un avis */}
+          {canReview && (
+            <Card className="p-4">
+              <h3 className="font-semibold text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-400" />
+                {reviewed ? 'Merci pour votre avis !' : 'Laisser un avis'}
+              </h3>
+              {reviewed ? (
+                <p className="text-sm text-gray-500">
+                  Votre retour a bien été enregistré. Il aide la communauté à faire les bons choix.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {(order.items || [])
+                    .filter((item: any) => item.productId || item.serviceId)
+                    .map((item: any, i: number) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {item.name}
+                          </p>
+                        </div>
+                        <Button
+                          size="xs"
+                          onClick={() =>
+                            setReviewTarget({
+                              productId: item.productId,
+                              serviceId: item.serviceId,
+                              name: item.name,
+                            })
+                          }
+                        >
+                          Évaluer
+                        </Button>
+                      </div>
+                    ))}
+                  {reviewTarget && (
+                    <div className="pt-1">
+                      <p className="text-xs text-gray-500 mb-2">
+                        Notez votre expérience : {reviewTarget.name}
+                      </p>
+                      <ReviewForm
+                        productId={reviewTarget.productId}
+                        serviceId={reviewTarget.serviceId}
+                        onCancel={() => setReviewTarget(null)}
+                        onSuccess={() => {
+                          setReviewed(true);
+                          setReviewTarget(null);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          )}
           {/* Timeline & Historique */}
           <Card className="p-4">
             <h3 className="font-semibold text-sm text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -277,51 +351,13 @@ export default function OrderDetailPage() {
                 </p>
               </div>
             </div>
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-              Chronologie
-            </h4>
-            <div className="space-y-3">
-              {[
-                { label: 'Commande créée', date: order.createdAt, icon: ShoppingBag },
-                { label: 'Acceptée', date: order.acceptedAt, icon: CheckCircle2 },
-                { label: 'En préparation', date: order.preparingAt, icon: Package },
-                { label: 'Prête', date: order.readyAt, icon: CheckCircle2 },
-                { label: 'En livraison', date: order.deliveringAt, icon: Truck },
-                { label: 'Livrée', date: order.deliveredAt, icon: Truck },
-                { label: 'Terminée', date: order.completedAt, icon: CheckCircle2 },
-              ]
-                .filter((e) => e.date)
-                .map((event, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-full bg-brand/10 flex items-center justify-center shrink-0">
-                      <event.icon className="w-3.5 h-3.5 text-brand" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-900 dark:text-white">
-                        {event.label}
-                      </p>
-                      <p className="text-[10px] text-gray-400">
-                        {new Date(event.date).toLocaleString('fr-FR')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              {order.cancelledAt && (
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                    <XCircle className="w-3.5 h-3.5 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-red-600">Annulée</p>
-                    <p className="text-[10px] text-gray-400">
-                      {order.cancelReason && `Motif: ${order.cancelReason}`} •{' '}
-                      {new Date(order.cancelledAt).toLocaleString('fr-FR')}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
           </Card>
+          {/* Suivi de commande (temps réel) */}
+          <OrderTimeline
+            timeline={timelineData?.timeline || []}
+            currentStatus={timelineData?.status || order.status}
+            orderNumber={order.orderNumber}
+          />
         </div>
 
         {/* Sidebar */}
