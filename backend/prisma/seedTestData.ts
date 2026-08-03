@@ -71,6 +71,18 @@ const ID = {
   NOTIF_3: '00000000-0000-0000-0000-000000000352',
   NOTIF_4: '00000000-0000-0000-0000-000000000353',
   NOTIF_5: '00000000-0000-0000-0000-000000000354',
+  BUSINESS_OWNER_2: '00000000-0000-0000-0000-000000000005',
+  BUSINESS_OWNER_3: '00000000-0000-0000-0000-000000000006',
+  CLIENT_2: '00000000-0000-0000-0000-000000000007',
+  BUSINESS_2: '00000000-0000-0000-0000-000000000011',
+  BUSINESS_3: '00000000-0000-0000-0000-000000000012',
+  PRODUCT_CAT_3: '00000000-0000-0000-0000-000000000022',
+  PRODUCT_4: '00000000-0000-0000-0000-000000000033',
+  ORDER_6: '00000000-0000-0000-0000-000000000115',
+  BOOKING_4: '00000000-0000-0000-0000-000000000123',
+  BOOKING_5: '00000000-0000-0000-0000-000000000124',
+  BOOKING_6: '00000000-0000-0000-0000-000000000125',
+  ESCROW_2: '00000000-0000-0000-0000-000000000301',
 };
 
 const PASSWORD = 'Test1234!';
@@ -116,9 +128,17 @@ async function cleanupExisting() {
     (prisma as any)[model].deleteMany({ where });
   // Delete in dependency-safe order (children first)
   
-  await prisma.businessBadge.deleteMany({ where: { businessId: ID.BUSINESS } });
+  await prisma.businessBadge.deleteMany({ where: { businessId: { in: [ID.BUSINESS, ID.BUSINESS_3] } } });
   await prisma.fraudRule.deleteMany({ where: { id: { in: ['fr-1', 'fr-2'] } } });
-  await prisma.follow.deleteMany({ where: { businessId: ID.BUSINESS } });
+  await prisma.follow.deleteMany({ where: { businessId: { in: [ID.BUSINESS, ID.BUSINESS_3] } } });
+  await prisma.campaignExecutionLog.deleteMany({ where: { campaignId: { in: ['camp-seq'] } } });
+  await prisma.campaignStep.deleteMany({ where: { campaignId: { in: ['camp-seq'] } } });
+  await prisma.campaign.deleteMany({ where: { businessId: { in: [ID.BUSINESS, ID.BUSINESS_3] } } });
+  await prisma.marketingCampaign.deleteMany({ where: { businessId: { in: [ID.BUSINESS, ID.BUSINESS_3] } } });
+  await prisma.review.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.deal.deleteMany({ where: { businessId: { in: [ID.BUSINESS, ID.BUSINESS_3] } } });
+  await prisma.pipelineStage.deleteMany({ where: { businessId: { in: [ID.BUSINESS, ID.BUSINESS_3] } } });
+  await prisma.payment.deleteMany({ where: { userId: { in: ids } } });
   // Nettoyage complet des tables liées au développeur (ordre parent-enfant)
   // 1. Tables enfants de DeveloperModule
   for (const model of [
@@ -218,7 +238,23 @@ async function cleanupExisting() {
   await prisma.businessModuleAssignment.deleteMany({ where: { businessId: ID.BUSINESS } });
   await prisma.wallet.deleteMany({ where: { businessId: ID.BUSINESS } });
   await prisma.businessSettings.deleteMany({ where: { businessId: ID.BUSINESS } });
-  await prisma.business.deleteMany({ where: { ownerId: { in: [ID.BUSINESS_OWNER] } } });
+  await prisma.business.deleteMany({ where: { ownerId: { in: [ID.BUSINESS_OWNER, ID.BUSINESS_OWNER_2, ID.BUSINESS_OWNER_3] } } });
+  // Nettoyage des business secondaires (onboarding + boutique)
+  for (const bId of [ID.BUSINESS_2, ID.BUSINESS_3]) {
+    await prisma.productVariant.deleteMany({ where: { product: { businessId: bId } } });
+    await prisma.product.deleteMany({ where: { businessId: bId } });
+    await prisma.productCategory.deleteMany({ where: { businessId: bId } });
+    await prisma.orderItem.deleteMany({ where: { order: { businessId: bId } } });
+    await prisma.order.deleteMany({ where: { businessId: bId } });
+    await prisma.booking.deleteMany({ where: { businessId: bId } });
+    await prisma.businessClient.deleteMany({ where: { businessId: bId } });
+    await prisma.businessModuleAssignment.deleteMany({ where: { businessId: bId } });
+    await prisma.businessSettings.deleteMany({ where: { businessId: bId } });
+    await prisma.businessPaymentMethod.deleteMany({ where: { businessId: bId } });
+    await prisma.businessHour.deleteMany({ where: { businessId: bId } });
+    await prisma.wallet.deleteMany({ where: { businessId: bId } });
+    await prisma.business.deleteMany({ where: { id: bId } });
+  }
   await prisma.userRoleAssignment.deleteMany({ where: { userId: { in: ids } } });
   // Sessions, tokens, etc for test users
   await prisma.session.deleteMany({ where: { userId: { in: ids } } });
@@ -230,7 +266,7 @@ async function cleanupExisting() {
   console.log('✓ Données existantes nettoyées');
 }
 
-async function main() {
+export async function seedTestData() {
   console.log('\n🌍 AfriBiz — Génération des données de test complètes\n');
   await cleanupExisting();
 
@@ -402,6 +438,163 @@ async function main() {
   console.log('✓ Business créé avec tous les modules activés');
 
   // ============================================================
+  // 2bis. BUSINESS secondaires — parcours Onboarding + Marketplace
+  // ============================================================
+  // --- Business 2 : en cours d'onboarding (aucun module, aucun produit) ---
+  await prisma.user.upsert({
+    where: { id: ID.BUSINESS_OWNER_2 }, update: {},
+    create: {
+      id: ID.BUSINESS_OWNER_2, email: 'salon@afribiz.test', phone: '+2250100000009',
+      firstName: 'Awa', lastName: 'Cissé', passwordHash: pwdHash,
+      emailVerified: true, isActive: true,
+      primaryRole: 'BUSINESS', roles: ['BUSINESS', 'CLIENT'],
+      country: 'Sénégal', city: 'Dakar', gender: 'F',
+      createdAt: new Date('2026-06-25'),
+    },
+  });
+  await prisma.userRoleAssignment.upsert({
+    where: { id: 'ra-business2' }, update: {},
+    create: { id: 'ra-business2', userId: ID.BUSINESS_OWNER_2, role: 'BUSINESS', source: 'ACTIVATION' },
+  });
+  await prisma.business.upsert({
+    where: { id: ID.BUSINESS_2 }, update: {},
+    create: {
+      id: ID.BUSINESS_2, ownerId: ID.BUSINESS_OWNER_2,
+      name: 'Khewele Beauté', slug: 'khewele-beaute', type: 'SALON_BEAUTE' as BusinessType,
+      description: 'Salon de beauté et esthétique. Coiffure, soins et pose d\'ongles.',
+      shortDescription: 'Beauté & soins',
+      email: 'contact@khewele.sn', phone: '+2250100000009',
+      country: 'Sénégal', city: 'Dakar', region: 'Plateau',
+      address: 'Avenue Léopold Sédar Senghor',
+      isActive: true, isVerified: false, onboardingCompleted: false,
+      verificationStatus: 'PENDING',
+    },
+  });
+  await prisma.businessSettings.upsert({
+    where: { businessId: ID.BUSINESS_2 }, update: {},
+    create: {
+      businessId: ID.BUSINESS_2, currency: 'FCFA', timezone: 'Africa/Dakar',
+      language: 'fr', dateFormat: 'DD/MM/YYYY',
+      autoConfirmBookings: true, autoConfirmOrders: false,
+      allowOnlinePayments: true, allowCashOnDelivery: true,
+    },
+  });
+  console.log('✓ Business 2 créé (SALON_BEAUTE, onboarding en cours : 0 module, 0 produit)');
+
+  // --- Business 3 : boutique opérationnelle avec 1ère commande en attente ---
+  await prisma.user.upsert({
+    where: { id: ID.BUSINESS_OWNER_3 }, update: {},
+    create: {
+      id: ID.BUSINESS_OWNER_3, email: 'boutique@afribiz.test', phone: '+2250100000010',
+      firstName: 'Ibrahim', lastName: 'Ndiaye', passwordHash: pwdHash,
+      emailVerified: true, isActive: true,
+      primaryRole: 'BUSINESS', roles: ['BUSINESS', 'CLIENT'],
+      country: 'Côte d\'Ivoire', city: 'Bouaké', gender: 'M',
+      createdAt: new Date('2026-05-30'),
+    },
+  });
+  await prisma.userRoleAssignment.upsert({
+    where: { id: 'ra-business3' }, update: {},
+    create: { id: 'ra-business3', userId: ID.BUSINESS_OWNER_3, role: 'BUSINESS', source: 'ACTIVATION' },
+  });
+  await prisma.user.upsert({
+    where: { id: ID.CLIENT_2 }, update: {},
+    create: {
+      id: ID.CLIENT_2, email: 'fatou@afribiz.test', phone: '+2250100000011',
+      firstName: 'Fatou', lastName: 'Ba', passwordHash: pwdHash,
+      emailVerified: true, isActive: true,
+      primaryRole: 'CLIENT', roles: ['CLIENT'],
+      country: 'Côte d\'Ivoire', city: 'Bouaké', gender: 'F',
+      createdAt: new Date('2026-06-20'),
+    },
+  });
+  await prisma.business.upsert({
+    where: { id: ID.BUSINESS_3 }, update: {},
+    create: {
+      id: ID.BUSINESS_3, ownerId: ID.BUSINESS_OWNER_3,
+      name: 'Au Bon Vivre', slug: 'au-bon-vivre', type: 'BOUTIQUE_VETEMENTS' as BusinessType,
+      description: 'Boutique de prêt-à-porter et accessoires pour hommes et femmes.',
+      shortDescription: 'Mode africaine moderne',
+      email: 'contact@aubonvivre.ci', phone: '+2250100000010',
+      website: 'https://au-bon-vivre.ci',
+      country: 'Côte d\'Ivoire', city: 'Bouaké', region: 'Centre',
+      address: 'Avenue de la Paix',
+      tagline: 'L\'élégance à l\'africaine',
+      isActive: true, isVerified: true, isNew: false,
+      isRecommended: true, onboardingCompleted: true, onboardedAt: new Date('2026-06-10'),
+      verificationStatus: 'VERIFIED',
+      rating: 4.2, reviewCount: 18,
+    },
+  });
+  await prisma.businessSettings.upsert({
+    where: { businessId: ID.BUSINESS_3 }, update: {},
+    create: {
+      businessId: ID.BUSINESS_3, currency: 'FCFA', timezone: 'Africa/Abidjan',
+      language: 'fr', dateFormat: 'DD/MM/YYYY',
+      autoConfirmBookings: true, autoConfirmOrders: true,
+      allowOnlinePayments: true, allowCashOnDelivery: true,
+    },
+  });
+  await prisma.businessModuleAssignment.upsert({
+    where: { id: `bma3-products` }, update: {},
+    create: { businessId: ID.BUSINESS_3, module: 'PRODUCTS' as BusinessModule, status: 'ACTIVE', config: { enabled: true } },
+  });
+  await prisma.businessModuleAssignment.upsert({
+    where: { id: `bma3-orders` }, update: {},
+    create: { businessId: ID.BUSINESS_3, module: 'ORDERS' as BusinessModule, status: 'ACTIVE', config: { enabled: true } },
+  });
+  await prisma.wallet.upsert({
+    where: { businessId: ID.BUSINESS_3 }, update: {},
+    create: { businessId: ID.BUSINESS_3, balance: 250000, currency: 'FCFA' },
+  });
+
+  await prisma.productCategory.upsert({
+    where: { id: ID.PRODUCT_CAT_3 }, update: {},
+    create: { id: ID.PRODUCT_CAT_3, businessId: ID.BUSINESS_3, name: 'Confections', slug: 'confections' },
+  });
+  await prisma.product.upsert({
+    where: { id: ID.PRODUCT_4 }, update: {},
+    create: {
+      id: ID.PRODUCT_4, businessId: ID.BUSINESS_3, sellerId: ID.BUSINESS_OWNER_3, categoryId: ID.PRODUCT_CAT_3,
+      name: 'Robe Wax Premium', slug: 'robe-wax-premium',
+      description: 'Robe en pagne wax cousu main, coupe moderne, tailles S à XL',
+      shortDescription: 'Couture traditionnelle moderne', brand: 'Au Bon Vivre',
+      price: 25000, currency: 'FCFA',
+      images: ['/images/products/robe-wax.jpg'], tags: ['wax', 'mode', 'femme'],
+      stock: 20, lowStockThreshold: 5, unit: 'pièce',
+      isActive: true, isVisibleOnPublicPage: true, isVisibleOnMarketplace: true,
+      isPhysical: true, featured: true, rating: 4.5, reviewCount: 12, orderCount: 34,
+    },
+  });
+
+  // 1ère commande en attente pour ce business (parcours "première commande")
+  await prisma.order.upsert({
+    where: { id: `ord-b3-1` }, update: {},
+    create: {
+      id: `ord-b3-1`, businessId: ID.BUSINESS_3, buyerId: ID.CLIENT_2,
+      orderNumber: 'CMD-B3-001', type: 'PICKUP', source: 'WEB_SITE',
+      status: 'PENDING',
+      totalAmount: 25000, subtotal: 25000, deliveryFee: 0, discountAmount: 0,
+      currency: 'FCFA',
+      contactPhone: '+2250100000011', contactName: 'Fatou Ba',
+      createdAt: new Date('2026-07-08T09:00:00'),
+      paymentMethod: null, paymentStatus: 'UNPAID',
+    },
+  });
+  await prisma.orderItem.upsert({
+    where: { id: `oi-b3-1` }, update: {},
+    create: { orderId: `ord-b3-1`, productId: ID.PRODUCT_4, name: 'Robe Wax Premium', quantity: 1, unitPrice: 25000, total: 25000 },
+  });
+  await tryCreate('businessClient', {
+    id: `bc-b3-1`, businessId: ID.BUSINESS_3, clientId: ID.CLIENT_2,
+    firstName: 'Fatou', lastName: 'Ba', email: 'fatou@afribiz.test', phone: '+2250100000011',
+    city: 'Bouaké', totalOrders: 1, totalSpent: 25000, lastOrderAt: new Date('2026-07-08'),
+    visitCount: 1, isBlacklisted: false,
+  }, { id: `bc-b3-1` });
+
+  console.log('✓ Business 3 créé (BOUTIQUE, 1 produit, 1 commande PENDING)');
+
+  // ============================================================
   // 3. PRODUITS & CATÉGORIES
   // ============================================================
   console.log('\n--- Création des produits ---');
@@ -504,6 +697,25 @@ async function main() {
   });
 
   console.log('✓ Services (2) créés');
+
+  // ============================================================
+  // 4bis. AVIS (reviews) — parcours Review
+  // ============================================================
+  console.log('\n--- Création des avis ---');
+
+  const reviews = [
+    { id: 'rv-1', productId: ID.PRODUCT_1, rating: 5, title: 'Délicieux !', comment: "L'attiéké est parfaitement préparé, le poisson frais, livraison rapide. Je recommande.", createdAt: new Date('2026-06-10T12:00:00') },
+    { id: 'rv-2', productId: ID.PRODUCT_1, rating: 4, title: 'Très bon', comment: 'Généreuse portion, la sauce graine est savoureuse. Juste un peu de retard sur la livraison.', createdAt: new Date('2026-06-18T18:30:00') },
+    { id: 'rv-3', productId: ID.PRODUCT_2, rating: 5, title: 'Le meilleur mafé de la ville', comment: 'Sauce cacahuète onctueuse, poulet fondant. On sent le fait-maison.', createdAt: new Date('2026-06-22T13:15:00') },
+    { id: 'rv-4', productId: ID.PRODUCT_2, rating: 4, title: 'Excellent rapport qualité/prix', comment: 'Très bon plat, surtout avec la promo en cours. Je recommande.', createdAt: new Date('2026-06-27T20:05:00') },
+    { id: 'rv-5', productId: ID.PRODUCT_3, rating: 5, title: 'Bissap rafraîchissant', comment: 'Jus 100% naturel, pas trop sucré. Parfait avec l\'attiéké.', createdAt: new Date('2026-07-01T11:40:00') },
+    { id: 'rv-6', serviceId: ID.SERVICE_1, rating: 5, title: 'Traiteur incroyable', comment: 'Service traiteur pour notre mariage : un menu somptueux et une équipe très professionnelle.', createdAt: new Date('2026-06-29T09:00:00') },
+    { id: 'rv-7', serviceId: ID.SERVICE_2, rating: 5, title: 'Cours super pédagogique', comment: 'J\'ai appris toutes les bases en 2h, ambiance chaleureuse et patronne passionnée.', createdAt: new Date('2026-07-11T16:00:00') },
+  ];
+  for (const r of reviews) {
+    await tryCreate('review', { userId: ID.CLIENT, response: null, ...r }, { id: r.id });
+  }
+  console.log('✓ 7 avis créés (produits + services)');
 
   // ============================================================
   // 5. MENU
@@ -702,6 +914,65 @@ async function main() {
   console.log('✓ 4 commandes supplémentaires créées (PREPARING, PENDING, DELIVERED, CANCELLED)');
 
   // ============================================================
+  // 9bis. PAIEMENTS & SÉQUESTRE — parcours Payment → Escrow
+  // ============================================================
+  console.log('\n--- Création des paiements ---');
+
+  await tryCreate('payment', {
+    id: 'pay-1', userId: ID.CLIENT, businessId: ID.BUSINESS, orderId: ID.ORDER_1,
+    amount: 9500, currency: 'FCFA', method: 'MOBILE_MONEY', status: 'COMPLETED',
+    reference: 'PAY-OM-20260615-001', description: 'Paiement commande CMD-2026-001',
+    paidAt: new Date('2026-06-15T10:15:00'),
+  }, { id: 'pay-1' });
+
+  await tryCreate('payment', {
+    id: 'pay-2', userId: ID.CLIENT, businessId: ID.BUSINESS, orderId: ID.ORDER_2,
+    amount: 6500, currency: 'FCFA', method: 'MOBILE_MONEY', status: 'COMPLETED',
+    reference: 'PAY-OM-20260702-001', description: 'Paiement commande CMD-2026-002',
+    paidAt: new Date('2026-07-02T09:30:00'),
+  }, { id: 'pay-2' });
+
+  await tryCreate('payment', {
+    id: 'pay-3', userId: ID.CLIENT, businessId: ID.BUSINESS, orderId: ID.ORDER_4,
+    amount: 12500, currency: 'FCFA', method: 'MOBILE_MONEY', status: 'COMPLETED',
+    reference: 'PAY-OM-20260628-001', description: 'Paiement commande CMD-2026-004',
+    paidAt: new Date('2026-06-28T12:00:00'),
+  }, { id: 'pay-3' });
+
+  // Commande CONFIRMED dont les fonds sont placés en séquestre (workflow escrow actif)
+  await tryCreate('order', {
+    id: ID.ORDER_6, businessId: ID.BUSINESS, buyerId: ID.CLIENT,
+    orderNumber: 'CMD-2026-006', type: 'DELIVERY', source: 'WEB_SITE',
+    status: 'CONFIRMED',
+    totalAmount: 150000, subtotal: 150000, deliveryFee: 0, discountAmount: 0,
+    currency: 'FCFA',
+    deliveryAddress: 'Angré 7ème Tranche, Abidjan',
+    contactPhone: '+2250100000002', contactName: 'Kouassi Koné',
+    paidAt: new Date('2026-07-06T11:00:00'), paymentMethod: 'ESCROW', paymentStatus: 'PAID',
+    createdAt: new Date('2026-07-06T10:30:00'),
+  }, { id: ID.ORDER_6 });
+
+  await tryCreate('orderItem', {
+    id: 'oi-9', orderId: ID.ORDER_6, serviceId: ID.SERVICE_1,
+    name: 'Service Traiteur Mariage', quantity: 1, unitPrice: 150000, total: 150000,
+  }, { id: 'oi-9' });
+
+  await tryCreate('escrow', {
+    id: ID.ESCROW_2, businessId: ID.BUSINESS, orderId: ID.ORDER_6,
+    amount: 150000, currency: 'FCFA', status: 'HELD',
+    fee: 1500, feeRate: 0.01, netAmount: 148500,
+  }, { id: ID.ESCROW_2 });
+
+  await tryCreate('payment', {
+    id: 'pay-4', userId: ID.CLIENT, businessId: ID.BUSINESS, orderId: ID.ORDER_6, escrowId: ID.ESCROW_2,
+    amount: 150000, currency: 'FCFA', method: 'ESCROW', status: 'COMPLETED',
+    reference: 'ESCROW-20260706-001', description: 'Fonds placés en séquestre — CMD-2026-006',
+    paidAt: new Date('2026-07-06T11:00:00'),
+  }, { id: 'pay-4' });
+
+  console.log('✓ 4 paiements créés + 1 commande sous séquestre (HELD)');
+
+  // ============================================================
   // 10. RÉSERVATIONS
   // ============================================================
   console.log('\n--- Création des réservations ---');
@@ -748,6 +1019,53 @@ async function main() {
   });
 
   console.log('✓ 2 réservations supplémentaires créées (COMPLETED, CANCELLED)');
+
+  // Réservation PENDING (à confirmer par le business)
+  await prisma.booking.upsert({
+    where: { id: ID.BOOKING_4 }, update: {},
+    create: {
+      id: ID.BOOKING_4, businessId: ID.BUSINESS, clientId: ID.CLIENT,
+      bookingNumber: 'RES-2026-004',
+      title: 'Service Traiteur Baptême', type: 'SERVICE', source: 'AFRIBIZ_SITE',
+      status: 'PENDING', serviceId: ID.SERVICE_1,
+      startDate: new Date('2026-07-18T09:00:00'), endDate: new Date('2026-07-18T17:00:00'),
+      customerName: 'Kouassi Koné', customerPhone: '+2250100000002', customerEmail: 'client@afribiz.test',
+      price: 25000, currency: 'FCFA', depositAmount: 10000, depositPaid: false,
+      createdAt: new Date('2026-07-12T08:30:00'),
+    },
+  });
+
+  // Réservation future CONFIRMED avec rappel déjà envoyé (workflow reminder)
+  await prisma.booking.upsert({
+    where: { id: ID.BOOKING_5 }, update: {},
+    create: {
+      id: ID.BOOKING_5, businessId: ID.BUSINESS, clientId: ID.CLIENT,
+      bookingNumber: 'RES-2026-005',
+      title: 'Chambre Émeraude', type: 'ROOM', source: 'AFRIBIZ_SITE',
+      status: 'CONFIRMED', roomId: ID.ROOM_1,
+      startDate: new Date('2026-08-01T14:00:00'), endDate: new Date('2026-08-03T12:00:00'),
+      customerName: 'Kouassi Koné', customerPhone: '+2250100000002', customerEmail: 'client@afribiz.test',
+      price: 35000, currency: 'FCFA', depositAmount: 10000, depositPaid: true,
+      reminderSent: true, remindedAt: new Date('2026-07-30T09:00:00'),
+    },
+  });
+
+  // Réservation ARRIVED (check-in effectué) — workflow check-in
+  await prisma.booking.upsert({
+    where: { id: ID.BOOKING_6 }, update: {},
+    create: {
+      id: ID.BOOKING_6, businessId: ID.BUSINESS, clientId: ID.CLIENT,
+      bookingNumber: 'RES-2026-006',
+      title: 'Cours de Cuisine Africaine', type: 'SERVICE', source: 'AFRIBIZ_SITE',
+      status: 'ARRIVED', serviceId: ID.SERVICE_2,
+      startDate: new Date('2026-07-10T10:00:00'), endDate: new Date('2026-07-10T12:00:00'),
+      customerName: 'Kouassi Koné', customerPhone: '+2250100000002', customerEmail: 'client@afribiz.test',
+      price: 15000, currency: 'FCFA', depositAmount: 5000, depositPaid: true,
+      checkedInAt: new Date('2026-07-10T09:55:00'),
+    },
+  });
+
+  console.log('✓ 3 réservations parcours ajoutées (PENDING, RAPPEL, ARRIVED)');
 
   // ============================================================
   // 11. EMPLOYÉS
@@ -857,6 +1175,50 @@ async function main() {
   console.log('✓ Promotions (1) + Coupons (1) + Bundles (1) + Fidélité créés');
 
   // ============================================================
+  // 13bis. CAMPAGNES — parcours Campagne → Engagement → Conversion
+  // ============================================================
+  console.log('\n--- Création des campagnes ---');
+
+  await tryCreate('marketingCampaign', {
+    id: 'mktcamp-1', businessId: ID.BUSINESS,
+    name: 'Promo Happy Hours', description: 'Annonce des -20% sur tous les jus de 17h à 19h',
+    channels: ['WHATSAPP', 'PUSH'],
+    message: 'Happy Hours ce soir : -20% sur tous les jus de 17h à 19h chez Les Délices d\'Afrique !',
+    targetAudience: 'Clients fidèles (SILVER et +)',
+    scheduledAt: new Date('2026-06-30T16:00:00'), sentAt: new Date('2026-07-01T16:00:00'),
+    status: 'COMPLETED', sentCount: 120, openedCount: 64, clickedCount: 21,
+  }, { id: 'mktcamp-1' });
+
+  // Campagne multi-étapes pilotée par le CampaignEngine
+  await tryCreate('campaign', {
+    id: 'camp-seq', businessId: ID.BUSINESS,
+    name: 'Séquence de bienvenue', description: 'Accompagne chaque nouveau client',
+    trigger: 'NEW_CLIENT', triggerConfig: {},
+    status: 'ACTIVE', startedAt: new Date('2026-06-01'),
+  }, { id: 'camp-seq' });
+
+  await tryCreate('campaignStep', {
+    id: 'cstep-1', campaignId: 'camp-seq', stepOrder: 1, name: 'Notification de bienvenue',
+    description: 'Notifie le client dès son inscription',
+    delayMinutes: 0, actionType: 'SEND_NOTIFICATION',
+    actionConfig: { message: 'Bienvenue chez Les Délices d\'Afrique ! Découvrez nos plats authentiques.' },
+  }, { id: 'cstep-1' });
+
+  await tryCreate('campaignStep', {
+    id: 'cstep-2', campaignId: 'camp-seq', stepOrder: 2, name: 'Offre première commande',
+    description: 'Envoie un code promo 24h après l\'inscription',
+    delayDays: 1, actionType: 'SEND_WHATSAPP',
+    actionConfig: { message: 'Envie de goûter notre cuisine ? Profitez de -10% sur votre première commande avec le code BIENVENUE10.' },
+  }, { id: 'cstep-2' });
+
+  await tryCreate('campaignExecutionLog', {
+    id: 'celog-1', campaignId: 'camp-seq', stepId: 'cstep-1', userId: ID.CLIENT, businessId: ID.BUSINESS,
+    result: 'SUCCESS', metadata: { channel: 'IN_APP' }, executedAt: new Date('2026-07-01T09:00:00'),
+  }, { id: 'celog-1' });
+
+  console.log('✓ Campagne marketing (1) + Campagne multi-étapes (2 steps) créées');
+
+  // ============================================================
   // 14. DEVIS & FACTURES
   // ============================================================
   console.log('\n--- Création des devis et factures ---');
@@ -908,9 +1270,9 @@ async function main() {
   await prisma.escrow.upsert({
     where: { id: ID.ESCROW_1 }, update: {},
     create: {
-      id: ID.ESCROW_1, businessId: ID.BUSINESS,
+      id: ID.ESCROW_1, businessId: ID.BUSINESS, invoiceId: ID.INVOICE_1,
       amount: 150000, currency: 'FCFA', status: 'HELD',
-      fee: 1500, netAmount: 148500,
+      fee: 1500, feeRate: 0.01, netAmount: 148500,
     },
   });
 
@@ -961,7 +1323,16 @@ async function main() {
     ['ps-4', 'Gagné', 4, '#10B981'],
   ];
   for (const [id, name, order, color] of stages) {
+    await tryCreate('pipelineStage', { id, businessId: ID.BUSINESS, name, order, color }, { id });
   }
+
+  await tryCreate('deal', {
+    id: 'deal-1', businessId: ID.BUSINESS, stageId: 'ps-3',
+    clientName: 'Kouassi Koné', clientEmail: 'client@afribiz.test', clientPhone: '+2250100000002',
+    title: 'Traiteur Mariage Diallo', description: 'Prestation traiteur complet pour 150 personnes',
+    value: 250000, currency: 'FCFA', source: 'OTHER', probability: 70,
+    expectedCloseDate: new Date('2026-08-30'),
+  }, { id: 'deal-1' });
 
   console.log('✓ CRM (client, tags, pipeline, deal) créé');
 
@@ -1383,10 +1754,12 @@ async function main() {
   console.log('💰 Portefeuille: 1.500.000 FCFA\n');
 }
 
-main()
-  .then(async () => { await prisma.$disconnect(); })
-  .catch(async (e) => {
-    console.error(e);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+if (require.main === module) {
+  seedTestData()
+    .then(async () => { await prisma.$disconnect(); })
+    .catch(async (e) => {
+      console.error(e);
+      await prisma.$disconnect();
+      process.exit(1);
+    });
+}

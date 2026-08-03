@@ -446,7 +446,24 @@ export async function checkout(
   if (data.paymentMethod && data.paymentMethod !== 'CASH' && businessId) {
     try {
       let paymentResult;
-      if (data.paymentMethod === 'STRIPE') {
+      if (data.paymentMethod === 'ESCROW') {
+        await prisma.escrow.create({
+          data: {
+            businessId,
+            orderId: order.id,
+            amount: total,
+            currency,
+            status: 'HELD',
+            feeRate: 0,
+            fee: 0,
+            notes: `Escrow créé lors du checkout (commande ${orderNumber})`,
+          },
+        });
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { paymentStatus: 'ESCROW_HELD' },
+        });
+      } else if (data.paymentMethod === 'STRIPE') {
         paymentResult = await processStripePayment(
           total,
           'usd',
@@ -470,22 +487,24 @@ export async function checkout(
           `Commande ${orderNumber}`
         );
       }
-      await saveTransaction({
-        businessId,
-        userId,
-        orderId: order.id,
-        amount: total,
-        currency,
-        provider: data.paymentMethod,
-        providerRef: paymentResult.providerRef,
-        status: paymentResult.status,
-        fee: paymentResult.fee || 0,
-      });
-      if (paymentResult.status === 'SUCCESS') {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { paymentStatus: 'PAID', paidAt: new Date() },
+      if (paymentResult) {
+        await saveTransaction({
+          businessId,
+          userId,
+          orderId: order.id,
+          amount: total,
+          currency,
+          provider: data.paymentMethod,
+          providerRef: paymentResult.providerRef,
+          status: paymentResult.status,
+          fee: paymentResult.fee || 0,
         });
+        if (paymentResult.status === 'SUCCESS') {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { paymentStatus: 'PAID', paidAt: new Date() },
+          });
+        }
       }
     } catch {
       // Payment failed — order still created, mark as payment pending

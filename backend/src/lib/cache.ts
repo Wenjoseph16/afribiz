@@ -90,6 +90,10 @@ export async function initCache(redisUrl?: string): Promise<void> {
         lazyConnect: true,
       });
 
+      redisClient.on('error', (err: Error) => {
+        logger.warn(`⚠️  Cache: Redis erreur (${err.message}), utilisation du cache mémoire`);
+      });
+
       await redisClient.connect();
 
       client = {
@@ -117,6 +121,13 @@ export async function initCache(redisUrl?: string): Promise<void> {
       logger.warn(
         `⚠️  Cache: Redis indisponible (${(err as Error).message}), utilisation du cache mémoire`
       );
+      if (redisClient) {
+        try {
+          redisClient.disconnect();
+        } catch {
+          // ignore cleanup errors
+        }
+      }
       client = new MemoryCache();
     }
   } else {

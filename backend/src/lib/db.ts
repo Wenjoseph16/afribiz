@@ -44,8 +44,8 @@ prisma.$use(async (params, next) => {
 });
 
 if (process.env.NODE_ENV === 'development') {
-  prisma.$connect().then(() => {
-    logger.info('Database connected');
+  prisma.$connect().catch((error) => {
+    logger.warn(`Database unavailable at startup: ${error instanceof Error ? error.message : String(error)}`);
   });
 }
 

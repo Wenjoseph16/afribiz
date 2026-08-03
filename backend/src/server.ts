@@ -524,12 +524,22 @@ app.use(errorHandler);
 initSocket(httpServer);
 
 // Warm copilot cache in background (non-blocking)
-warmCopilotCache();
+warmCopilotCache().catch((error) => {
+  logger.warn(`Copilot warmup skipped: ${error instanceof Error ? error.message : String(error)}`);
+});
 
 const PORT = config.PORT;
 httpServer.listen(PORT, () => {
   logger.info(`🚀 Server is running on port ${PORT} (HTTP + WebSocket)`);
   logger.info(`Environment: ${config.NODE_ENV}`);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.warn(`Unhandled rejection: ${reason instanceof Error ? reason.message : String(reason)}`);
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error(`Uncaught exception: ${error instanceof Error ? error.message : String(error)}`);
 });
 
 export default app;

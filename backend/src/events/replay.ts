@@ -4,10 +4,11 @@ import { DomainEvent, DomainEventType } from './events';
 import { logger } from '../lib/logger';
 
 export async function replayPendingEvents(): Promise<number> {
-  const pending = await prisma.queuedEvent.findMany({
-    where: { status: 'PENDING' },
-    orderBy: { createdAt: 'asc' },
-  });
+  try {
+    const pending = await prisma.queuedEvent.findMany({
+      where: { status: 'PENDING' },
+      orderBy: { createdAt: 'asc' },
+    });
 
   if (pending.length === 0) return 0;
 
@@ -38,6 +39,10 @@ export async function replayPendingEvents(): Promise<number> {
     }
   }
 
-  logger.info(`Replayed ${pending.length} events`);
-  return pending.length;
+    logger.info(`Replayed ${pending.length} events`);
+    return pending.length;
+  } catch (error) {
+    logger.warn(`Event replay skipped because the database is unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    return 0;
+  }
 }

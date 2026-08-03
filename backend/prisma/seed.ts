@@ -1,6 +1,7 @@
 import { PrismaClient, BusinessType } from '@prisma/client';
 import { seedAutomationTemplates } from '../src/seed-data/automation-templates';
 import { seedCampaignTemplates } from '../src/seed-data/campaign-templates';
+import { seedTestData } from './seedTestData';
 
 
 const prisma = new PrismaClient();
@@ -13,7 +14,7 @@ async function main() {
   // ============================================
 
   // Platform Settings
-  const defaultSettings = [
+  const defaultSettings: any[] = [
     { key: 'monetization_transactionCommissionRate', value: 0.01, category: 'general', label: 'Commission transactions' },
     { key: 'monetization_escrowCommissionRate', value: 0.02, category: 'general', label: 'Commission escrow' },
     { key: 'monetization_developerModuleCommissionRate', value: 0.20, category: 'general', label: 'Commission modules développeur' },
@@ -45,7 +46,7 @@ async function main() {
   console.log('✓ Commission configs (2)');
 
   // Ad Packages
-  const adPackages = [
+  const adPackages: any[] = [
     { name: 'Découverte', slug: 'decouverte', description: 'Bannière sur les pages business pendant 24h', advertiserType: 'BUSINESS', placements: ['BUSINESS_PUBLIC_PAGE:HERO_BANNER', 'BUSINESS_PUBLIC_PAGE:SIDEBAR'], durationHours: 24, price: 10000, currency: 'FCFA', isActive: true },
     { name: 'Standard', slug: 'standard', description: 'Visibilité accrue : bannière + sidebar + carrousel pendant 48h', advertiserType: 'BUSINESS', placements: ['BUSINESS_PUBLIC_PAGE:HERO_BANNER', 'BUSINESS_PUBLIC_PAGE:SIDEBAR', 'BUSINESS_PUBLIC_PAGE:PROMO_WIDGET', 'MARKETPLACE:SPONSORED_CARD'], durationHours: 48, price: 25000, currency: 'FCFA', isActive: true },
     { name: 'Premium', slug: 'premium', description: 'Pack complet : toutes les positions sur toutes les pages pendant 48h', advertiserType: 'BUSINESS', placements: ['BUSINESS_PUBLIC_PAGE:HERO_BANNER', 'BUSINESS_PUBLIC_PAGE:SIDEBAR', 'BUSINESS_PUBLIC_PAGE:PROMO_WIDGET', 'MARKETPLACE:SPONSORED_CARD', 'MARKETPLACE:SPONSORED_RESULT', 'HOMEPAGE:FEATURED_BLOCK', 'DASHBOARD_CLIENT:SIDEBAR', 'DASHBOARD_BUSINESS:SIDEBAR'], durationHours: 48, price: 100000, currency: 'FCFA', isActive: true },
@@ -131,12 +132,16 @@ async function main() {
     console.log(`✓ Campaign templates: deja presents (0 nouveaux)`);
   }
 
-
+  // ============================================
+  // 5. DONNÉES DE DÉMONSTRATION (rich seed)
+  // ============================================
+  await seedTestData();
 
   console.log('\n========================================');
   console.log('  Seed completed successfully!');
-  console.log('  ⚠️  Aucune donnée de test créée.');
-  console.log('  ⚠️  Les utilisateurs doivent s\'inscrire via l\'application.');
+  console.log('  ✅ Données de démonstration créées (comptes, business, produits, commandes, workflows).');
+  console.log('  🔑 admin@afribiz.test / client@afribiz.test / business@afribiz.test / dev@afribiz.test');
+  console.log('     (mot de passe : Test1234!)');
   console.log('========================================\n');
 }
 
