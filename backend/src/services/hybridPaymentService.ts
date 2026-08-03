@@ -3,6 +3,7 @@ import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 import { publishCommissionCharged } from '../events/publishers';
 import { calculateCommission } from './monetizationConfig';
+import { trackAnalyticsEvent } from './analyticsService';
 
 export async function getHybridPayments(orderId: string) {
   const [payments, order] = await Promise.all([
@@ -153,6 +154,23 @@ export async function addHybridPayment(data: {
       logger.error('Failed to log hybrid payment commission', { error: e });
     }
   }
+
+  // Analytics — paiement enregistré (fire-and-forget, non-bloquant)
+  trackAnalyticsEvent({
+    businessId: data.businessId,
+    userId: data.userId,
+    type: 'payment',
+    category: 'commercial',
+    eventName: 'PAYMENT_COMPLETED',
+    value: data.amount || 0,
+    properties: {
+      paymentId: payment.id,
+      orderId: data.orderId,
+      method: data.method,
+      isManual: !!data.isManual,
+      isPartial: nowTotalPaid < Number(order.totalAmount),
+    },
+  }).catch(() => {});
 
   return payment;
 }

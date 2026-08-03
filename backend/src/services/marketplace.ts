@@ -1,5 +1,6 @@
 import { prisma } from '../lib/db';
 import { searchIdsByText } from '../lib/fulltext';
+import { trackAnalyticsEvent } from './analyticsService';
 import type { MarketplaceSearchParams, MarketplaceResult } from '../types/service';
 
 // ============================================
@@ -873,5 +874,23 @@ export async function getProductBySlug(slug: string) {
       },
     },
   });
+
+  // Tracker vue produit publique (non-bloquant, fire-and-forget)
+  if (product) {
+    trackAnalyticsEvent({
+      businessId: product.business?.id,
+      type: 'product',
+      category: 'navigation',
+      eventName: 'PRODUCT_VIEWED',
+      properties: {
+        productId: product.id,
+        slug: product.slug,
+        name: product.name,
+        price: product.price ? Number(product.price) : undefined,
+      },
+      value: product.price ? Number(product.price) : undefined,
+    }).catch(() => {});
+  }
+
   return product;
 }

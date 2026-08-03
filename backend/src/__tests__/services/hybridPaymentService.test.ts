@@ -76,6 +76,14 @@ describe('hybridPaymentService', () => {
         method: 'CASH',
       });
       expect(r.id).toBe('pay-1');
+
+      // Analytics — tracker PAYMENT_COMPLETED (fire-and-forget)
+      const events = (mockPrisma.analyticsEvent.create as jest.Mock).mock.calls.map(
+        (c: any) => c[0].data
+      );
+      expect(events.some((e: any) => e.eventName === 'PAYMENT_COMPLETED')).toBe(true);
+      const paidEvent = events.find((e: any) => e.eventName === 'PAYMENT_COMPLETED');
+      expect(paidEvent).toMatchObject({ type: 'payment', value: 5000, businessId: 'biz-1' });
     });
 
     test('throws if order not found', async () => {

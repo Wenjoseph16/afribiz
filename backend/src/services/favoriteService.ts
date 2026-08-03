@@ -1,6 +1,7 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { publishFavoriteAdded, publishFavoriteRemoved } from '../events/publishers';
+import { trackAnalyticsEvent } from './analyticsService';
 
 export async function getFavorites(userId: string, type?: string) {
   const where: any = { userId };
@@ -159,6 +160,15 @@ export async function addFavorite(userId: string, type: string, referenceId: str
     businessId,
     businessName,
   });
+  // Tracker analytics (non-bloquant)
+  trackAnalyticsEvent({
+    businessId,
+    userId,
+    type: type.toLowerCase(),
+    category: 'commercial',
+    eventName: 'FAVORITE_ADDED',
+    properties: { referenceId, favoriteType: type },
+  }).catch(() => {});
 }
 
 export async function removeFavorite(userId: string, favoriteId: string) {
@@ -176,4 +186,13 @@ export async function removeFavorite(userId: string, favoriteId: string) {
     businessId,
     businessName,
   });
+  // Tracker analytics (non-bloquant)
+  trackAnalyticsEvent({
+    businessId,
+    userId,
+    type: fav.type.toLowerCase(),
+    category: 'commercial',
+    eventName: 'FAVORITE_REMOVED',
+    properties: { referenceId: fav.referenceId, favoriteType: fav.type },
+  }).catch(() => {});
 }

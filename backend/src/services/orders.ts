@@ -8,6 +8,7 @@ import {
   publishPaymentReceived,
   publishPaymentFailed,
 } from '../events/publishers';
+import { trackAnalyticsEvent } from './analyticsService';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
@@ -201,6 +202,17 @@ export async function createOrder(ownerId: string, data: any) {
     clientName: order.contactName || 'Client',
   });
 
+  // Analytics — commande placée (fire-and-forget, non-bloquant, jamais de latence sur la réponse)
+  trackAnalyticsEvent({
+    businessId: order.businessId || business.id,
+    userId: order.buyerId || undefined,
+    type: 'order',
+    category: 'commercial',
+    eventName: 'ORDER_PLACED',
+    value: Number(order.totalAmount) || 0,
+    properties: { orderId: order.id, status: order.status, itemCount: order.items?.length ?? 0 },
+  }).catch(() => {});
+
   return order;
 }
 
@@ -258,6 +270,16 @@ export async function updateOrderStatus(
     businessName: business.name,
     businessId: order.businessId || business.id,
   });
+
+  // Analytics — changement de statut (fire-and-forget, non-bloquant)
+  trackAnalyticsEvent({
+    businessId: order.businessId || business.id,
+    userId: order.buyerId || undefined,
+    type: 'order',
+    category: 'commercial',
+    eventName: 'ORDER_STATUS_CHANGED',
+    properties: { orderId: order.id, status },
+  }).catch(() => {});
 
   return updated;
 }

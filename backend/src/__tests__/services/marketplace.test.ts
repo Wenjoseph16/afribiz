@@ -209,6 +209,22 @@ describe('marketplace', () => {
       expect(r!.name).toBe('Product');
     });
 
+    test('tracks PRODUCT_VIEWED analytics event when found', async () => {
+      (mockPrisma.product.findFirst as jest.Mock).mockResolvedValue(mockProduct);
+      await marketplace.getProductBySlug('product');
+      await Promise.resolve(); // laisser la microtask fire-and-forget s'exécuter
+      expect(mockPrisma.analyticsEvent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            eventName: 'PRODUCT_VIEWED',
+            type: 'product',
+            category: 'navigation',
+            businessId: 'biz-1',
+          }),
+        })
+      );
+    });
+
     test('returns null when not found', async () => {
       (mockPrisma.product.findFirst as jest.Mock).mockResolvedValue(null);
       const r = await marketplace.getProductBySlug('bad-slug');

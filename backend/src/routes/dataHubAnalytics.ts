@@ -2,10 +2,20 @@ import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import { cacheResponse } from '../middlewares/cacheMiddleware';
 import * as analyticsController from '../controllers/dataHubAnalyticsController';
+import * as analyticsEventsController from '../controllers/analyticsEventsController';
 
 const router = Router();
 
 router.use(authMiddleware);
+
+// ── Analytics Event Feed (flux temps réel AnalyticsEvent) ──
+// Placées AVANT toute route /:id pour ne jamais être capturées.
+
+router.get('/analytics/events', analyticsEventsController.getEventsFeed);
+router.get('/analytics/events/breakdown/category', analyticsEventsController.getEventsByCategory);
+router.get('/analytics/events/breakdown', analyticsEventsController.getEventsByType);
+router.get('/analytics/events/summary', analyticsEventsController.getEventsSummary);
+router.get('/analytics/events/counters', analyticsEventsController.getEventsCounters);
 
 router.get(
   '/analytics/search-trends',

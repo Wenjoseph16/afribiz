@@ -84,4 +84,34 @@ describe('Favorite Service', () => {
       expect.objectContaining({ type: 'FAVORITE_ADDED', userId: 'u1' })
     );
   });
+
+  test('addFavorite tracks FAVORITE_ADDED analytics event', async () => {
+    jest.spyOn(mockPrisma.favorite, 'findUnique').mockResolvedValue(null);
+    jest.spyOn(mockPrisma.favorite, 'create').mockResolvedValue(mockFav as any);
+    jest
+      .spyOn(mockPrisma.product, 'findUnique')
+      .mockResolvedValue({ businessId: 'b1', business: { name: 'Boutique' } } as any);
+    await addFavorite('u1', 'PRODUCT', 'p1');
+    await Promise.resolve(); // laisser la microtask fire-and-forget s'exécuter
+    expect(mockPrisma.analyticsEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ eventName: 'FAVORITE_ADDED', type: 'product' }),
+      })
+    );
+  });
+
+  test('removeFavorite tracks FAVORITE_REMOVED analytics event', async () => {
+    jest.spyOn(mockPrisma.favorite, 'findFirst').mockResolvedValue(mockFav as any);
+    jest.spyOn(mockPrisma.favorite, 'delete').mockResolvedValue(mockFav as any);
+    jest
+      .spyOn(mockPrisma.product, 'findUnique')
+      .mockResolvedValue({ businessId: 'b1', business: { name: 'Boutique' } } as any);
+    await removeFavorite('u1', 'fav-1');
+    await Promise.resolve();
+    expect(mockPrisma.analyticsEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ eventName: 'FAVORITE_REMOVED', type: 'product' }),
+      })
+    );
+  });
 });

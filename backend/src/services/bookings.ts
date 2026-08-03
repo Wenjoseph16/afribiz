@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { publishBookingCreated, publishBookingStatusChanged } from '../events/publishers';
+import { trackAnalyticsEvent } from './analyticsService';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
@@ -184,6 +185,22 @@ export async function createBooking(ownerId: string, data: any) {
     businessName: business.name,
     businessId: business.id,
   });
+
+  // Analytics — réservation créée (fire-and-forget, non-bloquant)
+  trackAnalyticsEvent({
+    businessId: business.id,
+    userId: booking.clientId || undefined,
+    type: 'booking',
+    category: 'commercial',
+    eventName: 'BOOKING_CREATED',
+    value: Number(booking.price) || 0,
+    properties: {
+      bookingId: booking.id,
+      type: booking.type,
+      status: booking.status,
+      startDate: booking.startDate?.toISOString(),
+    },
+  }).catch(() => {});
 
   return booking;
 }

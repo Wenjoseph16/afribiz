@@ -3,6 +3,7 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { getPublicPortfolio } from './portfolio';
 import { publishOnboardingCompleted, publishReviewResponse, publishReviewPublished } from '../events/publishers';
+import { trackAnalyticsEvent } from './analyticsService';
 
 export async function getPublicBusiness(slug: string) {
   const business = await prisma.business.findUnique({
@@ -22,6 +23,14 @@ export async function getPublicBusiness(slug: string) {
     },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
+
+  // Analytics — vue de la page publique (fire-and-forget, non-bloquant)
+  trackAnalyticsEvent({
+    businessId: business.id,
+    type: 'page_view',
+    category: 'navigation',
+    eventName: 'BUSINESS_VIEWED',
+  }).catch(() => {});
 
   return {
     ...business,
@@ -178,6 +187,17 @@ export async function createBusinessReview(
     businessName: business.name,
     rating: data.rating,
   });
+
+  // Analytics — avis business publié (fire-and-forget, non-bloquant)
+  trackAnalyticsEvent({
+    businessId: business.id,
+    userId,
+    type: 'review',
+    category: 'social',
+    eventName: 'REVIEW_PUBLISHED',
+    value: data.rating,
+    properties: { reviewId: review.id, rating: data.rating },
+  }).catch(() => {});
 
   return review;
 }
