@@ -84,35 +84,55 @@ async function resolveFavoriteBusiness(referenceId: string, type: string) {
         where: { id: referenceId },
         select: { id: true, name: true, ownerId: true },
       });
-      return { businessId: b?.id || undefined, businessName: b?.name || undefined, ownerId: b?.ownerId || undefined };
+      return {
+        businessId: b?.id || undefined,
+        businessName: b?.name || undefined,
+        ownerId: b?.ownerId || undefined,
+      };
     }
     if (type === 'PRODUCT') {
       const p = await prisma.product.findUnique({
         where: { id: referenceId },
         select: { businessId: true, business: { select: { name: true, ownerId: true } } },
       });
-      return { businessId: p?.businessId || undefined, businessName: p?.business?.name || undefined, ownerId: p?.business?.ownerId || undefined };
+      return {
+        businessId: p?.businessId || undefined,
+        businessName: p?.business?.name || undefined,
+        ownerId: p?.business?.ownerId || undefined,
+      };
     }
     if (type === 'SERVICE') {
       const s = await prisma.service.findUnique({
         where: { id: referenceId },
         select: { businessId: true, business: { select: { name: true, ownerId: true } } },
       });
-      return { businessId: s?.businessId || undefined, businessName: s?.business?.name || undefined, ownerId: s?.business?.ownerId || undefined };
+      return {
+        businessId: s?.businessId || undefined,
+        businessName: s?.business?.name || undefined,
+        ownerId: s?.business?.ownerId || undefined,
+      };
     }
     if (type === 'TRAINING') {
       const t = await prisma.training.findUnique({
         where: { id: referenceId },
         select: { businessId: true, business: { select: { name: true, ownerId: true } } },
       });
-      return { businessId: t?.businessId || undefined, businessName: t?.business?.name || undefined, ownerId: t?.business?.ownerId || undefined };
+      return {
+        businessId: t?.businessId || undefined,
+        businessName: t?.business?.name || undefined,
+        ownerId: t?.business?.ownerId || undefined,
+      };
     }
     if (type === 'EVENT') {
       const e = await prisma.event.findUnique({
         where: { id: referenceId },
         select: { businessId: true, business: { select: { name: true, ownerId: true } } },
       });
-      return { businessId: e?.businessId || undefined, businessName: e?.business?.name || undefined, ownerId: e?.business?.ownerId || undefined };
+      return {
+        businessId: e?.businessId || undefined,
+        businessName: e?.business?.name || undefined,
+        ownerId: e?.business?.ownerId || undefined,
+      };
     }
   } catch {
     // silencieux : ne jamais bloquer le favori si la résolution échoue
@@ -145,7 +165,10 @@ export async function removeFavorite(userId: string, favoriteId: string) {
   const fav = await prisma.favorite.findFirst({ where: { id: favoriteId, userId } });
   if (!fav) throw new AppError('Favorite not found', 404);
   await prisma.favorite.delete({ where: { id: favoriteId } });
-  const { businessId, businessName, ownerId } = await resolveFavoriteBusiness(fav.referenceId, fav.type);
+  const { businessId, businessName, ownerId } = await resolveFavoriteBusiness(
+    fav.referenceId,
+    fav.type
+  );
   publishFavoriteRemoved({
     userId: ownerId || userId,
     referenceId: fav.referenceId,

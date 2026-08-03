@@ -107,7 +107,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       socket.off('notification:new', handleNewNotification);
       socket.off('business:event', handleBusinessEvent);
     };
-  }, [accessToken, businessId, handleNewMessage, handleNewNotification, handleNewConversation, handleBusinessEvent]);
+  }, [
+    accessToken,
+    businessId,
+    handleNewMessage,
+    handleNewNotification,
+    handleNewConversation,
+    handleBusinessEvent,
+  ]);
 
   // Rejoindre/quitter la room business quand le businessId change (chargé par la Sidebar)
   useEffect(() => {
