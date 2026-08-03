@@ -4,15 +4,92 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { BusinessReview } from '@/types/business';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/authStore';
+import { useCreateBusinessReview } from '@/features/hooks/business';
 
 interface ReviewsProps {
   reviews: BusinessReview[];
+  slug?: string;
 }
 
-export function Reviews({ reviews }: ReviewsProps) {
+function BusinessReviewForm({ slug, onSuccess }: { slug: string; onSuccess: () => void }) {
+  const [rating, setRating] = useState(5);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState('');
+  const createReview = useCreateBusinessReview(slug);
+
+  const handleSubmit = async () => {
+    try {
+      await createReview.mutateAsync({ rating, comment });
+      setComment('');
+      setRating(5);
+      onSuccess();
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 409) {
+        alert('Vous avez déjà évalué ce business.');
+      } else if (status === 400) {
+        alert(err?.response?.data?.message || 'Impossible de publier cet avis.');
+      } else {
+        alert('Erreur lors de la publication de l\'avis');
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-1">
+        {Array.from({ length: 5 }).map((_, i) => {
+          const value = i + 1;
+          return (
+            <button
+              key={i}
+              type="button"
+              onMouseEnter={() => setHover(value)}
+              onMouseLeave={() => setHover(0)}
+              onClick={() => setRating(value)}
+              className="transition-transform hover:scale-110"
+              aria-label={`${value} étoile${value > 1 ? 's' : ''}`}
+            >
+              <Star
+                className={cn(
+                  'h-5 w-5',
+                  value <= (hover || rating) ? 'text-amber-400 fill-current' : 'text-gray-300'
+                )}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Partagez votre expérience avec ce business (optionnel)"
+        rows={3}
+        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none"
+      />
+
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={handleSubmit} isLoading={createReview.isPending}>
+          Publier l&apos;avis
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function Reviews({ reviews, slug }: ReviewsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const currentUserId = user?.id;
+  const alreadyReviewed = reviews?.some((r) => r.user.id === currentUserId) ?? false;
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -36,13 +113,16 @@ export function Reviews({ reviews }: ReviewsProps) {
     el.scrollBy({ left: direction === 'left' ? -cardWidth : cardWidth, behavior: 'smooth' });
   };
 
-  if (!reviews?.length) return null;
+  const canReview = isAuthenticated() && !!slug && !alreadyReviewed;
+  if (!reviews?.length && !canReview) return null;
 
-  const averageRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+  const averageRating = reviews.length
+    ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+    : 0;
   const distribution = Array.from({ length: 5 }, (_, i) => {
     const star = 5 - i;
     const count = reviews.filter((r) => r.rating === star).length;
-    return { star, count, percentage: (count / reviews.length) * 100 };
+    return { star, count, percentage: reviews.length ? (count / reviews.length) * 100 : 0 };
   });
 
   return (
@@ -52,26 +132,54 @@ export function Reviews({ reviews }: ReviewsProps) {
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
             Avis Clients
           </h2>
-          {reviews.length > 3 && (
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                onClick={() => scroll('left')}
-                disabled={!canScrollLeft}
-                className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          <div className="flex items-center gap-3">
+            {canReview && !showForm && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setShowForm(true)}
+                className="flex items-center gap-1.5"
               >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => scroll('right')}
-                disabled={!canScrollRight}
-                className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+                <Star className="w-4 h-4 fill-current" />
+                Laisser un avis
+              </Button>
+            )}
+            {reviews.length > 3 && (
+              <div className="hidden sm:flex items-center gap-2">
+                <button
+                  onClick={() => scroll('left')}
+                  disabled={!canScrollLeft}
+                  className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => scroll('right')}
+                  disabled={!canScrollRight}
+                  className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
+        {showForm && slug && (
+          <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+              Votre avis compte
+            </h3>
+            <BusinessReviewForm
+              slug={slug}
+              onSuccess={() => {
+                setShowForm(false);
+              }}
+            />
+          </div>
+        )}
+
+        {reviews.length > 0 && (
         <div className="flex flex-col sm:flex-row gap-8 mb-10 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
           <div className="text-center flex-shrink-0">
             <div className="text-5xl font-bold text-gray-900 dark:text-white">
@@ -103,6 +211,7 @@ export function Reviews({ reviews }: ReviewsProps) {
             ))}
           </div>
         </div>
+        )}
 
         <div className="relative">
           <div

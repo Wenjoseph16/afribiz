@@ -2,7 +2,7 @@ import { Prisma, BusinessType, BusinessModule, BusinessVerificationStatus } from
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { getPublicPortfolio } from './portfolio';
-import { publishOnboardingCompleted, publishReviewResponse } from '../events/publishers';
+import { publishOnboardingCompleted, publishReviewResponse, publishReviewPublished } from '../events/publishers';
 
 export async function getPublicBusiness(slug: string) {
   const business = await prisma.business.findUnique({
@@ -136,6 +136,50 @@ export async function getBusinessReviews(slug: string) {
     include: { user: { select: { id: true, firstName: true, lastName: true, avatar: true } } },
     orderBy: { createdAt: 'desc' },
   });
+}
+
+export async function createBusinessReview(
+  slug: string,
+  userId: string,
+  data: { rating: number; title?: string; comment?: string }
+) {
+  if (!Number.isInteger(data.rating) || data.rating < 1 || data.rating > 5)
+    throw new AppError('La note doit être un entier entre 1 et 5', 400);
+
+  const business = await prisma.business.findUnique({
+    where: { slug, isActive: true, deletedAt: null },
+    select: { id: true, name: true, ownerId: true },
+  });
+  if (!business) throw new AppError('Business non trouvé', 404);
+  // Un propriétaire ne peut pas noter son propre business
+  if (business.ownerId === userId) throw new AppError('Vous ne pouvez pas noter votre propre business', 400);
+
+  const existing = await prisma.businessReview.findFirst({
+    where: { businessId: business.id, userId },
+  });
+  if (existing) throw new AppError('Vous avez déjà évalué ce business', 409);
+
+  const review = await prisma.businessReview.create({
+    data: {
+      businessId: business.id,
+      userId,
+      rating: data.rating,
+      title: data.title || null,
+      comment: data.comment || null,
+    },
+    include: { user: { select: { id: true, firstName: true, lastName: true, avatar: true } } },
+  });
+
+  // Recalcul immédiat de la note moyenne + compteur, puis diffusion de l'événement
+  await recalculateBusinessRating(business.id);
+  publishReviewPublished({
+    userId,
+    businessId: business.id,
+    businessName: business.name,
+    rating: data.rating,
+  });
+
+  return review;
 }
 
 export async function recalculateBusinessRating(businessId: string) {

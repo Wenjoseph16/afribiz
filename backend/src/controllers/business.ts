@@ -127,6 +127,20 @@ export const getBusinessReviews = catchAsyncErrors(
   }
 );
 
+export const createBusinessReview = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const { slug } = req.params;
+    const { rating, title, comment } = req.body;
+    const data = await businessService.createBusinessReview(slug, req.user.id, {
+      rating: Number(rating),
+      title,
+      comment,
+    });
+    res.status(201).json({ success: true, data, message: 'Avis publié' });
+  }
+);
+
 export const getBusinessBookings = catchAsyncErrors(
   async (req: Request, res: Response, _next: NextFunction) => {
     const { slug } = req.params;

@@ -369,6 +369,7 @@ export const BUSINESS_CORE_NAV: NavGroup[] = [
       { label: 'Growth Coaching', href: '/dashboard/growth-coaching', icon: 'UserCheck' },
       { label: 'Badges & Succès', href: '/dashboard/gamification', icon: 'Award' },
       { label: 'Statistiques', href: '/dashboard/statistics', icon: 'BarChart3' },
+      { label: 'Analytics', href: '/dashboard/analytics', icon: 'TrendingUp' },
       { label: 'AfriScore', href: '/dashboard/afriscore', icon: 'Award' },
       { label: 'Défis & Quêtes', href: '/dashboard/afriscore/gamification', icon: 'Trophy' },
     ],

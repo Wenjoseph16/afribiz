@@ -338,7 +338,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
             </ErrorBoundary>
             <ErrorBoundary>
               <section id="section-reviews">
-                <Reviews reviews={reviews || []} />
+                <Reviews reviews={reviews || []} slug={slug} />
               </section>
             </ErrorBoundary>
           </div>

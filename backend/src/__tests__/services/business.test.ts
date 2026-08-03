@@ -4,6 +4,7 @@ import {
   getBusinessProducts,
   getBusinessMenu,
   getBusinessReviews,
+  createBusinessReview,
   getMyBusiness,
   getMyBusinessStats,
   getAggregatedDashboardStats,
@@ -20,6 +21,7 @@ jest.mock('../../lib/logger', () => ({
 jest.mock('../../events/publishers', () => ({
   publishOnboardingCompleted: jest.fn(),
   publishReviewResponse: jest.fn(),
+  publishReviewPublished: jest.fn(),
 }));
 
 const mockDecimal = { toNumber: () => 50000, valueOf: () => 50000 } as any;
@@ -219,6 +221,69 @@ describe('business', () => {
         .spyOn(mockPrisma.business, 'findUnique')
         .mockResolvedValueOnce({ id: 'existing' } as any);
       await expect(createBusiness('u1', {} as any)).rejects.toThrow('Vous avez déjà un business');
+    });
+  });
+
+  describe('createBusinessReview', () => {
+    test('creates a review and recalculates rating', async () => {
+      jest.spyOn(mockPrisma.business, 'findUnique').mockResolvedValue({
+        id: 'b1',
+        name: 'Biz',
+        ownerId: 'u1',
+      } as any);
+      jest.spyOn(mockPrisma.businessReview, 'findFirst').mockResolvedValue(null);
+      jest.spyOn(mockPrisma.businessReview, 'create').mockResolvedValue({
+        id: 'r1',
+        rating: 4,
+        user: { id: 'u2', firstName: 'J', lastName: 'D', avatar: null },
+      } as any);
+      const aggregateSpy = jest
+        .spyOn(mockPrisma.businessReview, 'aggregate')
+        .mockResolvedValue({ _avg: { rating: 4 }, _count: 3 } as any);
+      const updateSpy = jest.spyOn(mockPrisma.business, 'update').mockResolvedValue(mockBiz as any);
+
+      const r = await createBusinessReview('biz', 'u2', { rating: 4, comment: 'Super' });
+      expect(r.id).toBe('r1');
+      expect(aggregateSpy).toHaveBeenCalled();
+      expect(updateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ rating: 4, reviewCount: 3 }) })
+      );
+    });
+
+    test('throws if business not found', async () => {
+      jest.spyOn(mockPrisma.business, 'findUnique').mockResolvedValue(null);
+      await expect(createBusinessReview('biz', 'u2', { rating: 4 })).rejects.toThrow(
+        'Business non trouvé'
+      );
+    });
+
+    test('throws if owner reviews own business', async () => {
+      jest.spyOn(mockPrisma.business, 'findUnique').mockResolvedValue({
+        id: 'b1',
+        name: 'Biz',
+        ownerId: 'u2',
+      } as any);
+      await expect(createBusinessReview('biz', 'u2', { rating: 4 })).rejects.toThrow(
+        'propre business'
+      );
+    });
+
+    test('throws if already reviewed', async () => {
+      jest.spyOn(mockPrisma.business, 'findUnique').mockResolvedValue({
+        id: 'b1',
+        name: 'Biz',
+        ownerId: 'u1',
+      } as any);
+      jest
+        .spyOn(mockPrisma.businessReview, 'findFirst')
+        .mockResolvedValue({ id: 'r1' } as any);
+      await expect(createBusinessReview('biz', 'u2', { rating: 4 })).rejects.toThrow('déjà évalué');
+    });
+
+    test('throws if rating out of range', async () => {
+      await expect(createBusinessReview('biz', 'u2', { rating: 9 })).rejects.toThrow(
+        'entre 1 et 5'
+      );
     });
   });
 

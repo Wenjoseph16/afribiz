@@ -48,6 +48,12 @@ export function injectBusiness(api: ApiClientMethods) {
     const url = slug ? `/business/${slug}/reviews` : '/business/reviews';
     return this.get(url);
   };
+  api.createBusinessReview = function (
+    slug: string,
+    data: { rating: number; title?: string; comment?: string }
+  ) {
+    return this.post(`/business/${slug}/reviews`, data);
+  };
   api.getBusinessPromotions = function (slug?: string) {
     const url = slug ? `/business/${slug}/promotions` : '/business/promotions';
     return this.get(url);

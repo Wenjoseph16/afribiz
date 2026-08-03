@@ -13,6 +13,7 @@ jest.mock('../../services/business', () => ({
   getBusinessPromotions: jest.fn(),
   getBusinessPartners: jest.fn(),
   getBusinessReviews: jest.fn(),
+  createBusinessReview: jest.fn(),
   getBusinessBookings: jest.fn(),
   getBusinessTrainings: jest.fn(),
   getMyBusiness: jest.fn(),
@@ -121,6 +122,32 @@ describe('business controller - public', () => {
     businessCtrl.getBusinessReviews({ params: { slug: 'my-biz' } } as any, res, next);
     await flush();
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  it('createBusinessReview returns 201', async () => {
+    (businessService.createBusinessReview as jest.Mock).mockResolvedValue({ id: 'r1' });
+    const res = mockRes();
+    const next = jest.fn();
+    businessCtrl.createBusinessReview(
+      req({ params: { slug: 'my-biz' }, body: { rating: 5, comment: 'Top' } }),
+      res,
+      next
+    );
+    await flush();
+    expect(businessService.createBusinessReview).toHaveBeenCalledWith('my-biz', 'u1', {
+      rating: 5,
+      title: undefined,
+      comment: 'Top',
+    });
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it('createBusinessReview returns 401 if no user', async () => {
+    const res = mockRes();
+    const next = jest.fn();
+    businessCtrl.createBusinessReview({} as any, res, next);
+    await flush();
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
   });
 });
 

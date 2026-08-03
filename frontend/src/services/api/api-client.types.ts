@@ -75,6 +75,10 @@ export interface ApiClientMethods {
   getBusinessRentals(slug?: string): Promise<any>;
   getBusinessBookings(slug?: string): Promise<any>;
   getBusinessReviews(slug?: string): Promise<any>;
+  createBusinessReview(
+    slug: string,
+    data: { rating: number; title?: string; comment?: string }
+  ): Promise<any>;
   getBusinessPromotions(slug?: string): Promise<any>;
   getBusinessPartners(slug?: string): Promise<any>;
   getBusinessPortfolio(slug?: string): Promise<any>;

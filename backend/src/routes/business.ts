@@ -11,6 +11,7 @@ import {
   getBusinessPromotions,
   getBusinessPartners,
   getBusinessReviews,
+  createBusinessReview,
   getBusinessBookings,
   getBusinessTrainings,
   getMyBusiness,
@@ -79,6 +80,7 @@ router.get('/:slug/portfolio', getBusinessPortfolio);
 router.get('/:slug/promotions', getBusinessPromotions);
 router.get('/:slug/partners', getBusinessPartners);
 router.get('/:slug/reviews', getBusinessReviews);
+router.post('/:slug/reviews', authMiddleware, createBusinessReview);
 router.get('/:slug/bookings', getBusinessBookings);
 router.get('/:slug/trainings', getBusinessTrainings);
 router.get('/:slug/faqs', getPublicFaqs);

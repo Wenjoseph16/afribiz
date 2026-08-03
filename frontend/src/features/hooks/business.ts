@@ -282,6 +282,18 @@ export function useBusinessReviews(
   });
 }
 
+export function useCreateBusinessReview(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { rating: number; title?: string; comment?: string }) =>
+      apiClient.createBusinessReview(slug, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: businessKeys.reviews(slug) });
+      qc.invalidateQueries({ queryKey: businessKeys.public(slug) });
+    },
+  });
+}
+
 export function useBusinessBookings(
   slug: string,
   options?: Partial<UseQueryOptions<any[]>>
