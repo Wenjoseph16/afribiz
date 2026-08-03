@@ -615,3 +615,98 @@ export function useAdminRecomputeAllScores() {
     },
   });
 }
+
+// ── AnalyticsEvent Hooks (chantier 1 — flux temps réel) ──
+
+export const analyticsEventKeys = {
+  events: (params?: any) => ['analytics-events', 'feed', params] as const,
+  summary: (days?: number) => ['analytics-events', 'summary', days] as const,
+  breakdownType: (days?: number) => ['analytics-events', 'breakdown', 'type', days] as const,
+  breakdownCategory: (days?: number) => ['analytics-events', 'breakdown', 'category', days] as const,
+  counters: (days?: number) => ['analytics-events', 'counters', days] as const,
+};
+
+export function useAnalyticsEvents(params?: any, refetchInterval?: number) {
+  return useQuery({
+    queryKey: analyticsEventKeys.events(params),
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getAnalyticsEvents(params);
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement flux événements:', error);
+        return { events: [], total: 0, page: 1, limit: 50, totalPages: 0 };
+      }
+    },
+    retry: false,
+    ...(refetchInterval ? { refetchInterval } : {}),
+  });
+}
+
+export function useAnalyticsEventsSummary(days = 30, refetchInterval?: number) {
+  return useQuery({
+    queryKey: analyticsEventKeys.summary(days),
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getAnalyticsEventsSummary({ days });
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement résumé événements:', error);
+        return { total: 0, today: 0, byType: [], byCategory: [], days };
+      }
+    },
+    retry: false,
+    ...(refetchInterval ? { refetchInterval } : {}),
+  });
+}
+
+export function useAnalyticsBreakdownByType(days = 30, refetchInterval?: number) {
+  return useQuery({
+    queryKey: analyticsEventKeys.breakdownType(days),
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getAnalyticsEventsBreakdownType({ days });
+        return res.data.data?.breakdown ?? [];
+      } catch (error) {
+        console.warn('Erreur chargement répartition par type:', error);
+        return [];
+      }
+    },
+    retry: false,
+    ...(refetchInterval ? { refetchInterval } : {}),
+  });
+}
+
+export function useAnalyticsBreakdownByCategory(days = 30, refetchInterval?: number) {
+  return useQuery({
+    queryKey: analyticsEventKeys.breakdownCategory(days),
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getAnalyticsEventsBreakdownCategory({ days });
+        return res.data.data?.breakdown ?? [];
+      } catch (error) {
+        console.warn('Erreur chargement répartition par catégorie:', error);
+        return [];
+      }
+    },
+    retry: false,
+    ...(refetchInterval ? { refetchInterval } : {}),
+  });
+}
+
+export function useAnalyticsEventsCounters(days = 30, refetchInterval?: number) {
+  return useQuery({
+    queryKey: analyticsEventKeys.counters(days),
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getAnalyticsEventsCounters({ days });
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement compteurs événements:', error);
+        return { period: days, totals: {}, revenue: 0, eventCount: 0 };
+      }
+    },
+    retry: false,
+    ...(refetchInterval ? { refetchInterval } : {}),
+  });
+}

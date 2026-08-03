@@ -150,6 +150,9 @@ export async function getAnalyticsSummary(businessId?: string, days = 30) {
   };
 }
 
+/** Types d'événements dont la valeur est un MONTANT monétaire (FCFA). */
+const MONEY_TYPES = ['order', 'payment', 'booking'];
+
 /**
  * Compteurs agrégés pour le dashboard business (depuis AnalyticsEvent).
  * Complète `dataHubAnalytics` (qui agrège les tables métier directement).
@@ -158,6 +161,8 @@ export async function getBusinessAnalyticsCounters(businessId: string, days = 30
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
   // Agrégation en base (pas de chargement mémoire) : counts par type + somme des valeurs
+  // NB : `revenue` ne somme QUE les types monétaires (ordre/paiment/réservation) —
+  // les valeurs non-monétaires (notes d'avis, etc.) ne sont jamais mélangées dedans.
   const [byType, revenueAgg] = await Promise.all([
     prisma.analyticsEvent.groupBy({
       by: ['type'],
@@ -166,7 +171,7 @@ export async function getBusinessAnalyticsCounters(businessId: string, days = 30
       orderBy: { _count: { type: 'desc' } },
     }),
     prisma.analyticsEvent.aggregate({
-      where: { businessId, occurredAt: { gte: since } },
+      where: { businessId, type: { in: MONEY_TYPES }, occurredAt: { gte: since } },
       _sum: { value: true },
     }),
   ]);

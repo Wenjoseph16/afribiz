@@ -295,11 +295,11 @@
 | **`analyticsService.ts` (trackAnalyticsEvent)** | ✅ | **CHANTIER 1 FAIT** — `analyticsService.ts` recréé (tracking NON-bloquant + helpers feed/breakdown/summary/counters) + trackers câblés dans 6 services : orders (ORDER_PLACED/STATUS_CHANGED), bookings (BOOKING_CREATED), business (BUSINESS_VIEWED + REVIEW_PUBLISHED), marketplace (PRODUCT_VIEWED), favoriteService (FAVORITE_ADDED/REMOVED), hybridPaymentService (PAYMENT_COMPLETED) — commit `e745399` |
 | Endpoints `/api/analytics/events/*` | ✅ | `analyticsEventsController` (feed, breakdown type/catégorie, summary, counters) — scope admin/business (404 sans business) |
 | Page `/dashboard/analytics` | ✅ | **CHANTIER A FAIT** (health, funnel, engagement, tendances, cohortes) — mais branchée sur `dataHubAnalytics` (agrégations à la volée), PAS sur AnalyticsEvent |
-| Page `/dashboard/analytics/realtime` | 🔴 | Absente (flux d'événements temps réel) — à recréer pour consommer `/api/analytics/events` |
+| Page `/dashboard/analytics/realtime` | ✅ | **FAITE (chantier 1)** — flux temps réel (KPIs, donuts cliquables type/catégorie, filtres recherche/type/catégorie, pagination, auto-refresh 30s) |
 | Page `/dashboard/analytics/reports` | 🔴 | Absente |
 | Page `/dashboard/analytics/custom` | 🔴 | Absente |
 
-**Verdict TOME-24 : ⚠️ backend ✅ (chantier 1) — reste la page realtime (dernière pièce du chantier 1) puis reports/custom.**
+**Verdict TOME-24 : ✅ chantier 1 TERMINÉ (backend + page realtime). Reste : pages reports/custom (chantier 5 / hors priorité).**
 
 ---
 
@@ -382,7 +382,7 @@
 
 | # | Chantier | TOME | Impact « vivant » | Effort |
 |---|---|---|---|---|
-| **1** | **Recréer `analyticsService.ts` + câbler les trackers** (AnalyticsEvent alimenté par commandes/réservations/paiements/vues) | 24 | ⭐⭐⭐⭐⭐ **✅ BACKEND FAIT (commit `e745399`)** — reste la page `/dashboard/analytics/realtime` (dernière pièce) | Moyen+ |
+| **1** | **Recréer `analyticsService.ts` + câbler les trackers** (AnalyticsEvent alimenté par commandes/réservations/paiements/vues) | 24 | ⭐⭐⭐⭐⭐ **✅ TERMINÉ** — backend `e745399` + page realtime (KPIs, donuts, filtres, auto-refresh) | Moyen+ |
 | **2** | **Réactiver les publishes `marketingCampaigns`** (décommenter) | 19 | ⭐⭐⭐ Les campagnes émettent enfin des events (notifs + analytics) | Petit |
 | **3** | **Recréer l'émission webhooks métier** (`fireWebhookEvent` : order.created, payment.completed…) | 30 | ⭐⭐⭐ Pilier de l'écosystème développeur | Moyen |
 | **4** | **Étendre `feedHandler`** (avis, commentaires, nouveaux business…) | 20 | ⭐⭐ Le fil social reflète les actions réelles | Moyen |
@@ -397,7 +397,7 @@
 ## ORDRE D'EXÉCUTION RECOMMANDÉ
 
 ```
-1.  Chantier 1  → ✅ BACKEND FAIT (e745399) — page realtime en cours
+1.  Chantier 1  → ✅ TERMINÉ (analyticsService + trackers + endpoints + page realtime)
 2.  Chantier 2  → marketingCampaigns (petit, effet immédiat)
 3.  Chantier 3  → webhooks métier
 4.  Chantier 4  → feed étendu

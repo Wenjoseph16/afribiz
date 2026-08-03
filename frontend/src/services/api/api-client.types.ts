@@ -970,6 +970,15 @@ export interface ApiClientMethods {
   getBusinessEngagement(): Promise<any>;
 
   // ============================================
+  // ANALYTICS EVENTS (injectAnalyticsEvents) — chantier 1
+  // ============================================
+  getAnalyticsEvents(params?: any): Promise<any>;
+  getAnalyticsEventsBreakdownType(params?: any): Promise<any>;
+  getAnalyticsEventsBreakdownCategory(params?: any): Promise<any>;
+  getAnalyticsEventsSummary(params?: any): Promise<any>;
+  getAnalyticsEventsCounters(params?: any): Promise<any>;
+
+  // ============================================
   // MISC (injectMisc) — Business Training, Alerts, Attention, etc.
   // ============================================
   getBizTrainings(params?: any): Promise<any>;

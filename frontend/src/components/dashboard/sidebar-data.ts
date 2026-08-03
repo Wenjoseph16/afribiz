@@ -370,6 +370,7 @@ export const BUSINESS_CORE_NAV: NavGroup[] = [
       { label: 'Badges & Succès', href: '/dashboard/gamification', icon: 'Award' },
       { label: 'Statistiques', href: '/dashboard/statistics', icon: 'BarChart3' },
       { label: 'Analytics', href: '/dashboard/analytics', icon: 'TrendingUp' },
+      { label: 'Flux temps réel', href: '/dashboard/analytics/realtime', icon: 'Radio' },
       { label: 'AfriScore', href: '/dashboard/afriscore', icon: 'Award' },
       { label: 'Défis & Quêtes', href: '/dashboard/afriscore/gamification', icon: 'Trophy' },
     ],
