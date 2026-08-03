@@ -34,8 +34,8 @@ export function TestimonialsSection() {
         <motion.div {...fadeInUp}>
           <SectionLabel text="Témoignages" />
           <SectionHeading
-            title="Ce que disent nos entrepreneurs"
-            subtitle="Rejoignez les milliers d'entrepreneurs qui transforment leur activité."
+            title="La preuve que l’outil tient ses promesses"
+            subtitle="Des entrepreneurs qui ont transformé leurs opérations en quelques semaines seulement."
           />
         </motion.div>
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">

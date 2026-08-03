@@ -71,8 +71,8 @@ export function PricingSection() {
         <motion.div {...fadeInUp}>
           <SectionLabel text="Tarifs" />
           <SectionHeading
-            title="Des tarifs adaptés à votre croissance"
-            subtitle="Commencez gratuitement. Pas de carte bancaire requise."
+            title="Un modèle clair pour passer de l’idée à la croissance"
+            subtitle="Commencez sans risque, gagnez en maturité au rythme de votre activité."
           />
         </motion.div>
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">

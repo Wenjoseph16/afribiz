@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import CountryMarketplaceClient from './client';
 
+export const dynamic = 'force-dynamic';
+
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://afribiz.com';
 
 const COUNTRY_NAMES: Record<string, string> = {

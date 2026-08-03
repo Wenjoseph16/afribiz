@@ -39,8 +39,8 @@ export function FAQSection() {
         <motion.div {...fadeInUp}>
           <SectionLabel text="FAQ" />
           <SectionHeading
-            title="Questions fréquentes"
-            subtitle="Tout ce que vous devez savoir avant de commencer."
+            title="Tout ce qu’il faut clarifier avant de lancer"
+            subtitle="Des réponses simples pour une mise en route rapide et sereine."
           />
         </motion.div>
         <div className="space-y-3">

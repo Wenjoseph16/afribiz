@@ -43,6 +43,8 @@ import AdSlot from '@/components/ads/AdSlot';
 import { apiClient } from '@/services/apiClient';
 import { Loader } from '@/components/ui/Loader';
 import { CopilotDashboardBrief } from '@/components/copilot/CopilotDashboardBrief';
+import { buildDashboardWorkflowState } from '@/lib/dashboardWorkflow';
+import { buildLaunchJourneyState } from '@/lib/launchJourney';
 
 export default function DashboardPage() {
   const { user, isLoading, isAuthenticated } = useAuthStore();
@@ -216,6 +218,37 @@ function ClientDashboardContent() {
   const pendingPayments = payments.filter((p: any) => p.status === 'pending').length;
 
   const promoCategories = ['recommended', 'popular', 'new'];
+  const workflowState = useMemo(
+    () =>
+      buildDashboardWorkflowState({
+        orders,
+        bookings,
+        payments,
+        promotions,
+        notifications,
+        loyaltyPoints,
+      }),
+    [bookings, loyaltyPoints, notifications, orders, payments, promotions]
+  );
+
+  const launchJourneyState = useMemo(
+    () =>
+      buildLaunchJourneyState({
+        hasProfile: !!(authUser?.firstName && authUser?.lastName),
+        hasPublicPage: !!authUser?.businessId,
+        hasProducts: orders.length > 0,
+        hasPayments: payments.length > 0,
+        hasPromotions: promotions.length > 0,
+      }),
+    [
+      authUser?.businessId,
+      authUser?.firstName,
+      authUser?.lastName,
+      orders.length,
+      payments.length,
+      promotions.length,
+    ]
+  );
 
   return (
     <motion.div
@@ -263,6 +296,64 @@ function ClientDashboardContent() {
 
       <motion.div variants={itemVariants}>
         <CopilotDashboardBrief />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <Card className="border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                État du workflow
+              </p>
+              <h3 className="mt-1 text-xl font-semibold text-gray-900">
+                Votre espace est à {workflowState.progressScore}% de son potentiel
+              </h3>
+              <p className="mt-2 max-w-2xl text-sm text-gray-600">{workflowState.healthMessage}</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-700">
+                Prochaine priorité
+              </p>
+              <p className="mt-1 text-sm font-semibold text-gray-900">
+                {workflowState.nextActions[0]?.title}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {workflowState.focusAreas.map((area) => (
+              <div key={area.title} className="rounded-xl border border-gray-200 bg-white/80 p-3">
+                <p className="text-sm font-semibold text-gray-900">{area.title}</p>
+                <p className="mt-1 text-sm text-gray-600">{area.description}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <Card className="border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Premier lancement
+              </p>
+              <h3 className="mt-1 text-xl font-semibold text-slate-900">
+                {launchJourneyState.currentStep.title}
+              </h3>
+              <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                {launchJourneyState.currentStep.description}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+                {launchJourneyState.progressScore}% prêt
+              </div>
+              <Link href={launchJourneyState.currentStep.href}>
+                <Button size="sm">Continuer</Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
       </motion.div>
 
       {/* Profile completion */}

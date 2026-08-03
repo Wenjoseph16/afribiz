@@ -85,15 +85,15 @@ export default function OnboardingPage() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-brand/5 text-brand rounded-full text-sm font-medium mb-4 border border-brand/10">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium mb-4 border border-emerald-200">
           <Sparkles className="h-3.5 w-3.5" />
-          Bienvenue sur AfriBiz
+          Lancement guidé AfriBiz
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Configurez votre compte
+          Lancez votre activité avec confiance
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-2">
-          Suivez ces étapes pour lancer votre business en ligne
+          Un parcours en 4 étapes pour transformer votre présence en croissance réelle
         </p>
       </motion.div>
 
@@ -101,7 +101,7 @@ export default function OnboardingPage() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6"
+        className="bg-gradient-to-r from-emerald-50 via-white to-slate-50 dark:from-emerald-950/20 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-emerald-200 dark:border-emerald-900/50 p-6"
       >
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -225,7 +225,7 @@ export default function OnboardingPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="bg-gradient-to-br from-brand to-brand-700 rounded-2xl p-6 text-white text-center"
+        className="bg-gradient-to-br from-emerald-600 via-brand to-slate-900 rounded-2xl p-6 text-white text-center"
       >
         <Sparkles className="h-8 w-8 mx-auto mb-3 text-emerald-200" />
         <h2 className="text-xl font-bold mb-2">Prêt à lancer votre business ?</h2>

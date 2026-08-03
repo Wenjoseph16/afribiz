@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
+import { getApiUrl, getSiteUrl } from '@/lib/config';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://afribiz.com';
+const BASE_URL = getSiteUrl();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = [
@@ -64,8 +65,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let businessPages: MetadataRoute.Sitemap = [];
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    const res = await fetch(`${apiUrl}/marketplace/trending`, { next: { revalidate: 300 } });
+    const res = await fetch(getApiUrl('/marketplace/trending'), {
+      next: { revalidate: 300 },
+      headers: { Accept: 'application/json' },
+    });
     const json = await res.json();
     const businesses = json?.data?.topBusinesses || [];
     businessPages = businesses.map((b: any) => ({

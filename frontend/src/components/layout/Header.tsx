@@ -338,9 +338,9 @@ export function Header() {
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-brand to-emerald-400 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:shadow-lg hover:shadow-brand/20 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 bg-gradient-to-r from-brand via-emerald-500 to-emerald-400 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm hover:shadow-lg hover:shadow-brand/20 transition-all duration-200"
               >
-                S'inscrire
+                Ouvrir mon espace
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <button

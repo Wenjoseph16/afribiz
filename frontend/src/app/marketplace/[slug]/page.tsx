@@ -27,6 +27,22 @@ import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
 
+const FALLBACK_MODULE = {
+  id: 'fallback-module',
+  name: 'Module AfriBiz',
+  description: 'Le catalogue est temporairement indisponible. Réessayez plus tard.',
+  shortDescription: 'Catalogue indisponible pour le moment.',
+  pricingType: 'FREE',
+  price: 0,
+  features: [],
+  category: 'Produit',
+  version: '1.0',
+  totalInstalls: 0,
+  publishedAt: null,
+  updatedAt: null,
+  developer: null,
+};
+
 function StarRating({ rating, count }: { rating: number; count: number }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -247,10 +263,15 @@ export default function ModuleDetailPage() {
     queryKey: ['marketplace-module', slug],
     queryFn: async () => {
       if (!slug) throw new Error('Slug manquant');
-      const res = await apiClient.getMarketplaceModule(slug);
-      return res.data.data;
+      try {
+        const res = await apiClient.getMarketplaceModule(slug);
+        return res.data.data;
+      } catch {
+        return FALLBACK_MODULE;
+      }
     },
     enabled: !!slug,
+    retry: false,
   });
 
   const mod = module;

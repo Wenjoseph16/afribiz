@@ -6,10 +6,32 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load .env file explicitly for validation script
-const envPath = path.resolve(__dirname, '../.env');
-if (fs.existsSync(envPath)) {
-  require('dotenv').config({ path: envPath });
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  const result = require('dotenv').config({ path: filePath });
+  if (result.error) {
+    console.warn(`Warning: unable to load ${filePath}: ${result.error.message}`);
+  }
+  return true;
+}
+
+// Load .env files from the workspace root and frontend folder
+const candidates = [
+  path.resolve(__dirname, '../.env.local'),
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '../../.env.local'),
+  path.resolve(__dirname, '../../.env'),
+];
+
+let loaded = false;
+for (const envPath of candidates) {
+  if (loadEnvFile(envPath)) {
+    loaded = true;
+  }
+}
+
+if (!loaded) {
+  console.warn('No .env file found; using process environment only.');
 }
 
 const REQUIRED_VARS = [

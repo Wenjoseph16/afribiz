@@ -1,5 +1,8 @@
 import { Metadata } from 'next';
 import { BusinessPageClient } from './BusinessPageClient';
+import { getApiUrl } from '@/lib/config';
+
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -50,8 +53,11 @@ interface BusinessData {
 
 async function fetchBusiness(slug: string): Promise<BusinessData | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    const res = await fetch(`${baseUrl}/business/${slug}/public`, { next: { revalidate: 60 } });
+    const res = await fetch(getApiUrl(`/business/${slug}/public`), {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
     const json = await res.json();
     return json?.data || null;
   } catch (e) {
