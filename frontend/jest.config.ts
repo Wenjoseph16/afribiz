@@ -12,7 +12,7 @@ const config: Config = {
       },
     }],
   },
-  testMatch: ['**/__tests__/**/*.test.{ts,tsx}'],
+  testMatch: ['**/__tests__/**/*.test.{ts,tsx}', '**/lib/**/*.test.{ts,tsx}'],
   setupFiles: ['<rootDir>/src/__tests__/setup.ts'],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup-framework.ts'],
   moduleNameMapper: {
