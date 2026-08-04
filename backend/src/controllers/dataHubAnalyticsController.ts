@@ -10,13 +10,11 @@ import { prisma } from '../lib/db';
 // ── Data Hub Platform Stats ──
 
 /** GET /datahub/auth-trends — activité d'authentification (Data Hub) */
-export const getAuthTrends = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {
-    const days = parseInt(req.query.days as string) || 30;
-    const trends = await analyticsService.getAuthTrends(days);
-    res.json({ success: true, data: trends });
-  }
-);
+export const getAuthTrends = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const days = parseInt(req.query.days as string) || 30;
+  const trends = await analyticsService.getAuthTrends(days);
+  res.json({ success: true, data: trends });
+});
 
 export const getPlatformStats = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {

@@ -98,11 +98,13 @@ describe('dataHubAnalytics', () => {
       { eventName: 'USER_LOGGED_IN', _count: { _all: 2 } },
       { eventName: 'USER_SIGNED_UP', _count: { _all: 1 } },
     ]);
-    jest.spyOn(mockPrisma.analyticsEvent, 'findMany').mockResolvedValue([
-      { occurredAt: new Date('2026-08-01T10:00:00.000Z') },
-      { occurredAt: new Date('2026-08-01T14:00:00.000Z') },
-      { occurredAt: new Date('2026-08-02T09:00:00.000Z') },
-    ]);
+    jest
+      .spyOn(mockPrisma.analyticsEvent, 'findMany')
+      .mockResolvedValue([
+        { occurredAt: new Date('2026-08-01T10:00:00.000Z') },
+        { occurredAt: new Date('2026-08-01T14:00:00.000Z') },
+        { occurredAt: new Date('2026-08-02T09:00:00.000Z') },
+      ]);
     const result = await getAuthTrends(30);
     expect(result.total).toBe(3);
     expect(result.byEvent).toHaveLength(2);

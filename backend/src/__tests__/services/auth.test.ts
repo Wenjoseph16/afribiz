@@ -398,9 +398,7 @@ describe('AuthService', () => {
         (c: any) => c[0].data
       );
       expect(
-        events.some(
-          (e: any) => e.eventName === 'USER_LOGGED_IN' && e.properties?.method === '2fa'
-        )
+        events.some((e: any) => e.eventName === 'USER_LOGGED_IN' && e.properties?.method === '2fa')
       ).toBe(true);
     });
   });

@@ -28,11 +28,9 @@ export const getUsers = catchAsyncErrors(
 );
 
 /** GET /admin/presence — utilisateurs connectés temps réel (compteur + par rôle) */
-export const getPresence = catchAsyncErrors(
-  async (_req: AuthenticatedRequest, res: Response) => {
-    res.json({ success: true, data: presenceService.getPresenceSnapshot() });
-  }
-);
+export const getPresence = catchAsyncErrors(async (_req: AuthenticatedRequest, res: Response) => {
+  res.json({ success: true, data: presenceService.getPresenceSnapshot() });
+});
 
 export const getUserById = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
