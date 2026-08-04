@@ -12,6 +12,12 @@ jest.mock('../../lib/db', () => ({ prisma: mockPrisma }));
 jest.mock('../../lib/logger', () => ({
   logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
 }));
+// Socket mocké : on capture le push temps réel sans serveur réel
+const mockEmit = jest.fn();
+const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+jest.mock('../../services/socket', () => ({
+  getIO: () => ({ to: mockTo }),
+}));
 
 const freePlan = {
   id: 'platform-free',
@@ -119,5 +125,126 @@ describe('planAccessService', () => {
     (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(afribizPlan);
     const value = await getPlanPrivilegeValue('biz-1', 'PRODUCTS_LIMIT');
     expect(value).toBeNull(); // -1 → illimité → null
+  });
+});
+
+describe('checkPlanLimit — alertes de quota à 80%', () => {
+  beforeEach(() => {
+    invalidatePlanCache();
+    jest.clearAllMocks();
+  });
+
+  it("crée une notification PLAN_LIMIT quand la limite est utilisée à >= 80%", async () => {
+    // business avec owner (fallback Gratuit : PRODUCTS_LIMIT = 10 → seuil = 8)
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
+      planId: null,
+      ownerId: 'owner-1',
+    });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([]);
+    (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
+
+    await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 8, 'produits');
+
+    expect(mockPrisma.notification.create).toHaveBeenCalledTimes(1);
+    const data = (mockPrisma.notification.create as jest.Mock).mock.calls[0][0].data;
+    expect(data.userId).toBe('owner-1');
+    expect(data.type).toBe('PLAN_LIMIT');
+    expect(data.link).toBe('/dashboard/business/subscription');
+    expect(data.metadata.resource).toBe('PRODUCTS_LIMIT');
+    expect(data.metadata.current).toBe(8);
+    expect(data.metadata.limit).toBe(10);
+    expect(data.title).toContain('produits');
+  });
+
+  it('ne crée pas de doublon si une alerte identique existe déjà (anti-spam 7 jours)', async () => {
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
+      planId: null,
+      ownerId: 'owner-1',
+    });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
+    // Alerte existante pour CE business + CETTE ressource dans les 7 jours
+    (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([
+      { metadata: { resource: 'PRODUCTS_LIMIT', businessId: 'biz-1', pct: 80 } },
+    ]);
+
+    await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 9, 'produits');
+
+    expect(mockPrisma.notification.create).not.toHaveBeenCalled();
+  });
+
+  it('notifie à nouveau quand l alerte existante concerne un AUTRE business (propriétaire multi-business)', async () => {
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
+      planId: null,
+      ownerId: 'owner-1',
+    });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-2' });
+    // Alerte récente pour le business B (pas biz-1) → ne doit pas bloquer l alerte de biz-1
+    (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([
+      { metadata: { resource: 'PRODUCTS_LIMIT', businessId: 'biz-B', pct: 80 } },
+    ]);
+
+    await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 8, 'produits');
+
+    expect(mockPrisma.notification.create).toHaveBeenCalledTimes(1);
+    const data = (mockPrisma.notification.create as jest.Mock).mock.calls[0][0].data;
+    expect(data.metadata.businessId).toBe('biz-1');
+  });
+
+  it('ne notifie pas quand l usage est en dessous de 80%', async () => {
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
+      planId: null,
+      ownerId: 'owner-1',
+    });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
+
+    await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 7, 'produits');
+
+    expect(mockPrisma.notification.create).not.toHaveBeenCalled();
+  });
+
+  it('reste non-bloquant si la création de notification échoue', async () => {
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
+      planId: null,
+      ownerId: 'owner-1',
+    });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([]);
+    (mockPrisma.notification.create as jest.Mock).mockRejectedValue(new Error('db down'));
+
+    // L alerte échoue en silence, mais le check de limite passe (pas de 500 métier)
+    await expect(checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 8, 'produits')).resolves.toBeUndefined();
+  });
+
+  it('ne notifie pas quand le business n a pas de propriétaire', async () => {
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
+
+    await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 8, 'produits');
+
+    expect(mockPrisma.notification.create).not.toHaveBeenCalled();
+  });
+
+  it('pousse la notification en temps réel sur la room user:{ownerId}', async () => {
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
+      planId: null,
+      ownerId: 'owner-1',
+    });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([]);
+    (mockPrisma.notification.create as jest.Mock).mockResolvedValue({
+      id: 'notif-1',
+      type: 'PLAN_LIMIT',
+      title: 'Limite produits presque atteinte',
+    });
+
+    await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 8, 'produits');
+
+    expect(mockTo).toHaveBeenCalledWith('user:owner-1');
+    expect(mockEmit).toHaveBeenCalledWith('notification:new', expect.objectContaining({ id: 'notif-1' }));
   });
 });

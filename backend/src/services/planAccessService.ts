@@ -1,5 +1,8 @@
+import { NotificationType } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
+import { logger } from '../lib/logger';
+import { getIO } from './socket';
 
 /**
  * ============================================
@@ -15,6 +18,11 @@ import { AppError } from '../middlewares/errorHandler';
  */
 
 export const FREE_PLAN_ID = 'platform-free';
+
+// Alerte de quota : notifie le propriétaire quand une limite est utilisée à >= 80%.
+// Anti-spam : au maximum 1 alerte par ressource (produits/clients/réservations) et par période.
+export const PLAN_LIMIT_ALERT_RATIO = 0.8;
+export const PLAN_LIMIT_ALERT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 // Cache court (30s) pour limiter les requêtes répétées
 const planCache = new Map<string, { plan: any; expiresAt: number }>();
@@ -111,6 +119,80 @@ export async function checkPlanLimit(
       `Limite du plan ${planName} atteinte : ${label} (max ${limit}). Passez à un plan supérieur pour continuer.`,
       403
     );
+  }
+  // Alerte d'usage à 80% de la limite (non-bloquant, anti-spam)
+  await maybeNotifyPlanLimit(businessId, code, currentCount, limit, label);
+}
+
+/**
+ * Alerte de quota : notifie le propriétaire du business quand une limite
+ * (produits, clients, réservations) est utilisée à >= 80% pour l'inciter à upgrader.
+ *
+ * Garanties :
+ * - Anti-spam : 1 alerte max par ressource et par période (7 jours) → aucun harcèlement.
+ * - Non-bloquant : toute erreur est loggée en warn, jamais de 500 métier.
+ * - Le push socket `notification:new` arrive en temps réel sur le dashboard du propriétaire.
+ */
+async function maybeNotifyPlanLimit(
+  businessId: string,
+  code: string,
+  currentCount: number,
+  limit: number,
+  label: string
+): Promise<void> {
+  try {
+    const threshold = Math.ceil(limit * PLAN_LIMIT_ALERT_RATIO);
+    if (currentCount < threshold) return; // en dessous de 80%
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { ownerId: true, name: true },
+    });
+    const ownerId = business?.ownerId;
+    if (!ownerId) return;
+
+    // Anti-spam : une alerte identique récente existe déjà pour CE business + CETTE ressource ?
+    // (le contrôle par businessId évite de sous-notifier les propriétaires multi-business)
+    const recentAlerts = await prisma.notification.findMany({
+      where: {
+        userId: ownerId,
+        type: NotificationType.PLAN_LIMIT,
+        createdAt: { gte: new Date(Date.now() - PLAN_LIMIT_ALERT_WINDOW_MS) },
+      },
+      select: { metadata: true },
+    });
+    const alreadyWarned = (recentAlerts || []).some(
+      (n: any) => n.metadata?.resource === code && n.metadata?.businessId === businessId
+    );
+    if (alreadyWarned) return;
+
+    const pct = Math.round((currentCount / limit) * 100);
+    const notification = await prisma.notification.create({
+      data: {
+        userId: ownerId,
+        type: NotificationType.PLAN_LIMIT,
+        title: `Limite « ${label} » presque atteinte (${pct}%)`,
+        description: `Vous utilisez déjà ${currentCount} ${label} sur ${limit} autorisés par votre plan actuel. Passez au plan AfriBiz pour profiter de l'illimité.`,
+        link: '/dashboard/business/subscription',
+        metadata: {
+          resource: code,
+          limit,
+          current: currentCount,
+          pct,
+          businessId,
+        },
+      },
+    });
+
+    // Push temps réel vers le dashboard du propriétaire (même événement que les autres notifications)
+    try {
+      const io = getIO();
+      io?.to(`user:${ownerId}`).emit('notification:new', notification);
+    } catch (err) {
+      logger.warn('PLAN_LIMIT socket push skipped', { error: (err as Error).message });
+    }
+  } catch (err) {
+    logger.warn('PLAN_LIMIT alert skipped (non-bloquant)', { error: (err as Error).message });
   }
 }
 
