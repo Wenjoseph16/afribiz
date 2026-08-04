@@ -2,6 +2,18 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { searchIdsByText } from '../lib/fulltext';
 import { publishPaymentReceived, publishRefundProcessed } from '../events/publishers';
+import { SecurityLogRepository } from '../repositories/securityLogRepository';
+import { forceDisconnectUser } from './socket';
+import {
+  logAdminAction,
+  trackAdminAction,
+  notifyBusinessVerified,
+  notifyModuleStatus,
+  notifyAdStatus,
+  notifyEscrowReleased,
+  notifyEscrowRefunded,
+  notifyDisputeResolved,
+} from './adminEvents';
 
 export const getDashboardStats = async () => {
   const now = new Date();
@@ -215,7 +227,8 @@ export const getUserById = async (id: string) => {
 
 export const updateUserStatus = async (
   id: string,
-  action: 'suspend' | 'activate' | 'block' | 'delete'
+  action: 'suspend' | 'activate' | 'block' | 'delete',
+  adminUserId?: string
 ) => {
   if (action === 'delete') {
     throw new AppError(
@@ -239,6 +252,29 @@ export const updateUserStatus = async (
       break;
   }
   const updated = await prisma.user.update({ where: { id }, data });
+
+  // Écosystème : journal d'audit + analytics + déconnexion forcée si suspension/blocage
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_USER_ACTION',
+      targetUserId: id,
+      reason: `Utilisateur ${action === 'activate' ? 'réactivé' : action === 'suspend' ? 'suspendu' : 'bloqué'}`,
+      metadata: { action, targetEmail: user.email },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: `ADMIN_USER_${action.toUpperCase()}`,
+      properties: { targetUserId: id, targetEmail: user.email },
+    });
+  }
+  if ((action === 'suspend' || action === 'block') && user.isActive) {
+    try {
+      forceDisconnectUser(id);
+    } catch (err) {
+      // non-bloquant
+    }
+  }
   return updated;
 };
 
@@ -370,7 +406,8 @@ export const getBusinessById = async (id: string) => {
 
 export const updateBusinessStatus = async (
   id: string,
-  action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete'
+  action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete',
+  adminUserId?: string
 ) => {
   if (action === 'delete') throw new AppError("La suppression d'un commerce est interdite", 400);
   const business = await prisma.business.findUnique({ where: { id } });
@@ -397,13 +434,33 @@ export const updateBusinessStatus = async (
       break;
   }
   const updated = await prisma.business.update({ where: { id }, data });
+
+  // Écosystème : journal + analytics + notification au propriétaire quand il est activé/vérifié
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_BUSINESS_ACTION',
+      targetUserId: business.ownerId,
+      reason: `Business ${action === 'validate' ? 'validé' : action === 'verify' ? 'vérifié' : action === 'suspend' ? 'suspendu' : 'bloqué'}: ${business.name}`,
+      metadata: { action, businessId: id, businessName: business.name },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: `ADMIN_BUSINESS_${action.toUpperCase()}`,
+      properties: { businessId: id, businessName: business.name },
+    });
+  }
+  if (action === 'validate' || action === 'verify') {
+    await notifyBusinessVerified(id);
+  }
   return updated;
 };
 
 export const updateBusinessVerification = async (
   id: string,
   action: 'verify' | 'reject',
-  rejectionReason?: string
+  rejectionReason?: string,
+  adminUserId?: string
 ) => {
   const business = await prisma.business.findUnique({ where: { id } });
   if (!business) throw new AppError('Commerce introuvable', 404);
@@ -418,6 +475,16 @@ export const updateBusinessVerification = async (
         rejectionReason: null,
       },
     });
+    if (adminUserId) {
+      await logAdminAction({
+        adminUserId,
+        action: 'ADMIN_BUSINESS_ACTION',
+        targetUserId: business.ownerId,
+        reason: `Vérification du business approuvée: ${business.name}`,
+        metadata: { action: 'verify', businessId: id },
+      });
+    }
+    await notifyBusinessVerified(id);
     return updated;
   }
 
@@ -426,6 +493,20 @@ export const updateBusinessVerification = async (
     where: { id },
     data: { verificationStatus: 'REJECTED', isVerified: false, rejectionReason },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_BUSINESS_ACTION',
+      targetUserId: business.ownerId,
+      reason: `Vérification du business refusée: ${business.name} (${rejectionReason})`,
+      metadata: { action: 'reject', businessId: id, rejectionReason },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_BUSINESS_VERIFICATION_REJECTED',
+      properties: { businessId: id, businessName: business.name, reason: rejectionReason },
+    });
+  }
   return updated;
 };
 
@@ -521,7 +602,8 @@ export const getDeveloperById = async (id: string) => {
 
 export const updateDeveloperStatus = async (
   id: string,
-  action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete'
+  action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete',
+  adminUserId?: string
 ) => {
   if (action === 'delete') throw new AppError("La suppression d'un développeur est interdite", 400);
   const developer = await prisma.developerProfile.findUnique({ where: { id } });
@@ -543,6 +625,22 @@ export const updateDeveloperStatus = async (
       break;
   }
   const updated = await prisma.developerProfile.update({ where: { id }, data });
+
+  // Écosystème : journal + analytics (aucun publisher dédié dev, on logge l'action)
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_USER_ACTION',
+      targetUserId: developer.userId,
+      reason: `Développeur ${action === 'verify' ? 'vérifié' : action === 'suspend' ? 'suspendu' : action === 'block' ? 'bloqué' : action} (${developer.companyName || developer.id})`,
+      metadata: { action, developerId: id },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: `ADMIN_DEVELOPER_${action.toUpperCase()}`,
+      properties: { developerId: id, companyName: developer.companyName },
+    });
+  }
   return updated;
 };
 
@@ -583,7 +681,8 @@ export const getModules = async (query: {
 
 export const updateModuleStatus = async (
   id: string,
-  action: 'validate' | 'reject' | 'publish' | 'archive' | 'delete'
+  action: 'validate' | 'reject' | 'publish' | 'archive' | 'delete',
+  adminUserId?: string
 ) => {
   if (action === 'delete') throw new AppError("La suppression d'un module est interdite", 400);
   const mod = await prisma.developerModule.findUnique({ where: { id } });
@@ -605,6 +704,24 @@ export const updateModuleStatus = async (
       break;
   }
   const updated = await prisma.developerModule.update({ where: { id }, data });
+
+  // Écosystème : journal + analytics + notification au développeur (approbation/refus)
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_MODULE_ACTION',
+      reason: `Module ${action === 'publish' ? 'publié' : action === 'reject' ? 'rejeté' : action === 'archive' ? 'archivé' : 'validé'}: ${mod.name}`,
+      metadata: { action, moduleId: id, moduleName: mod.name },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: `ADMIN_MODULE_${action.toUpperCase()}`,
+      properties: { moduleId: id, moduleName: mod.name },
+    });
+  }
+  if (action === 'publish' || action === 'reject') {
+    await notifyModuleStatus(id, action === 'publish' ? 'approved' : 'rejected');
+  }
   return updated;
 };
 
@@ -752,18 +869,53 @@ export const getDisputesStats = async () => {
   };
 };
 
-export const updateDisputeStatus = async (id: string, action: 'decide' | 'close') => {
+export const updateDisputeStatus = async (
+  id: string,
+  action: 'decide' | 'close',
+  adminUserId?: string,
+  decision?: string
+) => {
   const escrow = await prisma.escrow.findUnique({ where: { id } });
   if (!escrow) throw new AppError('Litige introuvable', 404);
 
   if (action === 'close') {
-    await prisma.escrow.update({
+    const updated = await prisma.escrow.update({
       where: { id },
       data: { status: 'RELEASED' },
     });
-    return { message: 'Litige fermé avec succès' };
+    if (adminUserId) {
+      await logAdminAction({
+        adminUserId,
+        action: 'ADMIN_ACTION',
+        reason: `Litige clos (escrow libéré) — ${escrow.amount} ${escrow.currency}`,
+        metadata: { action: 'close', escrowId: id },
+      });
+      await trackAdminAction({
+        adminUserId,
+        eventName: 'ADMIN_DISPUTE_CLOSED',
+        properties: { escrowId: id },
+      });
+    }
+    await notifyEscrowReleased(id);
+    await notifyDisputeResolved(id);
+    return { message: 'Litige fermé avec succès', data: updated };
   }
 
+  // 'decide' : décision rendue sur le litige
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ACTION',
+      reason: `Décision de litige enregistrée: ${decision || 'Résolu'}`,
+      metadata: { action: 'decide', decision: decision || 'Résolu', escrowId: id },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_DISPUTE_DECIDED',
+      properties: { escrowId: id, decision: decision || 'Résolu' },
+    });
+  }
+  await notifyDisputeResolved(id);
   return { message: 'Décision enregistrée' };
 };
 
@@ -836,31 +988,65 @@ export const getAdminEscrowStats = async () => {
   };
 };
 
-export const releaseAdminEscrow = async (id: string) => {
+export const releaseAdminEscrow = async (id: string, adminUserId?: string) => {
   const escrow = await prisma.escrow.findUnique({ where: { id } });
   if (!escrow) throw new AppError('Escrow introuvable', 404);
   if (escrow.status !== 'HELD' && escrow.status !== 'DISPUTED')
     throw new AppError('Cet escrow ne peut pas être libéré', 400);
 
-  return prisma.escrow.update({
+  const updated = await prisma.escrow.update({
     where: { id },
     data: { status: 'RELEASED', releasedAt: new Date() },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ACTION',
+      reason: `Escrow libéré (${escrow.amount} ${escrow.currency})`,
+      metadata: { action: 'release', escrowId: id, amount: Number(escrow.amount) },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_ESCROW_RELEASED',
+      properties: { escrowId: id, amount: Number(escrow.amount) },
+    });
+  }
+  await notifyEscrowReleased(id);
+  return updated;
 };
 
-export const refundAdminEscrow = async (id: string) => {
+export const refundAdminEscrow = async (id: string, adminUserId?: string) => {
   const escrow = await prisma.escrow.findUnique({ where: { id } });
   if (!escrow) throw new AppError('Escrow introuvable', 404);
   if (escrow.status !== 'HELD' && escrow.status !== 'DISPUTED')
     throw new AppError('Cet escrow ne peut pas être remboursé', 400);
 
-  return prisma.escrow.update({
+  const updated = await prisma.escrow.update({
     where: { id },
     data: { status: 'REFUNDED', refundedAt: new Date() },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ACTION',
+      reason: `Escrow remboursé (${escrow.amount} ${escrow.currency})`,
+      metadata: { action: 'refund', escrowId: id, amount: Number(escrow.amount) },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_ESCROW_REFUNDED',
+      properties: { escrowId: id, amount: Number(escrow.amount) },
+    });
+  }
+  await notifyEscrowRefunded(id);
+  return updated;
 };
 
-export const arbitrateAdminEscrow = async (id: string, decision: 'release' | 'refund') => {
+export const arbitrateAdminEscrow = async (
+  id: string,
+  decision: 'release' | 'refund',
+  adminUserId?: string
+) => {
   const escrow = await prisma.escrow.findUnique({ where: { id } });
   if (!escrow) throw new AppError('Escrow introuvable', 404);
   if (escrow.status !== 'DISPUTED')
@@ -871,7 +1057,24 @@ export const arbitrateAdminEscrow = async (id: string, decision: 'release' | 're
       ? { status: 'RELEASED' as const, releasedAt: new Date() }
       : { status: 'REFUNDED' as const, refundedAt: new Date() };
 
-  return prisma.escrow.update({ where: { id }, data });
+  const updated = await prisma.escrow.update({ where: { id }, data });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ACTION',
+      reason: `Escrow arbitré (${decision}) — ${escrow.amount} ${escrow.currency}`,
+      metadata: { action: 'arbitrate', decision, escrowId: id, amount: Number(escrow.amount) },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: decision === 'release' ? 'ADMIN_ESCROW_ARBITRATED_RELEASE' : 'ADMIN_ESCROW_ARBITRATED_REFUND',
+      properties: { escrowId: id, decision, amount: Number(escrow.amount) },
+    });
+  }
+  if (decision === 'release') await notifyEscrowReleased(id);
+  else await notifyEscrowRefunded(id);
+  await notifyDisputeResolved(id);
+  return updated;
 };
 
 // ============================================
@@ -951,21 +1154,35 @@ export const getAdminSubscriptionStats = async () => {
   };
 };
 
-export const cancelAdminSubscription = async (id: string) => {
+export const cancelAdminSubscription = async (id: string, adminUserId?: string) => {
   const sub = await prisma.partnerSubscription.findUnique({ where: { id } });
   if (!sub) throw new AppError('Abonnement introuvable', 404);
 
-  return prisma.partnerSubscription.update({
+  const updated = await prisma.partnerSubscription.update({
     where: { id },
     data: { status: 'CANCELLED', cancelledAt: new Date() },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ACTION',
+      reason: `Abonnement partenaire annulé (${updated.partnerId})`,
+      metadata: { action: 'cancel', subscriptionId: id },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_SUBSCRIPTION_CANCELLED',
+      properties: { subscriptionId: id },
+    });
+  }
+  return updated;
 };
 
-export const renewAdminSubscription = async (id: string) => {
+export const renewAdminSubscription = async (id: string, adminUserId?: string) => {
   const sub = await prisma.partnerSubscription.findUnique({ where: { id } });
   if (!sub) throw new AppError('Abonnement introuvable', 404);
 
-  return prisma.partnerSubscription.update({
+  const updated = await prisma.partnerSubscription.update({
     where: { id },
     data: {
       status: 'ACTIVE',
@@ -973,6 +1190,20 @@ export const renewAdminSubscription = async (id: string) => {
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ACTION',
+      reason: `Abonnement partenaire renouvelé (${updated.partnerId})`,
+      metadata: { action: 'renew', subscriptionId: id },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_SUBSCRIPTION_RENEWED',
+      properties: { subscriptionId: id },
+    });
+  }
+  return updated;
 };
 
 // ============================================
@@ -1072,14 +1303,30 @@ export const getAdminSecuritySessions = async (query: { page?: number; limit?: n
   };
 };
 
-export const revokeAdminSession = async (sessionId: string) => {
+export const revokeAdminSession = async (sessionId: string, adminUserId?: string) => {
   const session = await prisma.session.findUnique({ where: { id: sessionId } });
   if (!session) throw new AppError('Session introuvable', 404);
 
-  return prisma.session.update({
+  const updated = await prisma.session.update({
     where: { id: sessionId },
     data: { isActive: false, revokedAt: new Date() },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'SESSION_REVOKED',
+      targetUserId: session.userId,
+      reason: 'Session révoquée par un administrateur',
+      metadata: { sessionId },
+    });
+  }
+  // Force la déconnexion des sockets de cet utilisateur
+  try {
+    forceDisconnectUser(session.userId);
+  } catch (err) {
+    // non-bloquant
+  }
+  return updated;
 };
 
 export const getAdminSecurityAttempts = async (query: { page?: number; limit?: number }) => {
@@ -1382,22 +1629,52 @@ export const getAdminAdRevenue = async () => {
   return { total: result._sum.budget || 0, revenue: result._sum.budget || 0 };
 };
 
-export const validateAdminAdCampaign = async (id: string) => {
-  return prisma.adCampaign.update({
+export const validateAdminAdCampaign = async (id: string, adminUserId?: string) => {
+  const updated = await prisma.adCampaign.update({
     where: { id },
     data: { status: 'ACTIVE', validatedAt: new Date() },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_CONTENT_MODERATION',
+      reason: `Campagne publicitaire validée: ${updated.name}`,
+      metadata: { action: 'validate', campaignId: id },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_AD_VALIDATED',
+      properties: { campaignId: id, campaignName: updated.name },
+    });
+  }
+  await notifyAdStatus(id, 'approved');
+  return updated;
 };
 
-export const rejectAdminAdCampaign = async (id: string, reason?: string) => {
-  return prisma.adCampaign.update({
+export const rejectAdminAdCampaign = async (id: string, reason?: string, adminUserId?: string) => {
+  const updated = await prisma.adCampaign.update({
     where: { id },
     data: { status: 'REJECTED', rejectionReason: reason || 'Campagne refusée' },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_CONTENT_MODERATION',
+      reason: `Campagne publicitaire refusée: ${updated.name}${reason ? ' (' + reason + ')' : ''}`,
+      metadata: { action: 'reject', campaignId: id, reason },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_AD_REJECTED',
+      properties: { campaignId: id, campaignName: updated.name, reason },
+    });
+  }
+  await notifyAdStatus(id, 'rejected', reason);
+  return updated;
 };
 
-export const suspendAdminAdCampaign = async (id: string, reason?: string) => {
-  return prisma.adCampaign.update({
+export const suspendAdminAdCampaign = async (id: string, reason?: string, adminUserId?: string) => {
+  const updated = await prisma.adCampaign.update({
     where: { id },
     data: {
       status: 'SUSPENDED',
@@ -1405,6 +1682,20 @@ export const suspendAdminAdCampaign = async (id: string, reason?: string) => {
       suspendedAt: new Date(),
     },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_CONTENT_MODERATION',
+      reason: `Campagne publicitaire suspendue: ${updated.name}${reason ? ' (' + reason + ')' : ''}`,
+      metadata: { action: 'suspend', campaignId: id, reason },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_AD_SUSPENDED',
+      properties: { campaignId: id, campaignName: updated.name, reason },
+    });
+  }
+  return updated;
 };
 
 // ============================================

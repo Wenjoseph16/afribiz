@@ -42,7 +42,7 @@ export const getUserById = catchAsyncErrors(
 export const updateUserStatus = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { action } = req.body;
-    const user = await adminService.updateUserStatus(req.params.id, action);
+    const user = await adminService.updateUserStatus(req.params.id, action, req.user?.id);
     res.json({ success: true, data: user, message: 'Statut mis à jour' });
   }
 );
@@ -80,7 +80,11 @@ export const getBusinessById = catchAsyncErrors(
 export const updateBusinessStatus = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { action } = req.body;
-    const business = await adminService.updateBusinessStatus(req.params.id, action);
+    const business = await adminService.updateBusinessStatus(
+      req.params.id,
+      action,
+      req.user?.id
+    );
     res.json({ success: true, data: business, message: 'Statut mis à jour' });
   }
 );
@@ -91,7 +95,8 @@ export const updateBusinessVerification = catchAsyncErrors(
     const business = await adminService.updateBusinessVerification(
       req.params.id,
       action,
-      rejectionReason
+      rejectionReason,
+      req.user?.id
     );
     res.json({
       success: true,
@@ -127,7 +132,11 @@ export const getDeveloperById = catchAsyncErrors(
 export const updateDeveloperStatus = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { action } = req.body;
-    const developer = await adminService.updateDeveloperStatus(req.params.id, action);
+    const developer = await adminService.updateDeveloperStatus(
+      req.params.id,
+      action,
+      req.user?.id
+    );
     res.json({ success: true, data: developer, message: 'Statut mis à jour' });
   }
 );
@@ -150,7 +159,7 @@ export const getModules = catchAsyncErrors(
 export const updateModuleStatus = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { action } = req.body;
-    const mod = await adminService.updateModuleStatus(req.params.id, action);
+    const mod = await adminService.updateModuleStatus(req.params.id, action, req.user?.id);
     res.json({ success: true, data: mod, message: 'Statut mis à jour' });
   }
 );
@@ -220,14 +229,14 @@ export const getAdminEscrowStats = catchAsyncErrors(
 
 export const releaseAdminEscrow = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const result = await adminService.releaseAdminEscrow(req.params.id);
+    const result = await adminService.releaseAdminEscrow(req.params.id, req.user?.id);
     res.json({ success: true, data: result, message: 'Fonds libérés' });
   }
 );
 
 export const refundAdminEscrow = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const result = await adminService.refundAdminEscrow(req.params.id);
+    const result = await adminService.refundAdminEscrow(req.params.id, req.user?.id);
     res.json({ success: true, data: result, message: 'Remboursement effectué' });
   }
 );
@@ -235,7 +244,11 @@ export const refundAdminEscrow = catchAsyncErrors(
 export const arbitrateAdminEscrow = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { decision } = req.body;
-    const result = await adminService.arbitrateAdminEscrow(req.params.id, decision);
+    const result = await adminService.arbitrateAdminEscrow(
+      req.params.id,
+      decision,
+      req.user?.id
+    );
     res.json({ success: true, data: result, message: 'Arbitrage effectué' });
   }
 );
@@ -278,14 +291,14 @@ export const getAdminSubscriptionStats = catchAsyncErrors(
 
 export const cancelAdminSubscription = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const result = await adminService.cancelAdminSubscription(req.params.id);
+    const result = await adminService.cancelAdminSubscription(req.params.id, req.user?.id);
     res.json({ success: true, data: result, message: 'Abonnement résilié' });
   }
 );
 
 export const renewAdminSubscription = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const result = await adminService.renewAdminSubscription(req.params.id);
+    const result = await adminService.renewAdminSubscription(req.params.id, req.user?.id);
     res.json({ success: true, data: result, message: 'Abonnement renouvelé' });
   }
 );
@@ -321,7 +334,7 @@ export const getAdminSecuritySessions = catchAsyncErrors(
 
 export const revokeAdminSession = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    await adminService.revokeAdminSession(req.params.id);
+    await adminService.revokeAdminSession(req.params.id, req.user?.id);
     res.json({ success: true, data: null, message: 'Session révoquée' });
   }
 );
@@ -382,9 +395,12 @@ export const getDisputesStats = catchAsyncErrors(
 export const updateDisputeStatus = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { action } = req.params;
+    const { decision } = req.body;
     const result = await adminService.updateDisputeStatus(
       req.params.id,
-      action as 'decide' | 'close'
+      action as 'decide' | 'close',
+      req.user?.id,
+      decision as string | undefined
     );
     res.json({ success: true, data: result, message: 'Statut du litige mis à jour' });
   }
@@ -451,7 +467,7 @@ export const getAdminAdRevenue = catchAsyncErrors(
 
 export const validateAdminAdCampaign = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const result = await adminService.validateAdminAdCampaign(req.params.id);
+    const result = await adminService.validateAdminAdCampaign(req.params.id, req.user?.id);
     res.json({ success: true, data: result, message: 'Campagne validée' });
   }
 );
@@ -459,7 +475,11 @@ export const validateAdminAdCampaign = catchAsyncErrors(
 export const rejectAdminAdCampaign = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { reason } = req.body;
-    const result = await adminService.rejectAdminAdCampaign(req.params.id, reason);
+    const result = await adminService.rejectAdminAdCampaign(
+      req.params.id,
+      reason,
+      req.user?.id
+    );
     res.json({ success: true, data: result, message: 'Campagne refusée' });
   }
 );
@@ -467,7 +487,11 @@ export const rejectAdminAdCampaign = catchAsyncErrors(
 export const suspendAdminAdCampaign = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { reason } = req.body;
-    const result = await adminService.suspendAdminAdCampaign(req.params.id, reason);
+    const result = await adminService.suspendAdminAdCampaign(
+      req.params.id,
+      reason,
+      req.user?.id
+    );
     res.json({ success: true, data: result, message: 'Campagne suspendue' });
   }
 );
