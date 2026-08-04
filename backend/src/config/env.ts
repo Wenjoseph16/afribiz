@@ -72,4 +72,10 @@ export const config = {
 
   // Social
   FACEBOOK_API_VERSION: process.env.FACEBOOK_API_VERSION || 'v18.0',
+
+  // ⚠️ DEV SECURITY FLAG — JAMAIS définir en production
+  // DEV_BYPASS_2FA_CODE : si défini (ex. "123456"), CE code unique (et lui seul) permet
+  //   de passer la 2FA en développement. S'il est vide, aucun bypass n'existe.
+  //   Ne plus jamais activer un bypass implicite via NODE_ENV (porte dérobée).
+  DEV_BYPASS_2FA_CODE: process.env.DEV_BYPASS_2FA_CODE || '',
 };

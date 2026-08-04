@@ -4,15 +4,18 @@ import {
   requirePrimaryRole,
   requireEmailVerified,
   optionalAuth,
-  loginRateLimit,
 } from '../../middlewares/auth';
 
 jest.mock('../../lib/jwt', () => ({ verifyAccessToken: jest.fn() }));
 jest.mock('../../lib/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
+jest.mock('../../lib/db', () => ({
+  prisma: { user: { findUnique: jest.fn() } },
+}));
 
 import { verifyAccessToken } from '../../lib/jwt';
+import { prisma } from '../../lib/db';
 
 const mockRes = {} as any;
 
@@ -95,15 +98,46 @@ describe('requirePrimaryRole', () => {
 });
 
 describe('requireEmailVerified', () => {
-  it('should proceed if user is authenticated', async () => {
-    const next = jest.fn();
-    await requireEmailVerified({ user: { id: 'u1' } } as any, mockRes, next);
-    expect(next).toHaveBeenCalledWith();
+  // Attends que les microtâches du catchAsyncErrors (.catch(next)) s'exécutent.
+  const flush = () => new Promise((r) => setImmediate(r));
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should call next with 401 if not authenticated', async () => {
     const next = jest.fn();
     await requireEmailVerified({ user: undefined } as any, mockRes, next);
+    await flush();
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
+  });
+
+  it('should proceed if the user email is verified', async () => {
+    const next = jest.fn();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ emailVerified: true });
+    await requireEmailVerified({ user: { id: 'u1' } } as any, mockRes, next);
+    await flush();
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      select: { emailVerified: true },
+    });
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it('should call next with 403 + EMAIL_NOT_VERIFIED if the email is not verified', async () => {
+    const next = jest.fn();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ emailVerified: false });
+    await requireEmailVerified({ user: { id: 'u1' } } as any, mockRes, next);
+    await flush();
+    const err = next.mock.calls[0][0];
+    expect(err).toMatchObject({ statusCode: 403, data: { code: 'EMAIL_NOT_VERIFIED' } });
+  });
+
+  it('should call next with 401 if the user does not exist', async () => {
+    const next = jest.fn();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    await requireEmailVerified({ user: { id: 'ghost' } } as any, mockRes, next);
+    await flush();
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
   });
 });
@@ -142,21 +176,5 @@ describe('optionalAuth', () => {
     await optionalAuth(req, mockRes, next);
     expect(req.user).toBeUndefined();
     expect(next).toHaveBeenCalledWith();
-  });
-});
-
-describe('loginRateLimit', () => {
-  it('should allow requests under the limit', () => {
-    const next = jest.fn();
-    loginRateLimit(3, 60000)({ body: { email: 'test@test.com' } } as any, mockRes, next);
-    expect(next).toHaveBeenCalled();
-  });
-
-  it('should throw when exceeding max attempts', () => {
-    const req: any = { body: { email: 'test@test.com' }, ip: '127.0.0.1' };
-    const limiter = loginRateLimit(2, 60000);
-    limiter(req, mockRes, jest.fn());
-    limiter(req, mockRes, jest.fn());
-    expect(() => limiter(req, mockRes, jest.fn())).toThrow();
   });
 });

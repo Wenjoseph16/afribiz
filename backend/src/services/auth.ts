@@ -171,9 +171,18 @@ export class AuthService {
     }
 
     if (user.twoFactorEnabled) {
-      const tempToken = jwt.sign({ id: user.id, purpose: '2fa_login' }, config.JWT_SECRET, {
-        expiresIn: '5m',
-      });
+      // On embarque device/location dans le tempToken pour que la détection de nouvel
+      // appareil fonctionne aussi pour les utilisateurs 2FA (verify2FALogin n'a pas le payload).
+      const tempToken = jwt.sign(
+        {
+          id: user.id,
+          purpose: '2fa_login',
+          device: payload.userAgent || '',
+          location: payload.ipAddress || '',
+        },
+        config.JWT_SECRET,
+        { expiresIn: '5m' }
+      );
       const safeUser = {
         id: user.id,
         email: user.email,
@@ -281,7 +290,12 @@ export class AuthService {
     if (!user) throw new AppError('Utilisateur introuvable', 404);
     if (!user.isActive) throw new AppError('Compte désactivé', 403);
 
-    await UserRepository.updateLastLogin(user.id, '127.0.0.1');
+    const device = (decoded.device as string) || '';
+    const location = (decoded.location as string) || '';
+    // Nouvel appareil détecté pour les utilisateurs 2FA (même logique que le login classique).
+    await this.detectNewDevice(decoded.id, device || undefined, location || undefined);
+
+    await UserRepository.updateLastLogin(user.id, location || '127.0.0.1');
     const tokens = createTokenPair({
       id: user.id,
       email: user.email,
@@ -290,8 +304,8 @@ export class AuthService {
     });
     const session = await SessionRepository.create({
       userId: user.id,
-      ipAddress: '127.0.0.1',
-      userAgent: undefined,
+      ipAddress: location || '127.0.0.1',
+      userAgent: device || undefined,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
     await RefreshTokenRepository.create({
@@ -308,7 +322,8 @@ export class AuthService {
     });
 
     // Connexion 2FA réussie → même cascade qu'un login classique
-    publishUserLoggedIn({ userId: user.id, device: '', location: '' });
+    // (device/location proviennent du tempToken, cohérents avec detectNewDevice ci-dessus)
+    publishUserLoggedIn({ userId: user.id, device, location });
     trackAnalyticsEvent({
       userId: user.id,
       type: 'auth',

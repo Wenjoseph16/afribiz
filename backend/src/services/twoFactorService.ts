@@ -3,6 +3,7 @@ import { toDataURL } from 'qrcode';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
+import { config } from '../config/env';
 
 function base32Encode(buf: Buffer): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -95,7 +96,18 @@ export class TwoFactorService {
     return { secret, qrCode };
   }
 
-  static async verifyAndEnable(userId: string, token: string): Promise<void> {
+  /**
+   * Génère les codes de secours (usage unique) à afficher UNE seule fois à l'utilisateur.
+   */
+  static generateBackupCodes(count = 10): string[] {
+    const codes: string[] = [];
+    for (let i = 0; i < count; i++) {
+      codes.push(randomBytes(4).toString('hex').toUpperCase());
+    }
+    return codes;
+  }
+
+  static async verifyAndEnable(userId: string, token: string): Promise<string[]> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError('User not found', 404);
     if (!user.twoFactorSecret)
@@ -105,10 +117,13 @@ export class TwoFactorService {
     const isValid = verifyTOTP(token, user.twoFactorSecret);
     if (!isValid) throw new AppError('Invalid verification code', 400);
 
+    // Génère + stocke les codes de secours dès l'activation (ils sont rendus une seule fois).
+    const backupCodes = this.generateBackupCodes();
     await prisma.user.update({
       where: { id: userId },
-      data: { twoFactorEnabled: true },
+      data: { twoFactorEnabled: true, twoFactorBackupCodes: JSON.stringify(backupCodes) },
     });
+    return backupCodes;
   }
 
   static async disable(userId: string): Promise<void> {
@@ -126,12 +141,13 @@ export class TwoFactorService {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return false;
 
-    // 🔥 CODE UNIVERSEL DE TEST (DEV/TEST SEULEMENT) : 111111 fonctionne pour tous les comptes
-    // Cela permet aux développeurs de tester l'authentification 2FA sans application authentificateur
-    // Utilise NODE_ENV pour détecter l'environnement de développement
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const isTestCode = token === '111111';
-    if (isDevelopment && isTestCode) {
+    // 🔐 Bypass 2FA de développement — UNIQUEMENT si un code EXPLICITE est défini dans l'env
+    // (DEV_BYPASS_2FA_CODE). Jamais activé implicitement par NODE_ENV seul (c'était une porte
+    // dérobée : tout environnement non-prod acceptait le code universel 111111).
+    // Chaque usage est logué fortement pour l'audit.
+    const bypassCode = config.DEV_BYPASS_2FA_CODE;
+    if (bypassCode && token === bypassCode) {
+      logger.warn('⚠️ BYPASS 2FA utilisé (DEV_BYPASS_2FA_CODE)', { userId });
       return true;
     }
 

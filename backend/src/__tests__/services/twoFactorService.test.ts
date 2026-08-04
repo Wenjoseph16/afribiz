@@ -52,7 +52,13 @@ describe('TwoFactor Service', () => {
 
   test('verifyToken returns true for valid token', async () => {
     mockVerifyToken.mockResolvedValue(true);
-    const r = await TwoFactorService.verifyToken('u1', '111111');
+    const r = await TwoFactorService.verifyToken('u1', '482913');
     expect(r).toBe(true);
+  });
+
+  test('verifyToken rejects the legacy universal code 111111 unless explicitly bypassed', async () => {
+    mockVerifyToken.mockResolvedValue(false);
+    const r = await TwoFactorService.verifyToken('u1', '111111');
+    expect(r).toBe(false);
   });
 });

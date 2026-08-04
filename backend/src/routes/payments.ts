@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireRole, requireEmailVerified } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import { z } from 'zod';
 import { getPayments, getPayment, getWallet, addPaymentProof } from '../controllers/payments';
@@ -84,7 +84,12 @@ router.get('/escrow/client', requireRole(['CLIENT', 'ADMIN']), listClientEscrows
  *       200:
  *         description: Fonds liberes avec succes
  */
-router.post('/escrow/client/:id/confirm', requireRole(['CLIENT', 'ADMIN']), clientReleaseEscrow);
+router.post(
+  '/escrow/client/:id/confirm',
+  requireRole(['CLIENT', 'ADMIN']),
+  requireEmailVerified,
+  clientReleaseEscrow
+);
 
 /**
  * @openapi
@@ -116,6 +121,7 @@ router.post('/escrow/client/:id/confirm', requireRole(['CLIENT', 'ADMIN']), clie
 router.post(
   '/escrow/client/:id/dispute',
   requireRole(['CLIENT', 'ADMIN']),
+  requireEmailVerified,
   validateBody(z.object({ reason: z.string().min(1, 'Motif requis') })),
   clientDisputeEscrow
 );
@@ -168,6 +174,7 @@ router.get('/debts/client', requireRole(['CLIENT', 'ADMIN']), listClientDebts);
 router.post(
   '/debts/client/:id/pay',
   requireRole(['CLIENT', 'ADMIN']),
+  requireEmailVerified,
   validateBody(
     z.object({
       amount: z.number().positive('Montant invalide'),
@@ -228,6 +235,11 @@ router.get('/:id', requireRole(['CLIENT', 'BUSINESS', 'ADMIN']), getPayment);
  *       201:
  *         description: Preuve ajoutee avec succes
  */
-router.post('/:paymentId/proof', requireRole(['BUSINESS', 'ADMIN']), addPaymentProof);
+router.post(
+  '/:paymentId/proof',
+  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmailVerified,
+  addPaymentProof
+);
 
 export default router;

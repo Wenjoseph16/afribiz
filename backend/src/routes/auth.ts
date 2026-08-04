@@ -27,10 +27,7 @@ import {
   verifyOtpSchema,
   refreshTokenSchema,
 } from '../validators/auth';
-import { authMiddleware, loginRateLimit } from '../middlewares/auth';
-import { UserRepository } from '../repositories/userRepository';
-import { OtpCodeRepository } from '../repositories/otpCodeRepository';
-import { OtpType } from '@prisma/client';
+import { authMiddleware } from '../middlewares/auth';
 import { authLimiter, resendLimiter } from '../middlewares/rateLimiter';
 
 const router: Router = express.Router();
@@ -106,26 +103,5 @@ router.post('/activate-business', authMiddleware, activateBusinessRole);
 
 // Activate developer role
 router.post('/activate-developer', authMiddleware, activateDeveloperRole);
-
-// Development-only debug endpoint to fetch latest OTP for an email
-if (process.env.NODE_ENV !== 'production') {
-  router.get('/debug/otp', async (req, res) => {
-    try {
-      const email = String(req.query.email || '');
-      const type = (req.query.type as string) || 'LOGIN';
-      if (!email) return res.status(400).json({ success: false, error: 'email query required' });
-      const user = await UserRepository.findByEmail(email);
-      if (!user) return res.status(404).json({ success: false, error: 'user not found' });
-      const otp = await OtpCodeRepository.findByUserIdAndType(user.id, type as OtpType);
-      if (!otp) return res.status(404).json({ success: false, error: 'otp not found' });
-      return res.json({
-        success: true,
-        data: { code: otp.code, expiresAt: otp.expiresAt, attempts: otp.attempts },
-      });
-    } catch (err: any) {
-      return res.status(500).json({ success: false, error: err.message || 'server error' });
-    }
-  });
-}
 
 export default router;

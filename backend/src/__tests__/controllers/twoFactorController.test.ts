@@ -5,6 +5,7 @@ jest.mock('../../services/twoFactorService', () => ({
     generateSecret: jest.fn(),
     verifyAndEnable: jest.fn(),
     disable: jest.fn(),
+    generateBackupCodes: jest.fn(),
   },
 }));
 
@@ -62,16 +63,16 @@ describe('twoFactor controller', () => {
   });
 
   describe('verify2FA', () => {
-    it('should verify and enable', async () => {
-      (TwoFactorService.verifyAndEnable as jest.Mock).mockResolvedValue(undefined);
+    it('should verify, enable and return the backup codes', async () => {
+      (TwoFactorService.verifyAndEnable as jest.Mock).mockResolvedValue(['CODE1', 'CODE2']);
       const res = mockRes();
       ctrl.verify2FA(req({ body: { token: '123456' } }), res, jest.fn());
       await flush();
       expect(TwoFactorService.verifyAndEnable).toHaveBeenCalledWith('u1', '123456');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
-        data: null,
-        message: '2FA has been enabled successfully',
+        data: { backupCodes: ['CODE1', 'CODE2'] },
+        message: expect.stringContaining('codes de secours'),
       });
     });
 
@@ -81,6 +82,75 @@ describe('twoFactor controller', () => {
       ctrl.verify2FA(req({ body: {} }), res, next);
       await flush();
       expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+  });
+
+  describe('regenerateRecoveryCodes', () => {
+    it('should regenerate codes with a valid password', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        passwordHash: 'hashed',
+        twoFactorEnabled: true,
+      });
+      (comparePasswords as jest.Mock).mockResolvedValue(true);
+      (TwoFactorService.generateBackupCodes as jest.Mock).mockReturnValue(['NEW1', 'NEW2']);
+      const res = mockRes();
+      ctrl.regenerateRecoveryCodes(req({ body: { password: 'correct' } }), res, jest.fn());
+      await flush();
+      expect(comparePasswords).toHaveBeenCalledWith('correct', 'hashed');
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ twoFactorBackupCodes: '["NEW1","NEW2"]' }),
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { backupCodes: ['NEW1', 'NEW2'] } })
+      );
+    });
+
+    it('should return 400 if password missing', async () => {
+      const res = mockRes();
+      const next = jest.fn();
+      ctrl.regenerateRecoveryCodes(req({ body: {} }), res, next);
+      await flush();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+
+    it('should return 400 if 2FA is not enabled', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        passwordHash: 'hashed',
+        twoFactorEnabled: false,
+      });
+      (comparePasswords as jest.Mock).mockResolvedValue(true);
+      const res = mockRes();
+      const next = jest.fn();
+      ctrl.regenerateRecoveryCodes(req({ body: { password: 'correct' } }), res, next);
+      await flush();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+
+    it('should return 400 if invalid password', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        passwordHash: 'hashed',
+        twoFactorEnabled: true,
+      });
+      (comparePasswords as jest.Mock).mockResolvedValue(false);
+      const res = mockRes();
+      const next = jest.fn();
+      ctrl.regenerateRecoveryCodes(req({ body: { password: 'wrong' } }), res, next);
+      await flush();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    });
+
+    it('should return 404 if user not found', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      const res = mockRes();
+      const next = jest.fn();
+      ctrl.regenerateRecoveryCodes(req({ body: { password: 'test' } }), res, next);
+      await flush();
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 404 }));
     });
   });
 

@@ -401,5 +401,33 @@ describe('AuthService', () => {
         events.some((e: any) => e.eventName === 'USER_LOGGED_IN' && e.properties?.method === '2fa')
       ).toBe(true);
     });
+
+    it('detects a new device during 2FA login (device from tempToken → NEW_DEVICE_DETECTED)', async () => {
+      const user = { ...createMockUser(), twoFactorEnabled: false };
+      (TwoFactorService.verifyToken as jest.Mock).mockResolvedValue(true);
+      (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce(user); // findById
+      (mockPrisma.user.update as jest.Mock).mockResolvedValue(user); // updateLastLogin
+      (mockPrisma.session.findMany as jest.Mock).mockResolvedValue([{ userAgent: 'old-agent' }]);
+      (mockPrisma.session.create as jest.Mock).mockResolvedValue({ id: 'session-id' });
+      (mockPrisma.refreshToken.create as jest.Mock).mockResolvedValue({});
+      (mockPrisma.securityLog.create as jest.Mock).mockResolvedValue({});
+
+      const tempToken = jwt.sign(
+        { id: user.id, purpose: '2fa_login', device: 'new-agent', location: 'ip-9' },
+        config.JWT_SECRET,
+        { expiresIn: '5m' }
+      );
+      await AuthService.verify2FALogin(tempToken, '123456');
+
+      expect(publishNewDeviceDetected).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: user.id, device: 'new-agent', location: 'ip-9' })
+      );
+      // La session 2FA enregistre le vrai device/location (plus de 127.0.0.1 codé en dur).
+      expect(mockPrisma.session.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ ipAddress: 'ip-9', userAgent: 'new-agent' }),
+        })
+      );
+    });
   });
 });

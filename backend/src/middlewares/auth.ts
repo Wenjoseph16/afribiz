@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError, catchAsyncErrors } from './errorHandler';
 import { verifyAccessToken } from '../lib/jwt';
+import { prisma } from '../lib/db';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -80,7 +81,9 @@ export const requirePrimaryRole = (role: string) => {
 };
 
 /**
- * Require email verification
+ * Require email verification — vérifie en base que l'email du compte est vérifié.
+ * À appliquer aux actions sensibles (argent, admin, etc.).
+ * NB : coût = 1 requête DB légère par appel (select emailVerified uniquement).
  */
 export const requireEmailVerified = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -88,7 +91,21 @@ export const requireEmailVerified = catchAsyncErrors(
       throw new AppError('User not authenticated', 401);
     }
 
-    // In a real app, you'd check user.emailVerified from database
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { emailVerified: true },
+    });
+    if (!user) {
+      throw new AppError('User not found', 401);
+    }
+    if (!user.emailVerified) {
+      throw new AppError(
+        'Email non vérifié. Veuillez vérifier votre adresse email avant de continuer.',
+        403,
+        { code: 'EMAIL_NOT_VERIFIED' }
+      );
+    }
+
     next();
   }
 );
@@ -118,36 +135,3 @@ export const optionalAuth = catchAsyncErrors(
   }
 );
 
-/**
- * Login attempt rate limiting middleware
- */
-export const loginRateLimit = (maxAttempts: number = 5, windowMs: number = 15 * 60 * 1000) => {
-  const attempts: { [key: string]: { count: number; firstAttempt: number } } = {};
-
-  return (req: Request, res: Response, next: NextFunction) => {
-    const identifier = req.body.email || req.ip;
-
-    if (!attempts[identifier]) {
-      attempts[identifier] = { count: 0, firstAttempt: Date.now() };
-    }
-
-    const now = Date.now();
-    const timeSinceFirstAttempt = now - attempts[identifier].firstAttempt;
-
-    // Reset if window has passed
-    if (timeSinceFirstAttempt > windowMs) {
-      attempts[identifier] = { count: 0, firstAttempt: now };
-    }
-
-    attempts[identifier].count++;
-
-    if (attempts[identifier].count > maxAttempts) {
-      throw new AppError(
-        `Too many login attempts. Please try again in ${Math.ceil((windowMs - timeSinceFirstAttempt) / 1000)} seconds.`,
-        429
-      );
-    }
-
-    next();
-  };
-};
