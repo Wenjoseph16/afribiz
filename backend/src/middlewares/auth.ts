@@ -134,4 +134,3 @@ export const optionalAuth = catchAsyncErrors(
     next();
   }
 );
-
