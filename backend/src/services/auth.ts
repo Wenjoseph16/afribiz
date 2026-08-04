@@ -21,6 +21,16 @@ import { EmailVerificationRepository } from '../repositories/emailVerificationRe
 import { PasswordResetRepository } from '../repositories/passwordResetRepository';
 import { OtpCodeRepository } from '../repositories/otpCodeRepository';
 import { SecurityLogRepository } from '../repositories/securityLogRepository';
+import {
+  publishUserSignedUp,
+  publishUserLoggedIn,
+  publishUserLoggedOut,
+  publishPasswordChanged,
+  publishAccountLocked,
+  publishNewDeviceDetected,
+} from '../events/publishers';
+import { trackAnalyticsEvent } from './analyticsService';
+import { forceDisconnectUser } from './socket';
 
 export interface SignupPayload {
   firstName: string;
@@ -98,6 +108,20 @@ export class AuthService {
     await this.sendEmailVerification(user.id, user.email, user.firstName);
     await SecurityLogRepository.create({ userId: user.id, action: 'SIGNUP', success: true });
 
+    // Inscription → écosystème : événement (notif « Bienvenue » + email) + analytics
+    publishUserSignedUp({
+      userId: user.id,
+      email: user.email,
+      name: `${user.firstName} ${user.lastName || ''}`.trim(),
+    });
+    trackAnalyticsEvent({
+      userId: user.id,
+      type: 'auth',
+      category: 'navigation',
+      eventName: 'USER_SIGNED_UP',
+      properties: { email: user.email },
+    }).catch(() => {});
+
     logger.info(`User registered: ${user.email}`);
     return {
       user,
@@ -128,6 +152,15 @@ export class AuthService {
           action: 'ACCOUNT_LOCKED',
           success: false,
         });
+        // Verrouillage → alerte de sécurité (map notification déjà prête)
+        publishAccountLocked({ userId: user.id, reason: '5 échecs de connexion' });
+        trackAnalyticsEvent({
+          userId: user.id,
+          type: 'auth',
+          category: 'security',
+          eventName: 'ACCOUNT_LOCKED',
+          properties: { reason: '5 échecs de connexion' },
+        }).catch(() => {});
       }
       await SecurityLogRepository.create({
         userId: user.id,
@@ -165,6 +198,7 @@ export class AuthService {
     }
 
     await UserRepository.updateLastLogin(user.id, payload.ipAddress || '127.0.0.1');
+    await this.detectNewDevice(user.id, payload.userAgent, payload.ipAddress);
     const tokens = createTokenPair({
       id: user.id,
       email: user.email,
@@ -185,12 +219,50 @@ export class AuthService {
     });
     await SecurityLogRepository.create({ userId: user.id, action: 'LOGIN', success: true });
 
+    // Connexion → écosystème : notification « Connexion détectée » + analytics
+    publishUserLoggedIn({
+      userId: user.id,
+      device: payload.userAgent || '',
+      location: payload.ipAddress || '',
+    });
+    trackAnalyticsEvent({
+      userId: user.id,
+      type: 'auth',
+      category: 'navigation',
+      eventName: 'USER_LOGGED_IN',
+      properties: { method: 'password' },
+    }).catch(() => {});
+
     return {
       user,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       expiresIn: config.JWT_EXPIRES_IN,
     };
+  }
+
+  /**
+   * Détection d'un nouveau dispositif : compare le userAgent courant aux sessions
+   * précédentes. Si inconnu → `NEW_DEVICE_DETECTED` (alerte de sécurité).
+   * NB : si l'utilisateur n'a AUCUNE session antérieure (premier login d'un compte
+   * neuf), on ne déclenche pas d'alerte — c'est son propre premier appareil.
+   */
+  static async detectNewDevice(
+    userId: string,
+    userAgent?: string,
+    ipAddress?: string
+  ): Promise<void> {
+    if (!userAgent) return;
+    const previous = await SessionRepository.findByUserId(userId);
+    if (previous.length === 0) return; // premier login → pas de faux positif
+    const known = previous.some((s) => s.userAgent === userAgent);
+    if (!known) {
+      publishNewDeviceDetected({
+        userId,
+        device: userAgent.length > 120 ? userAgent.slice(0, 120) : userAgent,
+        location: ipAddress || 'Inconnue',
+      });
+    }
   }
 
   static async verify2FALogin(tempToken: string, totpCode: string): Promise<AuthResponse> {
@@ -235,6 +307,16 @@ export class AuthService {
       reason: '2FA',
     });
 
+    // Connexion 2FA réussie → même cascade qu'un login classique
+    publishUserLoggedIn({ userId: user.id, device: '', location: '' });
+    trackAnalyticsEvent({
+      userId: user.id,
+      type: 'auth',
+      category: 'navigation',
+      eventName: 'USER_LOGGED_IN',
+      properties: { method: '2fa' },
+    }).catch(() => {});
+
     return {
       user,
       accessToken: tokens.accessToken,
@@ -273,6 +355,23 @@ export class AuthService {
     else await RefreshTokenRepository.revokeAllByUserId(userId);
     await SessionRepository.revokeAllByUserId(userId);
     await SecurityLogRepository.create({ userId, action: 'LOGOUT', success: true });
+    // Force la déconnexion des sockets du user (défense en profondeur : la présence
+    // décrémente même si un socket client survit, ex. autre onglet).
+    try {
+      forceDisconnectUser(userId);
+    } catch (err) {
+      logger.warn('Force disconnect failed on logout', { error: (err as Error).message });
+    }
+
+    // Déconnexion → le compteur de présence décrémentera via le disconnect socket ;
+    // on publie l'événement + analytics pour le reste de l'écosystème.
+    publishUserLoggedOut({ userId });
+    trackAnalyticsEvent({
+      userId,
+      type: 'auth',
+      category: 'navigation',
+      eventName: 'USER_LOGGED_OUT',
+    }).catch(() => {});
   }
 
   static async forgotPassword(email: string): Promise<void> {
@@ -298,6 +397,15 @@ export class AuthService {
     await PasswordResetRepository.markAsUsed(req.id);
     await RefreshTokenRepository.revokeAllByUserId(req.userId);
     await SessionRepository.revokeAllByUserId(req.userId);
+
+    // Mot de passe modifié → notification « Mot de passe modifié » + analytics
+    publishPasswordChanged({ userId: req.userId });
+    trackAnalyticsEvent({
+      userId: req.userId,
+      type: 'auth',
+      category: 'security',
+      eventName: 'PASSWORD_CHANGED',
+    }).catch(() => {});
   }
 
   static async sendEmailVerification(

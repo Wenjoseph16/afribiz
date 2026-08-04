@@ -242,3 +242,43 @@ export async function getEngagementAnalytics(businessId: string): Promise<any> {
     avgViewsPerClient: activeClients > 0 ? Math.round(pageViews / activeClients) : 0,
   };
 }
+
+/**
+ * Activité d'authentification (Data Hub) — alimentée par les AnalyticsEvent type 'auth'
+ * (USER_SIGNED_UP, USER_LOGGED_IN, USER_LOGGED_OUT, PASSWORD_CHANGED, ACCOUNT_LOCKED).
+ * L'Auth nourrit ainsi le Data Hub : KPIs + répartition par événement + courbe par jour.
+ */
+export async function getAuthTrends(days: number = 30): Promise<any> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const where = { type: 'auth', occurredAt: { gte: since } } as any;
+
+  const [total, byEvent, byDayRows] = await Promise.all([
+    prisma.analyticsEvent.count({ where }),
+    prisma.analyticsEvent.groupBy({
+      by: ['eventName'],
+      where,
+      _count: { _all: true },
+      orderBy: { _count: { eventName: 'desc' } },
+    }),
+    prisma.analyticsEvent.findMany({
+      where,
+      select: { occurredAt: true },
+      orderBy: { occurredAt: 'asc' },
+      take: 5000,
+    }),
+  ]);
+
+  // Bucketing par jour en mémoire (évite le SQL date_trunc, fiable et simple)
+  const dayMap = new Map<string, number>();
+  for (const ev of byDayRows) {
+    const day = ev.occurredAt.toISOString().slice(0, 10);
+    dayMap.set(day, (dayMap.get(day) || 0) + 1);
+  }
+
+  return {
+    total,
+    days,
+    byEvent: byEvent.map((r) => ({ eventName: r.eventName, count: r._count._all })),
+    byDay: Array.from(dayMap.entries()).map(([day, count]) => ({ day, count })),
+  };
+}

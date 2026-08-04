@@ -58,6 +58,7 @@ router.get('/copilot/module/:moduleKey/tips', analyticsController.getModuleTips)
 // ── Data Hub Routes ──
 
 router.get('/datahub/stats', analyticsController.getPlatformStats);
+router.get('/datahub/auth-trends', analyticsController.getAuthTrends);
 router.get('/datahub/sectors', analyticsController.getSectorBenchmarks);
 router.get('/datahub/geographic', analyticsController.getGeographicStats);
 router.get('/datahub/growth', analyticsController.getGrowthStats);

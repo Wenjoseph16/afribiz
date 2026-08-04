@@ -14,6 +14,36 @@ import {
 } from '../helpers';
 import { AppError } from '../../middlewares/errorHandler';
 import { hashPassword, comparePasswords, isValidPassword } from '../../lib/password';
+import jwt from 'jsonwebtoken';
+import { config } from '../../config/env';
+import { TwoFactorService } from '../../services/twoFactorService';
+
+jest.mock('../../services/twoFactorService', () => ({
+  TwoFactorService: { verifyToken: jest.fn() },
+}));
+
+// Publishers auth : on garde les vrais (requireActual) mais on remplace les 6 utilisés
+// par auth.ts par des jest.fn() pour pouvoir asserter le câblage événementiel.
+jest.mock('../../events/publishers', () => {
+  const actual = jest.requireActual('../../events/publishers');
+  return {
+    ...actual,
+    publishUserSignedUp: jest.fn(),
+    publishUserLoggedIn: jest.fn(),
+    publishUserLoggedOut: jest.fn(),
+    publishPasswordChanged: jest.fn(),
+    publishAccountLocked: jest.fn(),
+    publishNewDeviceDetected: jest.fn(),
+  };
+});
+import {
+  publishUserSignedUp,
+  publishUserLoggedIn,
+  publishUserLoggedOut,
+  publishPasswordChanged,
+  publishAccountLocked,
+  publishNewDeviceDetected,
+} from '../../events/publishers';
 
 describe('Password Utilities', () => {
   test('hashPassword: returns a hash string', async () => {
@@ -229,6 +259,149 @@ describe('AuthService', () => {
       await expect(AuthService.resetPassword('valid-token', weakPassword)).rejects.toThrow(
         AppError
       );
+    });
+  });
+
+  // ==========================================
+  // AUTH → ÉCOSYSTÈME (événements + analytics)
+  // ==========================================
+  describe('Auth → Écosystème', () => {
+    it('publishes USER_SIGNED_UP + analytics event on signup', async () => {
+      const mockUser = createMockUser();
+      (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (mockPrisma.user.create as jest.Mock).mockResolvedValue(mockUser);
+      (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce(mockUser);
+      (mockPrisma.device.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (mockPrisma.device.create as jest.Mock).mockResolvedValue({ id: 'device-id' });
+      (mockPrisma.session.create as jest.Mock).mockResolvedValue({ id: 'session-id' });
+      (mockPrisma.refreshToken.create as jest.Mock).mockResolvedValue({});
+      (mockPrisma.emailVerification.create as jest.Mock).mockResolvedValue({});
+      (mockPrisma.securityLog.create as jest.Mock).mockResolvedValue({});
+
+      await AuthService.signup(validSignupPayload);
+
+      expect(publishUserSignedUp).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: mockUser.id, email: mockUser.email, name: 'Jean Test' })
+      );
+      const events = (mockPrisma.analyticsEvent.create as jest.Mock).mock.calls.map(
+        (c: any) => c[0].data
+      );
+      expect(events.some((e: any) => e.eventName === 'USER_SIGNED_UP' && e.type === 'auth')).toBe(
+        true
+      );
+    });
+
+    it('publishes PASSWORD_CHANGED + analytics on successful password reset', async () => {
+      (mockPrisma.passwordReset.findFirst as jest.Mock).mockResolvedValueOnce({
+        id: 'reset-id',
+        userId: 'user-id',
+        token: 'valid-token',
+        expiresAt: new Date(Date.now() + 3600000),
+        usedAt: null,
+      });
+      (mockPrisma.user.update as jest.Mock).mockResolvedValue({ id: 'user-id' });
+      (mockPrisma.passwordReset.update as jest.Mock).mockResolvedValue({});
+      (mockPrisma.refreshToken.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (mockPrisma.session.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+
+      await AuthService.resetPassword('valid-token', 'NewPass123!');
+
+      expect(publishPasswordChanged).toHaveBeenCalledWith({ userId: 'user-id' });
+      const events = (mockPrisma.analyticsEvent.create as jest.Mock).mock.calls.map(
+        (c: any) => c[0].data
+      );
+      expect(events.some((e: any) => e.eventName === 'PASSWORD_CHANGED')).toBe(true);
+    });
+
+    it('publishes ACCOUNT_LOCKED after 5 failed attempts', async () => {
+      const user = {
+        ...createMockUser(),
+        passwordHash: await hashPassword('TestPass123!'),
+      };
+      (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce(user);
+      (mockPrisma.user.update as jest.Mock).mockResolvedValueOnce({
+        ...user,
+        failedLoginAttempts: 1,
+      });
+      (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce({
+        ...user,
+        failedLoginAttempts: 5,
+      });
+      (mockPrisma.user.update as jest.Mock).mockResolvedValueOnce({
+        ...user,
+        lockedUntil: new Date(),
+      });
+      (mockPrisma.securityLog.create as jest.Mock).mockResolvedValue({});
+
+      await expect(
+        AuthService.login({ ...validLoginPayload, password: 'WrongPassword123!' })
+      ).rejects.toThrow('Identifiants invalides');
+
+      expect(publishAccountLocked).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: user.id, reason: '5 échecs de connexion' })
+      );
+    });
+
+    it('publishes USER_LOGGED_OUT + analytics on logout', async () => {
+      (mockPrisma.refreshToken.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (mockPrisma.session.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (mockPrisma.securityLog.create as jest.Mock).mockResolvedValue({});
+
+      await AuthService.logout('user-1');
+
+      expect(publishUserLoggedOut).toHaveBeenCalledWith({ userId: 'user-1' });
+      const events = (mockPrisma.analyticsEvent.create as jest.Mock).mock.calls.map(
+        (c: any) => c[0].data
+      );
+      expect(events.some((e: any) => e.eventName === 'USER_LOGGED_OUT')).toBe(true);
+    });
+
+    it('does NOT flag a new device on first-ever login (no previous sessions)', async () => {
+      (mockPrisma.session.findMany as jest.Mock).mockResolvedValue([]);
+      await AuthService.detectNewDevice('user-1', 'agent-1', 'ip-1');
+      expect(publishNewDeviceDetected).not.toHaveBeenCalled();
+    });
+
+    it('flags NEW_DEVICE_DETECTED when the userAgent differs from known sessions', async () => {
+      (mockPrisma.session.findMany as jest.Mock).mockResolvedValue([{ userAgent: 'old-agent' }]);
+      await AuthService.detectNewDevice('user-1', 'new-agent', 'ip-1');
+      expect(publishNewDeviceDetected).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user-1', device: 'new-agent', location: 'ip-1' })
+      );
+    });
+
+    it('does NOT flag when the userAgent is already known', async () => {
+      (mockPrisma.session.findMany as jest.Mock).mockResolvedValue([{ userAgent: 'known-agent' }]);
+      await AuthService.detectNewDevice('user-1', 'known-agent', 'ip-1');
+      expect(publishNewDeviceDetected).not.toHaveBeenCalled();
+    });
+
+    it('publishes USER_LOGGED_IN (2FA) + analytics on successful 2FA login', async () => {
+      const user = { ...createMockUser(), twoFactorEnabled: false };
+      (TwoFactorService.verifyToken as jest.Mock).mockResolvedValue(true);
+      (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce(user); // findById
+      (mockPrisma.user.update as jest.Mock).mockResolvedValue(user); // updateLastLogin
+      (mockPrisma.session.create as jest.Mock).mockResolvedValue({ id: 'session-id' });
+      (mockPrisma.refreshToken.create as jest.Mock).mockResolvedValue({});
+      (mockPrisma.securityLog.create as jest.Mock).mockResolvedValue({});
+
+      const tempToken = jwt.sign({ id: user.id, purpose: '2fa_login' }, config.JWT_SECRET, {
+        expiresIn: '5m',
+      });
+      await AuthService.verify2FALogin(tempToken, '123456');
+
+      expect(publishUserLoggedIn).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: user.id })
+      );
+      const events = (mockPrisma.analyticsEvent.create as jest.Mock).mock.calls.map(
+        (c: any) => c[0].data
+      );
+      expect(
+        events.some(
+          (e: any) => e.eventName === 'USER_LOGGED_IN' && e.properties?.method === '2fa'
+        )
+      ).toBe(true);
     });
   });
 });

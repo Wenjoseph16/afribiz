@@ -3,6 +3,7 @@ import { Server, Socket } from 'socket.io';
 import { verifyAccessToken, JWTPayload } from '../lib/jwt';
 import { config } from '../config/env';
 import { logger } from '../lib/logger';
+import { presenceService } from './presenceService';
 
 const isVercel = !!process.env.VERCEL;
 
@@ -10,6 +11,18 @@ let io: Server | null = null;
 
 export function getIO(): Server | null {
   return io;
+}
+
+/**
+ * Force la déconnexion de tous les sockets d'un utilisateur (utilisé au logout
+ * pour garantir que la présence décrémente même si un socket client survit).
+ */
+export function forceDisconnectUser(userId: string): void {
+  if (!io) return;
+  io.sockets.sockets.forEach((s) => {
+    const u = (s as any).user;
+    if (u && u.id === userId) s.disconnect(true);
+  });
 }
 
 export function initSocket(httpServer: HttpServer): Server | null {
@@ -47,11 +60,19 @@ export function initSocket(httpServer: HttpServer): Server | null {
     }
   });
 
+  // Diffuse le compteur de présence aux admins connectés (room admin:alerts)
+  // → version allégée (count + byRole), sans la liste des userId (PII)
+  function broadcastPresence() {
+    io?.to('admin:alerts').emit('admin:presence:update', presenceService.getPresenceSummary());
+  }
+
   io.on('connection', (socket: Socket) => {
     const user = (socket as any).user;
     const userId = user.id;
 
     socket.join(`user:${userId}`);
+    presenceService.registerConnection(userId, socket.id, user.primaryRole);
+    broadcastPresence();
     logger.debug(`Socket connected: ${user.email} (${userId})`);
 
     socket.on('join:conversation', (conversationId: string) => {
@@ -122,13 +143,16 @@ export function initSocket(httpServer: HttpServer): Server | null {
       io?.to(`live:${liveId}`).emit('live:viewer-count-update', { liveId, count });
     });
 
-    // Admin rejoint la room d'alertes système
+    // Admin rejoint la room d'alertes système + reçoit l'état de présence courant
     if (user.roles?.includes('ADMIN')) {
       socket.join('admin:alerts');
+      socket.emit('admin:presence:update', presenceService.getPresenceSummary());
       logger.debug(`Admin socket joined admin:alerts room: ${user.email}`);
     }
 
     socket.on('disconnect', (reason) => {
+      presenceService.unregisterConnection(userId, socket.id);
+      broadcastPresence();
       logger.debug(`Socket disconnected: ${user.email} (${reason})`);
     });
   });

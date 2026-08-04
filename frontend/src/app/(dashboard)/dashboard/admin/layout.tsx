@@ -3,6 +3,7 @@
 import { Shield } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PresenceBanner } from '@/components/dashboard/admin/PresenceBanner';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
@@ -20,5 +21,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  return <>{children}</>;
+  return (
+    <div className="space-y-4">
+      <PresenceBanner />
+      {children}
+    </div>
+  );
 }

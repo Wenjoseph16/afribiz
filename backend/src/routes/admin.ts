@@ -20,6 +20,7 @@ import { recalculateBusinessRating } from '../services/business';
 import {
   getDashboardStats,
   getUsers,
+  getPresence,
   getUserById,
   updateUserStatus,
   getUserActivity,
@@ -102,6 +103,7 @@ router.get('/admin/dashboard/stats', getDashboardStats);
 
 // Users management
 router.get('/admin/users', getUsers);
+router.get('/admin/presence', getPresence);
 router.get('/admin/users/:id', getUserById);
 router.put('/admin/users/:id/status', validateBody(updateUserStatusSchema), updateUserStatus);
 router.get('/admin/users/:id/activity', getUserActivity);

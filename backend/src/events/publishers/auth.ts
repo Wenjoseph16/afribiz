@@ -11,6 +11,10 @@ export const publishUserLoggedIn = def<{ userId: string; device?: string; locati
   (p) => ({ device: p.device || '', location: p.location || '' }),
   (p) => ({ device: p.device, location: p.location })
 );
+export const publishUserLoggedOut = def<{ userId: string }>(
+  DomainEventType.USER_LOGGED_OUT,
+  () => ({})
+);
 export const publishPasswordChanged = def<{ userId: string }>(
   DomainEventType.PASSWORD_CHANGED,
   () => ({})

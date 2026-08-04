@@ -66,6 +66,7 @@ const typeMapping: Record<DomainEventType, NotificationType> = {
   DEVELOPER_REVENUE_EARNED: NotificationType.PAYMENT_RECEIVED,
   DEVELOPER_PAYOUT_PROCESSED: NotificationType.PAYMENT_RECEIVED,
   USER_SIGNED_UP: NotificationType.NEW_MESSAGE,
+  USER_LOGGED_OUT: NotificationType.SECURITY_ALERT,
   BUSINESS_ACTIVATED: NotificationType.NEW_MESSAGE,
   DEVELOPER_ACTIVATED: NotificationType.NEW_MESSAGE,
   COMMISSION_CHARGED: NotificationType.PAYMENT_RECEIVED,
@@ -215,6 +216,7 @@ const eventTitles: Record<DomainEventType, string> = {
   DISPUTE_RESOLVED: 'Litige résolu',
   USER_SIGNED_UP: 'Bienvenue',
   USER_LOGGED_IN: 'Connexion détectée',
+  USER_LOGGED_OUT: 'Déconnexion',
   PASSWORD_CHANGED: 'Mot de passe modifié',
   BUSINESS_ACTIVATED: 'Business activé',
   DEVELOPER_ACTIVATED: 'Mode développeur',
@@ -396,6 +398,16 @@ function buildDescription(event: DomainEvent): string {
       return `Vous avez reçu un nouveau message de ${meta.businessName || 'AfriBiz'}.`;
     case DomainEventType.SECURITY_ALERT:
       return `Nouvelle connexion détectée sur votre compte.`;
+    case DomainEventType.USER_SIGNED_UP:
+      return `Bienvenue sur AfriBiz${event.payload?.name ? ', ' + event.payload.name : ''} ! Créez votre business, vendez et développez votre activité.`;
+    case DomainEventType.PASSWORD_CHANGED:
+      return `Votre mot de passe a été modifié. Si ce n'est pas vous, contactez immédiatement le support.`;
+    case DomainEventType.USER_LOGGED_OUT:
+      return `Vous avez été déconnecté(e) de votre session.`;
+    case DomainEventType.ACCOUNT_LOCKED:
+      return `Votre compte a été temporairement verrouillé après plusieurs tentatives de connexion.`;
+    case DomainEventType.NEW_DEVICE_DETECTED:
+      return `Un nouvel appareil s'est connecté à votre compte (${event.payload?.device || 'inconnu'}).`;
     case DomainEventType.DISPUTE_OPENED:
       return `Un litige a été ouvert pour la commande #${meta.orderId || ''}.`;
     case DomainEventType.DISPUTE_RESOLVED:

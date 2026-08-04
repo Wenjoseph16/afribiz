@@ -699,6 +699,7 @@ export interface ApiClientMethods {
   adminRecomputeAllScores(): Promise<any>;
   adminGetDataAccessLogs(params?: any): Promise<any>;
   adminGetPlatformAnalytics(params?: any): Promise<any>;
+  getAdminPresence(): Promise<any>;
   adminGetReports(params?: any): Promise<any>;
 
   // ============================================

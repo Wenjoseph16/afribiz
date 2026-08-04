@@ -616,6 +616,29 @@ export function useAdminRecomputeAllScores() {
   });
 }
 
+// ── Présence temps réel (compteur utilisateurs connectés — WF Auth) ──
+
+export const adminPresenceKeys = {
+  presence: ['admin', 'presence'] as const,
+};
+
+export function useAdminPresence(refetchInterval?: number) {
+  return useQuery({
+    queryKey: adminPresenceKeys.presence,
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getAdminPresence();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement présence:', error);
+        return { count: 0, byRole: {}, users: [] };
+      }
+    },
+    retry: false,
+    ...(refetchInterval ? { refetchInterval } : {}),
+  });
+}
+
 // ── AnalyticsEvent Hooks (chantier 1 — flux temps réel) ──
 
 export const analyticsEventKeys = {

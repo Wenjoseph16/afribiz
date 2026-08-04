@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import * as adminService from '../services/adminService';
+import { presenceService } from '../services/presenceService';
 
 export const getDashboardStats = catchAsyncErrors(
   async (_req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
@@ -23,6 +24,13 @@ export const getUsers = catchAsyncErrors(
       limit,
     });
     res.json({ success: true, data: result });
+  }
+);
+
+/** GET /admin/presence — utilisateurs connectés temps réel (compteur + par rôle) */
+export const getPresence = catchAsyncErrors(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    res.json({ success: true, data: presenceService.getPresenceSnapshot() });
   }
 );
 

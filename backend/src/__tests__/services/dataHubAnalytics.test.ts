@@ -9,6 +9,7 @@ import {
   getRetentionCohorts,
   getProductRecommendations,
   getEngagementAnalytics,
+  getAuthTrends,
 } from '../../services/dataHubAnalytics';
 
 describe('dataHubAnalytics', () => {
@@ -89,5 +90,25 @@ describe('dataHubAnalytics', () => {
     const result = await getEngagementAnalytics('biz-1');
     expect(result.totalClients).toBe(100);
     expect(result.engagementRate).toBeGreaterThanOrEqual(0);
+  });
+
+  test('getAuthTrends aggregates auth analytics events', async () => {
+    jest.spyOn(mockPrisma.analyticsEvent, 'count').mockResolvedValue(3);
+    jest.spyOn(mockPrisma.analyticsEvent, 'groupBy').mockResolvedValue([
+      { eventName: 'USER_LOGGED_IN', _count: { _all: 2 } },
+      { eventName: 'USER_SIGNED_UP', _count: { _all: 1 } },
+    ]);
+    jest.spyOn(mockPrisma.analyticsEvent, 'findMany').mockResolvedValue([
+      { occurredAt: new Date('2026-08-01T10:00:00.000Z') },
+      { occurredAt: new Date('2026-08-01T14:00:00.000Z') },
+      { occurredAt: new Date('2026-08-02T09:00:00.000Z') },
+    ]);
+    const result = await getAuthTrends(30);
+    expect(result.total).toBe(3);
+    expect(result.byEvent).toHaveLength(2);
+    expect(result.byEvent[0]).toEqual({ eventName: 'USER_LOGGED_IN', count: 2 });
+    expect(result.byDay).toHaveLength(2);
+    expect(result.byDay[0]).toEqual({ day: '2026-08-01', count: 2 });
+    expect(result.byDay[1]).toEqual({ day: '2026-08-02', count: 1 });
   });
 });

@@ -52,6 +52,9 @@ export function injectAdmin(api: ApiClientMethods) {
   api.adminGetPlatformAnalytics = function (params?: any) {
     return this.get('/admin/analytics', { params });
   };
+  api.getAdminPresence = function () {
+    return this.get('/admin/presence');
+  };
   api.adminGetReports = function (params?: any) {
     return this.get('/admin/reports', { params });
   };
