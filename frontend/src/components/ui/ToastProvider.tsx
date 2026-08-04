@@ -2,12 +2,13 @@
 
 import * as React from 'react';
 import * as ToastPrimitive from '@radix-ui/react-toast';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 interface ToastMessage {
   title: string;
   description?: string;
-  variant: 'success' | 'error';
+  variant: 'success' | 'error' | 'info';
+  link?: string;
 }
 
 interface ToastContextValue {
@@ -42,8 +43,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <div className="mt-1">
                 {toast.variant === 'success' ? (
                   <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                ) : (
+                ) : toast.variant === 'error' ? (
                   <AlertCircle className="h-5 w-5 text-red-600" />
+                ) : (
+                  <Info className="h-5 w-5 text-sky-600" />
                 )}
               </div>
               <div className="space-y-1 text-sm">
@@ -54,6 +57,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   <ToastPrimitive.Description className="text-slate-600">
                     {toast.description}
                   </ToastPrimitive.Description>
+                )}
+                {toast.link && (
+                  <a
+                    href={toast.link}
+                    className="mt-1 inline-block text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                  >
+                    Voir →
+                  </a>
                 )}
               </div>
             </div>

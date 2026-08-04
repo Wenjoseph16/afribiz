@@ -138,6 +138,7 @@ import {
   clientQuotesInvoicesRoutes,
 } from './routes';
 import { registerNotificationHandlers } from './events/handlers/notificationHandler';
+import { registerAdminEventHandlers } from './events/handlers/adminEventHandler';
 import { registerFeedHandlers } from './events/handlers/feedHandler';
 import { registerBusinessRoomHandlers } from './events/handlers/businessRoomHandler';
 import { registerAutomationHandlers } from './services/advancedTasks';
@@ -484,6 +485,7 @@ initCache(config.REDIS_URL);
 
 // Register event handlers
 registerNotificationHandlers();
+registerAdminEventHandlers();
 
 // Register feed auto-population handlers
 registerFeedHandlers();

@@ -50,6 +50,30 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     [queryClient, notify]
   );
 
+  // Événements admin (nouveaux signalements, modules à valider, litiges, escrows)
+  // poussés par le backend sur la room admin:alerts → invalidation + toast.
+  const handleAdminEvent = useCallback(
+    (data?: {
+      type?: string;
+      title?: string;
+      link?: string;
+      payload?: Record<string, unknown>;
+    }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-moderation'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-disputes'] });
+      if (data?.title) {
+        notify({
+          title: data.title,
+          description: 'Nécessite votre attention.',
+          variant: 'info',
+          link: data.link,
+        });
+      }
+    },
+    [queryClient, notify]
+  );
+
   const { addNotification, fetchUnreadCount } = useNotificationStore();
 
   const handleNewNotification = useCallback(
@@ -97,6 +121,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     socket.on('conversation:new', handleNewConversation);
     socket.on('notification:new', handleNewNotification);
     socket.on('business:event', handleBusinessEvent);
+    socket.on('admin:event', handleAdminEvent);
     if (businessId) socket.emit('join:business', businessId);
 
     return () => {
@@ -106,6 +131,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       socket.off('conversation:new', handleNewConversation);
       socket.off('notification:new', handleNewNotification);
       socket.off('business:event', handleBusinessEvent);
+      socket.off('admin:event', handleAdminEvent);
     };
   }, [
     accessToken,
@@ -114,6 +140,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     handleNewNotification,
     handleNewConversation,
     handleBusinessEvent,
+    handleAdminEvent,
   ]);
 
   // Rejoindre/quitter la room business quand le businessId change (chargé par la Sidebar)
