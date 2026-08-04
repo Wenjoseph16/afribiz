@@ -654,6 +654,7 @@ export interface ApiClientMethods {
   // MARKETPLACE (injectMarketplace)
   // ============================================
   searchMarketplace(params?: any): Promise<any>;
+  getHomeData(): Promise<any>;
   getTrendingMarketplace(): Promise<any>;
   getMarketplaceModules(params?: any): Promise<any>;
   getMarketplaceModule(slug: string): Promise<any>;

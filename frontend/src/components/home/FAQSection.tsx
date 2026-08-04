@@ -6,32 +6,16 @@ import { ChevronDown } from 'lucide-react';
 import { fadeInUp } from './animations';
 import { SectionLabel } from './SectionLabel';
 import { SectionHeading } from './SectionHeading';
-
-const faqs = [
-  {
-    q: 'Puis-je utiliser AfriBiz uniquement depuis mon smartphone ?',
-    a: "Oui ! AfriBiz est conçu mobile-first. Gérez votre boutique, commandes et paiements depuis n'importe quel smartphone.",
-  },
-  {
-    q: 'Comment sont gérés les paiements ?',
-    a: 'Nous intégrons Mobile Money (Orange Money, MTN MoMo, Free Money), transferts bancaires et cartes. Les fonds sont sécurisés via Escrow et reversés sous 48h.',
-  },
-  {
-    q: 'Est-ce vraiment gratuit pour commencer ?',
-    a: "Absolument ! Le plan Gratuit est gratuit à vie sans engagement. Pas d'abonnement. Vous ne payez que 1% de commission uniquement sur vos ventes.",
-  },
-  {
-    q: 'Puis-je vendre depuis plusieurs pays africains ?',
-    a: 'Oui, AfriBiz supporte les transactions multi-pays avec les moyens de paiement locaux de chaque pays.',
-  },
-  {
-    q: "Comment fonctionne l'espace développeur ?",
-    a: "Créez des modules personnalisés, intégrations, thèmes et outils. Gagnez de l'argent à chaque utilisation par les business.",
-  },
-];
+import { useHomeData } from '@/hooks/useHomeData';
 
 export function FAQSection() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+
+  // FAQ RÉELLES du CMS (plus de données fictives) — via le hook partagé /api/home
+  const { data, isFetched } = useHomeData();
+  const faqs = data?.faqs || [];
+
+  if (isFetched && faqs.length === 0) return null;
 
   return (
     <section className="py-20 sm:py-28 px-4 bg-gray-50/50 dark:bg-gray-900/30">
@@ -46,7 +30,7 @@ export function FAQSection() {
         <div className="space-y-3">
           {faqs.map((faq, i) => (
             <motion.div
-              key={faq.q}
+              key={faq.id}
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -58,7 +42,7 @@ export function FAQSection() {
                 className="flex items-center justify-between w-full px-5 sm:px-6 py-4 sm:py-5 text-left"
               >
                 <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 pr-4">
-                  {faq.q}
+                  {faq.question}
                 </span>
                 <ChevronDown
                   className={`h-4 w-4 text-gray-400 shrink-0 transition-transform duration-300 ${activeFaq === i ? 'rotate-180' : ''}`}
@@ -75,7 +59,7 @@ export function FAQSection() {
                   >
                     <div className="px-5 sm:px-6 pb-4 sm:pb-5">
                       <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                        {faq.a}
+                        {faq.answer}
                       </p>
                     </div>
                   </motion.div>

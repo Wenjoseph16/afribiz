@@ -1,6 +1,9 @@
 import type { ApiClientMethods } from './api-client.types';
 
 export function injectMarketplace(api: ApiClientMethods) {
+  api.getHomeData = function () {
+    return this.get('/home');
+  };
   api.searchMarketplace = function (params?: any) {
     return this.get('/marketplace/search', { params });
   };
