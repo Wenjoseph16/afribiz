@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
+import { checkPlanLimit } from './planAccessService';
 
 async function ensureBusinessClient(businessId: string, clientId: string) {
   const userExists = await prisma.user.findUnique({
@@ -8,6 +9,17 @@ async function ensureBusinessClient(businessId: string, clientId: string) {
     select: { id: true },
   });
   if (!userExists) throw new AppError('Client non trouvé', 404);
+
+  // Garde plan : vérifie la limite clients uniquement si le client est NOUVEAU
+  const existing = await prisma.businessClient.findUnique({
+    where: { businessId_clientId: { businessId, clientId } },
+    select: { id: true },
+  });
+  if (!existing) {
+    const clientCount = await prisma.businessClient.count({ where: { businessId } });
+    await checkPlanLimit(businessId, 'CLIENTS_LIMIT', clientCount, 'clients');
+  }
+
   return prisma.businessClient.upsert({
     where: { businessId_clientId: { businessId, clientId } },
     create: { businessId, clientId },

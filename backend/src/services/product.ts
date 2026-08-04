@@ -10,6 +10,7 @@ import {
 } from '../events/publishers';
 import { autoShareToSocial } from './socialShareService';
 import { triggerAlertsForBackInStock, triggerAlertsForPriceDrop } from './alertService';
+import { checkPlanLimit } from './planAccessService';
 
 function slugify(text: string): string {
   return text
@@ -129,6 +130,11 @@ export async function getProduct(ownerId: string, productId: string) {
 
 export async function createProduct(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
+  // Garde plan : limite du nombre de produits selon le plan du business
+  const productCount = await prisma.product.count({
+    where: { businessId: business.id, deletedAt: null },
+  });
+  await checkPlanLimit(business.id, 'PRODUCTS_LIMIT', productCount, 'produits');
   const slug = await generateProductSlug(data.name, business.id);
 
   return prisma.$transaction(async (tx) => {
@@ -288,6 +294,12 @@ export async function duplicateProduct(ownerId: string, productId: string) {
     include: { variants: { where: { isActive: true } } },
   });
   if (!original) throw new AppError('Product not found', 404);
+
+  // Garde plan : une duplication crée un produit supplémentaire
+  const productCount = await prisma.product.count({
+    where: { businessId: business.id, deletedAt: null },
+  });
+  await checkPlanLimit(business.id, 'PRODUCTS_LIMIT', productCount, 'produits');
 
   const slug = await generateProductSlug(original.name + ' (copy)', business.id);
 
@@ -524,6 +536,16 @@ export async function exportProducts(ownerId: string, format: string, params: an
 
 export async function importProducts(ownerId: string, products: any[]) {
   const business = await getBusinessByOwner(ownerId);
+  // Garde plan : l'import ne doit pas dépasser la limite du plan (total prospectif)
+  const productCount = await prisma.product.count({
+    where: { businessId: business.id, deletedAt: null },
+  });
+  await checkPlanLimit(
+    business.id,
+    'PRODUCTS_LIMIT',
+    productCount + products.length,
+    'produits'
+  );
   let imported = 0;
   const errors: { row: number; error: string }[] = [];
 

@@ -28,6 +28,7 @@ import {
   getBusinessById,
   updateBusinessStatus,
   updateBusinessVerification,
+  updateBusinessPlan,
   getDevelopers,
   getDeveloperById,
   updateDeveloperStatus,
@@ -121,6 +122,7 @@ router.put(
   validateBody(updateBusinessVerificationSchema),
   updateBusinessVerification
 );
+router.put('/admin/businesses/:id/plan', updateBusinessPlan);
 
 // Developers management
 router.get('/admin/developers', getDevelopers);

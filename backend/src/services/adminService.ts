@@ -16,6 +16,7 @@ import {
   notifyDisputeResolved,
 } from './adminEvents';
 import * as adminFeaturesService from './adminFeaturesService';
+import { invalidatePlanCache } from './planAccessService';
 
 export const getDashboardStats = async () => {
   const now = new Date();
@@ -461,6 +462,51 @@ export const updateBusinessStatus = async (
       reason: business.rejectionReason || undefined,
     });
   }
+  return updated;
+};
+
+export const updateBusinessPlan = async (
+  businessId: string,
+  planId: string | null,
+  adminUserId?: string
+) => {
+  const business = await prisma.business.findUnique({ where: { id: businessId } });
+  if (!business) throw new AppError('Business not found', 404);
+
+  if (planId) {
+    const plan = await prisma.subscriptionPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, name: true, businessId: true },
+    });
+    if (!plan || plan.businessId !== null) {
+      throw new AppError('Plan plateforme introuvable', 404);
+    }
+  }
+
+  const updated = await prisma.business.update({
+    where: { id: businessId },
+    data: { planId: planId || null },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      planId: true,
+      plan: { select: { id: true, name: true } },
+    },
+  });
+
+  // Invalider le cache du plan
+  invalidatePlanCache(businessId);
+
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_BUSINESS_ACTION',
+      targetUserId: business.ownerId,
+      metadata: { action: 'PLAN_CHANGED', planId: planId || null, businessName: business.name, businessId },
+    });
+  }
+
   return updated;
 };
 

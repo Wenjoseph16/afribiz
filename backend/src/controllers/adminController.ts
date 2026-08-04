@@ -85,6 +85,14 @@ export const updateBusinessStatus = catchAsyncErrors(
   }
 );
 
+export const updateBusinessPlan = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
+    const { planId } = req.body;
+    const business = await adminService.updateBusinessPlan(req.params.id, planId || null, req.user?.id);
+    res.json({ success: true, data: business, message: 'Plan du business mis à jour' });
+  }
+);
+
 export const updateBusinessVerification = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const { action, rejectionReason } = req.body;

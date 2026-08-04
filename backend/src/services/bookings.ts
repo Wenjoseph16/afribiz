@@ -3,6 +3,7 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { publishBookingCreated, publishBookingStatusChanged } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
+import { checkPlanLimit } from './planAccessService';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
@@ -127,6 +128,11 @@ export async function getBusinessBooking(ownerId: string, bookingId: string) {
 
 export async function createBooking(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
+  // Garde plan : limite du nombre de réservations selon le plan
+  const bookingCount = await prisma.booking.count({
+    where: { businessId: business.id, status: { not: 'CANCELLED' } },
+  });
+  await checkPlanLimit(business.id, 'BOOKINGS_LIMIT', bookingCount, 'réservations');
   const bookingNumber = generateBookingNumber();
 
   const booking = await prisma.$transaction(async (tx) => {

@@ -60,8 +60,10 @@ const PLANS: PlanSeed[] = [
       { code: 'COMMISSION_TRANSACTION', label: 'Commission transaction', description: 'Prélevée uniquement sur vente réussie', value: 1, valueType: 'PERCENT', sortOrder: 1 },
       { code: 'COMMISSION_ESCROW', label: 'Commission Escrow', value: 2, valueType: 'PERCENT', sortOrder: 2 },
       { code: 'SUPPORT_LEVEL', label: 'Support', value: 1, valueType: 'TEXT', sortOrder: 3, description: 'Communauté + email' },
-      { code: 'PRODUCTS_LIMIT', label: 'Produits', value: -1, valueType: 'COUNT', sortOrder: 4, description: 'Illimité (phase de lancement)' },
-      { code: 'MODULES_ACCESS', label: 'Modules', value: -1, valueType: 'COUNT', sortOrder: 5, description: 'Tous les modules' },
+      { code: 'PRODUCTS_LIMIT', label: 'Produits', value: 10, valueType: 'COUNT', sortOrder: 4, description: '10 produits en ligne' },
+      { code: 'CLIENTS_LIMIT', label: 'Clients', value: 50, valueType: 'COUNT', sortOrder: 5, description: '50 fiches clients' },
+      { code: 'BOOKINGS_LIMIT', label: 'Réservations', value: 30, valueType: 'COUNT', sortOrder: 6, description: '30 réservations' },
+      { code: 'MODULES_ACCESS', label: 'Modules', value: -1, valueType: 'COUNT', sortOrder: 7, description: 'Tous les modules' },
     ],
   },
   {
@@ -79,7 +81,6 @@ const PLANS: PlanSeed[] = [
       'Commission transaction réduite à 0,5%',
       'Support prioritaire (réponse < 24h)',
       'Analytics avancés + rapports automatiques',
-      'Copilot IA inclus 30 jours offerts',
       'Réservations en ligne illimitées',
     ],
     privileges: [
@@ -87,8 +88,10 @@ const PLANS: PlanSeed[] = [
       { code: 'COMMISSION_ESCROW', label: 'Commission Escrow', value: 1.5, valueType: 'PERCENT', sortOrder: 2 },
       { code: 'SUPPORT_LEVEL', label: 'Support', value: 2, valueType: 'TEXT', sortOrder: 3, description: 'Prioritaire' },
       { code: 'PRODUCTS_LIMIT', label: 'Produits', value: -1, valueType: 'COUNT', sortOrder: 4, description: 'Illimité' },
-      { code: 'MODULES_ACCESS', label: 'Modules', value: -1, valueType: 'COUNT', sortOrder: 5, description: 'Tous les modules' },
-      { code: 'REPORTS_AUTOMATION', label: 'Rapports automatiques', value: 1, valueType: 'BOOL', sortOrder: 6 },
+      { code: 'CLIENTS_LIMIT', label: 'Clients', value: -1, valueType: 'COUNT', sortOrder: 5, description: 'Illimité' },
+      { code: 'BOOKINGS_LIMIT', label: 'Réservations', value: -1, valueType: 'COUNT', sortOrder: 6, description: 'Illimité' },
+      { code: 'MODULES_ACCESS', label: 'Modules', value: -1, valueType: 'COUNT', sortOrder: 7, description: 'Tous les modules' },
+      { code: 'REPORTS_AUTOMATION', label: 'Rapports automatiques', value: 1, valueType: 'BOOL', sortOrder: 8 },
     ],
   },
   {

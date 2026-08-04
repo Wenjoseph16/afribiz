@@ -287,6 +287,7 @@ export async function getMyBusiness(ownerId: string) {
     where: { ownerId, deletedAt: null },
     include: {
       settings: true,
+      plan: { select: { id: true, name: true, price: true, currency: true, badge: true } },
       owner: {
         select: {
           id: true,

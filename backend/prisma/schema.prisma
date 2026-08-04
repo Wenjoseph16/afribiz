@@ -1568,6 +1568,8 @@ model Business {
   name                String
   slug                String                     @unique
   type                BusinessType
+  planId              String?
+  plan                SubscriptionPlan?          @relation("BusinessPlan", fields: [planId], references: [id], onDelete: SetNull)
   modules             BusinessModule[]           @default([]) // @deprecated: use moduleAssignments
   moduleAssignments   BusinessModuleAssignment[]
   description         String?
@@ -4320,6 +4322,7 @@ model SubscriptionPlan {
   featured     Boolean                 @default(false)
   badge        String?
   subscribers  BusinessSubscription[]
+  businesses   Business[]              @relation("BusinessPlan")
   logs         SubscriptionLog[]
   createdAt    DateTime                @default(now())
   updatedAt    DateTime                @updatedAt
