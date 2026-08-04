@@ -1,7 +1,7 @@
 import { PrismaClient, BusinessType } from '@prisma/client';
 import { seedAutomationTemplates } from '../src/seed-data/automation-templates';
 import { seedCampaignTemplates } from '../src/seed-data/campaign-templates';
-import { seedTestData } from './seedTestData';
+import { seedRealistic } from './seedRealistic';
 
 
 const prisma = new PrismaClient();
@@ -135,13 +135,14 @@ async function main() {
   // ============================================
   // 5. DONNÉES DE DÉMONSTRATION (rich seed)
   // ============================================
-  await seedTestData();
+  await seedRealistic();
 
   console.log('\n========================================');
   console.log('  Seed completed successfully!');
-  console.log('  ✅ Données de démonstration créées (comptes, business, produits, commandes, workflows).');
-  console.log('  🔑 admin@afribiz.test / client@afribiz.test / business@afribiz.test / dev@afribiz.test');
-  console.log('     (mot de passe : Test1234!)');
+  console.log('  ✅ Seed réaliste : 16 comptes, 6 business vérifiés, tout est connecté.');
+  console.log('  🔑 admin@afribiz.com / client1-5@afribiz.com / dev1-4@afribiz.com');
+  console.log('     resto@ salon@ hotel@ boutique@ btp@ events@ @afribiz.com');
+  console.log('     (mot de passe unique : Afribiz@2026!)');
   console.log('========================================\n');
 }
 
