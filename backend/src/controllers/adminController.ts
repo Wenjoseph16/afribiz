@@ -728,7 +728,7 @@ export const getPlatformSettings = catchAsyncErrors(
 
 export const updatePlatformSettings = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const result = await adminService.updatePlatformSettings(req.body);
+    const result = await adminService.updatePlatformSettings(req.body, req.user?.id);
     res.json({ success: true, data: result });
   }
 );

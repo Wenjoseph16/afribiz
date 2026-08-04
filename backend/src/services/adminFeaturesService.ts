@@ -5,7 +5,13 @@ import { recomputeAllScores } from './afriScoreService';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import { logAdminAction, trackAdminAction, notifyUserWarned, notifyMediaModerated } from './adminEvents';
+import {
+  logAdminAction,
+  trackAdminAction,
+  notifyUserWarned,
+  notifyMediaModerated,
+} from './adminEvents';
+import { resetMaintenanceCache } from '../middlewares/maintenanceMode';
 
 const BACKUP_DIR = path.resolve(process.cwd(), 'backups');
 const BACKUP_MANIFEST = path.join(BACKUP_DIR, 'manifest.json');
@@ -77,6 +83,10 @@ export async function updatePlatformSettings(
       create: { key, value, category: 'general' },
       update: { value },
     });
+  }
+  // Invalidation du cache du middleware de maintenance si le réglage a changé
+  if ('maintenanceMode' in data) {
+    resetMaintenanceCache();
   }
   // Piste d'audit : toute modification de réglages plateforme est tracée
   if (adminUserId) {

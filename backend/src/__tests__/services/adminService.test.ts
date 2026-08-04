@@ -621,13 +621,29 @@ describe('adminService', () => {
       const r = await restoreBackup('b1');
       expect(r.success).toBe(true);
     });
-    test('getPlatformSettings returns mock', async () => {
+    test('getPlatformSettings reads real PlatformSetting table', async () => {
+      jest.spyOn(mockPrisma.platformSetting, 'findMany').mockResolvedValue([
+        { key: 'platformName', value: 'AfriBiz', category: 'general' },
+        { key: 'maintenanceMode', value: false, category: 'general' },
+        { key: 'commissionRate', value: '0.1', category: 'general' },
+        { key: 'registrationOpen', value: true, category: 'general' },
+      ] as any);
       const r = await getPlatSettings();
       expect(r.platformName).toBe('AfriBiz');
+      expect(r.maintenanceMode).toBe(false);
+      expect(r.commissionRate).toBe(0.1); // conversion string → number
+      expect(r.registrationOpen).toBe(true); // conversion string → boolean
     });
-    test('updatePlatformSettings returns success', async () => {
-      const r = await updatePlatSettings({ platformName: 'New' });
-      expect(r.success).toBe(true);
+    test('updatePlatformSettings persists to PlatformSetting table', async () => {
+      jest.spyOn(mockPrisma.platformSetting, 'findMany').mockResolvedValue([
+        { key: 'platformName', value: 'New', category: 'general' },
+      ] as any);
+      (mockPrisma.platformSetting as any).upsert = jest.fn().mockResolvedValue({});
+      const r = await updatePlatSettings({ platformName: 'New' }, 'admin-1');
+      expect(mockPrisma.platformSetting.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { key: 'platformName' } })
+      );
+      expect(r.platformName).toBe('New');
     });
     test('getFraudReports returns empty', async () => {
       const r = await getFraudReports({});

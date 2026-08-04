@@ -18,6 +18,8 @@ import { sanitizeInput } from './middlewares/sanitize';
 import { apiVersioning } from './middlewares/apiVersion';
 import { correlationId } from './middlewares/correlationId';
 import { metricsMiddleware, metricsHandler } from './middlewares/metrics';
+import { maintenanceMode, resetMaintenanceCache } from './middlewares/maintenanceMode';
+import { maintenanceStatus as maintenanceStatusHandler } from './controllers/health';
 import { initTracing } from './lib/tracing';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
@@ -275,6 +277,8 @@ app.use(
 app.get('/api/docs.json', (_req, res) => res.json(swaggerSpec));
 
 app.use('/api/health', healthRoutes);
+// Statut de maintenance public — toujours accessible (exclu du middleware)
+app.get('/api/public/maintenance-status', maintenanceStatusHandler);
 app.get('/api/metrics', metricsHandler);
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/2fa', twoFactorRoutes);
@@ -289,6 +293,9 @@ app.use('/api/whatsapp', whatsappWebhookRoutes);
 // CSRF Protection — double-submit cookie pattern
 // Sets csrf-token cookie on GET; validates x-csrf-token header on POST/PUT/PATCH/DELETE
 app.use('/api', csrfProtection);
+
+// Mode maintenance — 503 partout sauf /admin /auth /health /metrics
+app.use('/api', maintenanceMode);
 
 // Routes
 app.use('/api/users', usersRoutes);

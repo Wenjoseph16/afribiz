@@ -994,7 +994,11 @@ describe('Ads', () => {
       await ctrl.rejectAdminAdCampaign(r, res, mockNext);
       await flush();
 
-      expect(adminService.rejectAdminAdCampaign).toHaveBeenCalledWith('camp-1', 'inappropriate', 'admin-1');
+      expect(adminService.rejectAdminAdCampaign).toHaveBeenCalledWith(
+        'camp-1',
+        'inappropriate',
+        'admin-1'
+      );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -1482,7 +1486,10 @@ describe('Backups & API Keys & Settings', () => {
       await ctrl.updatePlatformSettings(r, res, mockNext);
       await flush();
 
-      expect(adminService.updatePlatformSettings).toHaveBeenCalledWith({ maintenance: true });
+      expect(adminService.updatePlatformSettings).toHaveBeenCalledWith(
+        { maintenance: true },
+        'admin-1'
+      );
       expect(res.json).toHaveBeenCalledWith({ success: true, data: result });
     });
   });

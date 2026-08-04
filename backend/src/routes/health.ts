@@ -4,6 +4,7 @@ import {
   healthDb,
   healthRedis,
   healthStorage,
+  maintenanceStatus,
   testEmail,
 } from '../controllers/health';
 

@@ -56,6 +56,24 @@ export const healthStorage = catchAsyncErrors(async (req: Request, res: Response
     .json({ success: result.status === 'connected', ...result });
 });
 
+/**
+ * Statut de maintenance public — utilisé par la page /maintenance du frontend
+ * pour détecter la fin de la maintenance (polling toutes les 15s).
+ */
+export const maintenanceStatus = catchAsyncErrors(async (_req: Request, res: Response) => {
+  const { prisma } = await import('../lib/db');
+  let maintenance = false;
+  try {
+    const row = await (prisma as any).platformSetting.findUnique({
+      where: { key: 'maintenanceMode' },
+    });
+    maintenance = row?.value === true || row?.value === 'true';
+  } catch {
+    // Erreur de lecture → on considère que la maintenance est levée (éviter un blocage)
+  }
+  res.json({ success: true, maintenance });
+});
+
 export const testEmail = catchAsyncErrors(async (req: Request, res: Response) => {
   const { to, subject, text } = req.body;
   if (!to) throw new AppError('Email requis (to)', 400);

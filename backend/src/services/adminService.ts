@@ -14,6 +14,7 @@ import {
   notifyEscrowRefunded,
   notifyDisputeResolved,
 } from './adminEvents';
+import * as adminFeaturesService from './adminFeaturesService';
 
 export const getDashboardStats = async () => {
   const now = new Date();
@@ -2128,30 +2129,16 @@ export const getFraudReports = async (_query: {
   return { items: [], total: 0, page: _query.page || 1, limit: _query.limit || 10, totalPages: 0 };
 };
 
-export const getPlatformSettings = async () => {
-  return {
-    platformName: 'AfriBiz',
-    supportEmail: 'support@afribiz.net',
-    supportPhone: '+228 90 00 00 00',
-    commissionRate: 0.1,
-    developerCommissionRate: 0.3,
-    currency: 'FCFA',
-    language: 'fr',
-    timezone: 'Africa/Lome',
-    maintenanceMode: false,
-    registrationOpen: true,
-    maxFileUploadSize: 10,
-    emailVerificationRequired: true,
-    phoneVerificationRequired: false,
-    twoFactorEnabled: true,
-    autoBackupEnabled: true,
-    backupFrequency: 'daily',
-    retentionDays: 90,
-  };
+export const getPlatformSettings = async (): Promise<Record<string, any>> => {
+  // Source de vérité unique : table PlatformSetting (impl. réelle dans adminFeaturesService)
+  return adminFeaturesService.getPlatformSettings();
 };
 
-export const updatePlatformSettings = async (data: any) => {
-  return { success: true, message: 'Paramètres mis à jour', data };
+export const updatePlatformSettings = async (
+  data: Record<string, any>,
+  adminUserId?: string
+): Promise<Record<string, any>> => {
+  return adminFeaturesService.updatePlatformSettings(data, adminUserId);
 };
 
 export const getAdminAuditLog = async (query: {

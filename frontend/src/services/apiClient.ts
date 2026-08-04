@@ -66,6 +66,15 @@ export class ApiClient {
           _retry?: boolean;
         };
 
+        // Mode maintenance : rediriger vers la page /maintenance (une seule fois)
+        if (
+          error.response?.status === 503 &&
+          error.response?.data?.error === 'MAINTENANCE_MODE' &&
+          !window.location.pathname.startsWith('/maintenance')
+        ) {
+          window.location.href = '/maintenance';
+        }
+
         // If 401 and not a retry, try to refresh token
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
