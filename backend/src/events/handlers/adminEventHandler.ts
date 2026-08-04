@@ -12,12 +12,24 @@ let registered = false;
  */
 
 const ADMIN_EVENT_TYPES: Record<string, { title: string; link: string }> = {
-  [DomainEventType.REPORT_CREATED]: { title: 'Nouveau signalement', link: '/dashboard/admin/moderation' },
-  [DomainEventType.MODULE_SUBMITTED]: { title: 'Nouveau module à valider', link: '/dashboard/admin/modules' },
+  [DomainEventType.REPORT_CREATED]: {
+    title: 'Nouveau signalement',
+    link: '/dashboard/admin/moderation',
+  },
+  [DomainEventType.MODULE_SUBMITTED]: {
+    title: 'Nouveau module à valider',
+    link: '/dashboard/admin/modules',
+  },
   [DomainEventType.DISPUTE_OPENED]: { title: 'Litige ouvert', link: '/dashboard/admin/disputes' },
-  [DomainEventType.ESCROW_DISPUTED]: { title: 'Escrow litigieux', link: '/dashboard/admin/payments' },
+  [DomainEventType.ESCROW_DISPUTED]: {
+    title: 'Escrow litigieux',
+    link: '/dashboard/admin/payments',
+  },
   [DomainEventType.ESCROW_RELEASED]: { title: 'Escrow libéré', link: '/dashboard/admin/payments' },
-  [DomainEventType.ESCROW_REFUNDED]: { title: 'Escrow remboursé', link: '/dashboard/admin/payments' },
+  [DomainEventType.ESCROW_REFUNDED]: {
+    title: 'Escrow remboursé',
+    link: '/dashboard/admin/payments',
+  },
 };
 
 export function registerAdminEventHandlers(): void {

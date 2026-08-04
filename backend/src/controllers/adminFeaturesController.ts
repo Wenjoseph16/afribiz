@@ -100,7 +100,11 @@ export const createFeatureFlag = catchAsyncErrors(
 
 export const updateFeatureFlag = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const flag = await adminFeaturesService.updateFeatureFlag(req.params.id, req.body, req.user?.id);
+    const flag = await adminFeaturesService.updateFeatureFlag(
+      req.params.id,
+      req.body,
+      req.user?.id
+    );
     res.json({ success: true, data: flag, message: 'Feature flag mis à jour' });
   }
 );
@@ -216,7 +220,11 @@ export const createAutomationRule = catchAsyncErrors(
 
 export const updateAutomationRule = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const rule = await adminFeaturesService.updateAutomationRule(req.params.id, req.body, req.user?.id);
+    const rule = await adminFeaturesService.updateAutomationRule(
+      req.params.id,
+      req.body,
+      req.user?.id
+    );
     res.json({ success: true, data: rule, message: "Règle d'automatisation mise à jour" });
   }
 );

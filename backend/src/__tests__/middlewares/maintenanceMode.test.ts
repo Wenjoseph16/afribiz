@@ -43,9 +43,7 @@ describe('maintenanceMode middleware', () => {
     });
 
     expect(res.status).toHaveBeenCalledWith(503);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: 'MAINTENANCE_MODE' })
-    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'MAINTENANCE_MODE' }));
     expect(next).not.toHaveBeenCalled();
   });
 

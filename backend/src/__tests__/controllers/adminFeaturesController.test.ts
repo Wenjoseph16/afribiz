@@ -305,10 +305,7 @@ describe('createFeatureFlag', () => {
     const next = jest.fn();
     ctrl.createFeatureFlag(req({ body: { key: 'new_flag' } }), res, next);
     await flush();
-    expect(adminFeaturesService.createFeatureFlag).toHaveBeenCalledWith(
-      { key: 'new_flag' },
-      'u1'
-    );
+    expect(adminFeaturesService.createFeatureFlag).toHaveBeenCalledWith({ key: 'new_flag' }, 'u1');
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Feature flag créé' });
   });
 });
@@ -388,10 +385,7 @@ describe('createAdminRole', () => {
     const next = jest.fn();
     ctrl.createAdminRole(req({ body: { name: 'Moderator' } }), res, next);
     await flush();
-    expect(adminFeaturesService.createAdminRole).toHaveBeenCalledWith(
-      { name: 'Moderator' },
-      'u1'
-    );
+    expect(adminFeaturesService.createAdminRole).toHaveBeenCalledWith({ name: 'Moderator' }, 'u1');
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Rôle créé' });
   });
 });
@@ -530,10 +524,7 @@ describe('createAutomationRule', () => {
     const next = jest.fn();
     ctrl.createAutomationRule(req({ body: { name: 'Rule1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.createAutomationRule).toHaveBeenCalledWith(
-      { name: 'Rule1' },
-      'u1'
-    );
+    expect(adminFeaturesService.createAutomationRule).toHaveBeenCalledWith({ name: 'Rule1' }, 'u1');
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data,
@@ -550,9 +541,13 @@ describe('updateAutomationRule', () => {
     const next = jest.fn();
     ctrl.updateAutomationRule(req({ params: { id: 'a1' }, body: { name: 'Updated' } }), res, next);
     await flush();
-    expect(adminFeaturesService.updateAutomationRule).toHaveBeenCalledWith('a1', {
-      name: 'Updated',
-    }, 'u1');
+    expect(adminFeaturesService.updateAutomationRule).toHaveBeenCalledWith(
+      'a1',
+      {
+        name: 'Updated',
+      },
+      'u1'
+    );
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data,

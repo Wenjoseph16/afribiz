@@ -635,9 +635,9 @@ describe('adminService', () => {
       expect(r.registrationOpen).toBe(true); // conversion string → boolean
     });
     test('updatePlatformSettings persists to PlatformSetting table', async () => {
-      jest.spyOn(mockPrisma.platformSetting, 'findMany').mockResolvedValue([
-        { key: 'platformName', value: 'New', category: 'general' },
-      ] as any);
+      jest
+        .spyOn(mockPrisma.platformSetting, 'findMany')
+        .mockResolvedValue([{ key: 'platformName', value: 'New', category: 'general' }] as any);
       (mockPrisma.platformSetting as any).upsert = jest.fn().mockResolvedValue({});
       const r = await updatePlatSettings({ platformName: 'New' }, 'admin-1');
       expect(mockPrisma.platformSetting.upsert).toHaveBeenCalledWith(

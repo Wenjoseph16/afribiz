@@ -515,7 +515,11 @@ export const updateBusinessVerification = async (
       properties: { businessId: id, businessName: business.name, reason: rejectionReason },
     });
   }
-  await notifyBusinessStatusChanged({ businessId: id, status: 'rejected', reason: rejectionReason });
+  await notifyBusinessStatusChanged({
+    businessId: id,
+    status: 'rejected',
+    reason: rejectionReason,
+  });
   return updated;
 };
 
