@@ -20,9 +20,8 @@ export default function MaintenancePage() {
     let cancelled = false;
     const check = async () => {
       try {
-        const res = await fetch(`${getApiBaseUrl()}/health`, { cache: 'no-store' });
-        // Le health check répond toujours 200 ; la maintenance se voit sur /api/*.
-        // On vérifie le flag via un endpoint public dédié pour éviter les faux positifs.
+        // Endpoint public dédié : renvoie { maintenance: boolean } même quand
+        // le mode maintenance est actif (exclu du middleware).
         const flags = await fetch(`${getApiBaseUrl()}/public/maintenance-status`, {
           cache: 'no-store',
         });
@@ -75,14 +74,26 @@ export default function MaintenancePage() {
           Nous revenons dans un instant
         </h1>
         <p className="text-slate-300 text-lg leading-relaxed mb-8">
-          AfriBiz subit actuellement une maintenance pour vous offrir une meilleure
-          expérience. Nos équipes travaillent activement — vos données sont en sécurité.
+          AfriBiz subit actuellement une maintenance pour vous offrir une meilleure expérience. Nos
+          équipes travaillent activement — vos données sont en sécurité.
         </p>
 
         <div className="mx-auto mb-8 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-3 backdrop-blur">
           <svg className="h-5 w-5 text-emerald-400 animate-spin" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-20" />
-            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="3"
+              className="opacity-20"
+            />
+            <path
+              d="M12 2a10 10 0 0 1 10 10"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
           </svg>
           <span className="font-mono text-slate-200 tabular-nums">
             {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}

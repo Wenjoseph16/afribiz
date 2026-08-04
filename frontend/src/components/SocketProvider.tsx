@@ -59,9 +59,9 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       link?: string;
       payload?: Record<string, unknown>;
     }) => {
-      queryClient.invalidateQueries({ queryKey: ['admin'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-moderation'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-disputes'] });
+      // Invalidation globale : couvre tous les hooks admin (stats, moderation,
+      // disputes, modules...) quelles que soient leurs clés de query.
+      queryClient.invalidateQueries();
       if (data?.title) {
         notify({
           title: data.title,

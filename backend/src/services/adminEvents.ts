@@ -82,6 +82,37 @@ export async function notifyBusinessVerified(businessId: string): Promise<void> 
   }
 }
 
+/**
+ * Business suspendu/bloqué/refusé → alerte au propriétaire via le canal SECURITY_ALERT
+ * (pas d'événement dédié négatif ; le message est porté par la description).
+ */
+export async function notifyBusinessStatusChanged(params: {
+  businessId: string;
+  status: 'suspended' | 'blocked' | 'rejected';
+  reason?: string;
+}): Promise<void> {
+  try {
+    const business = await prisma.business.findUnique({
+      where: { id: params.businessId },
+      select: { ownerId: true, name: true },
+    });
+    if (!business?.ownerId) return;
+    const label =
+      params.status === 'suspended'
+        ? 'suspendu'
+        : params.status === 'blocked'
+          ? 'bloqué'
+          : 'refusé';
+    publishSecurityAlert({
+      userId: business.ownerId,
+      device: 'Administration',
+      location: `Votre commerce « ${business.name} » a été ${label}${params.reason ? ' (' + params.reason + ')' : ''}`,
+    });
+  } catch (err) {
+    logger.warn(`[admin] notifyBusinessStatusChanged échoué`, { error: (err as Error).message });
+  }
+}
+
 // ============================================================
 // MODULES (marketplace développeurs)
 // ============================================================
@@ -115,6 +146,7 @@ export async function notifyModuleStatus(
     logger.warn(`[admin] notifyModuleStatus échoué`, { error: (err as Error).message });
   }
 }
+
 
 // ============================================================
 // ADS
@@ -309,9 +341,10 @@ export async function notifyMediaModerated(params: {
     publishSecurityAlert({
       userId: business.ownerId,
       device: 'Modération',
-      location: params.status === 'approved'
-        ? `Votre ${params.target.kind} a été approuvé ✅`
-        : `Votre ${params.target.kind} a été refusé ❌${params.reason ? ' (' + params.reason + ')' : ''}`,
+      location:
+        params.status === 'approved'
+          ? `Votre ${params.target.kind} a été approuvé ✅`
+          : `Votre ${params.target.kind} a été refusé ❌${params.reason ? ' (' + params.reason + ')' : ''}`,
     });
   } catch (err) {
     logger.warn(`[admin] notifyMediaModerated échoué`, { error: (err as Error).message });

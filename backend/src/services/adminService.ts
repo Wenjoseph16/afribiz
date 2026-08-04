@@ -8,6 +8,7 @@ import {
   logAdminAction,
   trackAdminAction,
   notifyBusinessVerified,
+  notifyBusinessStatusChanged,
   notifyModuleStatus,
   notifyAdStatus,
   notifyEscrowReleased,
@@ -453,6 +454,12 @@ export const updateBusinessStatus = async (
   }
   if (action === 'validate' || action === 'verify') {
     await notifyBusinessVerified(id);
+  } else if (action === 'suspend' || action === 'block') {
+    await notifyBusinessStatusChanged({
+      businessId: id,
+      status: action === 'suspend' ? 'suspended' : 'blocked',
+      reason: business.rejectionReason || undefined,
+    });
   }
   return updated;
 };
@@ -508,6 +515,7 @@ export const updateBusinessVerification = async (
       properties: { businessId: id, businessName: business.name, reason: rejectionReason },
     });
   }
+  await notifyBusinessStatusChanged({ businessId: id, status: 'rejected', reason: rejectionReason });
   return updated;
 };
 
