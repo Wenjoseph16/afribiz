@@ -2,15 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  ShoppingCart,
-  Trash2,
-  Plus,
-  Minus,
-  ArrowRight,
-  Store,
-  CreditCard,
-} from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Store, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useCartStore } from '@/stores/cartStore';
@@ -131,9 +123,7 @@ export default function CartPage() {
 
         <div className="space-y-4">
           <Card className="p-5">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Résumé
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Résumé</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-500">
                 <span>

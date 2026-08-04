@@ -37,6 +37,9 @@ export function injectOrders(api: ApiClientMethods) {
   api.getBusinessOrderStats = function () {
     return this.get('/business/orders/stats');
   };
+  api.exportBusinessOrdersCSV = function () {
+    return this.get('/business/orders/export/csv', { responseType: 'blob' });
+  };
   api.getBusinessDebts = function (params?: any) {
     return this.get('/business/orders/debts/list', { params });
   };

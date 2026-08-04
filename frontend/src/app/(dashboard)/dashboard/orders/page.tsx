@@ -118,6 +118,27 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
   const [actionOrder, setActionOrder] = useState<any>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const res = await apiClient.exportBusinessOrdersCSV();
+      const blob = res.data instanceof Blob ? res.data : new Blob([res.data]);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `commandes-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export CSV error:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
   const {
     data: ordersData,
     isLoading,
@@ -278,12 +299,14 @@ export default function OrdersPage() {
         <div className="flex items-center gap-2">
           {isBusiness && (
             <>
-              <Link href="/dashboard/business/orders/export/csv">
-                <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={exporting}>
+                {exporting ? (
+                  <Loader className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
                   <Package className="h-4 w-4 mr-1.5" />
-                  Export CSV
-                </Button>
-              </Link>
+                )}
+                Export CSV
+              </Button>
               <Link href="/dashboard/orders/stats">
                 <Button variant="outline" size="sm">
                   <Package className="h-4 w-4 mr-1.5" />

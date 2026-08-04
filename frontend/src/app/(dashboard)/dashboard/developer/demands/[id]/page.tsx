@@ -150,7 +150,7 @@ export default function DeveloperDemandDetailPage() {
             </p>
 
             {acceptedMatch?.proposalType === 'CUSTOM_BUILD' ? (
-              <Link href="/dashboard/developer/modules/new">
+              <Link href="/dashboard/developer/modules/publish">
                 <Button>
                   <Hammer className="w-4 h-4 mr-2" />
                   Créer le module sur mesure
@@ -164,7 +164,7 @@ export default function DeveloperDemandDetailPage() {
                     Voir le module proposé
                   </Button>
                 </Link>
-                <Link href="/dashboard/developer/modules/new">
+                <Link href="/dashboard/developer/modules/publish">
                   <Button>
                     <Hammer className="w-4 h-4 mr-2" />
                     Créer une nouvelle version

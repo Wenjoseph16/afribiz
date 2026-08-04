@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
 import {
   FileText,
   Upload,
@@ -14,7 +13,6 @@ import {
   FileCheck,
   FileSignature,
   Loader,
-  FolderPlus,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card } from '@/components/ui/Card';
@@ -164,12 +162,6 @@ export default function DocumentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/dashboard/documents/categories">
-            <Button variant="outline" size="sm">
-              <FolderPlus className="h-4 w-4 mr-1.5" />
-              Catégories
-            </Button>
-          </Link>
           <Button size="sm">
             <Upload className="h-4 w-4 mr-1.5" />
             Uploader

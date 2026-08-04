@@ -101,6 +101,7 @@ export interface ApiClientMethods {
   updateBusinessOrderPayment(id: string, data: any): Promise<any>;
   deleteBusinessOrder(id: string): Promise<any>;
   getBusinessOrderStats(): Promise<any>;
+  exportBusinessOrdersCSV(): Promise<any>;
   getBusinessDebts(params?: any): Promise<any>;
   payBusinessDebt(id: string, amount: number): Promise<any>;
   settleBusinessDebt(id: string): Promise<any>;
