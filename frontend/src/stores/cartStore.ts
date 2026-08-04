@@ -90,7 +90,29 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: 'afribiz-cart',
+      // IMPORTANT : le `version` est COUPLÉ AU SEED. Si le seed backend change les
+      // IDs des produits (régénération), incrémenter ce numéro pour purger les
+      // paniers locaux aux IDs obsolètes (le migrate filtre + purge en une passe).
+      version: 2,
       partialize: (state) => ({ items: state.items }),
+      // Purge les items fantômes (produits supprimés / IDs d'anciens seeds)
+      // pour que le badge ne montre plus jamais un panier vide de contenu.
+      migrate: (persisted: any) => {
+        const items: CartItem[] = Array.isArray(persisted?.items)
+          ? persisted.items.filter(
+              (i: any) =>
+                i &&
+                typeof i.productId === 'string' &&
+                i.productId.length > 0 &&
+                typeof i.name === 'string' &&
+                typeof i.price === 'number' &&
+                Number.isFinite(i.price) &&
+                i.price >= 0 &&
+                typeof i.businessId === 'string'
+            )
+          : [];
+        return { items, open: false };
+      },
     }
   )
 );
