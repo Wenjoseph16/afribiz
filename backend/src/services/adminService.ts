@@ -503,7 +503,12 @@ export const updateBusinessPlan = async (
       adminUserId,
       action: 'ADMIN_BUSINESS_ACTION',
       targetUserId: business.ownerId,
-      metadata: { action: 'PLAN_CHANGED', planId: planId || null, businessName: business.name, businessId },
+      metadata: {
+        action: 'PLAN_CHANGED',
+        planId: planId || null,
+        businessName: business.name,
+        businessId,
+      },
     });
   }
 

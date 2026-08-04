@@ -71,7 +71,11 @@ router.get(
   cacheResponse({ prefix: 'copilot-business-health', ttl: 300_000 }),
   analyticsController.getBusinessHealth
 );
-router.post('/copilot/check-and-notify', copilotGuard, analyticsController.triggerCopilotNotifications);
+router.post(
+  '/copilot/check-and-notify',
+  copilotGuard,
+  analyticsController.triggerCopilotNotifications
+);
 router.get('/copilot/module/:moduleKey/tips', copilotGuard, analyticsController.getModuleTips);
 
 // ── Data Hub Routes ──

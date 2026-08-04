@@ -540,12 +540,7 @@ export async function importProducts(ownerId: string, products: any[]) {
   const productCount = await prisma.product.count({
     where: { businessId: business.id, deletedAt: null },
   });
-  await checkPlanLimit(
-    business.id,
-    'PRODUCTS_LIMIT',
-    productCount + products.length,
-    'produits'
-  );
+  await checkPlanLimit(business.id, 'PRODUCTS_LIMIT', productCount + products.length, 'produits');
   let imported = 0;
   const errors: { row: number; error: string }[] = [];
 

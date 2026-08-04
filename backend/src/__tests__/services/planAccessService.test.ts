@@ -50,21 +50,19 @@ describe('planAccessService', () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
     (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
 
-    await expect(
-      checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 5, 'produits')
-    ).resolves.toBeUndefined();
+    await expect(checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 5, 'produits')).resolves.toBeUndefined();
   });
 
   it('bloque quand la limite du plan est atteinte', async () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
     (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
 
-    await expect(
-      checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 10, 'produits')
-    ).rejects.toThrow(AppError);
-    await expect(
-      checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 10, 'produits')
-    ).rejects.toThrow(/Limite du plan/);
+    await expect(checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 10, 'produits')).rejects.toThrow(
+      AppError
+    );
+    await expect(checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 10, 'produits')).rejects.toThrow(
+      /Limite du plan/
+    );
   });
 
   it('laisse passer quand le privilège est illimité (-1)', async () => {

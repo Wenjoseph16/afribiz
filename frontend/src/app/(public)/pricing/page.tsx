@@ -201,12 +201,10 @@ export default function PricingPage() {
     };
   }, []);
 
-  const transactionPct = liveCommissions?.transaction != null
-    ? `${Number(liveCommissions.transaction) * 100}%`
-    : '1%';
-  const escrowPct = liveCommissions?.escrow != null
-    ? `${Number(liveCommissions.escrow) * 100}%`
-    : '2%';
+  const transactionPct =
+    liveCommissions?.transaction != null ? `${Number(liveCommissions.transaction) * 100}%` : '1%';
+  const escrowPct =
+    liveCommissions?.escrow != null ? `${Number(liveCommissions.escrow) * 100}%` : '2%';
 
   const highlights = [
     {

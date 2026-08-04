@@ -10,7 +10,11 @@ jest.mock('framer-motion', () => ({
 
 // Mock lucide-react : les icônes sont des composants simples
 jest.mock('lucide-react', () => {
-  const Icon = ({ children, ...props }: any) => <svg data-testid="icon" {...props}>{children}</svg>;
+  const Icon = ({ children, ...props }: any) => (
+    <svg data-testid="icon" {...props}>
+      {children}
+    </svg>
+  );
   return new Proxy(
     { default: Icon },
     {
@@ -38,46 +42,47 @@ jest.mock('@/components/layout/Footer', () => ({
 
 describe('Page /pricing (dynamique depuis /api/plans)', () => {
   beforeEach(() => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            success: true,
-            data: {
-              plans: [
-                {
-                  id: 'platform-free',
-                  name: 'Gratuit',
-                  price: 0,
-                  description: 'Pour démarrer sans risque',
-                  benefits: ['Profil business public complet', 'Tous les modules de gestion'],
-                  privileges: [{ code: 'COMMISSION_TRANSACTION', value: 1 }],
-                  badge: '🔥 Populaire',
-                },
-                {
-                  id: 'platform-afribiz',
-                  name: 'AfriBiz',
-                  price: 5000,
-                  description: "L'abonnement unique, tout inclus",
-                  benefits: ['100% des modules, sans limite', 'Support prioritaire'],
-                  privileges: [{ code: 'COMMISSION_TRANSACTION', value: 0.5 }],
-                  badge: '🚀 Recommandé',
-                },
-                {
-                  id: 'platform-copilot',
-                  name: 'Copilot IA',
-                  price: 3000,
-                  description: 'Votre assistant virtuel intelligent',
-                  benefits: ['Alertes WhatsApp automatiques'],
-                  privileges: [{ code: 'COPILOT_ACCESS', value: 1 }],
-                  badge: '✨ Option IA',
-                },
-              ],
-              commissions: { transaction: 0.01, escrow: 0.02 },
-            },
-          }),
-      }) as any
+    global.fetch = jest.fn(
+      () =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              data: {
+                plans: [
+                  {
+                    id: 'platform-free',
+                    name: 'Gratuit',
+                    price: 0,
+                    description: 'Pour démarrer sans risque',
+                    benefits: ['Profil business public complet', 'Tous les modules de gestion'],
+                    privileges: [{ code: 'COMMISSION_TRANSACTION', value: 1 }],
+                    badge: '🔥 Populaire',
+                  },
+                  {
+                    id: 'platform-afribiz',
+                    name: 'AfriBiz',
+                    price: 5000,
+                    description: "L'abonnement unique, tout inclus",
+                    benefits: ['100% des modules, sans limite', 'Support prioritaire'],
+                    privileges: [{ code: 'COMMISSION_TRANSACTION', value: 0.5 }],
+                    badge: '🚀 Recommandé',
+                  },
+                  {
+                    id: 'platform-copilot',
+                    name: 'Copilot IA',
+                    price: 3000,
+                    description: 'Votre assistant virtuel intelligent',
+                    benefits: ['Alertes WhatsApp automatiques'],
+                    privileges: [{ code: 'COPILOT_ACCESS', value: 1 }],
+                    badge: '✨ Option IA',
+                  },
+                ],
+                commissions: { transaction: 0.01, escrow: 0.02 },
+              },
+            }),
+        }) as any
     ) as any;
   });
 

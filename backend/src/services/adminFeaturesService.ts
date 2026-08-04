@@ -12,6 +12,7 @@ import {
   notifyMediaModerated,
 } from './adminEvents';
 import { resetMaintenanceCache } from '../middlewares/maintenanceMode';
+import { invalidatePlanCache } from './planAccessService';
 
 const BACKUP_DIR = path.resolve(process.cwd(), 'backups');
 const BACKUP_MANIFEST = path.join(BACKUP_DIR, 'manifest.json');
@@ -1338,13 +1339,17 @@ export async function createSubscriptionPlan(data: {
 export async function updateSubscriptionPlan(id: string, data: any) {
   const plan = await prisma.subscriptionPlan.findUnique({ where: { id } });
   if (!plan) throw new AppError('Subscription plan not found', 404);
-  return prisma.subscriptionPlan.update({ where: { id }, data: data as any });
+  const updated = await prisma.subscriptionPlan.update({ where: { id }, data: data as any });
+  // Les limites/privilèges changent → invalider le cache des plans
+  invalidatePlanCache();
+  return updated;
 }
 
 export async function deleteSubscriptionPlan(id: string) {
   const plan = await prisma.subscriptionPlan.findUnique({ where: { id } });
   if (!plan) throw new AppError('Subscription plan not found', 404);
   await prisma.subscriptionPlan.delete({ where: { id } });
+  invalidatePlanCache();
   return { message: 'Subscription plan deleted' };
 }
 
@@ -1361,7 +1366,9 @@ export async function addPlanPrivilege(
 ) {
   const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } });
   if (!plan) throw new AppError('Subscription plan not found', 404);
-  return prisma.subscriptionPrivilege.create({ data: { planId, ...data } });
+  const priv = await prisma.subscriptionPrivilege.create({ data: { planId, ...data } });
+  invalidatePlanCache();
+  return priv;
 }
 
 export async function updatePlanPrivilege(
@@ -1377,13 +1384,16 @@ export async function updatePlanPrivilege(
 ) {
   const priv = await prisma.subscriptionPrivilege.findUnique({ where: { id } });
   if (!priv) throw new AppError('Privilege not found', 404);
-  return prisma.subscriptionPrivilege.update({ where: { id }, data });
+  const updated = await prisma.subscriptionPrivilege.update({ where: { id }, data });
+  invalidatePlanCache();
+  return updated;
 }
 
 export async function removePlanPrivilege(id: string) {
   const priv = await prisma.subscriptionPrivilege.findUnique({ where: { id } });
   if (!priv) throw new AppError('Privilege not found', 404);
   await prisma.subscriptionPrivilege.delete({ where: { id } });
+  invalidatePlanCache();
   return { message: 'Privilege removed' };
 }
 
