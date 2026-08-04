@@ -120,7 +120,9 @@ export async function notifyModuleStatus(
 // ADS
 // ============================================================
 
-async function getAdOwnerUserId(campaignId: string): Promise<{ userId: string | null; name: string }> {
+async function getAdOwnerUserId(
+  campaignId: string
+): Promise<{ userId: string | null; name: string }> {
   const camp = await prisma.adCampaign.findUnique({
     where: { id: campaignId },
     select: { name: true, businessId: true, companyName: true },
@@ -131,7 +133,8 @@ async function getAdOwnerUserId(campaignId: string): Promise<{ userId: string | 
       where: { id: camp.businessId },
       select: { ownerId: true },
     });
-    if (business?.ownerId) return { userId: business.ownerId, name: camp.name || camp.companyName || '' };
+    if (business?.ownerId)
+      return { userId: business.ownerId, name: camp.name || camp.companyName || '' };
   }
   return { userId: null, name: camp.name || camp.companyName || '' };
 }
@@ -147,7 +150,12 @@ export async function notifyAdStatus(
     if (status === 'approved') {
       publishAdApproved({ userId, adId: campaignId, businessName: name });
     } else {
-      publishAdRejected({ userId, adId: campaignId, businessName: name, reason: reason || 'Refusée' });
+      publishAdRejected({
+        userId,
+        adId: campaignId,
+        businessName: name,
+        reason: reason || 'Refusée',
+      });
     }
   } catch (err) {
     logger.warn(`[admin] notifyAdStatus échoué`, { error: (err as Error).message });
@@ -190,8 +198,7 @@ export async function notifyEscrowReleased(escrowId: string): Promise<void> {
     const ctx = await getEscrowContext(escrowId);
     if (!ctx) return;
     const amount = String(ctx.amount);
-    if (ctx.sellerUserId)
-      publishEscrowReleased({ userId: ctx.sellerUserId, escrowId, amount });
+    if (ctx.sellerUserId) publishEscrowReleased({ userId: ctx.sellerUserId, escrowId, amount });
     if (ctx.buyerUserId && ctx.buyerUserId !== ctx.sellerUserId)
       publishEscrowReleased({ userId: ctx.buyerUserId, escrowId, amount });
   } catch (err) {
@@ -204,8 +211,7 @@ export async function notifyEscrowRefunded(escrowId: string): Promise<void> {
     const ctx = await getEscrowContext(escrowId);
     if (!ctx) return;
     const amount = String(ctx.amount);
-    if (ctx.sellerUserId)
-      publishEscrowRefunded({ userId: ctx.sellerUserId, escrowId, amount });
+    if (ctx.sellerUserId) publishEscrowRefunded({ userId: ctx.sellerUserId, escrowId, amount });
     if (ctx.buyerUserId && ctx.buyerUserId !== ctx.sellerUserId)
       publishEscrowRefunded({ userId: ctx.buyerUserId, escrowId, amount });
   } catch (err) {
@@ -239,10 +245,7 @@ export async function notifyDisputeResolved(escrowId: string): Promise<void> {
 // AVERTISSEMENTS (warnings)
 // ============================================================
 
-export async function notifyUserWarned(params: {
-  userId: string;
-  reason: string;
-}): Promise<void> {
+export async function notifyUserWarned(params: { userId: string; reason: string }): Promise<void> {
   try {
     publishSecurityAlert({
       userId: params.userId,
@@ -251,6 +254,67 @@ export async function notifyUserWarned(params: {
     });
   } catch (err) {
     logger.warn(`[admin] notifyUserWarned échoué`, { error: (err as Error).message });
+  }
+}
+
+// ============================================================
+// MODÉRATION MÉDIA (stories / shorts / lives)
+// ============================================================
+
+export type MediaTarget =
+  | { kind: 'story'; id: string }
+  | { kind: 'short'; id: string }
+  | { kind: 'live'; id: string };
+
+/**
+ * Notifie le créateur d'un média modéré (story/short/live).
+ * On cherche le business owner via la relation du média.
+ */
+export async function notifyMediaModerated(params: {
+  target: MediaTarget;
+  status: 'approved' | 'rejected';
+  reason?: string;
+}): Promise<void> {
+  try {
+    let businessId: string | undefined;
+    if (params.target.kind === 'story') {
+      businessId = (
+        await prisma.story.findUnique({
+          where: { id: params.target.id },
+          select: { businessId: true },
+        })
+      )?.businessId;
+    } else if (params.target.kind === 'short') {
+      businessId = (
+        await prisma.short.findUnique({
+          where: { id: params.target.id },
+          select: { businessId: true },
+        })
+      )?.businessId;
+    } else {
+      businessId = (
+        await prisma.live.findUnique({
+          where: { id: params.target.id },
+          select: { businessId: true },
+        })
+      )?.businessId;
+    }
+    if (!businessId) return;
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { ownerId: true, name: true },
+    });
+    if (!business) return;
+    // On réutilise le canal SECURITY_ALERT pour un message de modération clair.
+    publishSecurityAlert({
+      userId: business.ownerId,
+      device: 'Modération',
+      location: params.status === 'approved'
+        ? `Votre ${params.target.kind} a été approuvé ✅`
+        : `Votre ${params.target.kind} a été refusé ❌${params.reason ? ' (' + params.reason + ')' : ''}`,
+    });
+  } catch (err) {
+    logger.warn(`[admin] notifyMediaModerated échoué`, { error: (err as Error).message });
   }
 }
 

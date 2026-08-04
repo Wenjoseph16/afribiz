@@ -1067,7 +1067,10 @@ export const arbitrateAdminEscrow = async (
     });
     await trackAdminAction({
       adminUserId,
-      eventName: decision === 'release' ? 'ADMIN_ESCROW_ARBITRATED_RELEASE' : 'ADMIN_ESCROW_ARBITRATED_REFUND',
+      eventName:
+        decision === 'release'
+          ? 'ADMIN_ESCROW_ARBITRATED_RELEASE'
+          : 'ADMIN_ESCROW_ARBITRATED_REFUND',
       properties: { escrowId: id, decision, amount: Number(escrow.amount) },
     });
   }

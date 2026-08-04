@@ -80,11 +80,7 @@ export const getBusinessById = catchAsyncErrors(
 export const updateBusinessStatus = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { action } = req.body;
-    const business = await adminService.updateBusinessStatus(
-      req.params.id,
-      action,
-      req.user?.id
-    );
+    const business = await adminService.updateBusinessStatus(req.params.id, action, req.user?.id);
     res.json({ success: true, data: business, message: 'Statut mis à jour' });
   }
 );
@@ -132,11 +128,7 @@ export const getDeveloperById = catchAsyncErrors(
 export const updateDeveloperStatus = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { action } = req.body;
-    const developer = await adminService.updateDeveloperStatus(
-      req.params.id,
-      action,
-      req.user?.id
-    );
+    const developer = await adminService.updateDeveloperStatus(req.params.id, action, req.user?.id);
     res.json({ success: true, data: developer, message: 'Statut mis à jour' });
   }
 );
@@ -244,11 +236,7 @@ export const refundAdminEscrow = catchAsyncErrors(
 export const arbitrateAdminEscrow = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { decision } = req.body;
-    const result = await adminService.arbitrateAdminEscrow(
-      req.params.id,
-      decision,
-      req.user?.id
-    );
+    const result = await adminService.arbitrateAdminEscrow(req.params.id, decision, req.user?.id);
     res.json({ success: true, data: result, message: 'Arbitrage effectué' });
   }
 );
@@ -475,11 +463,7 @@ export const validateAdminAdCampaign = catchAsyncErrors(
 export const rejectAdminAdCampaign = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { reason } = req.body;
-    const result = await adminService.rejectAdminAdCampaign(
-      req.params.id,
-      reason,
-      req.user?.id
-    );
+    const result = await adminService.rejectAdminAdCampaign(req.params.id, reason, req.user?.id);
     res.json({ success: true, data: result, message: 'Campagne refusée' });
   }
 );
@@ -487,11 +471,7 @@ export const rejectAdminAdCampaign = catchAsyncErrors(
 export const suspendAdminAdCampaign = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { reason } = req.body;
-    const result = await adminService.suspendAdminAdCampaign(
-      req.params.id,
-      reason,
-      req.user?.id
-    );
+    const result = await adminService.suspendAdminAdCampaign(req.params.id, reason, req.user?.id);
     res.json({ success: true, data: result, message: 'Campagne suspendue' });
   }
 );

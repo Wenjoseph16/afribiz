@@ -188,7 +188,7 @@ describe('Dashboard & Users', () => {
       await ctrl.updateUserStatus(r, res, mockNext);
       await flush();
 
-      expect(adminService.updateUserStatus).toHaveBeenCalledWith('u1', 'suspend');
+      expect(adminService.updateUserStatus).toHaveBeenCalledWith('u1', 'suspend', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: user,
@@ -262,7 +262,7 @@ describe('Businesses', () => {
       await ctrl.updateBusinessStatus(r, res, mockNext);
       await flush();
 
-      expect(adminService.updateBusinessStatus).toHaveBeenCalledWith('b1', 'approve');
+      expect(adminService.updateBusinessStatus).toHaveBeenCalledWith('b1', 'approve', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: business,
@@ -287,7 +287,8 @@ describe('Businesses', () => {
       expect(adminService.updateBusinessVerification).toHaveBeenCalledWith(
         'b1',
         'verify',
-        undefined
+        undefined,
+        'admin-1'
       );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
@@ -311,7 +312,8 @@ describe('Businesses', () => {
       expect(adminService.updateBusinessVerification).toHaveBeenCalledWith(
         'b1',
         'reject',
-        'docs invalides'
+        'docs invalides',
+        'admin-1'
       );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
@@ -371,7 +373,7 @@ describe('Developers & Modules', () => {
       await ctrl.updateDeveloperStatus(r, res, mockNext);
       await flush();
 
-      expect(adminService.updateDeveloperStatus).toHaveBeenCalledWith('d1', 'approve');
+      expect(adminService.updateDeveloperStatus).toHaveBeenCalledWith('d1', 'approve', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: developer,
@@ -410,7 +412,7 @@ describe('Developers & Modules', () => {
       await ctrl.updateModuleStatus(r, res, mockNext);
       await flush();
 
-      expect(adminService.updateModuleStatus).toHaveBeenCalledWith('m1', 'approve');
+      expect(adminService.updateModuleStatus).toHaveBeenCalledWith('m1', 'approve', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: mod,
@@ -552,7 +554,7 @@ describe('Escrows', () => {
       await ctrl.releaseAdminEscrow(r, res, mockNext);
       await flush();
 
-      expect(adminService.releaseAdminEscrow).toHaveBeenCalledWith('e1');
+      expect(adminService.releaseAdminEscrow).toHaveBeenCalledWith('e1', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -571,7 +573,7 @@ describe('Escrows', () => {
       await ctrl.refundAdminEscrow(r, res, mockNext);
       await flush();
 
-      expect(adminService.refundAdminEscrow).toHaveBeenCalledWith('e1');
+      expect(adminService.refundAdminEscrow).toHaveBeenCalledWith('e1', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -590,7 +592,7 @@ describe('Escrows', () => {
       await ctrl.arbitrateAdminEscrow(r, res, mockNext);
       await flush();
 
-      expect(adminService.arbitrateAdminEscrow).toHaveBeenCalledWith('e1', 'buyer');
+      expect(adminService.arbitrateAdminEscrow).toHaveBeenCalledWith('e1', 'buyer', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -644,7 +646,7 @@ describe('Subscriptions', () => {
       await ctrl.cancelAdminSubscription(r, res, mockNext);
       await flush();
 
-      expect(adminService.cancelAdminSubscription).toHaveBeenCalledWith('s1');
+      expect(adminService.cancelAdminSubscription).toHaveBeenCalledWith('s1', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -663,7 +665,7 @@ describe('Subscriptions', () => {
       await ctrl.renewAdminSubscription(r, res, mockNext);
       await flush();
 
-      expect(adminService.renewAdminSubscription).toHaveBeenCalledWith('s1');
+      expect(adminService.renewAdminSubscription).toHaveBeenCalledWith('s1', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -727,7 +729,7 @@ describe('Security', () => {
       await ctrl.revokeAdminSession(r, res, mockNext);
       await flush();
 
-      expect(adminService.revokeAdminSession).toHaveBeenCalledWith('sess-1');
+      expect(adminService.revokeAdminSession).toHaveBeenCalledWith('sess-1', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: null,
@@ -845,7 +847,12 @@ describe('Disputes', () => {
       await ctrl.updateDisputeStatus(r, res, mockNext);
       await flush();
 
-      expect(adminService.updateDisputeStatus).toHaveBeenCalledWith('disp-1', 'close');
+      expect(adminService.updateDisputeStatus).toHaveBeenCalledWith(
+        'disp-1',
+        'close',
+        'admin-1',
+        undefined
+      );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -968,7 +975,7 @@ describe('Ads', () => {
       await ctrl.validateAdminAdCampaign(r, res, mockNext);
       await flush();
 
-      expect(adminService.validateAdminAdCampaign).toHaveBeenCalledWith('camp-1');
+      expect(adminService.validateAdminAdCampaign).toHaveBeenCalledWith('camp-1', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -987,7 +994,7 @@ describe('Ads', () => {
       await ctrl.rejectAdminAdCampaign(r, res, mockNext);
       await flush();
 
-      expect(adminService.rejectAdminAdCampaign).toHaveBeenCalledWith('camp-1', 'inappropriate');
+      expect(adminService.rejectAdminAdCampaign).toHaveBeenCalledWith('camp-1', 'inappropriate', 'admin-1');
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: result,
@@ -1008,7 +1015,8 @@ describe('Ads', () => {
 
       expect(adminService.suspendAdminAdCampaign).toHaveBeenCalledWith(
         'camp-1',
-        'policy violation'
+        'policy violation',
+        'admin-1'
       );
       expect(res.json).toHaveBeenCalledWith({
         success: true,

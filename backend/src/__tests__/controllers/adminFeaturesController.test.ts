@@ -182,10 +182,13 @@ describe('updatePlatformSettings', () => {
       next
     );
     await flush();
-    expect(adminFeaturesService.updatePlatformSettings).toHaveBeenCalledWith({
-      transactionCommissionRate: '0.15',
-      currency: 'XOF',
-    });
+    expect(adminFeaturesService.updatePlatformSettings).toHaveBeenCalledWith(
+      {
+        transactionCommissionRate: '0.15',
+        currency: 'XOF',
+      },
+      'u1'
+    );
     expect(logMonetizationChanges).toHaveBeenCalledWith(
       [
         { key: 'transactionCommissionRate', oldValue: '0.1', newValue: '0.15' },
@@ -302,7 +305,10 @@ describe('createFeatureFlag', () => {
     const next = jest.fn();
     ctrl.createFeatureFlag(req({ body: { key: 'new_flag' } }), res, next);
     await flush();
-    expect(adminFeaturesService.createFeatureFlag).toHaveBeenCalledWith({ key: 'new_flag' });
+    expect(adminFeaturesService.createFeatureFlag).toHaveBeenCalledWith(
+      { key: 'new_flag' },
+      'u1'
+    );
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Feature flag créé' });
   });
 });
@@ -315,7 +321,11 @@ describe('updateFeatureFlag', () => {
     const next = jest.fn();
     ctrl.updateFeatureFlag(req({ params: { id: 'f1' }, body: { enabled: true } }), res, next);
     await flush();
-    expect(adminFeaturesService.updateFeatureFlag).toHaveBeenCalledWith('f1', { enabled: true });
+    expect(adminFeaturesService.updateFeatureFlag).toHaveBeenCalledWith(
+      'f1',
+      { enabled: true },
+      'u1'
+    );
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data,
@@ -331,7 +341,7 @@ describe('deleteFeatureFlag', () => {
     const next = jest.fn();
     ctrl.deleteFeatureFlag(req({ params: { id: 'f1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.deleteFeatureFlag).toHaveBeenCalledWith('f1');
+    expect(adminFeaturesService.deleteFeatureFlag).toHaveBeenCalledWith('f1', 'u1');
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data: null,
@@ -348,7 +358,7 @@ describe('toggleFeatureFlag', () => {
     const next = jest.fn();
     ctrl.toggleFeatureFlag(req({ params: { id: 'f1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.toggleFeatureFlag).toHaveBeenCalledWith('f1');
+    expect(adminFeaturesService.toggleFeatureFlag).toHaveBeenCalledWith('f1', 'u1');
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Feature flag basculé' });
   });
 });
@@ -378,7 +388,10 @@ describe('createAdminRole', () => {
     const next = jest.fn();
     ctrl.createAdminRole(req({ body: { name: 'Moderator' } }), res, next);
     await flush();
-    expect(adminFeaturesService.createAdminRole).toHaveBeenCalledWith({ name: 'Moderator' });
+    expect(adminFeaturesService.createAdminRole).toHaveBeenCalledWith(
+      { name: 'Moderator' },
+      'u1'
+    );
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Rôle créé' });
   });
 });
@@ -391,7 +404,11 @@ describe('updateAdminRole', () => {
     const next = jest.fn();
     ctrl.updateAdminRole(req({ params: { id: 'r1' }, body: { name: 'Admin' } }), res, next);
     await flush();
-    expect(adminFeaturesService.updateAdminRole).toHaveBeenCalledWith('r1', { name: 'Admin' });
+    expect(adminFeaturesService.updateAdminRole).toHaveBeenCalledWith(
+      'r1',
+      { name: 'Admin' },
+      'u1'
+    );
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Rôle mis à jour' });
   });
 });
@@ -403,7 +420,7 @@ describe('deleteAdminRole', () => {
     const next = jest.fn();
     ctrl.deleteAdminRole(req({ params: { id: 'r1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.deleteAdminRole).toHaveBeenCalledWith('r1');
+    expect(adminFeaturesService.deleteAdminRole).toHaveBeenCalledWith('r1', 'u1');
     expect(res.json).toHaveBeenCalledWith({ success: true, data: null, message: 'Rôle supprimé' });
   });
 });
@@ -429,7 +446,7 @@ describe('assignRoleToUser', () => {
     const next = jest.fn();
     ctrl.assignRoleToUser(req({ body: { userId: 'u1', roleId: 'r1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.assignRoleToUser).toHaveBeenCalledWith('u1', 'r1');
+    expect(adminFeaturesService.assignRoleToUser).toHaveBeenCalledWith('u1', 'r1', 'u1');
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Rôle assigné' });
   });
 });
@@ -441,7 +458,7 @@ describe('removeRoleFromUser', () => {
     const next = jest.fn();
     ctrl.removeRoleFromUser(req({ body: { userId: 'u1', roleId: 'r1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.removeRoleFromUser).toHaveBeenCalledWith('u1', 'r1');
+    expect(adminFeaturesService.removeRoleFromUser).toHaveBeenCalledWith('u1', 'r1', 'u1');
     expect(res.json).toHaveBeenCalledWith({ success: true, data: null, message: 'Rôle retiré' });
   });
 });
@@ -513,7 +530,10 @@ describe('createAutomationRule', () => {
     const next = jest.fn();
     ctrl.createAutomationRule(req({ body: { name: 'Rule1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.createAutomationRule).toHaveBeenCalledWith({ name: 'Rule1' });
+    expect(adminFeaturesService.createAutomationRule).toHaveBeenCalledWith(
+      { name: 'Rule1' },
+      'u1'
+    );
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data,
@@ -532,7 +552,7 @@ describe('updateAutomationRule', () => {
     await flush();
     expect(adminFeaturesService.updateAutomationRule).toHaveBeenCalledWith('a1', {
       name: 'Updated',
-    });
+    }, 'u1');
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data,
@@ -548,7 +568,7 @@ describe('deleteAutomationRule', () => {
     const next = jest.fn();
     ctrl.deleteAutomationRule(req({ params: { id: 'a1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.deleteAutomationRule).toHaveBeenCalledWith('a1');
+    expect(adminFeaturesService.deleteAutomationRule).toHaveBeenCalledWith('a1', 'u1');
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data: null,
@@ -565,7 +585,7 @@ describe('toggleAutomationRule', () => {
     const next = jest.fn();
     ctrl.toggleAutomationRule(req({ params: { id: 'a1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.toggleAutomationRule).toHaveBeenCalledWith('a1');
+    expect(adminFeaturesService.toggleAutomationRule).toHaveBeenCalledWith('a1', 'u1');
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data,
@@ -672,7 +692,11 @@ describe('updateCmsPage', () => {
     const next = jest.fn();
     ctrl.updateCmsPage(req({ params: { id: 'p1' }, body: { title: 'Updated' } }), res, next);
     await flush();
-    expect(adminFeaturesService.updateCmsPage).toHaveBeenCalledWith('p1', { title: 'Updated' });
+    expect(adminFeaturesService.updateCmsPage).toHaveBeenCalledWith(
+      'p1',
+      { title: 'Updated' },
+      'u1'
+    );
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Page CMS mise à jour' });
   });
 });
@@ -684,7 +708,7 @@ describe('deleteCmsPage', () => {
     const next = jest.fn();
     ctrl.deleteCmsPage(req({ params: { id: 'p1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.deleteCmsPage).toHaveBeenCalledWith('p1');
+    expect(adminFeaturesService.deleteCmsPage).toHaveBeenCalledWith('p1', 'u1');
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data: null,
@@ -701,7 +725,7 @@ describe('publishCmsPage', () => {
     const next = jest.fn();
     ctrl.publishCmsPage(req({ params: { id: 'p1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.publishCmsPage).toHaveBeenCalledWith('p1');
+    expect(adminFeaturesService.publishCmsPage).toHaveBeenCalledWith('p1', 'u1');
     expect(res.json).toHaveBeenCalledWith({ success: true, data, message: 'Page CMS publiée' });
   });
 });
@@ -1404,7 +1428,7 @@ describe('revokeWarning', () => {
     const next = jest.fn();
     ctrl.revokeWarning(req({ params: { id: 'w1' } }), res, next);
     await flush();
-    expect(adminFeaturesService.revokeWarning).toHaveBeenCalledWith('w1');
+    expect(adminFeaturesService.revokeWarning).toHaveBeenCalledWith('w1', 'u1');
     expect(res.json).toHaveBeenCalledWith({
       success: true,
       data: null,

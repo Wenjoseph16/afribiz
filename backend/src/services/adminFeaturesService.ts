@@ -5,6 +5,7 @@ import { recomputeAllScores } from './afriScoreService';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { logAdminAction, trackAdminAction, notifyUserWarned, notifyMediaModerated } from './adminEvents';
 
 const BACKUP_DIR = path.resolve(process.cwd(), 'backups');
 const BACKUP_MANIFEST = path.join(BACKUP_DIR, 'manifest.json');
@@ -67,13 +68,28 @@ export async function getPlatformSettings(): Promise<Record<string, any>> {
 }
 
 export async function updatePlatformSettings(
-  data: Record<string, any>
+  data: Record<string, any>,
+  adminUserId?: string
 ): Promise<Record<string, any>> {
   for (const [key, value] of Object.entries(data)) {
     await (prisma as any).platformSetting.upsert({
       where: { key },
       create: { key, value, category: 'general' },
       update: { value },
+    });
+  }
+  // Piste d'audit : toute modification de réglages plateforme est tracée
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_SETTINGS_CHANGE',
+      reason: `Paramètres plateforme modifiés: ${Object.keys(data).join(', ')}`,
+      metadata: { keys: Object.keys(data) },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_SETTINGS_UPDATED',
+      properties: { keys: Object.keys(data) },
     });
   }
   return getPlatformSettings();
@@ -127,17 +143,31 @@ export async function getFeatureFlag(key: string) {
   return flag;
 }
 
-export async function createFeatureFlag(data: {
-  key: string;
-  label: string;
-  description?: string;
-  enabled?: boolean;
-  scope?: string;
-  scopeValue?: string;
-}) {
+export async function createFeatureFlag(
+  data: {
+    key: string;
+    label: string;
+    description?: string;
+    enabled?: boolean;
+    scope?: string;
+    scopeValue?: string;
+  },
+  adminUserId?: string
+) {
   const existing = await prisma.featureFlag.findUnique({ where: { key: data.key } });
   if (existing) throw new AppError('Feature flag with this key already exists', 400);
-  return prisma.featureFlag.create({ data: { ...data, scope: (data.scope as any) || 'GLOBAL' } });
+  const flag = await prisma.featureFlag.create({
+    data: { ...data, scope: (data.scope as any) || 'GLOBAL' },
+  });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_FEATURE_FLAG_CHANGE',
+      reason: `Feature flag créé: ${flag.key}`,
+      metadata: { action: 'create', flagKey: flag.key },
+    });
+  }
+  return flag;
 }
 
 export async function updateFeatureFlag(
@@ -148,23 +178,63 @@ export async function updateFeatureFlag(
     enabled?: boolean;
     scope?: string;
     scopeValue?: string;
-  }
+  },
+  adminUserId?: string
 ) {
   const flag = await prisma.featureFlag.findUnique({ where: { id } });
   if (!flag) throw new AppError('Feature flag not found', 404);
-  return prisma.featureFlag.update({ where: { id }, data: data as any });
+  const updated = await prisma.featureFlag.update({ where: { id }, data: data as any });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_FEATURE_FLAG_CHANGE',
+      reason: `Feature flag modifié: ${flag.key}`,
+      metadata: { action: 'update', flagKey: flag.key },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_FEATURE_FLAG_UPDATED',
+      properties: { flagKey: flag.key },
+    });
+  }
+  return updated;
 }
 
-export async function toggleFeatureFlag(id: string) {
+export async function toggleFeatureFlag(id: string, adminUserId?: string) {
   const flag = await prisma.featureFlag.findUnique({ where: { id } });
   if (!flag) throw new AppError('Feature flag not found', 404);
-  return prisma.featureFlag.update({ where: { id }, data: { enabled: !flag.enabled } });
+  const updated = await prisma.featureFlag.update({
+    where: { id },
+    data: { enabled: !flag.enabled },
+  });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_FEATURE_FLAG_CHANGE',
+      reason: `Feature flag ${updated.enabled ? 'activé' : 'désactivé'}: ${flag.key}`,
+      metadata: { action: 'toggle', flagKey: flag.key, enabled: updated.enabled },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: updated.enabled ? 'ADMIN_FEATURE_FLAG_ENABLED' : 'ADMIN_FEATURE_FLAG_DISABLED',
+      properties: { flagKey: flag.key },
+    });
+  }
+  return updated;
 }
 
-export async function deleteFeatureFlag(id: string) {
+export async function deleteFeatureFlag(id: string, adminUserId?: string) {
   const flag = await prisma.featureFlag.findUnique({ where: { id } });
   if (!flag) throw new AppError('Feature flag not found', 404);
   await prisma.featureFlag.delete({ where: { id } });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_FEATURE_FLAG_CHANGE',
+      reason: `Feature flag supprimé: ${flag.key}`,
+      metadata: { action: 'delete', flagKey: flag.key },
+    });
+  }
   return { message: 'Feature flag deleted' };
 }
 
@@ -186,11 +256,14 @@ export async function getAdminRoles() {
   });
 }
 
-export async function createAdminRole(data: {
-  name: string;
-  description?: string;
-  permissionIds?: string[];
-}) {
+export async function createAdminRole(
+  data: {
+    name: string;
+    description?: string;
+    permissionIds?: string[];
+  },
+  adminUserId?: string
+) {
   const existing = await prisma.adminRole.findUnique({ where: { name: data.name } });
   if (existing) throw new AppError('Role already exists', 400);
   const role = await prisma.adminRole.create({
@@ -209,12 +282,21 @@ export async function createAdminRole(data: {
       },
     },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ROLE_CHANGE',
+      reason: `Rôle admin créé: ${role.name}`,
+      metadata: { action: 'create', roleId: role.id },
+    });
+  }
   return role;
 }
 
 export async function updateAdminRole(
   id: string,
-  data: { name?: string; description?: string; permissionIds?: string[] }
+  data: { name?: string; description?: string; permissionIds?: string[] },
+  adminUserId?: string
 ) {
   const role = await prisma.adminRole.findUnique({ where: { id } });
   if (!role) throw new AppError('Role not found', 404);
@@ -226,7 +308,7 @@ export async function updateAdminRole(
       data: data.permissionIds.map((pid) => ({ roleId: id, permissionId: pid })),
     });
   }
-  return prisma.adminRole.update({
+  const updated = await prisma.adminRole.update({
     where: { id },
     data: { name: data.name, description: data.description },
     include: {
@@ -237,13 +319,35 @@ export async function updateAdminRole(
       },
     },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ROLE_CHANGE',
+      reason: `Rôle admin modifié: ${role.name}`,
+      metadata: { action: 'update', roleId: id },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_ROLE_UPDATED',
+      properties: { roleId: id, roleName: role.name },
+    });
+  }
+  return updated;
 }
 
-export async function deleteAdminRole(id: string) {
+export async function deleteAdminRole(id: string, adminUserId?: string) {
   const role = await prisma.adminRole.findUnique({ where: { id } });
   if (!role) throw new AppError('Role not found', 404);
   if (role.isSystem) throw new AppError('System roles cannot be deleted', 403);
   await prisma.adminRole.delete({ where: { id } });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ROLE_CHANGE',
+      reason: `Rôle admin supprimé: ${role.name}`,
+      metadata: { action: 'delete', roleId: id },
+    });
+  }
   return { message: 'Role deleted' };
 }
 
@@ -251,7 +355,7 @@ export async function getAdminPermissions() {
   return prisma.adminPermission.findMany({ orderBy: [{ resource: 'asc' }, { action: 'asc' }] });
 }
 
-export async function assignRoleToUser(userId: string, roleId: string) {
+export async function assignRoleToUser(userId: string, roleId: string, adminUserId?: string) {
   const [user, role] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
     prisma.adminRole.findUnique({ where: { id: roleId } }),
@@ -262,18 +366,42 @@ export async function assignRoleToUser(userId: string, roleId: string) {
     where: { userId_roleId: { userId, roleId } },
   });
   if (existing) throw new AppError('User already has this role', 400);
-  return prisma.adminRoleAssignment.create({
+  const assignment = await prisma.adminRoleAssignment.create({
     data: { userId, roleId },
     include: { role: true },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ROLE_CHANGE',
+      targetUserId: userId,
+      reason: `Rôle ${role.name} assigné à l'utilisateur`,
+      metadata: { action: 'assign', roleId, userId },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_ROLE_ASSIGNED',
+      properties: { roleId, userId, roleName: role.name },
+    });
+  }
+  return assignment;
 }
 
-export async function removeRoleFromUser(userId: string, roleId: string) {
+export async function removeRoleFromUser(userId: string, roleId: string, adminUserId?: string) {
   const assignment = await prisma.adminRoleAssignment.findUnique({
     where: { userId_roleId: { userId, roleId } },
   });
   if (!assignment) throw new AppError('Role assignment not found', 404);
   await prisma.adminRoleAssignment.delete({ where: { id: assignment.id } });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_ROLE_CHANGE',
+      targetUserId: userId,
+      reason: `Rôle retiré de l'utilisateur (${roleId})`,
+      metadata: { action: 'unassign', roleId, userId },
+    });
+  }
   return { message: 'Role removed from user' };
 }
 
@@ -352,38 +480,84 @@ export async function getAutomationRule(id: string) {
   return rule;
 }
 
-export async function createAutomationRule(data: {
-  name: string;
-  description?: string;
-  trigger: string;
-  triggerConfig?: any;
-  conditions?: any;
-  actionType: string;
-  actionConfig: any;
-  cooldownMinutes?: number;
-  status?: string;
-}) {
-  return prisma.automationRule.create({ data: data as any });
+export async function createAutomationRule(
+  data: {
+    name: string;
+    description?: string;
+    trigger: string;
+    triggerConfig?: any;
+    conditions?: any;
+    actionType: string;
+    actionConfig: any;
+    cooldownMinutes?: number;
+    status?: string;
+  },
+  adminUserId?: string
+) {
+  const rule = await prisma.automationRule.create({ data: data as any });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'AUTOMATION_RULE_CHANGED',
+      reason: `Règle d'automatisation créée: ${rule.name}`,
+      metadata: { action: 'create', ruleId: rule.id },
+    });
+  }
+  return rule;
 }
 
-export async function updateAutomationRule(id: string, data: any) {
+export async function updateAutomationRule(id: string, data: any, adminUserId?: string) {
   const rule = await prisma.automationRule.findUnique({ where: { id } });
   if (!rule) throw new AppError('Automation rule not found', 404);
-  return prisma.automationRule.update({ where: { id }, data });
+  const updated = await prisma.automationRule.update({ where: { id }, data });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'AUTOMATION_RULE_CHANGED',
+      reason: `Règle d'automatisation modifiée: ${rule.name}`,
+      metadata: { action: 'update', ruleId: id },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_AUTOMATION_UPDATED',
+      properties: { ruleId: id, ruleName: rule.name },
+    });
+  }
+  return updated;
 }
 
-export async function deleteAutomationRule(id: string) {
+export async function deleteAutomationRule(id: string, adminUserId?: string) {
   const rule = await prisma.automationRule.findUnique({ where: { id } });
   if (!rule) throw new AppError('Automation rule not found', 404);
   await prisma.automationRule.delete({ where: { id } });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'AUTOMATION_RULE_CHANGED',
+      reason: `Règle d'automatisation supprimée: ${rule.name}`,
+      metadata: { action: 'delete', ruleId: id },
+    });
+  }
   return { message: 'Automation rule deleted' };
 }
 
-export async function toggleAutomationRule(id: string) {
+export async function toggleAutomationRule(id: string, adminUserId?: string) {
   const rule = await prisma.automationRule.findUnique({ where: { id } });
   if (!rule) throw new AppError('Automation rule not found', 404);
   const newStatus = rule.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
-  return prisma.automationRule.update({ where: { id }, data: { status: newStatus as any } });
+  const updated = await prisma.automationRule.update({
+    where: { id },
+    data: { status: newStatus as any },
+  });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'AUTOMATION_RULE_CHANGED',
+      reason: `Règle d'automatisation ${newStatus === 'ACTIVE' ? 'activée' : 'mise en pause'}: ${rule.name}`,
+      metadata: { action: 'toggle', ruleId: id, status: newStatus },
+    });
+  }
+  return updated;
 }
 
 export async function getAutomationExecutionLogs(ruleId: string) {
@@ -491,7 +665,7 @@ export async function createCmsPage(
 ) {
   const existing = await prisma.cmsPage.findUnique({ where: { slug: data.slug } });
   if (existing) throw new AppError('A page with this slug already exists', 400);
-  return prisma.cmsPage.create({
+  const page = await prisma.cmsPage.create({
     data: {
       slug: data.slug,
       title: data.title,
@@ -504,6 +678,13 @@ export async function createCmsPage(
     },
     include: { author: { select: { id: true, firstName: true, lastName: true } } },
   });
+  await logAdminAction({
+    adminUserId: authorId,
+    action: 'CMS_PAGE_CHANGED',
+    reason: `Page CMS créée: ${page.title}`,
+    metadata: { action: 'create', pageId: page.id, slug: page.slug },
+  });
+  return page;
 }
 
 export async function updateCmsPage(
@@ -516,32 +697,64 @@ export async function updateCmsPage(
     category?: string;
     tags?: string[];
     status?: string;
-  }
+  },
+  adminUserId?: string
 ) {
   const page = await prisma.cmsPage.findUnique({ where: { id } });
   if (!page) throw new AppError('CMS page not found', 404);
-  return prisma.cmsPage.update({
+  const updated = await prisma.cmsPage.update({
     where: { id },
     data: data as any,
     include: { author: { select: { id: true, firstName: true, lastName: true } } },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'CMS_PAGE_CHANGED',
+      reason: `Page CMS modifiée: ${page.title}`,
+      metadata: { action: 'update', pageId: id },
+    });
+  }
+  return updated;
 }
 
-export async function deleteCmsPage(id: string) {
+export async function deleteCmsPage(id: string, adminUserId?: string) {
   const page = await prisma.cmsPage.findUnique({ where: { id } });
   if (!page) throw new AppError('CMS page not found', 404);
   await prisma.cmsPage.delete({ where: { id } });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'CMS_PAGE_CHANGED',
+      reason: `Page CMS supprimée: ${page.title}`,
+      metadata: { action: 'delete', pageId: id },
+    });
+  }
   return { message: 'CMS page deleted' };
 }
 
-export async function publishCmsPage(id: string) {
+export async function publishCmsPage(id: string, adminUserId?: string) {
   const page = await prisma.cmsPage.findUnique({ where: { id } });
   if (!page) throw new AppError('CMS page not found', 404);
-  return prisma.cmsPage.update({
+  const updated = await prisma.cmsPage.update({
     where: { id },
     data: { status: 'PUBLISHED', publishedAt: new Date() },
     include: { author: { select: { id: true, firstName: true, lastName: true } } },
   });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'CMS_PAGE_CHANGED',
+      reason: `Page CMS publiée: ${page.title}`,
+      metadata: { action: 'publish', pageId: id, slug: page.slug },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_CMS_PUBLISHED',
+      properties: { pageId: id, slug: page.slug, title: page.title },
+    });
+  }
+  return updated;
 }
 
 export async function getCmsCategories() {
@@ -857,28 +1070,59 @@ export async function reportMedia(
 export async function approveMedia(id: string, reviewedById: string) {
   const item = await prisma.mediaModerationItem.findUnique({ where: { id } });
   if (!item) throw new AppError('Moderation item not found', 404);
-  return prisma.mediaModerationItem.update({
+  const updated = await prisma.mediaModerationItem.update({
     where: { id },
     data: { status: 'APPROVED', reviewedById, reviewedAt: new Date() },
   });
+  // Piste d'audit + notification au créateur
+  await logAdminAction({
+    adminUserId: reviewedById,
+    action: 'ADMIN_CONTENT_MODERATION',
+    reason: `Média approuvé (${updated.contentType})`,
+    metadata: { action: 'approve', itemId: id, contentType: updated.contentType },
+  });
+  await notifyMediaModerated({
+    target: { kind: updated.contentType as any, id: updated.contentId },
+    status: 'approved',
+  });
+  return updated;
 }
 
 export async function rejectMedia(id: string, reviewedById: string, reason?: string) {
   const item = await prisma.mediaModerationItem.findUnique({ where: { id } });
   if (!item) throw new AppError('Moderation item not found', 404);
-  return prisma.mediaModerationItem.update({
+  const updated = await prisma.mediaModerationItem.update({
     where: { id },
     data: { status: 'REJECTED', reviewedById, reviewedAt: new Date(), resolution: reason },
   });
+  await logAdminAction({
+    adminUserId: reviewedById,
+    action: 'ADMIN_CONTENT_MODERATION',
+    reason: `Média rejeté (${updated.contentType})${reason ? ' — ' + reason : ''}`,
+    metadata: { action: 'reject', itemId: id, contentType: updated.contentType, reason },
+  });
+  await notifyMediaModerated({
+    target: { kind: updated.contentType as any, id: updated.contentId },
+    status: 'rejected',
+    reason,
+  });
+  return updated;
 }
 
 export async function flagMedia(id: string, reviewedById: string, reason?: string) {
   const item = await prisma.mediaModerationItem.findUnique({ where: { id } });
   if (!item) throw new AppError('Moderation item not found', 404);
-  return prisma.mediaModerationItem.update({
+  const updated = await prisma.mediaModerationItem.update({
     where: { id },
     data: { status: 'FLAGGED', reviewedById, reviewedAt: new Date(), resolution: reason },
   });
+  await logAdminAction({
+    adminUserId: reviewedById,
+    action: 'ADMIN_CONTENT_MODERATION',
+    reason: `Média signalé (${updated.contentType})${reason ? ' — ' + reason : ''}`,
+    metadata: { action: 'flag', itemId: id, contentType: updated.contentType, reason },
+  });
+  return updated;
 }
 
 export async function getModerationStats() {
@@ -984,16 +1228,40 @@ export async function issueWarning(
   ]);
   if (!user) throw new AppError('User not found', 404);
   if (!issuer) throw new AppError('Issuer not found', 404);
-  return prisma.userWarning.create({
+  const warning = await prisma.userWarning.create({
     data: { userId, issuedById, reason, description, action },
     include: { issuedBy: { select: { id: true, firstName: true, lastName: true } } },
   });
+  // Piste d'audit + notification à l'utilisateur averti
+  await logAdminAction({
+    adminUserId: issuedById,
+    action: 'ADMIN_USER_ACTION',
+    targetUserId: userId,
+    reason: `Avertissement émis: ${reason}`,
+    metadata: { action: 'warning', warningId: warning.id },
+  });
+  await trackAdminAction({
+    adminUserId: issuedById,
+    eventName: 'ADMIN_WARNING_ISSUED',
+    properties: { targetUserId: userId, reason },
+  });
+  await notifyUserWarned({ userId, reason });
+  return warning;
 }
 
-export async function revokeWarning(id: string) {
+export async function revokeWarning(id: string, adminUserId?: string) {
   const warning = await prisma.userWarning.findUnique({ where: { id } });
   if (!warning) throw new AppError('Warning not found', 404);
   await prisma.userWarning.delete({ where: { id } });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_USER_ACTION',
+      targetUserId: warning.userId,
+      reason: `Avertissement révoqué (${warning.reason})`,
+      metadata: { action: 'revoke-warning', warningId: id },
+    });
+  }
   return { message: 'Warning revoked' };
 }
 

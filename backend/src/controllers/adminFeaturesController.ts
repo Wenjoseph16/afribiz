@@ -25,7 +25,7 @@ export const getPlatformSettings = catchAsyncErrors(
 export const updatePlatformSettings = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const oldSettings = await adminFeaturesService.getPlatformSettings();
-    const settings = await adminFeaturesService.updatePlatformSettings(req.body);
+    const settings = await adminFeaturesService.updatePlatformSettings(req.body, req.user?.id);
 
     // Audit log for monetization changes
     const monetizationKeys = [
@@ -93,28 +93,28 @@ export const getFeatureFlag = catchAsyncErrors(
 
 export const createFeatureFlag = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const flag = await adminFeaturesService.createFeatureFlag(req.body);
+    const flag = await adminFeaturesService.createFeatureFlag(req.body, req.user?.id);
     res.json({ success: true, data: flag, message: 'Feature flag créé' });
   }
 );
 
 export const updateFeatureFlag = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const flag = await adminFeaturesService.updateFeatureFlag(req.params.id, req.body);
+    const flag = await adminFeaturesService.updateFeatureFlag(req.params.id, req.body, req.user?.id);
     res.json({ success: true, data: flag, message: 'Feature flag mis à jour' });
   }
 );
 
 export const deleteFeatureFlag = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    await adminFeaturesService.deleteFeatureFlag(req.params.id);
+    await adminFeaturesService.deleteFeatureFlag(req.params.id, req.user?.id);
     res.json({ success: true, data: null, message: 'Feature flag supprimé' });
   }
 );
 
 export const toggleFeatureFlag = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const flag = await adminFeaturesService.toggleFeatureFlag(req.params.id);
+    const flag = await adminFeaturesService.toggleFeatureFlag(req.params.id, req.user?.id);
     res.json({ success: true, data: flag, message: 'Feature flag basculé' });
   }
 );
@@ -132,21 +132,21 @@ export const getAdminRoles = catchAsyncErrors(
 
 export const createAdminRole = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const role = await adminFeaturesService.createAdminRole(req.body);
+    const role = await adminFeaturesService.createAdminRole(req.body, req.user?.id);
     res.json({ success: true, data: role, message: 'Rôle créé' });
   }
 );
 
 export const updateAdminRole = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const role = await adminFeaturesService.updateAdminRole(req.params.id, req.body);
+    const role = await adminFeaturesService.updateAdminRole(req.params.id, req.body, req.user?.id);
     res.json({ success: true, data: role, message: 'Rôle mis à jour' });
   }
 );
 
 export const deleteAdminRole = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    await adminFeaturesService.deleteAdminRole(req.params.id);
+    await adminFeaturesService.deleteAdminRole(req.params.id, req.user?.id);
     res.json({ success: true, data: null, message: 'Rôle supprimé' });
   }
 );
@@ -161,7 +161,7 @@ export const getAdminPermissions = catchAsyncErrors(
 export const assignRoleToUser = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { userId, roleId } = req.body;
-    const result = await adminFeaturesService.assignRoleToUser(userId, roleId);
+    const result = await adminFeaturesService.assignRoleToUser(userId, roleId, req.user?.id);
     res.json({ success: true, data: result, message: 'Rôle assigné' });
   }
 );
@@ -169,7 +169,7 @@ export const assignRoleToUser = catchAsyncErrors(
 export const removeRoleFromUser = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const { userId, roleId } = req.body;
-    await adminFeaturesService.removeRoleFromUser(userId, roleId);
+    await adminFeaturesService.removeRoleFromUser(userId, roleId, req.user?.id);
     res.json({ success: true, data: null, message: 'Rôle retiré' });
   }
 );
@@ -209,28 +209,28 @@ export const getAutomationRule = catchAsyncErrors(
 
 export const createAutomationRule = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const rule = await adminFeaturesService.createAutomationRule(req.body);
+    const rule = await adminFeaturesService.createAutomationRule(req.body, req.user?.id);
     res.json({ success: true, data: rule, message: "Règle d'automatisation créée" });
   }
 );
 
 export const updateAutomationRule = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const rule = await adminFeaturesService.updateAutomationRule(req.params.id, req.body);
+    const rule = await adminFeaturesService.updateAutomationRule(req.params.id, req.body, req.user?.id);
     res.json({ success: true, data: rule, message: "Règle d'automatisation mise à jour" });
   }
 );
 
 export const deleteAutomationRule = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    await adminFeaturesService.deleteAutomationRule(req.params.id);
+    await adminFeaturesService.deleteAutomationRule(req.params.id, req.user?.id);
     res.json({ success: true, data: null, message: "Règle d'automatisation supprimée" });
   }
 );
 
 export const toggleAutomationRule = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const rule = await adminFeaturesService.toggleAutomationRule(req.params.id);
+    const rule = await adminFeaturesService.toggleAutomationRule(req.params.id, req.user?.id);
     res.json({ success: true, data: rule, message: 'Statut de la règle basculé' });
   }
 );
@@ -288,21 +288,21 @@ export const createCmsPage = catchAsyncErrors(
 
 export const updateCmsPage = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const page = await adminFeaturesService.updateCmsPage(req.params.id, req.body);
+    const page = await adminFeaturesService.updateCmsPage(req.params.id, req.body, req.user?.id);
     res.json({ success: true, data: page, message: 'Page CMS mise à jour' });
   }
 );
 
 export const deleteCmsPage = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    await adminFeaturesService.deleteCmsPage(req.params.id);
+    await adminFeaturesService.deleteCmsPage(req.params.id, req.user?.id);
     res.json({ success: true, data: null, message: 'Page CMS supprimée' });
   }
 );
 
 export const publishCmsPage = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const page = await adminFeaturesService.publishCmsPage(req.params.id);
+    const page = await adminFeaturesService.publishCmsPage(req.params.id, req.user?.id);
     res.json({ success: true, data: page, message: 'Page CMS publiée' });
   }
 );
@@ -643,7 +643,7 @@ export const issueWarning = catchAsyncErrors(
 
 export const revokeWarning = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    await adminFeaturesService.revokeWarning(req.params.id);
+    await adminFeaturesService.revokeWarning(req.params.id, req.user?.id);
     res.json({ success: true, data: null, message: 'Avertissement révoqué' });
   }
 );
