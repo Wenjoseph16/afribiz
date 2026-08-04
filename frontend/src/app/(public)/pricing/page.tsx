@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
   CheckCircle2,
   ArrowRight,
@@ -15,6 +16,7 @@ import {
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { getApiUrl } from '@/lib/config';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
@@ -23,8 +25,16 @@ const fadeInUp = {
   transition: { duration: 0.6, ease: 'easeOut' },
 };
 
-const plans = [
+const formatPrice = (price: number | null | undefined) => {
+  if (price === null || price === undefined) return 'Bientôt';
+  const n = Number(price);
+  if (n === 0) return '0';
+  return n.toLocaleString('fr-FR').replace(/\u202f/g, ' ');
+};
+
+const staticPlans = [
   {
+    key: 'platform-free',
     name: 'Gratuit',
     price: '0',
     period: '/mois',
@@ -46,9 +56,32 @@ const plans = [
     badge: 'Recommandé',
   },
   {
+    key: 'platform-afribiz',
+    name: 'AfriBiz',
+    price: '5 000',
+    period: 'FCFA/mois',
+    description: "L'abonnement unique, tout inclus",
+    icon: Sparkles,
+    gradient: 'from-orange-500 to-amber-400',
+    features: [
+      '100% des modules, sans limite',
+      'Commission transaction réduite (0,5%)',
+      'Support prioritaire (réponse < 24h)',
+      'Analytics avancés + rapports automatiques',
+      'Réservations en ligne illimitées',
+      'Copilot IA inclus 30 jours offerts',
+    ],
+    footnote: 'Sans engagement — résiliable à tout moment',
+    cta: 'Passer à AfriBiz',
+    href: '/signup',
+    popular: true,
+    badge: '🚀 Recommandé',
+  },
+  {
+    key: 'platform-copilot',
     name: 'Copilot IA',
-    price: 'Bientôt',
-    period: '',
+    price: '3 000',
+    period: 'FCFA/mois',
     description: 'Votre assistant virtuel intelligent',
     icon: Bot,
     gradient: 'from-purple-600 to-indigo-500',
@@ -60,57 +93,33 @@ const plans = [
       'Rapports intelligents',
       'Gestion prédictive',
     ],
-    footnote: 'Option Premium — quelques milliers de FCFA / mois',
-    cta: 'Être notifié',
-    href: '#notify',
+    footnote: 'Option Premium — à ajouter à tout plan',
+    cta: 'Activer le Copilot',
+    href: '/signup',
     popular: false,
-    badge: null,
-  },
-  {
-    name: 'Développeur',
-    price: 'Gratuit',
-    period: '',
-    description: "Pour bâtir l'écosystème",
-    icon: BookOpen,
-    gradient: 'from-blue-600 to-cyan-500',
-    features: [
-      'Accès API REST complet',
-      'Documentation technique',
-      'Publication de modules',
-      'Sandbox de test',
-      'Revenue sharing 80/20',
-      'Support technique dédié',
-    ],
-    footnote: 'Vous gardez 80% du prix de vos modules',
-    cta: "Rejoindre l'espace Dev",
-    href: '/signup?role=developer',
-    popular: false,
-    badge: null,
+    badge: '✨ Option IA',
   },
 ];
 
-const highlights = [
-  {
-    icon: Smartphone,
-    title: 'Mobile Money accepté',
-    desc: 'Wave, TMoney, Flooz, Moov Money — vos clients paient depuis leur téléphone sans frais supplémentaires.',
-  },
-  {
-    icon: Shield,
-    title: 'Paiement sécurisé Escrow',
-    desc: "L'argent est séquestré jusqu'à confirmation de livraison. Pas de risque d'arnaque.",
-  },
-  {
-    icon: Percent,
-    title: '1% seulement par transaction',
-    desc: "La plateforme prélève 1% sur chaque vente réussie quand vous gagnez de l'argent.",
-  },
-  {
-    icon: Bot,
-    title: 'Copilot IA (à venir)',
-    desc: 'Un assistant intelligent qui vous alerte sur WhatsApp pour optimiser vos stocks et ventes.',
-  },
-];
+const devPlan = {
+  name: 'Développeur',
+  price: 'Gratuit',
+  period: '',
+  description: "Pour bâtir l'écosystème",
+  icon: BookOpen,
+  gradient: 'from-blue-600 to-cyan-500',
+  features: [
+    'Accès API REST complet',
+    'Documentation technique',
+    'Publication de modules',
+    'Sandbox de test',
+    'Revenue sharing 80/20',
+    'Support technique dédié',
+  ],
+  footnote: 'Vous gardez 80% du prix de vos modules',
+  cta: "Rejoindre l'espace Dev",
+  href: '/signup?role=developer',
+};
 
 const faqs = [
   {
@@ -127,7 +136,7 @@ const faqs = [
   },
   {
     q: "Et le Copilot IA, c'est payant ?",
-    a: "Le Copilot IA sera une option Premium (quelques milliers de FCFA par mois). Il analyse vos ventes et vous envoie des alertes WhatsApp automatisées : ruptures de stock imminentes, heures d'affluence, tendances...",
+    a: "Le Copilot IA est une option Premium à 3 000 FCFA par mois. Il analyse vos ventes et vous envoie des alertes WhatsApp automatisées : ruptures de stock imminentes, heures d'affluence, tendances...",
   },
   {
     q: 'Les développeurs sont payés comment ?',
@@ -139,7 +148,89 @@ const faqs = [
   },
 ];
 
+type PlanCard = (typeof staticPlans)[number];
+
+function mapApiPlan(apiPlan: any): PlanCard | null {
+  const match = staticPlans.find((p) => p.key === apiPlan.id);
+  if (!match) return null;
+  const price = formatPrice(apiPlan.price);
+  const commission = apiPlan.privileges?.find((p: any) => p.code === 'COMMISSION_TRANSACTION');
+  return {
+    ...match,
+    price,
+    period: Number(apiPlan.price) > 0 ? 'FCFA/mois' : '/mois',
+    description: apiPlan.description || match.description,
+    features: apiPlan.benefits?.length ? apiPlan.benefits : match.features,
+    footnote: commission
+      ? `Commission de ${Number(commission.value)}% sur chaque transaction réussie`
+      : match.footnote,
+    badge: apiPlan.badge || match.badge,
+  };
+}
+
 export default function PricingPage() {
+  const [plans, setPlans] = useState<PlanCard[]>(staticPlans);
+  const [liveCommissions, setLiveCommissions] = useState<{
+    transaction?: number;
+    escrow?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(getApiUrl('/plans'))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('fetch failed'))))
+      .then((json) => {
+        if (cancelled) return;
+        const apiPlans = json?.data?.plans;
+        if (Array.isArray(apiPlans) && apiPlans.length > 0) {
+          const mapped = apiPlans.map(mapApiPlan).filter(Boolean) as PlanCard[];
+          if (mapped.length > 0) setPlans(mapped);
+        }
+        if (json?.data?.commissions) {
+          setLiveCommissions({
+            transaction: json.data.commissions.transaction,
+            escrow: json.data.commissions.escrow,
+          });
+        }
+      })
+      .catch(() => {
+        // Fallback sur les plans statiques — la page reste fonctionnelle hors ligne
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const transactionPct = liveCommissions?.transaction != null
+    ? `${Number(liveCommissions.transaction) * 100}%`
+    : '1%';
+  const escrowPct = liveCommissions?.escrow != null
+    ? `${Number(liveCommissions.escrow) * 100}%`
+    : '2%';
+
+  const highlights = [
+    {
+      icon: Smartphone,
+      title: 'Mobile Money accepté',
+      desc: 'Wave, TMoney, Flooz, Moov Money — vos clients paient depuis leur téléphone sans frais supplémentaires.',
+    },
+    {
+      icon: Shield,
+      title: 'Paiement sécurisé Escrow',
+      desc: "L'argent est séquestré jusqu'à confirmation de livraison. Pas de risque d'arnaque.",
+    },
+    {
+      icon: Percent,
+      title: `${transactionPct} seulement par transaction`,
+      desc: "La plateforme prélève une commission sur chaque vente réussie quand vous gagnez de l'argent.",
+    },
+    {
+      icon: Bot,
+      title: 'Copilot IA',
+      desc: 'Un assistant intelligent qui vous alerte sur WhatsApp pour optimiser vos stocks et ventes.',
+    },
+  ];
+
   return (
     <main className="min-h-screen bg-white dark:bg-gray-950">
       <Header />
@@ -161,8 +252,8 @@ export default function PricingPage() {
               </span>
             </h1>
             <p className="text-lg sm:text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-              AfriBiz est entièrement gratuit à l&apos;inscription. Pas d&apos;abonnement, pas de
-              frais cachés. Nous prélevons seulement 1% sur chaque transaction quand votre business
+              AfriBiz est entièrement gratuit à l&apos;inscription. Pas de frais cachés. Nous
+              prélevons seulement {transactionPct} sur chaque transaction quand votre business
               génère des revenus.
             </p>
           </motion.div>
@@ -273,6 +364,49 @@ export default function PricingPage() {
               );
             })}
           </div>
+
+          {/* Dev plan banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="max-w-5xl mx-auto mt-8"
+          >
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-8 shadow-lg shadow-blue-600/10">
+              <div className="flex items-center gap-4 sm:min-w-0">
+                <div className="p-3 rounded-xl bg-white/15 shrink-0">
+                  <BookOpen className="h-6 w-6 text-white" />
+                </div>
+                <div className="sm:min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="text-xl font-bold text-white">{devPlan.name}</h3>
+                    <span className="text-xs font-bold bg-white/20 text-white px-3 py-1 rounded-full">
+                      {devPlan.price}
+                    </span>
+                  </div>
+                  <p className="text-blue-100 text-sm mt-1">{devPlan.description}</p>
+                  <ul className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                    {devPlan.features.slice(0, 4).map((f) => (
+                      <li key={f} className="text-blue-50 text-xs flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              <div className="sm:ml-auto shrink-0">
+                <Link
+                  href={devPlan.href}
+                  className="flex items-center justify-center gap-2 bg-white text-blue-700 font-semibold px-6 py-3 rounded-xl hover:bg-blue-50 transition-all shadow-lg"
+                >
+                  {devPlan.cta}
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -293,11 +427,11 @@ export default function PricingPage() {
                 <Percent className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                1% sur les transactions
+                {transactionPct} sur les transactions
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
                 Quand un client vous paie via Mobile Money (Wave, TMoney, Flooz) ou carte bancaire,
-                nous prélevons 1% du montant.{' '}
+                nous prélevons {transactionPct} du montant.{' '}
                 <strong>Si vous ne vendez pas, vous ne payez rien.</strong>
               </p>
             </div>
@@ -306,7 +440,7 @@ export default function PricingPage() {
                 <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                2% sur l&apos;Escrow
+                {escrowPct} sur l&apos;Escrow
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
                 Notre service de tiers de confiance sécurise vos transactions. L&apos;argent est
@@ -384,7 +518,7 @@ export default function PricingPage() {
             <ArrowRight className="h-5 w-5" />
           </Link>
           <p className="text-emerald-200 text-sm mt-4">
-            0 FCFA à l&apos;inscription · 1% commission seulement sur les ventes
+            0 FCFA à l&apos;inscription · {transactionPct} commission seulement sur les ventes
           </p>
         </motion.div>
       </section>

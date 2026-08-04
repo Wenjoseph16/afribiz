@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
+import { getMonetizationSettings } from './monetizationConfig';
 
 // ===================== SUBSCRIPTION PLANS =====================
 
@@ -551,6 +552,35 @@ export async function listSubscriptionLogs(ownerId: string, filters: any) {
 }
 
 // ===================== PUBLIC API =====================
+
+export async function getPublicPlatformPlans() {
+  // Plans plateforme (businessId = null) affichés sur la page publique /pricing
+  const [plans, commissions] = await Promise.all([
+    prisma.subscriptionPlan.findMany({
+      where: { businessId: null, isActive: true, isPublic: true },
+      orderBy: [{ featured: 'desc' }, { sortOrder: 'asc' }, { price: 'asc' }],
+      include: {
+        privileges: { orderBy: { sortOrder: 'asc' } },
+        _count: { select: { subscribers: { where: { status: 'ACTIVE' } } } },
+      },
+    }),
+    // Taux de commission courants (calculés depuis CommissionConfig / defaults)
+    getMonetizationSettings(),
+  ]);
+
+  return {
+    plans,
+    commissions: commissions
+      ? {
+          transaction: commissions.transactionCommissionRate,
+          escrow: commissions.escrowCommissionRate,
+          developerModule: commissions.developerModuleCommissionRate,
+          minimumEscrowFee: commissions.minimumEscrowFee,
+          maximumEscrowFee: commissions.maximumEscrowFee,
+        }
+      : null,
+  };
+}
 
 export async function getPublicSubscriptionPlans(slug: string) {
   const business = await prisma.business.findFirst({

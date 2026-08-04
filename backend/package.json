@@ -20,6 +20,7 @@
     "type-check": "cross-env NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:plans": "tsx scripts/seed-platform-plans.ts",
     "db:seed:test": "tsx prisma/seedTestData.ts",
     "db:studio": "prisma studio"
   },
