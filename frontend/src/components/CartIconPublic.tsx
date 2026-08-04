@@ -1,16 +1,17 @@
 'use client';
 
-import Link from 'next/link';
 import { ShoppingCart as ShoppingCartIcon } from 'lucide-react';
 import { useCartStore } from '@/stores/cartStore';
 
 export function CartIconPublic() {
   const itemCount = useCartStore((s) => s.totalItems());
+  const openDrawer = useCartStore((s) => s.openDrawer);
 
   return (
-    <Link
-      href="/checkout"
+    <button
+      onClick={openDrawer}
       className="relative p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+      aria-label="Voir le panier"
     >
       <ShoppingCartIcon className="h-5 w-5" />
       {itemCount > 0 && (
@@ -18,6 +19,6 @@ export function CartIconPublic() {
           {itemCount > 99 ? '99+' : itemCount}
         </span>
       )}
-    </Link>
+    </button>
   );
 }

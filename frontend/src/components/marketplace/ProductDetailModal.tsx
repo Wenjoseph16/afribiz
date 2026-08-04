@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore';
 import { useAddToCart } from '@/features/hooks';
 import type { ProductResult } from '@/components/marketplace/cards/types';
 
@@ -37,6 +38,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
   const addToCart = useAddToCart();
+  const addToLocalCart = useCartStore((s) => s.addItem);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [showPromos, setShowPromos] = useState(false);
@@ -63,19 +65,31 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
   ].filter(Boolean);
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated()) {
-      router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
-      return;
-    }
-    try {
-      await addToCart.mutateAsync({
-        productId: product.id,
-        quantity,
-      } as any);
-      setAddedToCart(true);
-      setTimeout(() => setAddedToCart(false), 2000);
-    } catch (e) {
-      console.error('Error adding to cart:', e);
+    // Toujours ajouter au panier local (fonctionne pour tout le monde, y compris invités)
+    addToLocalCart({
+      id: product.id,
+      productId: product.id,
+      name: product.name,
+      price: product.promoPrice || product.price,
+      currency: 'FCFA',
+      quantity,
+      image: product.image,
+      businessId: product.businessId || product.businessSlug,
+      businessName: product.businessName,
+    });
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
+
+    // Sync backend cart si authentifié
+    if (isAuthenticated()) {
+      try {
+        await addToCart.mutateAsync({
+          productId: product.id,
+          quantity,
+        } as any);
+      } catch (e) {
+        console.error('Error syncing to backend cart:', e);
+      }
     }
   };
 
@@ -95,7 +109,7 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
 
   const handleOrderNow = async () => {
     await handleAddToCart();
-    router.push('/dashboard/cart/checkout');
+    router.push('/checkout');
   };
 
   useEffect(() => {

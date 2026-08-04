@@ -29,10 +29,14 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 
 import { apiClient } from '@/services/apiClient';
 import { CartIconPublic } from '@/components/CartIconPublic';
+import { CartDrawer } from '@/components/cart/CartDrawer';
+import { useCartStore } from '@/stores/cartStore';
 
 export function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const cartOpen = useCartStore((s) => s.open);
+  const closeCart = useCartStore((s) => s.closeDrawer);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -264,18 +268,18 @@ export function Header() {
         <div className="flex items-center gap-1">
           <ThemeToggle />
 
-          {/* Cart icon + Messages — uniquement pour les utilisateurs connectés */}
+          {/* Cart icon — pour tout le monde (panier local) */}
+          {mounted && <CartIconPublic />}
+
+          {/* Messages — uniquement pour les utilisateurs connectés */}
           {mounted && isAuthenticated() && (
-            <>
-              <Link
-                href="/dashboard/messages"
-                className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors relative"
-                title="Messages"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </Link>
-              <CartIconPublic />
-            </>
+            <Link
+              href="/dashboard/messages"
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors relative"
+              title="Messages"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </Link>
           )}
 
           {mounted && isAuthenticated() && user ? (
@@ -437,6 +441,8 @@ export function Header() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CartDrawer isOpen={cartOpen} onClose={closeCart} />
     </header>
   );
 }
