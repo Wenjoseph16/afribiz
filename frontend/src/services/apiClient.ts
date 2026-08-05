@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { getApiBaseUrl } from '@/lib/config';
+import { useAuthStore } from '@/stores/authStore';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -92,20 +93,23 @@ export class ApiClient {
               });
 
               if (response.data.success && response.data.data) {
-                localStorage.setItem('accessToken', response.data.data.accessToken);
-                localStorage.setItem('refreshToken', response.data.data.refreshToken);
+                // setTokens synchronise store + localStorage + cookies (même logique que le login) —
+                // sans ça le middleware voit un vieux cookie et on boucle /dashboard ⇄ /login
+                useAuthStore
+                  .getState()
+                  .setTokens(response.data.data.accessToken, response.data.data.refreshToken);
 
                 originalRequest.headers.Authorization = `Bearer ${response.data.data.accessToken}`;
                 return this.instance(originalRequest);
               }
             }
           } catch (refreshError) {
-            // Refresh failed, clear tokens and redirect to login
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            document.cookie = 'accessToken=; path=/; max-age=0';
-            document.cookie = 'refreshToken=; path=/; max-age=0';
-            window.location.href = '/login';
+            // Refresh échoué → logout complet (y compris le store persisté 'auth-storage',
+            // sinon AuthGuard restaure de vieux tokens et on boucle /dashboard ⇄ /login)
+            useAuthStore.getState().logout();
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
           }
         }
 

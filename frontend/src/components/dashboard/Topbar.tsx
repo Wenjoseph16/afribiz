@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/index';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
+import { apiClient } from '@/services/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { Avatar } from '@/components/ui/Avatar';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -65,19 +66,10 @@ export function Topbar() {
     if (loggingOut) return; // Éviter les doubles clics
     setLoggingOut(true);
     try {
-      await Promise.race([
-        fetch('/api/auth/logout', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            'Content-Type': 'application/json',
-          },
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
-      ]);
+      // Vrai endpoint backend (http://localhost:3001/api/auth/logout) — révoque la session
+      await apiClient.logout();
     } catch {
-      // Timeout ou erreur : on continue quand même
+      // Erreur réseau ou timeout : on nettoie localement quand même
     }
     logout();
     window.location.href = '/login';

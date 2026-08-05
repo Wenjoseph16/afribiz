@@ -339,9 +339,9 @@ export default function SignupPage() {
                   </label>
                   <select {...register('gender')} className={`${inputBase} cursor-pointer`}>
                     <option value="">Non spécifié</option>
-                    <option value="MALE">Masculin</option>
-                    <option value="FEMALE">Féminin</option>
-                    <option value="OTHER">Autre</option>
+                    <option value="male">Masculin</option>
+                    <option value="female">Féminin</option>
+                    <option value="other">Autre</option>
                   </select>
                   {fieldError(errors.gender?.message)}
                 </div>
