@@ -620,6 +620,191 @@ async function seedCms() {
 }
 
 // ============================================================
+// 11. OPÉRATIONS MÉTIER (chaque page de la sidebar business est alimentée)
+// Employés, Planning, Livraisons, Dettes, Devis/Factures, Promotions/Coupons,
+// Billets événement, Partenaires, CRM clients, Documents.
+// ============================================================
+async function seedOperations() {
+  // ── 1. EMPLOYÉS (module Employés) ──
+  const employees: any[] = [
+    // RESTO
+    { id: 'emp-res-1', businessId: B.RESTO, firstName: 'Adjoua', lastName: 'Kouassi', phone: '+2250701010101', position: 'Cheffe de cuisine', department: 'Cuisine', salary: 150000, hireDate: new Date('2024-01-15') },
+    { id: 'emp-res-2', businessId: B.RESTO, firstName: 'Yao', lastName: 'N\'Guessan', phone: '+2250701010102', position: 'Serveur', department: 'Salle', salary: 90000, hireDate: new Date('2024-03-01') },
+    { id: 'emp-res-3', businessId: B.RESTO, firstName: 'Serge', lastName: 'Aka', phone: '+2250701010103', position: 'Livreur', department: 'Livraison', salary: 85000, hireDate: new Date('2024-06-10') },
+    // SALON
+    { id: 'emp-sal-1', businessId: B.SALON, firstName: 'Fatou', lastName: 'Diagne', phone: '+221771010101', position: 'Coiffeuse senior', department: 'Coiffure', salary: 120000, hireDate: new Date('2024-02-01') },
+    { id: 'emp-sal-2', businessId: B.SALON, firstName: 'Aïcha', lastName: 'Ba', phone: '+221771010102', position: 'Esthéticienne', department: 'Soins', salary: 110000, hireDate: new Date('2024-04-15') },
+    // HOTEL
+    { id: 'emp-hot-1', businessId: B.HOTEL, firstName: 'Grâce', lastName: 'Kouamé', phone: '+2250702020201', position: 'Réceptionniste', department: 'Réception', salary: 130000, hireDate: new Date('2023-09-01') },
+    { id: 'emp-hot-2', businessId: B.HOTEL, firstName: 'Mariam', lastName: 'Traoré', phone: '+2250702020202', position: 'Gouvernante', department: 'Housekeeping', salary: 100000, hireDate: new Date('2023-11-20') },
+    // BOUTIQUE
+    { id: 'emp-bout-1', businessId: B.BOUTIQUE, firstName: 'Kwame', lastName: 'Asante', phone: '+233202030301', position: 'Vendeur principal', department: 'Vente', salary: 95000, hireDate: new Date('2024-05-01') },
+    { id: 'emp-bout-2', businessId: B.BOUTIQUE, firstName: 'Efua', lastName: 'Mensah', phone: '+233202030302', position: 'Logisticienne', department: 'Stock', salary: 88000, hireDate: new Date('2024-07-12') },
+    // BTP
+    { id: 'emp-btp-1', businessId: B.BTP, firstName: 'Ibrahim', lastName: 'Touré', phone: '+2250703030301', position: 'Chef de chantier', department: 'Chantier', salary: 220000, hireDate: new Date('2023-05-10') },
+    { id: 'emp-btp-2', businessId: B.BTP, firstName: 'Lassina', lastName: 'Ouattara', phone: '+2250703030302', position: 'Maçon', department: 'Chantier', salary: 140000, hireDate: new Date('2023-08-15') },
+    // EVENTS
+    { id: 'emp-evt-1', businessId: B.EVENTS, firstName: 'Boris', lastName: 'Dossou', phone: '+22997010101', position: 'Coordinateur événementiel', department: 'Production', salary: 160000, hireDate: new Date('2024-01-20') },
+    { id: 'emp-evt-2', businessId: B.EVENTS, firstName: 'Gaston', lastName: 'Ahouansou', phone: '+22997010102', position: 'Technicien son & lumière', department: 'Technique', salary: 120000, hireDate: new Date('2024-06-01') },
+  ];
+  for (const e of employees) {
+    await prisma.employee.upsert({ where: { id: e.id }, update: {}, create: { id: e.id, ...e, status: 'ACTIVE' as any, isActive: true } });
+  }
+
+  // ── 2. PLANNING & TÂCHES (modules Planning / Tâches avancées) ──
+  await prisma.taskCategory.upsert({ where: { id: 'tc-btp-1' }, update: {}, create: { id: 'tc-btp-1', businessId: B.BTP, name: 'Construction', color: '#0f766e' } });
+  await prisma.taskCategory.upsert({ where: { id: 'tc-btp-2' }, update: {}, create: { id: 'tc-btp-2', businessId: B.BTP, name: 'Rénovation', color: '#b45309' } });
+  await prisma.taskCategory.upsert({ where: { id: 'tc-res-1' }, update: {}, create: { id: 'tc-res-1', businessId: B.RESTO, name: 'Cuisine', color: '#dc2626' } });
+  await prisma.taskCategory.upsert({ where: { id: 'tc-evt-1' }, update: {}, create: { id: 'tc-evt-1', businessId: B.EVENTS, name: 'Préparation', color: '#7c3aed' } });
+
+  const tasks: any[] = [
+    // RESTO : tâche liée à une commande (préparation CMD-2026-002)
+    { id: 'ptk-1', businessId: B.RESTO, title: 'Préparer commande CMD-2026-002', orderId: 'ord-2', assigneeId: 'emp-res-1', categoryId: 'tc-res-1', priority: 'HIGH', status: 'IN_PROGRESS', dueDate: new Date('2026-08-06T11:00:00Z'), description: 'Mafé poulet + bissap, prévoir le packaging.', requiresValidation: true },
+    { id: 'ptk-2', businessId: B.RESTO, title: 'Nettoyage cuisine hebdomadaire', assigneeId: 'emp-res-2', categoryId: 'tc-res-1', priority: 'MEDIUM', status: 'TODO', dueDate: new Date('2026-08-07T08:00:00Z'), notes: 'Désinfection complète des plans de travail.' },
+    // SALON : tâche liée à une réservation
+    { id: 'ptk-3', businessId: B.SALON, title: 'Préparer matériel manucure RSV-2026-001', bookingId: 'bk-1', assigneeId: 'emp-sal-2', priority: 'MEDIUM', status: 'TODO', dueDate: new Date('2026-07-20T09:00:00Z') },
+    // HOTEL : tâche liée à une réservation (séjour Deluxe)
+    { id: 'ptk-4', businessId: B.HOTEL, title: 'Préparer suite Deluxe RSV-2026-003', bookingId: 'bk-3', assigneeId: 'emp-hot-2', priority: 'HIGH', status: 'TODO', dueDate: new Date('2026-08-01T12:00:00Z') },
+    // BTP : tâches avancées (module ADVANCED_TASKS)
+    { id: 'ptk-5', businessId: B.BTP, title: 'Coulage dalle villa R+1 Cocody', categoryId: 'tc-btp-1', assigneeId: 'emp-btp-1', priority: 'HIGH', status: 'IN_PROGRESS', dueDate: new Date('2026-08-10T07:00:00Z'), estimatedHours: 8, clientName: 'Jean Kouadio', requiresPhoto: true, description: 'Dalle 120 m², béton dosé 350 kg/m³.' },
+    { id: 'ptk-6', businessId: B.BTP, title: 'Électricité phase 2 immeuble Yopougon', categoryId: 'tc-btp-2', assigneeId: 'emp-btp-2', priority: 'MEDIUM', status: 'TODO', dueDate: new Date('2026-08-14T08:00:00Z'), estimatedHours: 12, requiresValidation: true },
+    // EVENTS : préparation du concert
+    { id: 'ptk-7', businessId: B.EVENTS, title: 'Montage scène Concert Afrique', categoryId: 'tc-evt-1', assigneeId: 'emp-evt-2', priority: 'HIGH', status: 'TODO', dueDate: new Date('2026-08-15T12:00:00Z'), estimatedHours: 6 },
+    { id: 'ptk-8', businessId: B.EVENTS, title: 'Sécurité & accueil participants', categoryId: 'tc-evt-1', assigneeId: 'emp-evt-1', priority: 'MEDIUM', status: 'TODO', dueDate: new Date('2026-08-15T14:00:00Z'), clientName: 'Concert Afrique Festival' },
+  ];
+  for (const t of tasks) {
+    await prisma.planningTask.upsert({ where: { id: t.id }, update: {}, create: { id: t.id, ...t } });
+  }
+
+  // ── 3. LIVRAISONS (module Livraisons : zones + livreurs + livraisons) ──
+  const zones: any[] = [
+    { id: 'dz-res-1', businessId: B.RESTO, name: 'Cocody', fee: 1000, minOrder: 2000, estimatedTime: 30, isActive: true },
+    { id: 'dz-res-2', businessId: B.RESTO, name: 'Plateau', fee: 1500, minOrder: 3000, estimatedTime: 40, isActive: true },
+    { id: 'dz-res-3', businessId: B.RESTO, name: 'Yopougon', fee: 2000, minOrder: 5000, estimatedTime: 55, isActive: true },
+    { id: 'dz-bout-1', businessId: B.BOUTIQUE, name: 'Accra Centre', fee: 2000, minOrder: 10000, estimatedTime: 45, isActive: true },
+    { id: 'dz-bout-2', businessId: B.BOUTIQUE, name: 'East Legon', fee: 2500, minOrder: 15000, estimatedTime: 60, isActive: true },
+  ];
+  for (const z of zones) {
+    await prisma.deliveryZone.upsert({ where: { id: z.id }, update: {}, create: { id: z.id, ...z } });
+  }
+  const drivers: any[] = [
+    { id: 'drv-res-1', businessId: B.RESTO, name: 'Serge Aka', phone: '+2250701010103', vehicleType: 'MOTORCYCLE' as any, status: 'AVAILABLE' as any, zones: ['Cocody', 'Plateau'] },
+    { id: 'drv-bout-1', businessId: B.BOUTIQUE, name: 'Kojo Boateng', phone: '+233202030303', vehicleType: 'MOTORCYCLE' as any, status: 'AVAILABLE' as any, zones: ['Accra Centre'] },
+  ];
+  for (const d of drivers) {
+    await prisma.driver.upsert({ where: { id: d.id }, update: {}, create: { id: d.id, ...d } });
+  }
+  const deliveries: any[] = [
+    { id: 'dlv-1', businessId: B.RESTO, orderId: 'ord-1', deliveryNumber: 'LIV-2026-001', status: 'DELIVERED' as any, address: 'Angré 7e tranche, Abidjan', city: 'Abidjan', zoneId: 'dz-res-1', zoneName: 'Cocody', fee: 1000, recipientName: 'Awa Coulibaly', recipientPhone: '+2250100000002', driverId: 'drv-res-1', deliveredAt: new Date('2026-06-15T13:00:00Z') },
+    { id: 'dlv-2', businessId: B.RESTO, orderId: 'ord-3', deliveryNumber: 'LIV-2026-002', status: 'PREPARING' as any, address: 'Bamako, Faladié', city: 'Bamako', zoneId: null, zoneName: 'Hors zone', fee: 0, recipientName: 'Aminata Koné', recipientPhone: '+22370000001', scheduledAt: new Date('2026-08-06T18:00:00Z') },
+    { id: 'dlv-3', businessId: B.BOUTIQUE, orderId: 'ord-4', deliveryNumber: 'LIV-2026-003', status: 'DELIVERED' as any, address: 'Osu, Accra', city: 'Accra', zoneId: 'dz-bout-1', zoneName: 'Accra Centre', fee: 2000, recipientName: 'Kofi Mensah', recipientPhone: '+233202020202', driverId: 'drv-bout-1', deliveredAt: new Date('2026-06-22T15:30:00Z') },
+  ];
+  for (const d of deliveries) {
+    await prisma.delivery.upsert({ where: { deliveryNumber: d.deliveryNumber }, update: {}, create: { id: d.id, ...d } });
+  }
+
+  // ── 4. DETTES (module Créances) ──
+  const debts: any[] = [
+    { id: 'debt-1', businessId: B.RESTO, buyerId: U.CLIENT_5, orderId: 'ord-3', totalAmount: 3500, amountPaid: 0, remainingAmount: 3500, currency: 'FCFA', dueDate: new Date('2026-08-20'), status: 'ACTIVE' as any, priority: 'MEDIUM' as any, sourceType: 'ORDER' as any, notes: 'Commande livrée à Bamako, paiement à la livraison attendu.' },
+    { id: 'debt-2', businessId: B.BOUTIQUE, buyerId: U.CLIENT_2, totalAmount: 30000, amountPaid: 10000, remainingAmount: 20000, currency: 'FCFA', dueDate: new Date('2026-08-15'), status: 'ACTIVE' as any, priority: 'HIGH' as any, sourceType: 'ORDER' as any, notes: 'Solde du paiement échelonné du casque Bluetooth.' },
+  ];
+  for (const d of debts) {
+    await prisma.debt.upsert({ where: { id: d.id }, update: {}, create: { id: d.id, ...d } });
+  }
+
+  // ── 5. DEVIS & FACTURES (module Devis & Factures) ──
+  const quotes: any[] = [
+    { id: 'qte-1', quoteNumber: 'DEV-2026-001', businessId: B.BTP, clientId: U.CLIENT_4, clientName: 'Jean Kouadio', clientPhone: '+2250100000004', clientEmail: 'client4@afribiz.com', title: 'Devis villa R+1 Cocody', description: 'Construction neuve 4 pièces, hors terrain', items: [{ label: 'Gros œuvre (fondations, dalle, élévation)', qty: 1, unitPrice: 9000000, total: 9000000 }, { label: 'Toiture + charpente', qty: 1, unitPrice: 3500000, total: 3500000 }, { label: 'Finitions (carrelage, peinture)', qty: 1, unitPrice: 2500000, total: 2500000 }], subtotal: 15000000, taxAmount: 0, totalAmount: 15000000, currency: 'FCFA', status: 'SENT' as any, validUntil: new Date('2026-09-01'), notes: 'Devis détaillé suite à votre demande du 08/07.' },
+    { id: 'qte-2', quoteNumber: 'DEV-2026-002', businessId: B.RESTO, clientId: U.CLIENT_1, clientName: 'Awa Coulibaly', clientPhone: '+2250100000002', title: 'Traiteur mariage (30 pers.)', description: 'Buffet ivoirien complet', items: [{ label: 'Formule banquet 30 personnes', qty: 30, unitPrice: 8000, total: 240000 }], subtotal: 240000, taxAmount: 0, totalAmount: 240000, currency: 'FCFA', status: 'DRAFT' as any },
+  ];
+  for (const q of quotes) {
+    await prisma.quote.upsert({ where: { quoteNumber: q.quoteNumber }, update: {}, create: { id: q.id, ...q } });
+  }
+  const invoices: any[] = [
+    { id: 'inv-1', invoiceNumber: 'FAC-2026-001', businessId: B.BOUTIQUE, clientId: U.CLIENT_3, clientName: 'Fatou Ndiaye', clientPhone: '+221770001122', title: 'Facture casques Bluetooth', items: [{ label: 'Casque Bluetooth Pro x2', qty: 2, unitPrice: 25000, total: 50000 }], subtotal: 50000, taxAmount: 0, totalAmount: 50000, amountPaid: 50000, currency: 'FCFA', status: 'PAID' as any, paidAt: new Date('2026-06-29'), dueDate: new Date('2026-07-15') },
+    { id: 'inv-2', invoiceNumber: 'FAC-2026-002', businessId: B.RESTO, clientId: U.CLIENT_2, clientName: 'Kofi Mensah', clientPhone: '+233202020202', title: 'Facture repas entreprise (juillet)', items: [{ label: 'Packs déjeuner entreprise (juillet)', qty: 20, unitPrice: 5000, total: 100000 }], subtotal: 100000, taxAmount: 0, totalAmount: 100000, amountPaid: 0, currency: 'FCFA', status: 'SENT' as any, dueDate: new Date('2026-08-31') },
+  ];
+  for (const i of invoices) {
+    await prisma.invoice.upsert({ where: { invoiceNumber: i.invoiceNumber }, update: {}, create: { id: i.id, ...i } });
+  }
+
+  // ── 6. PROMOTIONS & COUPONS (module Promotions) ──
+  const promos: any[] = [
+    { id: 'pro-1', businessId: B.RESTO, title: 'Semaine du Garba', description: 'Le plat du terroir à -20% toute la semaine', promotionType: 'PERCENTAGE' as any, discountValue: 20, code: 'GARBA20', targetType: 'ALL' as any, startsAt: new Date('2026-08-03'), endsAt: new Date('2026-08-10'), isActive: true, isFeatured: true, badgeLabel: '🔥 Populaire' },
+    { id: 'pro-2', businessId: B.BOUTIQUE, title: 'Solde casques audio', description: 'Réduction sur tous les casques Bluetooth', promotionType: 'PERCENTAGE' as any, discountValue: 10, code: 'CASQUE10', targetType: 'ALL' as any, startsAt: new Date('2026-08-01'), endsAt: new Date('2026-08-31'), isActive: true, isFeatured: true, badgeLabel: 'SOLDES' },
+    { id: 'pro-3', businessId: B.SALON, title: 'Parrainage bienvenue', description: '-20% pour les nouveaux clients', promotionType: 'PERCENTAGE' as any, discountValue: 20, code: 'WELCOME20', targetType: 'ALL' as any, startsAt: new Date('2026-08-01'), endsAt: new Date('2026-12-31'), isActive: true, isFeatured: false },
+  ];
+  for (const p of promos) {
+    await prisma.promotion.upsert({ where: { id: p.id }, update: {}, create: { id: p.id, ...p } });
+  }
+  const coupons: any[] = [
+    { id: 'cpn-1', businessId: B.RESTO, promotionId: 'pro-1', code: 'GARBA20', discountType: 'PERCENTAGE', discountValue: 20, minOrderAmount: 3000, maxUses: 100, useCount: 37, status: 'ACTIVE' as any, expiresAt: new Date('2026-08-10') },
+    { id: 'cpn-2', businessId: B.BOUTIQUE, promotionId: 'pro-2', code: 'CASQUE10', discountType: 'PERCENTAGE', discountValue: 10, minOrderAmount: 15000, maxUses: 50, useCount: 12, status: 'ACTIVE' as any, expiresAt: new Date('2026-08-31') },
+    { id: 'cpn-3', businessId: B.SALON, promotionId: 'pro-3', clientId: U.CLIENT_3, code: 'WELCOME20', discountType: 'PERCENTAGE', discountValue: 20, maxUses: 1, useCount: 0, isNewCustomer: true, status: 'ACTIVE' as any, expiresAt: new Date('2026-12-31') },
+  ];
+  for (const c of coupons) {
+    await prisma.coupon.upsert({ where: { code: c.code }, update: {}, create: { id: c.id, ...c } });
+  }
+
+  // ── 7. BILLETS & PARTICIPANTS (module Événements) ──
+  await prisma.eventTicket.upsert({ where: { id: 'tkt-1' }, update: {}, create: { id: 'tkt-1', eventId: 'ev-evt-1', name: 'Standard', description: 'Accès à la fosse', type: 'STANDARD' as any, price: 10000, currency: 'FCFA', quantity: 500, remaining: 458, benefits: ['Accès fosse'], saleStatus: 'ACTIVE' as any, isActive: true } });
+  await prisma.eventTicket.upsert({ where: { id: 'tkt-2' }, update: {}, create: { id: 'tkt-2', eventId: 'ev-evt-1', name: 'VIP', description: 'Accès backstage + espace VIP', type: 'VIP' as any, price: 25000, currency: 'FCFA', quantity: 100, remaining: 78, benefits: ['Backstage', 'Espace VIP'], saleStatus: 'ACTIVE' as any, isActive: true } });
+  const participants: any[] = [
+    { id: 'ptc-1', eventId: 'ev-evt-1', ticketId: 'tkt-1', clientId: U.CLIENT_3, firstName: 'Fatou', lastName: 'Ndiaye', email: 'client3@afribiz.com', phone: '+221770001122', ticketRef: 'TKT-CONC-001', ticketType: 'STANDARD' as any, price: 20000, isPaid: true, paidAt: new Date('2026-07-08'), status: 'REGISTERED' as any },
+    { id: 'ptc-2', eventId: 'ev-evt-1', ticketId: 'tkt-2', clientId: U.CLIENT_1, firstName: 'Awa', lastName: 'Coulibaly', email: 'client1@afribiz.com', phone: '+2250100000002', ticketRef: 'TKT-CONC-002', ticketType: 'VIP' as any, price: 25000, isPaid: true, paidAt: new Date('2026-07-12'), status: 'REGISTERED' as any },
+    { id: 'ptc-3', eventId: 'ev-evt-1', ticketId: 'tkt-1', clientId: U.CLIENT_5, firstName: 'Aminata', lastName: 'Koné', email: 'client5@afribiz.com', phone: '+22370000001', ticketRef: 'TKT-CONC-003', ticketType: 'STANDARD' as any, price: 10000, isPaid: false, status: 'REGISTERED' as any },
+  ];
+  for (const p of participants) {
+    await prisma.eventParticipant.upsert({ where: { id: p.id }, update: {}, create: { id: p.id, ...p } });
+  }
+
+  // ── 8. PARTENAIRES (module Partenaires) ──
+  const partners: any[] = [
+    { id: 'ptn-1', businessId: B.BTP, name: 'CimAfrika', description: 'Fournisseur ciment et agrégats', category: 'FOURNISSEUR' as any, type: 'Fournisseur', phone: '+2250704040401', email: 'contact@cimafrika.ci', website: 'https://cimafrika.ci', isActive: true, sortOrder: 1 },
+    { id: 'ptn-2', businessId: B.BTP, name: 'Elek CI', description: 'Entreprise d electricite', category: 'TECHNIQUE' as any, type: 'Sous-traitant', phone: '+2250704040402', email: 'contact@elekci.ci', isActive: true, sortOrder: 2 },
+  ];
+  for (const p of partners) {
+    await prisma.partner.upsert({ where: { id: p.id }, update: {}, create: { id: p.id, ...p } });
+  }
+
+  // ── 9. CRM CLIENTS (module CRM : chaque business voit ses vrais clients) ──
+  const crmClients: any[] = [
+    { id: 'bc-res-1', businessId: B.RESTO, clientId: U.CLIENT_1, firstName: 'Awa', lastName: 'Coulibaly', email: 'client1@afribiz.com', phone: '+2250100000002', city: 'Abidjan', totalOrders: 2, totalSpent: 33000, lastOrderAt: new Date('2026-06-15'), visitCount: 6, isActive: true },
+    { id: 'bc-res-2', businessId: B.RESTO, clientId: U.CLIENT_2, firstName: 'Kofi', lastName: 'Mensah', email: 'client2@afribiz.com', phone: '+233202020202', city: 'Accra', totalOrders: 1, totalSpent: 6000, lastOrderAt: new Date('2026-07-02'), visitCount: 3, isActive: true },
+    { id: 'bc-res-3', businessId: B.RESTO, clientId: U.CLIENT_5, firstName: 'Aminata', lastName: 'Koné', email: 'client5@afribiz.com', phone: '+22370000001', city: 'Bamako', totalOrders: 1, totalSpent: 3500, lastOrderAt: new Date('2026-07-05'), visitCount: 2, isActive: true },
+    { id: 'bc-sal-1', businessId: B.SALON, clientId: U.CLIENT_1, firstName: 'Awa', lastName: 'Coulibaly', email: 'client1@afribiz.com', phone: '+2250100000002', city: 'Abidjan', totalOrders: 1, totalSpent: 8000, lastOrderAt: new Date('2026-07-20'), visitCount: 4, isActive: true },
+    { id: 'bc-sal-2', businessId: B.SALON, clientId: U.CLIENT_3, firstName: 'Fatou', lastName: 'Ndiaye', email: 'client3@afribiz.com', phone: '+221770001122', city: 'Dakar', totalOrders: 1, totalSpent: 5000, lastOrderAt: new Date('2026-07-25'), visitCount: 2, isActive: true },
+    { id: 'bc-hot-1', businessId: B.HOTEL, clientId: U.CLIENT_3, firstName: 'Fatou', lastName: 'Ndiaye', email: 'client3@afribiz.com', phone: '+221770001122', city: 'Dakar', totalOrders: 1, totalSpent: 90000, lastOrderAt: new Date('2026-08-01'), visitCount: 2, isActive: true },
+    { id: 'bc-hot-2', businessId: B.HOTEL, clientId: U.CLIENT_1, firstName: 'Awa', lastName: 'Coulibaly', email: 'client1@afribiz.com', phone: '+2250100000002', city: 'Abidjan', totalOrders: 1, totalSpent: 25000, lastOrderAt: new Date('2026-07-10'), visitCount: 1, isActive: true },
+    { id: 'bc-bout-1', businessId: B.BOUTIQUE, clientId: U.CLIENT_2, firstName: 'Kofi', lastName: 'Mensah', email: 'client2@afribiz.com', phone: '+233202020202', city: 'Accra', totalOrders: 2, totalSpent: 190000, lastOrderAt: new Date('2026-06-22'), visitCount: 5, isActive: true },
+    { id: 'bc-bout-2', businessId: B.BOUTIQUE, clientId: U.CLIENT_3, firstName: 'Fatou', lastName: 'Ndiaye', email: 'client3@afribiz.com', phone: '+221770001122', city: 'Dakar', totalOrders: 1, totalSpent: 50000, lastOrderAt: new Date('2026-06-29'), visitCount: 3, isActive: true },
+    { id: 'bc-btp-1', businessId: B.BTP, clientId: U.CLIENT_4, firstName: 'Jean', lastName: 'Kouadio', email: 'client4@afribiz.com', phone: '+2250100000004', city: 'Bouaké', totalOrders: 0, totalSpent: 0, lastOrderAt: null, visitCount: 1, isActive: true },
+    { id: 'bc-evt-1', businessId: B.EVENTS, clientId: U.CLIENT_3, firstName: 'Fatou', lastName: 'Ndiaye', email: 'client3@afribiz.com', phone: '+221770001122', city: 'Dakar', totalOrders: 1, totalSpent: 20000, lastOrderAt: new Date('2026-07-08'), visitCount: 2, isActive: true },
+  ];
+  for (const c of crmClients) {
+    await prisma.businessClient.upsert({
+      where: { businessId_clientId: { businessId: c.businessId, clientId: c.clientId } },
+      update: {},
+      create: { id: c.id, businessId: c.businessId, clientId: c.clientId, firstName: c.firstName, lastName: c.lastName, email: c.email, phone: c.phone, city: c.city, totalOrders: c.totalOrders, totalSpent: c.totalSpent, lastOrderAt: c.lastOrderAt, visitCount: c.visitCount, isActive: true },
+    });
+  }
+
+  // ── 10. DOCUMENTS (module Documents) ──
+  const docs: any[] = [
+    { id: 'doc-1', businessId: B.RESTO, type: 'LICENCE' as any, title: 'Licence d exploitation', description: 'Autorisation municipale 2026', fileUrl: '/uploads/documents/licence-resto.pdf', mimeType: 'application/pdf' },
+    { id: 'doc-2', businessId: B.RESTO, type: 'CONTRAT' as any, title: 'Assurance responsabilité civile', description: 'Contrat annuel SUNU Assurance', fileUrl: '/uploads/documents/assurance-resto.pdf', mimeType: 'application/pdf', expiresAt: new Date('2027-03-01') },
+    { id: 'doc-3', businessId: B.HOTEL, type: 'LICENCE' as any, title: 'Registre de commerce', description: 'RC Abidjan 2026', fileUrl: '/uploads/documents/rc-hotel.pdf', mimeType: 'application/pdf' },
+    { id: 'doc-4', businessId: B.BOUTIQUE, type: 'FACTURE' as any, title: 'Facture import TechX (juin)', description: 'Facture fournisseur 250 smartphones', fileUrl: '/uploads/documents/import-techx.pdf', mimeType: 'application/pdf' },
+    { id: 'doc-5', businessId: B.BTP, type: 'CONTRAT' as any, title: 'Contrat villa Cocody', description: 'Contrat signé avec J. Kouadio', fileUrl: '/uploads/documents/contrat-villa.pdf', mimeType: 'application/pdf' },
+  ];
+  for (const d of docs) {
+    await prisma.businessDocument.upsert({ where: { id: d.id }, update: {}, create: { id: d.id, ...d } });
+  }
+
+  console.log('✓ Opérations métier : ' + employees.length + ' employés, ' + tasks.length + ' tâches, ' + deliveries.length + ' livraisons, ' + debts.length + ' dettes, ' + quotes.length + ' devis, ' + invoices.length + ' factures, ' + promos.length + ' promotions, ' + participants.length + ' participants, ' + partners.length + ' partenaires, ' + crmClients.length + ' clients CRM, ' + docs.length + ' documents');
+}
+
+// ============================================================
 // 11b. PURGE ANCIEN SEED (.test / test2026 / wen / business fantômes)
 // ============================================================
 async function purgeLegacyData() {
@@ -825,10 +1010,17 @@ async function cleanupExisting() {
   await prisma.refreshToken.deleteMany({ where: userWhere });
   await prisma.otpCode.deleteMany({ where: userWhere });
   await prisma.securityLog.deleteMany({ where: userWhere });
-  // Résidus de l ancien seed : numéros uniques (orderNumber / bookingNumber)
+  // Résidus de l ancien seed : numéros uniques (orderNumber / bookingNumber / quote / invoice / delivery / coupon)
   const legacyOrderNumbers = ['CMD-2026-001', 'CMD-2026-002', 'CMD-2026-003', 'CMD-2026-004', 'CMD-2026-005', 'CMD-2026-006'];
   await prisma.orderItem.deleteMany({ where: { order: { orderNumber: { in: legacyOrderNumbers } } } });
   await prisma.order.deleteMany({ where: { orderNumber: { in: legacyOrderNumbers } } });
+  await prisma.quoteItem.deleteMany({ where: { quote: { quoteNumber: { in: ['DEV-2026-001', 'DEV-2026-002'] } } } });
+  await prisma.quote.deleteMany({ where: { quoteNumber: { in: ['DEV-2026-001', 'DEV-2026-002'] } } });
+  await prisma.invoiceItem.deleteMany({ where: { invoice: { invoiceNumber: { in: ['FAC-2026-001', 'FAC-2026-002'] } } } });
+  await prisma.invoice.deleteMany({ where: { invoiceNumber: { in: ['FAC-2026-001', 'FAC-2026-002'] } } });
+  await prisma.deliveryTracking.deleteMany({ where: { delivery: { deliveryNumber: { in: ['LIV-2026-001', 'LIV-2026-002', 'LIV-2026-003'] } } } });
+  await prisma.deliveryProof.deleteMany({ where: { delivery: { deliveryNumber: { in: ['LIV-2026-001', 'LIV-2026-002', 'LIV-2026-003'] } } } });
+  await prisma.delivery.deleteMany({ where: { deliveryNumber: { in: ['LIV-2026-001', 'LIV-2026-002', 'LIV-2026-003'] } } });
   await prisma.booking.deleteMany({ where: { bookingNumber: { in: ['RSV-2026-001', 'RSV-2026-002', 'RSV-2026-003', 'RSV-2026-004', 'RSV-2026-005'] } } });
   // ── Nettoyage principal du seed réaliste ──
   await prisma.walletTransaction.deleteMany({ where: { wallet: { businessId: { in: ALL_BIZ_IDS } } } });
@@ -885,6 +1077,7 @@ export async function seedRealistic() {
   await seedMessages();
   await seedWallets();
   await seedCms();
+  await seedOperations();
   console.log('\n✅ Seed réaliste terminé. Mdp unique : ' + PASSWORD);
 }
 

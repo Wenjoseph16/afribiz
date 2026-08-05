@@ -12,6 +12,7 @@ const eventToFeedType: Partial<Record<DomainEventType, FeedItemType>> = {
   [DomainEventType.UPCOMING_EVENT]: FeedItemType.EVENT,
   [DomainEventType.RENTAL_CREATED]: FeedItemType.RENTAL,
   [DomainEventType.BUSINESS_ACTIVATED]: FeedItemType.BUSINESS_UPDATE,
+  [DomainEventType.REVIEW_PUBLISHED]: FeedItemType.BUSINESS_UPDATE,
 };
 
 export function registerFeedHandlers(): void {
@@ -74,6 +75,13 @@ export function registerFeedHandlers(): void {
           referenceId = p.businessId as string;
           title = (p.businessName as string) || 'Nouvelle entreprise';
           description = `Rejoint la communauté AfriBiz`;
+          break;
+        }
+        case DomainEventType.REVIEW_PUBLISHED: {
+          const p = event.payload;
+          referenceId = p.businessId as string;
+          title = p.businessName as string;
+          description = `Nouvel avis ${p.rating}/5 par un client`;
           break;
         }
       }
