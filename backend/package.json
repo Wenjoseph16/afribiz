@@ -19,14 +19,14 @@
     "test:coverage": "jest --coverage",
     "type-check": "cross-env NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "tsx prisma/seedRealistic.ts",
     "db:seed:plans": "tsx scripts/seed-platform-plans.ts",
     "db:seed:grandfather": "tsx scripts/grandfather-businesses.ts",
     "db:seed:test": "tsx prisma/seedTestData.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seedRealistic.ts"
   },
   "dependencies": {
     "@afribiz/shared": "*",

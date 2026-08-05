@@ -620,6 +620,145 @@ async function seedCms() {
 }
 
 // ============================================================
+// 11b. PURGE ANCIEN SEED (.test / test2026 / wen / business fantômes)
+// ============================================================
+async function purgeLegacyData() {
+  // Comptes système à préserver (utilisés par le backend pour les tâches internes)
+  const SYSTEM_EMAILS = ['system@afribiz.local', 'system@afribiz.com'];
+
+  // ── 1. Anciens comptes utilisateurs parasites (hors seed réaliste + hors système) ──
+  const allUsers = await prisma.user.findMany({
+    select: { id: true, email: true },
+    where: { email: { notIn: SYSTEM_EMAILS } },
+  });
+  const legacyUserIds = allUsers
+    .filter((u) => !ALL_USER_IDS.includes(u.id)) // tout user hors IDs déterministes du seed
+    .map((u) => u.id);
+
+  // ── 2. Business fantômes (ancien seed) : TOUS les business hors nouveau seed, sauf ceux du système ──
+  const allBiz = await prisma.business.findMany({ select: { id: true, ownerId: true, name: true } });
+  const systemOwners = await prisma.user.findMany({
+    where: { email: { in: SYSTEM_EMAILS } },
+    select: { id: true },
+  });
+  const systemOwnerIds = systemOwners.map((u) => u.id);
+  const legacyBizIds = allBiz
+    .filter((b) => !ALL_BIZ_IDS.includes(b.id))
+    .filter((b) => !systemOwnerIds.includes(b.ownerId)) // garder AfriBiz System
+    .map((b) => b.id);
+
+  if (legacyUserIds.length === 0 && legacyBizIds.length === 0) {
+    console.log('--- Aucun résidu d ancien seed détecté ---');
+    return;
+  }
+
+  // Suppression des données liées (FK-safe : enfants avant parents)
+  const userWhere = { userId: { in: legacyUserIds } };
+  const bizWhere = { businessId: { in: legacyBizIds } };
+
+  // ── Conversations/messages orphelins de l ancien seed (hors conv du nouveau seed) ──
+  const keepConvs = ['conv-1', 'conv-2', 'conv-3'];
+  await prisma.message.deleteMany({ where: { conversation: { id: { notIn: keepConvs } } } });
+  await prisma.conversationParticipant.deleteMany({ where: { conversation: { id: { notIn: keepConvs } } } });
+  await prisma.conversation.deleteMany({ where: { id: { notIn: keepConvs } } });
+  // ── Commandes/réservations orphelines (référence nulle, résidus d anciens tests) ──
+  await prisma.orderItem.deleteMany({ where: { OR: [{ order: { businessId: null } }, { order: { buyerId: null } }] } });
+  await prisma.order.deleteMany({ where: { OR: [{ businessId: null }, { buyerId: null }] } });
+  await prisma.booking.deleteMany({ where: { businessId: null } });
+
+  // ── BUSINESS fantômes d abord (FK ownerId → User, enfants en Restrict → ordre critique) ──
+  if (legacyBizIds.length) {
+    // Enfants profonds d abord
+    await prisma.orderItem.deleteMany({ where: { order: { businessId: { in: legacyBizIds } } } });
+    await prisma.order.deleteMany({ where: bizWhere });
+    await prisma.booking.deleteMany({ where: bizWhere });
+    // Avis + favoris pointant vers les produits/services fantômes (FK Restrict)
+    const ghostProducts = await prisma.product.findMany({ where: { businessId: { in: legacyBizIds } }, select: { id: true } });
+    const ghostServices = await prisma.service.findMany({ where: { businessId: { in: legacyBizIds } }, select: { id: true } });
+    const ghostProductIds = ghostProducts.map((p) => p.id);
+    const ghostServiceIds = ghostServices.map((s) => s.id);
+    if (ghostProductIds.length) {
+      await prisma.review.deleteMany({ where: { productId: { in: ghostProductIds } } });
+      await prisma.favorite.deleteMany({ where: { productId: { in: ghostProductIds } } });
+    }
+    if (ghostServiceIds.length) {
+      await prisma.review.deleteMany({ where: { serviceId: { in: ghostServiceIds } } });
+    }
+    await prisma.productVariant.deleteMany({ where: { product: { businessId: { in: legacyBizIds } } } });
+    await prisma.product.deleteMany({ where: bizWhere });
+    await prisma.productCategory.deleteMany({ where: bizWhere });
+    await prisma.serviceEmployee.deleteMany({ where: { service: { businessId: { in: legacyBizIds } } } });
+    await prisma.service.deleteMany({ where: bizWhere });
+    await prisma.serviceCategory.deleteMany({ where: bizWhere });
+    await prisma.menuItemVariant.deleteMany({ where: { menuItem: { businessId: { in: legacyBizIds } } } });
+    await prisma.menuItem.deleteMany({ where: bizWhere });
+    await prisma.menuCategory.deleteMany({ where: bizWhere });
+    await prisma.room.deleteMany({ where: bizWhere });
+    await prisma.portfolioItem.deleteMany({ where: bizWhere });
+    await prisma.portfolioCategory.deleteMany({ where: bizWhere });
+    await prisma.rental.deleteMany({ where: bizWhere });
+    await prisma.eventParticipant.deleteMany({ where: { event: { businessId: { in: legacyBizIds } } } });
+    await prisma.eventTicket.deleteMany({ where: { event: { businessId: { in: legacyBizIds } } } });
+    await prisma.event.deleteMany({ where: bizWhere });
+    await prisma.quoteItem.deleteMany({ where: { quote: { businessId: { in: legacyBizIds } } } });
+    await prisma.quote.deleteMany({ where: bizWhere });
+    await prisma.invoiceItem.deleteMany({ where: { invoice: { businessId: { in: legacyBizIds } } } });
+    await prisma.invoice.deleteMany({ where: bizWhere });
+    await prisma.escrow.deleteMany({ where: bizWhere });
+    await prisma.debt.deleteMany({ where: bizWhere });
+    await prisma.expense.deleteMany({ where: bizWhere });
+    await prisma.businessClientTag.deleteMany({ where: { clientId: { in: legacyBizIds } } });
+    await prisma.clientNote.deleteMany({ where: { businessClient: { businessId: { in: legacyBizIds } } } });
+    await prisma.businessClient.deleteMany({ where: bizWhere });
+    await prisma.businessTag.deleteMany({ where: bizWhere });
+    await prisma.businessModuleAssignment.deleteMany({ where: bizWhere });
+    await prisma.businessPaymentMethod.deleteMany({ where: bizWhere });
+    await prisma.businessHour.deleteMany({ where: bizWhere });
+    await prisma.businessSettings.deleteMany({ where: bizWhere });
+    await prisma.businessBadge.deleteMany({ where: bizWhere });
+    await prisma.walletTransaction.deleteMany({ where: { wallet: { businessId: { in: legacyBizIds } } } });
+    await prisma.wallet.deleteMany({ where: bizWhere });
+    await prisma.delivery.deleteMany({ where: bizWhere });
+    await prisma.driver.deleteMany({ where: bizWhere });
+    await prisma.deliveryZone.deleteMany({ where: bizWhere });
+    await prisma.employee.deleteMany({ where: bizWhere });
+    await prisma.planningTask.deleteMany({ where: bizWhere });
+    await prisma.partner.deleteMany({ where: bizWhere });
+    await prisma.post.deleteMany({ where: bizWhere });
+    await prisma.story.deleteMany({ where: bizWhere });
+    await prisma.short.deleteMany({ where: bizWhere });
+    await prisma.live.deleteMany({ where: bizWhere });
+    await prisma.deal.deleteMany({ where: bizWhere });
+    await prisma.offerFlash.deleteMany({ where: bizWhere });
+    await prisma.marketingCampaign.deleteMany({ where: bizWhere });
+    await prisma.campaign.deleteMany({ where: bizWhere });
+    await prisma.pipelineStage.deleteMany({ where: bizWhere });
+    await prisma.business.deleteMany({ where: { id: { in: legacyBizIds } } });
+  }
+
+  // ── USERS parasites ensuite ──
+  if (legacyUserIds.length) {
+    await prisma.notificationDelivery.deleteMany({ where: { notification: { userId: { in: legacyUserIds } } } });
+    await prisma.notification.deleteMany({ where: userWhere });
+    await prisma.session.deleteMany({ where: userWhere });
+    await prisma.refreshToken.deleteMany({ where: userWhere });
+    await prisma.otpCode.deleteMany({ where: userWhere });
+    await prisma.securityLog.deleteMany({ where: userWhere });
+    await prisma.favorite.deleteMany({ where: { userId: { in: legacyUserIds } } });
+    await prisma.follow.deleteMany({ where: { followerId: { in: legacyUserIds } } });
+    await prisma.review.deleteMany({ where: { userId: { in: legacyUserIds } } });
+    await prisma.payment.deleteMany({ where: userWhere });
+    await prisma.orderItem.deleteMany({ where: { order: { buyerId: { in: legacyUserIds } } } });
+    await prisma.order.deleteMany({ where: { buyerId: { in: legacyUserIds } } });
+    await prisma.booking.deleteMany({ where: { clientId: { in: legacyUserIds } } });
+    await prisma.userRoleAssignment.deleteMany({ where: { userId: { in: legacyUserIds } } });
+    await prisma.user.deleteMany({ where: { id: { in: legacyUserIds } } });
+  }
+
+  console.log(`--- Purge : ${legacyUserIds.length} users + ${legacyBizIds.length} business anciens supprimés ---`);
+}
+
+// ============================================================
 // 12. NETTOYAGE (idempotent, FK-safe)
 // ============================================================
 async function cleanupExisting() {
@@ -733,6 +872,7 @@ async function cleanupExisting() {
 // ============================================================
 export async function seedRealistic() {
   console.log('\n🌍 Seed réaliste — Zéro fiction, tout connecté\n');
+  await purgeLegacyData();
   await cleanupExisting();
   await seedUsers();
   await seedBusinesses();
