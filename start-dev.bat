@@ -155,18 +155,13 @@ if %errorlevel% neq 0 (
 echo [OK] Base de donnees synchronisee
 
 :: ---------------------------------------------------------------------
-:: 9. Seed (optionnel, ignore si deja fait)
+:: 9. Seed (le seed realiste couvre tous les comptes et donnees)
 :: ---------------------------------------------------------------------
-echo [INFO] Seed de la base de donnees (config)...
+echo [INFO] Seed de la base de donnees (realiste)...
 cd /d %~dp0
 call npm run db:seed
 if %errorlevel% neq 0 (
-    echo [ATTENTION] Le seed config a rencontre une erreur.
-)
-echo [INFO] Seed des donnees de test...
-call npm run db:seed:test
-if %errorlevel% neq 0 (
-    echo [ATTENTION] Le seed test a rencontre une erreur.
+    echo [ATTENTION] Le seed a rencontre une erreur.
 )
 echo [OK] Base de donnees initialisee
 

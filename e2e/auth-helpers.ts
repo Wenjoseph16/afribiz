@@ -3,15 +3,15 @@ import type { APIRequestContext, BrowserContext } from '@playwright/test';
 
 export const TEST_ACCOUNTS = {
   business: {
-    email: 'demo@afribiz.com',
-    password: 'Test1234!',
-    name: 'Demo Business',
+    email: 'resto@afribiz.com',
+    password: 'Afribiz@2026!',
+    name: 'Saveur d\'Abidjan',
     role: 'BUSINESS',
   },
   client: {
-    email: 'client@afribiz.com',
-    password: 'Test1234!',
-    name: 'Client Test',
+    email: 'client1@afribiz.com',
+    password: 'Afribiz@2026!',
+    name: 'Awa Coulibaly',
     role: 'CLIENT',
   },
 } as const;

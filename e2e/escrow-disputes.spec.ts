@@ -43,7 +43,7 @@ test.describe('Admin Escrow', () => {
   test('should display admin escrow page', async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="email"]', 'admin@afribiz.com');
-    await page.fill('[name="password"]', 'admin123');
+    await page.fill('[name="password"]', 'Afribiz@2026!');
     await page.click('button[type="submit"]');
     await page.waitForURL('**/dashboard/**');
 
