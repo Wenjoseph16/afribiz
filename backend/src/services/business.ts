@@ -24,6 +24,10 @@ export async function getPublicBusiness(slug: string) {
       hours: { orderBy: { day: 'asc' } },
       paymentMethods: { where: { isActive: true } },
       deliveryZones: { where: { isActive: true } },
+      moduleAssignments: {
+        where: { status: 'ACTIVE' },
+        select: { module: true },
+      },
     },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -36,10 +40,19 @@ export async function getPublicBusiness(slug: string) {
     eventName: 'BUSINESS_VIEWED',
   }).catch(() => {});
 
+  // Modules : la vraie source de vérité = moduleAssignments (le champ modules est @deprecated et souvent vide).
+  // NB : quand des assignments ACTIVE existent, ils font foi — le champ déprécié n'est utilisé qu'en secours
+  // pour les business historiques sans assignments.
+  const { moduleAssignments, ...businessRest } = business;
+  const activeModules = (moduleAssignments || []).map((a) => a.module as BusinessModule);
+  const mergedModules =
+    activeModules.length > 0 ? activeModules : (businessRest.modules as BusinessModule[] | undefined) || [];
+
   return {
-    ...business,
-    description: business.description || business.shortDescription,
-    mission: business.mission,
+    ...businessRest,
+    modules: mergedModules,
+    description: businessRest.description || businessRest.shortDescription,
+    mission: businessRest.mission,
     vision: business.vision,
     foundedYear: business.foundedYear,
     owner: business.owner
