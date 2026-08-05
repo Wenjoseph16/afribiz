@@ -1,4 +1,5 @@
 import { prisma } from '../lib/db';
+import { resolveBusinessModules, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 type WeightedTag = { tag: string; weight: number };
 type SimilarProduct = { productId: string; score: number };
@@ -55,21 +56,23 @@ export async function findSimilarBusinesses(
 ): Promise<{ businessId: string; score: number }[]> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { id: true, type: true, modules: true, city: true, country: true },
+    select: { id: true, type: true, ...activeModuleAssignmentsSelect, city: true, country: true },
   });
   if (!business) return [];
 
   const candidates = await prisma.business.findMany({
     where: { id: { not: businessId }, isActive: true, deletedAt: null, country: business.country },
-    select: { id: true, type: true, modules: true, city: true, rating: true, reviewCount: true },
+    select: { id: true, type: true, ...activeModuleAssignmentsSelect, city: true, rating: true, reviewCount: true },
     take: 100,
   });
 
+  const businessModules = resolveBusinessModules(business);
   const scored = candidates.map((c) => {
     let score = 0;
     if (c.type === business.type) score += 0.4;
-    const moduleOverlap = business.modules.filter((m) => c.modules.includes(m)).length;
-    const maxModules = Math.max(business.modules.length, c.modules.length);
+    const cModules = resolveBusinessModules(c);
+    const moduleOverlap = businessModules.filter((m) => cModules.includes(m)).length;
+    const maxModules = Math.max(businessModules.length, cModules.length);
     if (maxModules > 0) score += (moduleOverlap / maxModules) * 0.3;
     if (c.city === business.city) score += 0.15;
     const ratingScore = ((c.rating || 0) / 5) * 0.1;

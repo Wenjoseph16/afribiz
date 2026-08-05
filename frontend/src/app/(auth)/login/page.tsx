@@ -48,7 +48,7 @@ function LoginContent() {
   const [tempToken, setTempToken] = useState('');
   const [loginData, setLoginData] = useState<LoginData | null>(null);
   const [totpCode, setTotpCode] = useState('');
-  const { setTokens, setUser } = useAuthStore();
+  const { setTokens, setUser, setSelectedSpace } = useAuthStore();
   const { notify } = useToast();
 
   const {
@@ -71,6 +71,9 @@ function LoginContent() {
     const redirect = searchParams.get('redirect');
     if (redirect) return redirect;
     if (user.primaryRole === 'ADMIN' || user.roles?.includes('ADMIN')) return '/dashboard/admin';
+    // Les gérants business arrivent directement dans leur espace (sidebar business visible)
+    if (user.primaryRole === 'BUSINESS' || user.roles?.includes('BUSINESS'))
+      return '/dashboard/business';
     return '/dashboard';
   };
 
@@ -107,6 +110,7 @@ function LoginContent() {
         const payload = response.data.data;
         setTokens(payload.accessToken, payload.refreshToken);
         setUser(payload.user);
+        setSelectedSpace(payload.user.primaryRole || 'CLIENT');
         notify({ title: 'Connexion réussie', variant: 'success' });
         router.push(getRedirectPath(payload.user));
       }
@@ -139,6 +143,7 @@ function LoginContent() {
         const payload = response.data.data;
         setTokens(payload.accessToken, payload.refreshToken);
         setUser(payload.user);
+        setSelectedSpace(payload.user.primaryRole || 'CLIENT');
         notify({ title: 'Connexion réussie', variant: 'success' });
         router.push(getRedirectPath(payload.user));
       }

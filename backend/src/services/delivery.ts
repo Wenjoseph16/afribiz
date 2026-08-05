@@ -3,6 +3,10 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { getBusinessByOwner } from '../lib/businessAccess';
 import {
+  hasBusinessModule,
+  activeModuleAssignmentsSelect,
+} from '../lib/businessModules';
+import {
   publishDeliveryAssigned,
   publishDeliveryStarted,
   publishDeliveryCompleted,
@@ -416,6 +420,7 @@ export async function getPublicDeliveryInfo(slug: string) {
     select: {
       id: true,
       modules: true,
+      ...activeModuleAssignmentsSelect,
       deliveryZones: {
         where: { isActive: true },
         select: { name: true, fee: true, minOrder: true, estimatedTime: true },
@@ -423,7 +428,7 @@ export async function getPublicDeliveryInfo(slug: string) {
     },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('DELIVERIES')) {
+  if (!hasBusinessModule(business, 'DELIVERIES')) {
     return { available: false, zones: [] };
   }
   return { available: true, zones: business.deliveryZones };

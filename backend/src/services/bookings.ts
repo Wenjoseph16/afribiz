@@ -4,14 +4,18 @@ import { AppError } from '../middlewares/errorHandler';
 import { publishBookingCreated, publishBookingStatusChanged } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
 import { checkPlanLimit } from './planAccessService';
+import {
+  hasBusinessModule,
+  activeModuleAssignmentsSelect,
+} from '../lib/businessModules';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, name: true, modules: true, settings: true },
+    select: { id: true, name: true, modules: true, settings: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('BOOKINGS'))
+  if (!hasBusinessModule(business, 'BOOKINGS'))
     throw new AppError('Module R\u00e9servations non activ\u00e9', 403);
   return business;
 }

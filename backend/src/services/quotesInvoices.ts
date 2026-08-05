@@ -1,14 +1,15 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 
 export async function getBusinessByOwner(ownerId: string, requireModule = true) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, name: true, modules: true, settings: true, logo: true },
+    select: { id: true, name: true, ...activeModuleAssignmentsSelect, settings: true, logo: true },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (requireModule && !business.modules.includes('QUOTES_INVOICES'))
+  if (requireModule && !hasBusinessModule(business, 'QUOTES_INVOICES'))
     throw new AppError('Module Devis & Factures non activ\u00e9', 403);
   return business;
 }

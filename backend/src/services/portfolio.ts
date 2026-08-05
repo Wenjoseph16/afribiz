@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 
 // ===================== PORTFOLIO ITEMS =====================
@@ -483,10 +484,10 @@ export async function recordInteraction(ownerId: string, data: any) {
 export async function getPublicPortfolio(slug: string) {
   const business = await prisma.business.findFirst({
     where: { slug, isActive: true },
-    select: { id: true, modules: true },
+    select: { id: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) return [];
-  if (!business.modules.includes('PORTFOLIO')) return [];
+  if (!hasBusinessModule(business, 'PORTFOLIO')) return [];
 
   const [items, categories, testimonials] = await Promise.all([
     prisma.portfolioItem.findMany({

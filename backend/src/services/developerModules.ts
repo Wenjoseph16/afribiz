@@ -123,6 +123,15 @@ async function maybeDeactivateModuleMarketplace(businessId: string): Promise<voi
           modules: { set: modules as any },
         },
       });
+      // Désactiver aussi l'assignment (source de vérité actuelle)
+      try {
+        await prisma.businessModuleAssignment.updateMany({
+          where: { businessId, module: 'MODULE_MARKETPLACE' as any, status: 'ACTIVE' },
+          data: { status: 'INACTIVE', deactivatedAt: new Date() },
+        });
+      } catch {
+        // Non-blocking
+      }
     }
   } catch {
     // Non-blocking

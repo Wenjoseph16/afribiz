@@ -3,6 +3,10 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 import { eventBus } from '../events/EventBus';
+import {
+  hasBusinessModule,
+  activeModuleAssignmentsSelect,
+} from '../lib/businessModules';
 import { DomainEventType, DomainEvent } from '../events/events';
 
 async function getBusinessByOwner(ownerId: string) {
@@ -453,9 +457,9 @@ export async function registerAutomationHandlers() {
       if (!businessIdVal) return;
       const biz = await prisma.business.findUnique({
         where: { id: businessIdVal },
-        select: { modules: true },
+        select: { modules: true, ...activeModuleAssignmentsSelect },
       });
-      if (!biz || !biz.modules.includes('ADVANCED_TASKS')) return;
+      if (!biz || !hasBusinessModule(biz, 'ADVANCED_TASKS')) return;
       const orderId = event.payload.orderId as string;
       const order = await prisma.order.findUnique({
         where: { id: orderId },
@@ -503,9 +507,9 @@ export async function registerAutomationHandlers() {
       if (!businessIdVal) return;
       const biz = await prisma.business.findUnique({
         where: { id: businessIdVal },
-        select: { modules: true },
+        select: { modules: true, ...activeModuleAssignmentsSelect },
       });
-      if (!biz || !biz.modules.includes('ADVANCED_TASKS')) return;
+      if (!biz || !hasBusinessModule(biz, 'ADVANCED_TASKS')) return;
       const bookingId = event.payload.bookingId as string;
       const booking = await prisma.booking.findUnique({
         where: { id: bookingId },

@@ -134,7 +134,7 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
     jest.clearAllMocks();
   });
 
-  it("crée une notification PLAN_LIMIT quand la limite est utilisée à >= 80%", async () => {
+  it('crée une notification PLAN_LIMIT quand la limite est utilisée à >= 80%', async () => {
     // business avec owner (fallback Gratuit : PRODUCTS_LIMIT = 10 → seuil = 8)
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
       planId: null,
@@ -245,6 +245,9 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
     await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 8, 'produits');
 
     expect(mockTo).toHaveBeenCalledWith('user:owner-1');
-    expect(mockEmit).toHaveBeenCalledWith('notification:new', expect.objectContaining({ id: 'notif-1' }));
+    expect(mockEmit).toHaveBeenCalledWith(
+      'notification:new',
+      expect.objectContaining({ id: 'notif-1' })
+    );
   });
 });

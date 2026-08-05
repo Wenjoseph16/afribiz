@@ -1,14 +1,15 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, name: true, modules: true, settings: true },
+    select: { id: true, name: true, ...activeModuleAssignmentsSelect, settings: true },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('PLANNING')) throw new AppError('Module Planning non activé', 403);
+  if (!hasBusinessModule(business, 'PLANNING')) throw new AppError('Module Planning non activé', 403);
   return business;
 }
 

@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 import { calculatePagination } from '../utils/helpers';
 import { publishServicePublished } from '../events/publishers';
@@ -19,10 +20,10 @@ function slugify(text: string): string {
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, name: true, modules: true },
+    select: { id: true, name: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('SERVICES')) {
+  if (!hasBusinessModule(business, 'SERVICES')) {
     throw new AppError('Module Services not activated', 403);
   }
   return business;

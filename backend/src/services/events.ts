@@ -2,6 +2,10 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { publishUpcomingEvent } from '../events/publishers';
 import { toDataURL } from 'qrcode';
+import {
+  hasBusinessModule,
+  activeModuleAssignmentsSelect,
+} from '../lib/businessModules';
 
 // ===== Helper =====
 async function getBusiness(userId: string) {
@@ -543,10 +547,10 @@ export async function getDashboardStats(userId: string) {
 export async function getPublicEvents(slug: string) {
   const business = await prisma.business.findUnique({
     where: { slug },
-    select: { id: true, modules: true },
+    select: { id: true, modules: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('EVENTS')) {
+  if (!hasBusinessModule(business, 'EVENTS')) {
     return { available: false, events: [] };
   }
   const now = new Date();

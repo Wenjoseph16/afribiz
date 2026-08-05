@@ -68,7 +68,18 @@ export function Sidebar() {
   const onExplicitDeveloperPath = currentPath.startsWith('/dashboard/developer');
   const onExplicitAdminPath = currentPath.startsWith('/dashboard/admin');
   const coreBusinessPaths = BUSINESS_CORE_NAV.flatMap((g) => g.items.map((i) => i.href));
-  const onSharedBusinessPath = coreBusinessPaths.some(
+  // Les liens des modules métier (Produits, Services, Réservations…) pointent vers des
+  // chemins partagés /dashboard/* — ils doivent compter comme chemins business, sinon le
+  // simple clic rebascule l'espace en CLIENT et la sidebar « ramène dans l'espace client ».
+  const moduleHrefs = [
+    MODULE_HREF_MAP['MODULE_MARKETPLACE'] || '/dashboard/marketplace',
+    ...(business?.modules || [])
+      .filter((mod) => mod !== 'MODULE_MARKETPLACE')
+      .map((mod) => MODULE_HREF_MAP[mod] || `/dashboard/${mod.toLowerCase()}`),
+  ];
+  const subItemHrefs = Object.values(MODULE_SUB_ITEMS).flat().map((s) => s.href);
+  const businessPaths = [...coreBusinessPaths, ...moduleHrefs, ...subItemHrefs];
+  const onSharedBusinessPath = businessPaths.some(
     (p) => currentPath === p || currentPath.startsWith(p + '/')
   );
 
@@ -107,7 +118,7 @@ export function Sidebar() {
     ) {
       setSelectedSpace('CLIENT');
     }
-  }, [currentPath]);
+  }, [currentPath, business?.modules]);
 
   useEffect(() => {
     if (myBusiness) setBusiness(myBusiness);

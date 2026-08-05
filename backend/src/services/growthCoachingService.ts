@@ -1,5 +1,6 @@
 import { prisma } from '../lib/db';
 import { BusinessModule, BusinessType } from '@prisma/client';
+import { resolveBusinessModules, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 // ──────────────────────────────────────────────
 // HELPERS
@@ -121,8 +122,8 @@ export async function getGrowthDetection(businessId: string): Promise<GrowthDete
       },
     }),
     prisma.business
-      .findUnique({ where: { id: businessId }, select: { modules: true } })
-      .then((b) => b?.modules || []),
+      .findUnique({ where: { id: businessId }, select: { ...activeModuleAssignmentsSelect } })
+      .then((b) => (b ? resolveBusinessModules(b) : [])),
   ]);
 
   const calcTrend = (current: number, previous: number): GrowthTrend['direction'] => {
@@ -332,9 +333,13 @@ export interface CoachResult {
 export async function getCoachDashboard(businessId: string): Promise<CoachResult> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    include: { score: true },
+    include: {
+      score: true,
+      moduleAssignments: { where: { status: 'ACTIVE' }, select: { module: true } },
+    },
   });
   if (!business) throw new Error('Business not found');
+  const activeModules = resolveBusinessModules(business as any);
 
   const sevenDaysAgo = SEVEN_DAYS_AGO();
   const thirtyDaysAgo = THIRTY_DAYS_AGO();
@@ -421,7 +426,7 @@ export async function getCoachDashboard(businessId: string): Promise<CoachResult
     });
 
   // === PRODUCTS ===
-  if (totalProducts === 0 && business.modules.includes('PRODUCTS')) {
+  if (totalProducts === 0 && activeModules.includes('PRODUCTS')) {
     tips.push({
       category: 'produits',
       priority: 'high',
@@ -440,7 +445,7 @@ export async function getCoachDashboard(businessId: string): Promise<CoachResult
   }
 
   // === SERVICES ===
-  if (totalServices === 0 && business.modules.includes('SERVICES')) {
+  if (totalServices === 0 && activeModules.includes('SERVICES')) {
     tips.push({
       category: 'services',
       priority: 'high',
@@ -472,7 +477,7 @@ export async function getCoachDashboard(businessId: string): Promise<CoachResult
   if (
     bookings30d === 0 &&
     business.createdAt < thirtyDaysAgo &&
-    business.modules.includes('BOOKINGS')
+    activeModules.includes('BOOKINGS')
   ) {
     tips.push({
       category: 'réservations',
@@ -546,7 +551,7 @@ export async function getCoachDashboard(businessId: string): Promise<CoachResult
 
   // === MODULES ===
   const recommended = getRecommendedModulesForType(business.type as BusinessType);
-  const missingModules = recommended.filter((m) => !business.modules.includes(m));
+  const missingModules = recommended.filter((m) => !activeModules.includes(m));
   if (missingModules.length > 0) {
     tips.push({
       category: 'modules',
@@ -577,7 +582,7 @@ export async function getCoachDashboard(businessId: string): Promise<CoachResult
     !!business.phone,
     !!business.city,
     totalProducts > 0,
-    totalServices > 0 || !business.modules.includes('SERVICES'),
+    totalServices > 0 || !activeModules.includes('SERVICES'),
     activePromos > 0,
     !!business.whatsapp,
     socialFields.some((s) => !!s),
@@ -849,7 +854,7 @@ export async function getModuleRecommendations(
 ): Promise<ModuleRecommendation[]> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { type: true, modules: true },
+    select: { type: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) throw new Error('Business not found');
 
@@ -882,7 +887,7 @@ export async function getModuleRecommendations(
   return allModules
     .map((m) => {
       const info = MODULE_DESCRIPTIONS[m];
-      const isActive = business.modules.includes(m);
+      const isActive = resolveBusinessModules(business).includes(m);
       let priority: ModuleRecommendation['priority'] = 'optional';
       let reason = '';
 

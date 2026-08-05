@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 import { getMonetizationSettings } from './monetizationConfig';
@@ -585,10 +586,10 @@ export async function getPublicPlatformPlans() {
 export async function getPublicSubscriptionPlans(slug: string) {
   const business = await prisma.business.findFirst({
     where: { slug, isActive: true },
-    select: { id: true, modules: true },
+    select: { id: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) return [];
-  if (!business.modules.includes('SUBSCRIPTIONS')) return [];
+  if (!hasBusinessModule(business, 'SUBSCRIPTIONS')) return [];
 
   return prisma.subscriptionPlan.findMany({
     where: { businessId: business.id, isActive: true, isPublic: true },

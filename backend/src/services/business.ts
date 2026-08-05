@@ -2,6 +2,7 @@ import { Prisma, BusinessType, BusinessModule, BusinessVerificationStatus } from
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { getPublicPortfolio } from './portfolio';
+import { resolveBusinessModules } from '../lib/businessModules';
 import {
   publishOnboardingCompleted,
   publishReviewResponse,
@@ -296,7 +297,7 @@ export interface OnboardingInput {
 }
 
 export async function getMyBusiness(ownerId: string) {
-  return prisma.business.findUnique({
+  const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
     include: {
       settings: true,
@@ -311,8 +312,18 @@ export async function getMyBusiness(ownerId: string) {
           avatar: true,
         },
       },
+      moduleAssignments: {
+        where: { status: 'ACTIVE' },
+        select: { module: true },
+      },
     },
   });
+  if (!business) return null;
+  // Source de vérité des modules = assignments ACTIVE (champ Business.modules déprécié)
+  return {
+    ...business,
+    modules: resolveBusinessModules(business),
+  };
 }
 
 export async function getMyBusinessStats(ownerId: string) {

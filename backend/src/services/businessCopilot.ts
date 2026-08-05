@@ -2,6 +2,10 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 import { cache } from '../lib/cache';
+import {
+  resolveBusinessModules,
+  activeModuleAssignmentsSelect,
+} from '../lib/businessModules';
 
 /**
  * Valeurs par défaut des poids pour le calcul du health score (utilisées
@@ -418,11 +422,11 @@ const MODULE_TIPS: Record<
 export async function getModuleTips(businessId: string, moduleKey: string): Promise<any[]> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { modules: true },
+    select: { modules: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) throw new AppError('Business not found', 404);
 
-  const activeModules = (business.modules || []) as string[];
+  const activeModules = resolveBusinessModules(business);
   if (!activeModules.includes(moduleKey)) return [];
 
   const tips = MODULE_TIPS[moduleKey];

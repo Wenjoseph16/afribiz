@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 import { calculatePagination } from '../utils/helpers';
 import { findProductByBusinessAndSlug as dbFindProductByBusinessAndSlug } from '../data';
@@ -40,10 +41,10 @@ function generateProductSlug(name: string, businessId: string): Promise<string> 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, name: true, modules: true },
+    select: { id: true, name: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('PRODUCTS')) {
+  if (!hasBusinessModule(business, 'PRODUCTS')) {
     throw new AppError('Module Produits not activated', 403);
   }
   return business;

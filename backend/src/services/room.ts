@@ -1,14 +1,15 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, name: true, modules: true },
+    select: { id: true, name: true, ...activeModuleAssignmentsSelect },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('ROOMS')) throw new AppError('Module Logements non activé', 403);
+  if (!hasBusinessModule(business, 'ROOMS')) throw new AppError('Module Logements non activé', 403);
   return business;
 }
 
@@ -343,10 +344,10 @@ export async function bulkToggleRooms(ownerId: string, ids: string[], isActive: 
 export async function getRoomStats(ownerId: string) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, modules: true, ownerId: true },
+    select: { id: true, ...activeModuleAssignmentsSelect, ownerId: true },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!business.modules.includes('ROOMS')) throw new AppError('Module Logements non activé', 403);
+  if (!hasBusinessModule(business, 'ROOMS')) throw new AppError('Module Logements non activé', 403);
   const bid = business.id;
   const [total, active, available, featured, bookings, promo] = await Promise.all([
     prisma.room.count({ where: { businessId: bid, deletedAt: null } }),
