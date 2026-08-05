@@ -70,4 +70,79 @@
 
 ---
 
+## 🏛️ AUDIT ADMIN — Carte réelle des 24 items (05/08/2026)
+
+> Audit code réel (routes backend + pages frontend + câblage). Statuts : 🟢 fonctionne · 🟡 partiel · 🔴 à construire.
+
+### LOT 1 — Command Center
+
+| Item | Statut | Constat vérifié |
+|---|---|---|
+| C1 Cockpit unifié | 🟡 | Page réelle (`adminGetDashboardStats`, polling 30s) mais pas de socket, hardcode `services: 0`, pas de file d'alertes ni raccourcis |
+| C2 Recherche globale | 🔴 | Aucun endpoint de recherche globale dans les routes admin |
+| C3 File d'alertes proactive | 🔴 | Rien n'agrège KYC en attente / litiges en retard / fraude / campagnes à valider |
+
+### LOT 2 — Cycle de vie business
+
+| Item | Statut | Constat vérifié |
+|---|---|---|
+| B1 Pipeline KYC | 🟡 | API complète (verify/reject, `verificationStatus`, filtres pays/vérif) ; vue « file » à compléter |
+| B2 Freeze / observation | 🔴 | N'existe nulle part (aucun freeze/observation dans le code) |
+| B3 Voir-comme (lecture seule) | 🔴 | N'existe nulle part (aucune impersonation) |
+| B4 Géo-intelligence | 🟡 | Filtre `country` existe ; pas de vue carto/par verticale |
+| B5 Historique 360 | 🟡 | `getUserActivity` existe ; pas de vue unifiée multi-onglets |
+
+### LOT 3 — L'argent
+
+| Item | Statut | Constat vérifié |
+|---|---|---|
+| F1 Escrow consolidé | 🟢 | Routes + stats + release/refund/arbitrate + page câblée |
+| F2 Payouts | 🟢 | Routes approve/reject + page developers/commissions |
+| F3 Dettes & recouvrement | 🔴 | Frontend attend `/admin/finance/debt-recovery` → **route inexistante** (travail perdu au restore) |
+| F4 Revenus par source | 🟡 | Route `/admin/revenue/stats` + `:period` existe, page câblée ; `getPlatformRevenue` à confirmer |
+| F5 Fraude | 🔴 | `getFraudReports` = **STUB vide** (`{items:[], total:0}`) ; actions approve/reject/ban **inexistantes** ; page frontend sur routes fantômes |
+
+### LOT 4 — Confiance & sécurité
+
+| Item | Statut | Constat vérifié |
+|---|---|---|
+| T1 Modération média | 🟢 | items / report / approve / reject complets |
+| T2 Litiges | 🟢 | stats + decide/close + notifications 2 parties |
+| T3 AfriScore piloté | 🟡 | Consultation OK (stats/badges/history/audit) ; **pas d'ajustement manuel justifié** |
+| T4 Sécurité active | 🟢 | logs/stats/admins/sessions/attempts/blacklist/journal + page câblée |
+
+### LOT 5 — Support & contenu
+
+| Item | Statut | Constat vérifié |
+|---|---|---|
+| S1 Tickets + SLA | 🟢 | tickets/stats/action + page câblée |
+| S2 CMS | 🟡 | Pages CMS existent ; câblage à vérifier |
+| S3 Feature flags | 🟢 | CRUD + toggle complets |
+
+### LOT 6 — Gouvernance & fiabilité
+
+| Item | Statut | Constat vérifié |
+|---|---|---|
+| G1 Rôles admin | 🟢 | CRUD + assign/unassign + permissions |
+| G2 Double validation | 🔴 | N'existe nulle part |
+| G3 Audit + RGPD | 🟢 | audit-logs + data-access-logs + api-keys |
+| G4 Santé système | 🟡 | platform-health + cron-monitoring existent ; vue consolidée à faire |
+
+### 🩹 Code mort détecté
+
+| Élément | Constat |
+|---|---|
+| `getFraudReports` | Stub vide → remplacé par une vraie implémentation |
+| Pages `ads/packages` et `datahub` | Aucun import API (statiques) → à câbler ou retirer |
+
+### Bilan
+
+| Statut | Nombre |
+|---|---|
+| 🟢 Fonctionne | 9 |
+| 🟡 Partiel | 8 |
+| 🔴 À construire | 7 |
+
+---
+
 *Registre maintenu à chaque fin de workflow. Voir [MASTER.md](./MASTER.md) pour la méthodologie.*

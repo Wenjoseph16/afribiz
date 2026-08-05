@@ -109,7 +109,9 @@ export function ModulesGridSection() {
                 variants={staggerItem}
                 className={`relative group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 ${isLarge ? 'sm:col-span-2 sm:row-span-2' : ''}`}
               >
-                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${style.color}`} />
+                <div
+                  className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${style.color}`}
+                />
                 <div className={`p-5 sm:p-6 ${isLarge ? 'sm:p-7' : ''}`}>
                   <div className="flex items-start justify-between mb-4">
                     <div

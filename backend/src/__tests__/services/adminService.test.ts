@@ -68,6 +68,11 @@ import {
   restoreBackup,
   getApiKeys,
   getFraudReports,
+  approveFraudReport,
+  rejectFraudReport,
+  banFraudReport,
+  globalSearch,
+  getAdminAlertQueue,
   getPlatformSettings as getPlatSettings,
   updatePlatformSettings as updatePlatSettings,
   getAdminAuditLog,
@@ -645,9 +650,105 @@ describe('adminService', () => {
       );
       expect(r.platformName).toBe('New');
     });
-    test('getFraudReports returns empty', async () => {
-      const r = await getFraudReports({});
-      expect(r.items).toHaveLength(0);
+    test('getFraudReports returns real fraud events (filtre par type)', async () => {
+      jest.spyOn(mockPrisma.fraudEvent, 'count').mockResolvedValue(1);
+      jest.spyOn(mockPrisma.fraudEvent, 'findMany').mockResolvedValue([
+        {
+          id: 'fx1',
+          eventType: 'VELOCITY_ORDER',
+          severity: 'HIGH',
+          ruleName: 'Vitesse de commande anormale',
+          blocked: false,
+          ipAddress: '127.0.0.1',
+          country: 'CI',
+          createdAt: new Date(),
+          user: { id: 'u1', firstName: 'A', lastName: 'B', email: 'a@b.com' },
+        } as any,
+      ]);
+      const r = await getFraudReports({ type: 'FRAUD' });
+      expect(r.reports).toHaveLength(1);
+      expect(r.reports[0].type).toBe('VELOCITY_ORDER');
+      expect(r.reports[0].client?.email).toBe('a@b.com');
+      expect(mockPrisma.fraudEvent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eventType: { contains: 'FRAUD', mode: 'insensitive' },
+            // Sémantique de file : par défaut, seules les alertes non traitées sont visibles
+            blocked: false,
+          },
+        })
+      );
+    });
+    test('approveFraudReport bloque le fraudEvent + audit', async () => {
+      jest.spyOn(mockPrisma.fraudEvent, 'findUnique').mockResolvedValue({
+        id: 'fx1',
+        userId: 'u1',
+        eventType: 'VELOCITY_ORDER',
+        blocked: false,
+      } as any);
+      jest.spyOn(mockPrisma.fraudEvent, 'update').mockResolvedValue({
+        id: 'fx1',
+        blocked: true,
+        action: 'BLOCK',
+      } as any);
+      const r = await approveFraudReport('fx1', 'admin-1');
+      expect(r.success).toBe(true);
+      expect(mockPrisma.fraudEvent.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { blocked: true, action: 'BLOCK' } })
+      );
+    });
+    test('rejectFraudReport marque un faux positif', async () => {
+      jest.spyOn(mockPrisma.fraudEvent, 'findUnique').mockResolvedValue({ id: 'fx1' } as any);
+      jest
+        .spyOn(mockPrisma.fraudEvent, 'update')
+        .mockResolvedValue({ id: 'fx1', blocked: false } as any);
+      const r = await rejectFraudReport('fx1', 'admin-1');
+      expect(r.success).toBe(true);
+    });
+    test('banFraudReport bloque l utilisateur lié', async () => {
+      jest
+        .spyOn(mockPrisma.fraudEvent, 'findUnique')
+        .mockResolvedValue({ id: 'fx1', userId: 'u1', blocked: false } as any);
+      jest.spyOn(mockPrisma.fraudEvent, 'update').mockResolvedValue({ id: 'fx1' } as any);
+      jest.spyOn(mockPrisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(mockPrisma.user, 'update').mockResolvedValue({ ...mockUser, isActive: false });
+      const r = await banFraudReport('fx1', 'admin-1');
+      expect(r.success).toBe(true);
+    });
+    test('globalSearch retourne des résultats groupés', async () => {
+      jest.spyOn(mockPrisma.user, 'findMany').mockResolvedValue([mockUser]);
+      jest.spyOn(mockPrisma.business, 'findMany').mockResolvedValue([mockBiz]);
+      jest.spyOn(mockPrisma.order, 'findMany').mockResolvedValue([
+        {
+          id: 'o1',
+          orderNumber: 'CMD-2026-001',
+          status: 'PENDING',
+          totalAmount: 5000,
+          buyerId: 'u1',
+          businessId: 'b1',
+        } as any,
+      ]);
+      jest.spyOn(mockPrisma.dispute, 'findMany').mockResolvedValue([]);
+      jest.spyOn(mockPrisma.developerProfile, 'findMany').mockResolvedValue([]);
+      const r = await globalSearch('a@b');
+      expect(r.users).toHaveLength(1);
+      expect(r.orders).toHaveLength(1);
+      expect(mockPrisma.business.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { OR: expect.any(Array) } })
+      );
+    });
+    test('getAdminAlertQueue agrège les situations à traiter', async () => {
+      jest.spyOn(mockPrisma.business, 'count').mockResolvedValue(2);
+      jest.spyOn(mockPrisma.dispute, 'count').mockResolvedValue(1);
+      jest.spyOn(mockPrisma.adCampaign, 'count').mockResolvedValue(0);
+      jest.spyOn(mockPrisma.developerPayout, 'count').mockResolvedValue(0);
+      jest.spyOn(mockPrisma.developerSupportTicket, 'count').mockResolvedValue(0);
+      jest.spyOn(mockPrisma.fraudEvent, 'count').mockResolvedValue(0);
+      jest.spyOn(mockPrisma.businessSubscription, 'count').mockResolvedValue(0);
+      const r = await getAdminAlertQueue();
+      expect(r.alerts.some((a: any) => a.key === 'kyc')).toBe(true);
+      expect(r.alerts.some((a: any) => a.key === 'disputes')).toBe(true);
+      expect(r.total).toBeGreaterThan(0);
     });
     test('getDataReports returns', async () => {
       jest.spyOn(mockPrisma.dataReport, 'count').mockResolvedValue(1);

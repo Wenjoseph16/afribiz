@@ -93,3 +93,6 @@ stop
 test-results/
 playwright-report/
 .aider*
+
+# Export outils d analyse (repomix)
+repomix-*.xml

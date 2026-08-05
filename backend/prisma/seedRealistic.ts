@@ -1078,7 +1078,111 @@ export async function seedRealistic() {
   await seedWallets();
   await seedCms();
   await seedOperations();
+  await seedFraud();
+  await seedFinance();
   console.log('\n✅ Seed réaliste terminé. Mdp unique : ' + PASSWORD);
+}
+
+// ============================================================
+// FRAUDE (événements de détection réalistes, liés à de vrais comptes)
+// ============================================================
+async function seedFraud() {
+  const rules = [
+    { id: 'fr-1', name: 'Vitesse de commande anormale', type: 'VELOCITY', action: 'FLAG', severity: 'HIGH', priority: 10 },
+    { id: 'fr-2', name: 'Incohérence géographique', type: 'GEO', action: 'CHALLENGE_2FA', severity: 'MEDIUM', priority: 5 },
+  ];
+  for (const r of rules) {
+    await prisma.fraudRule.upsert({
+      where: { id: r.id },
+      update: {
+        name: r.name, type: r.type, action: r.action as any, severity: r.severity as any, priority: r.priority, config: {},
+      },
+      create: {
+        id: r.id, name: r.name, type: r.type,
+        action: r.action as any, severity: r.severity as any, priority: r.priority, config: {},
+      },
+    });
+  }
+
+  const events = [
+    {
+      id: 'fr-ev-1', userId: U.CLIENT_3, ruleId: 'fr-1', ruleName: 'Vitesse de commande anormale',
+      eventType: 'FRAUD_VELOCITY_ORDER', severity: 'HIGH', action: 'FLAG',
+      metadata: { ordersInHour: 4, amount: 250000 }, createdAt: new Date('2026-07-20'),
+    },
+    {
+      id: 'fr-ev-2', userId: U.CLIENT_2, ruleId: 'fr-2', ruleName: 'Incohérence géographique',
+      eventType: 'FAUX_PROFILS_GEO_MISMATCH', severity: 'MEDIUM', action: 'CHALLENGE_2FA',
+      metadata: { country: 'GH', expected: 'CI' }, createdAt: new Date('2026-07-18'),
+    },
+  ];
+  for (const e of events) {
+    await prisma.fraudEvent.upsert({
+      where: { id: e.id },
+      update: {
+        userId: e.userId, ruleId: e.ruleId, ruleName: e.ruleName, eventType: e.eventType,
+        severity: e.severity as any, action: e.action as any, blocked: false, metadata: e.metadata,
+      },
+      create: {
+        id: e.id, userId: e.userId, ruleId: e.ruleId, ruleName: e.ruleName, eventType: e.eventType,
+        severity: e.severity as any, action: e.action as any, blocked: false, metadata: e.metadata,
+        createdAt: e.createdAt,
+      },
+    });
+  }
+  console.log('✓ Fraude : 2 règles + 2 événements créés');
+}
+
+// ============================================================
+// FINANCE (paiements + escrow liés à de vraies commandes)
+// ============================================================
+async function seedFinance() {
+  const [ord1, ord3, ord4] = await Promise.all([
+    prisma.order.findUnique({ where: { id: 'ord-1' } }),
+    prisma.order.findUnique({ where: { id: 'ord-3' } }),
+    prisma.order.findUnique({ where: { id: 'ord-4' } }),
+  ]);
+  const amt = (o: any) => (o ? Number(o.totalAmount) || 0 : 0);
+
+  await prisma.payment.upsert({
+    where: { id: 'pay-1' },
+    update: {},
+    create: {
+      id: 'pay-1', userId: U.CLIENT_1, businessId: B.RESTO, orderId: 'ord-1',
+      amount: amt(ord1), currency: 'FCFA', method: 'MOBILE_MONEY', status: 'COMPLETED',
+      reference: 'REF-PAY-2026-001', description: 'Paiement CMD-2026-001',
+      paidAt: new Date('2026-06-15'),
+    },
+  });
+  await prisma.payment.upsert({
+    where: { id: 'pay-2' },
+    update: {},
+    create: {
+      id: 'pay-2', userId: U.CLIENT_2, businessId: B.BOUTIQUE, orderId: 'ord-4',
+      amount: amt(ord4), currency: 'FCFA', method: 'CASH', status: 'COMPLETED',
+      reference: 'REF-PAY-2026-002', description: 'Paiement CMD-2026-004',
+      paidAt: new Date('2026-07-02'),
+    },
+  });
+  await prisma.payment.upsert({
+    where: { id: 'pay-3' },
+    update: {},
+    create: {
+      id: 'pay-3', userId: U.CLIENT_5, businessId: B.RESTO, orderId: 'ord-3',
+      amount: amt(ord3), currency: 'FCFA', method: 'MOBILE_MONEY', status: 'PENDING',
+      reference: 'REF-PAY-2026-003', description: 'Paiement CMD-2026-003',
+    },
+  });
+  await prisma.escrow.upsert({
+    where: { id: 'esc-1' },
+    update: {},
+    create: {
+      id: 'esc-1', businessId: B.RESTO, orderId: 'ord-2',
+      amount: 12000, currency: 'FCFA', status: 'HELD', fee: 600, feeRate: 5,
+      notes: 'Séquestre CMD-2026-002 en attente de livraison',
+    },
+  });
+  console.log('✓ Finance : 3 paiements + 1 escrow liés à de vraies commandes');
 }
 
 // Exécution directe (npx tsx prisma/seedRealistic.ts)

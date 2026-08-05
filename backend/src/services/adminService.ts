@@ -14,6 +14,7 @@ import {
   notifyEscrowReleased,
   notifyEscrowRefunded,
   notifyDisputeResolved,
+  notifyUserWarned,
 } from './adminEvents';
 import * as adminFeaturesService from './adminFeaturesService';
 import { invalidatePlanCache } from './planAccessService';
@@ -2184,12 +2185,194 @@ export const getApiKeys = async (query: { page?: number; limit?: number }) => {
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
 };
 
-export const getFraudReports = async (_query: {
+export const getFraudReports = async (query: {
   status?: string;
+  type?: string;
   page?: number;
   limit?: number;
 }) => {
-  return { items: [], total: 0, page: _query.page || 1, limit: _query.limit || 10, totalPages: 0 };
+  const page = query.page || 1;
+  const limit = query.limit || 10;
+  const where: any = {};
+  // Onglets frontend : FRAUD | SPAM | ARNAQUE | FAUX_PROFILS | CONTENU_ILLEGAL | ABUS
+  if (query.type) {
+    where.eventType = { contains: query.type, mode: 'insensitive' };
+  }
+  if (query.status === 'RESOLVED' || query.status === 'ACTION_TAKEN') {
+    where.blocked = true;
+  } else if (query.status === 'PENDING') {
+    where.blocked = false;
+  } else {
+    // Sémantique de file : par défaut, seules les alertes non traitées sont visibles
+    where.blocked = false;
+  }
+
+  const [items, total] = await Promise.all([
+    prisma.fraudEvent.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+    }),
+    prisma.fraudEvent.count({ where }),
+  ]);
+
+  return {
+    reports: items.map((f) => ({
+      id: f.id,
+      type: f.eventType,
+      severity: f.severity,
+      reason: f.ruleName,
+      status: f.blocked ? 'ACTION_TAKEN' : 'PENDING',
+      blocked: f.blocked,
+      client: f.user
+        ? { id: f.user.id, firstName: f.user.firstName, lastName: f.user.lastName, email: f.user.email }
+        : null,
+      ipAddress: f.ipAddress,
+      country: f.country,
+      createdAt: f.createdAt,
+    })),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+
+/** Confirmer une alerte de fraude (fraudEvent bloque + audit). */
+export const approveFraudReport = async (id: string, adminUserId?: string) => {
+  const evt = await prisma.fraudEvent.findUnique({ where: { id } });
+  if (!evt) throw new AppError('Alerte de fraude introuvable', 404);
+  await prisma.fraudEvent.update({ where: { id }, data: { blocked: true, action: 'BLOCK' } });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_USER_ACTION',
+      targetUserId: evt.userId || undefined,
+      reason: 'Fraude confirmée',
+      metadata: { resource: 'fraudEvent', eventType: evt.eventType, fraudEventId: id },
+    });
+  }
+  return { success: true, id };
+};
+
+/** Rejeter une alerte de fraude (faux positif + audit). */
+export const rejectFraudReport = async (id: string, adminUserId?: string) => {
+  const evt = await prisma.fraudEvent.findUnique({ where: { id } });
+  if (!evt) throw new AppError('Alerte de fraude introuvable', 404);
+  await prisma.fraudEvent.update({ where: { id }, data: { blocked: false } });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_USER_ACTION',
+      targetUserId: evt.userId || undefined,
+      reason: 'Faux positif rejeté',
+      metadata: { resource: 'fraudEvent', eventType: evt.eventType, fraudEventId: id },
+    });
+  }
+  return { success: true, id };
+};
+
+/** Bannir l'utilisateur lié à une alerte de fraude confirmée (blocage + notif + audit). */
+export const banFraudReport = async (id: string, adminUserId?: string) => {
+  const evt = await prisma.fraudEvent.findUnique({ where: { id } });
+  if (!evt) throw new AppError('Alerte de fraude introuvable', 404);
+  await prisma.fraudEvent.update({ where: { id }, data: { blocked: true, action: 'BLOCK' } });
+  if (evt.userId) {
+    await updateUserStatus(evt.userId, 'block', adminUserId);
+    try {
+      await notifyUserWarned({
+        userId: evt.userId,
+        reason: "Votre compte a été bloqué après confirmation d'une alerte de fraude.",
+      });
+    } catch {
+      // Non bloquant : la notification ne doit pas faire échouer le bannissement
+    }
+  }
+  return { success: true, id };
+};
+
+/** Recherche globale admin : utilisateurs, commerces, développeurs, commandes, litiges. */
+export const globalSearch = async (q?: string) => {
+  const term = (q || '').trim();
+  const empty = { users: [], businesses: [], developers: [], orders: [], disputes: [] };
+  if (!term) return empty;
+  const contains = { contains: term, mode: 'insensitive' as const };
+
+  const [users, businesses, orders, disputes, developers] = await Promise.all([
+    prisma.user.findMany({
+      where: { OR: [{ email: contains }, { firstName: contains }, { lastName: contains }] },
+      select: { id: true, firstName: true, lastName: true, email: true, primaryRole: true, avatar: true },
+      take: 8,
+    }),
+    prisma.business.findMany({
+      where: { OR: [{ name: contains }, { slug: contains }, { email: contains }] },
+      select: { id: true, name: true, slug: true, type: true, verificationStatus: true, isActive: true },
+      take: 8,
+    }),
+    prisma.order.findMany({
+      where: { orderNumber: { contains: term } },
+      select: { id: true, orderNumber: true, status: true, totalAmount: true, buyerId: true, businessId: true },
+      take: 8,
+    }),
+    prisma.dispute.findMany({
+      where: { OR: [{ title: contains }, { reference: contains }] },
+      select: { id: true, title: true, status: true, createdAt: true },
+      take: 8,
+    }),
+    prisma.developerProfile.findMany({
+      where: { OR: [{ companyName: contains }] },
+      select: { id: true, userId: true, companyName: true },
+      take: 8,
+    }),
+  ]);
+
+  return { users, businesses, developers, orders, disputes };
+};
+
+/** File d'alertes proactive : agrège les situations à traiter prioritairement. */
+export const getAdminAlertQueue = async () => {
+  const now = new Date();
+  const since3d = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const [kyc, disputesOpen, disputesOld, adsPending, payoutsPending, ticketsOpen, fraudHigh, subsExpiring] =
+    await Promise.all([
+      prisma.business.count({ where: { verificationStatus: 'PENDING' } }),
+      prisma.dispute.count({ where: { status: { in: ['OUVERT', 'EN_COURS'] } } }),
+      prisma.dispute.count({ where: { status: { in: ['OUVERT', 'EN_COURS'] }, createdAt: { lt: since3d } } }),
+      prisma.adCampaign.count({ where: { status: 'PENDING' } }),
+      prisma.developerPayout.count({ where: { status: 'PENDING' } }),
+      prisma.developerSupportTicket.count({ where: { status: 'OPEN' } }),
+      prisma.fraudEvent.count({ where: { severity: { in: ['HIGH', 'CRITICAL'] }, blocked: false } }),
+      prisma.businessSubscription.count({
+        where: { status: 'ACTIVE', endDate: { not: null, lte: in7d } },
+      }),
+    ]);
+
+  const alerts: {
+    key: string;
+    label: string;
+    count: number;
+    severity: string;
+    link: string;
+  }[] = [];
+  const push = (key: string, label: string, count: number, severity: string, link: string) => {
+    if (count > 0) alerts.push({ key, label, count, severity, link });
+  };
+
+  push('kyc', 'Commerces en attente de vérification KYC', kyc, kyc > 5 ? 'HIGH' : 'MEDIUM', '/dashboard/admin/businesses');
+  push('disputes', 'Litiges ouverts', disputesOpen, disputesOpen > 5 ? 'HIGH' : 'MEDIUM', '/dashboard/admin/disputes');
+  push('disputes-old', 'Litiges non traités depuis plus de 3 jours', disputesOld, 'HIGH', '/dashboard/admin/disputes');
+  push('ads', 'Campagnes publicitaires à valider', adsPending, 'MEDIUM', '/dashboard/admin/ads');
+  push('payouts', 'Payouts développeurs en attente', payoutsPending, 'MEDIUM', '/dashboard/admin/developers/commissions');
+  push('support', 'Tickets support ouverts', ticketsOpen, 'MEDIUM', '/dashboard/admin/support');
+  push('fraud', 'Alertes fraude à haut risque', fraudHigh, 'CRITICAL', '/dashboard/admin/reports/fraud');
+  push('subscriptions', 'Abonnements arrivant à expiration', subsExpiring, 'LOW', '/dashboard/admin/subscriptions');
+
+  const urgent = alerts.filter((a) => a.severity === 'CRITICAL' || a.severity === 'HIGH').length;
+  return { alerts, total: alerts.length, urgent, generatedAt: now };
 };
 
 export const getPlatformSettings = async (): Promise<Record<string, any>> => {

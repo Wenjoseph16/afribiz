@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import * as adminService from '../services/adminService';
+import * as adminFinanceService from '../services/adminFinanceService';
 import { presenceService } from '../services/presenceService';
 
 export const getDashboardStats = catchAsyncErrors(
@@ -719,14 +720,109 @@ export const getApiKeys = catchAsyncErrors(
 
 export const getFraudReports = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const { status } = req.query;
+    const { status, type } = req.query;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const result = await adminService.getFraudReports({
       status: status as string,
+      type: type as string,
       page,
       limit,
     });
+    res.json({ success: true, data: result });
+  }
+);
+
+/** POST /admin/reports/fraud/:id/approve — confirmer une alerte de fraude */
+export const approveFraudReport = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
+    const result = await adminService.approveFraudReport(req.params.id, req.user?.id);
+    res.json({ success: true, data: result, message: 'Fraude confirmée' });
+  }
+);
+
+/** POST /admin/reports/fraud/:id/reject — rejeter un faux positif */
+export const rejectFraudReport = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
+    const result = await adminService.rejectFraudReport(req.params.id, req.user?.id);
+    res.json({ success: true, data: result, message: 'Alerte rejetée' });
+  }
+);
+
+/** POST /admin/reports/fraud/:id/ban — bannir l'utilisateur lié à la fraude */
+export const banFraudReport = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
+    const result = await adminService.banFraudReport(req.params.id, req.user?.id);
+    res.json({ success: true, data: result, message: 'Utilisateur banni' });
+  }
+);
+
+// ============================================
+// FINANCE ADMIN (overview / transactions / escrows / fraude / recouvrement)
+// ============================================
+
+export const getAdminFinanceOverview = catchAsyncErrors(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const result = await adminFinanceService.getAdminFinanceOverview();
+    res.json({ success: true, data: result });
+  }
+);
+
+export const getAdminFinanceTransactions = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 15;
+    const result = await adminFinanceService.getAdminFinanceTransactions({
+      page,
+      limit,
+      status: req.query.status as string,
+      provider: req.query.provider as string,
+    });
+    res.json({ success: true, data: result });
+  }
+);
+
+export const getAdminFinanceEscrows = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 15;
+    const result = await adminFinanceService.getAdminFinanceEscrows({
+      page,
+      limit,
+      status: req.query.status as string,
+    });
+    res.json({ success: true, data: result });
+  }
+);
+
+export const getAdminFinanceFraudAlerts = catchAsyncErrors(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const result = await adminFinanceService.getAdminFinanceFraudAlerts();
+    res.json({ success: true, data: result });
+  }
+);
+
+export const getAdminFinanceDebtRecovery = catchAsyncErrors(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const result = await adminFinanceService.getAdminFinanceDebtRecovery();
+    res.json({ success: true, data: result });
+  }
+);
+
+// ============================================
+// RECHERCHE GLOBALE + FILE D'ALERTES
+// ============================================
+
+export const searchAdmin = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const result = await adminService.globalSearch(req.query.q as string);
+    res.json({ success: true, data: result });
+  }
+);
+
+export const getAdminAlertQueue = catchAsyncErrors(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const result = await adminService.getAdminAlertQueue();
     res.json({ success: true, data: result });
   }
 );

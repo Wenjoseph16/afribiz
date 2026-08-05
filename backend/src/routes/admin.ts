@@ -45,6 +45,16 @@ import {
   getSystemLogs,
   getApiKeys,
   getFraudReports,
+  approveFraudReport,
+  rejectFraudReport,
+  banFraudReport,
+  getAdminFinanceOverview,
+  getAdminFinanceTransactions,
+  getAdminFinanceEscrows,
+  getAdminFinanceFraudAlerts,
+  getAdminFinanceDebtRecovery,
+  searchAdmin,
+  getAdminAlertQueue,
   getAdminAuditLog,
   // NEW CONTROLLERS
   getAdminEscrows,
@@ -161,6 +171,20 @@ router.get('/admin/disputes', getDisputes);
 // Data Reports
 router.get('/admin/reports', getDataReports);
 router.get('/admin/reports/fraud', getFraudReports);
+router.post('/admin/reports/fraud/:id/approve', approveFraudReport);
+router.post('/admin/reports/fraud/:id/reject', rejectFraudReport);
+router.post('/admin/reports/fraud/:id/ban', banFraudReport);
+
+// Finance admin (dashboard /admin/payments)
+router.get('/admin/finance/overview', getAdminFinanceOverview);
+router.get('/admin/finance/transactions', getAdminFinanceTransactions);
+router.get('/admin/finance/escrows', getAdminFinanceEscrows);
+router.get('/admin/finance/fraud-alerts', getAdminFinanceFraudAlerts);
+router.get('/admin/finance/debt-recovery', getAdminFinanceDebtRecovery);
+
+// Recherche globale + file d'alertes proactive
+router.get('/admin/search', searchAdmin);
+router.get('/admin/alerts', getAdminAlertQueue);
 
 // Notifications
 router.get('/admin/notifications', getNotifications);
