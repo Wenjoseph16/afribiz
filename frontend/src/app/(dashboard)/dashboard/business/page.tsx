@@ -109,6 +109,61 @@ const BusinessAlertQueue = dynamic(() => import('@/components/dashboard/Business
   loading: () => <div className="h-48 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
 });
 
+// ─── Mapping module BusinessModule -> vraie page du dashboard ───
+// Les codes enum (QUOTES_INVOICES, DEBTS_PAYMENTS…) ne correspondent pas
+// toujours à une route ; fallback sûr = marketplace (existe toujours).
+const MODULE_ROUTES: Record<string, string> = {
+  PRODUCTS: '/dashboard/products',
+  SERVICES: '/dashboard/services',
+  MENU: '/dashboard/menu',
+  ROOMS: '/dashboard/rooms',
+  BOOKINGS: '/dashboard/bookings',
+  ORDERS: '/dashboard/orders',
+  QUOTES_INVOICES: '/dashboard/accounting',
+  DEBTS_PAYMENTS: '/dashboard/debts-payments',
+  PROMOTIONS: '/dashboard/promotions',
+  PLANNING: '/dashboard/planning',
+  EMPLOYEES: '/dashboard/employees',
+  PORTFOLIO: '/dashboard/portfolio',
+  SUBSCRIPTIONS: '/dashboard/subscriptions',
+  DELIVERIES: '/dashboard/deliveries',
+  EVENTS: '/dashboard/events',
+  RENTALS: '/dashboard/rentals',
+  DOCUMENTS: '/dashboard/documents',
+  PARTNERS: '/dashboard/partners',
+  DISPUTES: '/dashboard/disputes',
+  MODULE_MARKETPLACE: '/dashboard/marketplace',
+  ADVANCED_TASKS: '/dashboard/tasks',
+  TRAINING: '/dashboard/trainings',
+  SAVINGS: '/dashboard/savings',
+  CRM: '/dashboard/crm',
+  MARKETING: '/dashboard/marketing',
+  MEDIA: '/dashboard/media-commerce',
+  AFRISCORE: '/dashboard/afriscore',
+  GROUP_BUY: '/dashboard/group-buys',
+  VOICE: '/dashboard/voice',
+};
+
+const MODULE_LABELS: Record<string, string> = {
+  MODULE_MARKETPLACE: 'Marketplace',
+  QUOTES_INVOICES: 'Devis & Factures',
+  DEBTS_PAYMENTS: 'Dettes & Paiements',
+  ADVANCED_TASKS: 'Tâches avancées',
+  GROUP_BUY: 'Achat groupé',
+};
+
+function moduleLabel(mod: string): string {
+  if (MODULE_LABELS[mod]) return MODULE_LABELS[mod];
+  return mod
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function moduleRoute(mod: string): string {
+  return MODULE_ROUTES[mod] || '/dashboard/marketplace';
+}
+
 const QUICK_ACTIONS = [
   {
     label: 'Page publique',
@@ -882,11 +937,11 @@ export default function BusinessDashboardPage() {
               {biz.modules.map((mod: any) => (
                 <Link
                   key={mod}
-                  href={`/dashboard/${mod.toLowerCase()}`}
+                  href={moduleRoute(mod)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand/5 text-brand text-xs font-medium rounded-full border border-brand/10 hover:bg-brand/10 transition-colors"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-brand" />
-                  {mod.charAt(0) + mod.slice(1).toLowerCase()}
+                  {moduleLabel(mod)}
                 </Link>
               ))}
               <Link

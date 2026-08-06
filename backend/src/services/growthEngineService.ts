@@ -440,7 +440,7 @@ function generateAdvice({ orders, bookings, promotions, offerFlashes }: any): an
       priority: 'low',
       message: 'Publiez vos offres avant 11h pour toucher le maximum de clients.',
       action: 'Créer une publication',
-      link: '/dashboard/stories/new',
+      link: '/dashboard/stories',
     });
   }
 
@@ -529,7 +529,7 @@ function generateImprovementAxes({
       priority: 'high',
       message: `${pageViews} visiteurs aujourd'hui mais 0 commande. Optimisez votre page.`,
       action: 'Améliorer la page',
-      link: '/dashboard/business/edit',
+      link: '/dashboard/business/settings',
     });
   }
 
