@@ -52,32 +52,15 @@ describe('Page /pricing (dynamique depuis /api/plans)', () => {
               data: {
                 plans: [
                   {
-                    id: 'platform-free',
-                    name: 'Gratuit',
-                    price: 0,
-                    description: 'Pour démarrer sans risque',
-                    benefits: ['Profil business public complet', 'Tous les modules de gestion'],
-                    privileges: [{ code: 'COMMISSION_TRANSACTION', value: 1 }],
-                    badge: '🔥 Populaire',
-                  },
-                  {
                     id: 'platform-afribiz',
                     name: 'AfriBiz',
-                    price: 5000,
-                    description: "L'abonnement unique, tout inclus",
-                    benefits: ['100% des modules, sans limite', 'Support prioritaire'],
-                    privileges: [{ code: 'COMMISSION_TRANSACTION', value: 0.5 }],
-                    badge: '🚀 Recommandé',
+                    price: 0,
+                    description: "L'abonnement unique, tout inclus — GRATUIT pour le lancement",
+                    benefits: ['100% des modules, sans limite', 'Copilot IA inclus gratuitement'],
+                    privileges: [{ code: 'COMMISSION_TRANSACTION', value: 1 }],
+                    badge: '🔥 Promo lancement : gratuit',
                   },
-                  {
-                    id: 'platform-copilot',
-                    name: 'Copilot IA',
-                    price: 3000,
-                    description: 'Votre assistant virtuel intelligent',
-                    benefits: ['Alertes WhatsApp automatiques'],
-                    privileges: [{ code: 'COPILOT_ACCESS', value: 1 }],
-                    badge: '✨ Option IA',
-                  },
+                  // Le plan Copilot IA est isPublic=false → absent de l'API (préparé, pas vendu)
                 ],
                 commissions: { transaction: 0.01, escrow: 0.02 },
               },
@@ -95,40 +78,36 @@ describe('Page /pricing (dynamique depuis /api/plans)', () => {
 
     render(<PricingPage />);
 
-    // Les plans statiques sont rendus par défaut (fallback)
+    // Les plans statiques sont rendus par défaut (fallback) : AfriBiz + Copilot « Bientôt »
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Gratuit' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'AfriBiz' })).toBeInTheDocument();
     });
-    expect(screen.getByRole('heading', { name: 'AfriBiz' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Copilot IA' })).toBeInTheDocument();
   });
 
-  it('affiche les 3 plans stratégiques (Gratuit, AfriBiz, Copilot IA) avec leurs tarifs', async () => {
+  it('affiche AfriBiz (0 FCFA promo) + la carte Copilot « Bientôt » persistée', async () => {
     render(<PricingPage />);
 
-    // Les 3 cartes de plans (h3 des cartes)
+    // AfriBiz vient de l'API (prix 0 → « 0 ») ; Copilot est une carte statique conservée
     await waitFor(() => {
-      expect(screen.getAllByRole('heading', { name: 'Gratuit' }).length).toBeGreaterThan(0);
+      expect(screen.getByRole('heading', { name: 'AfriBiz' })).toBeInTheDocument();
     });
-    expect(screen.getByRole('heading', { name: 'AfriBiz' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Copilot IA' })).toBeInTheDocument();
 
-    // Tarifs chargés depuis l'API (formatés)
-    expect(screen.getByText('5 000')).toBeInTheDocument();
-    expect(screen.getByText('3 000')).toBeInTheDocument();
+    // Tarifs : AfriBiz gratuit (0), Copilot « Bientôt »
+    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.getByText('Bientôt')).toBeInTheDocument();
   });
 
-  it('affiche les badges et le bandeau Développeur', async () => {
+  it('affiche les badges promo et le bandeau Développeur', async () => {
     render(<PricingPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('🔥 Populaire')).toBeInTheDocument();
+      expect(screen.getByText(/Promo lancement/i)).toBeInTheDocument();
     });
 
-    // Badges des plans
-    expect(screen.getByText('🔥 Populaire')).toBeInTheDocument();
-    expect(screen.getByText('🚀 Recommandé')).toBeInTheDocument();
-    expect(screen.getByText('✨ Option IA')).toBeInTheDocument();
+    // Badge de la carte AfriBiz (promo) + carte Copilot (bientôt)
+    expect(screen.getByText('✨ Bientôt disponible')).toBeInTheDocument();
 
     // Bandeau Développeur (features du bandeau : API REST, sandbox)
     expect(screen.getByRole('heading', { name: 'Développeur' })).toBeInTheDocument();
@@ -140,7 +119,7 @@ describe('Page /pricing (dynamique depuis /api/plans)', () => {
     render(<PricingPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('🔥 Populaire')).toBeInTheDocument();
+      expect(screen.getByText(/Promo lancement/i)).toBeInTheDocument();
     });
 
     // Section "Comment gagnons-nous de l'argent ?"

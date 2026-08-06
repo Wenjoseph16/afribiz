@@ -11,7 +11,6 @@ import {
   Bot,
   Smartphone,
   BookOpen,
-  Unlock,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
@@ -34,55 +33,33 @@ const formatPrice = (price: number | null | undefined) => {
 
 const staticPlans = [
   {
-    key: 'platform-free',
-    name: 'Gratuit',
-    price: '0',
-    period: '/mois',
-    description: 'Pour démarrer sans risque',
-    icon: Unlock,
-    gradient: 'from-emerald-500 to-teal-400',
-    features: [
-      'Profil business public complet',
-      'Produits, services et réservations',
-      'Paiements Mobile Money (Wave, TMoney, Flooz)',
-      'Système Escrow (tiers de confiance)',
-      'Tous les modules de gestion',
-      'Support communautaire',
-    ],
-    footnote: 'Commission de 1% sur chaque transaction réussie',
-    cta: 'Commencer gratuitement',
-    href: '/signup',
-    popular: true,
-    badge: 'Recommandé',
-  },
-  {
     key: 'platform-afribiz',
     name: 'AfriBiz',
-    price: '5 000',
-    period: 'FCFA/mois',
-    description: "L'abonnement unique, tout inclus",
+    price: '0',
+    period: 'FCFA',
+    description: "L'abonnement unique, tout inclus — GRATUIT pour le lancement",
     icon: Sparkles,
     gradient: 'from-orange-500 to-amber-400',
     features: [
       '100% des modules, sans limite',
-      'Commission transaction réduite (0,5%)',
-      'Support prioritaire (réponse < 24h)',
+      'Paiements Mobile Money (Wave, TMoney, Flooz) + Escrow sécurisé',
+      'Commission transaction de 1% seulement quand vous vendez',
+      'Commission Escrow de 2% (tiers de confiance)',
+      'Copilot IA inclus gratuitement',
       'Analytics avancés + rapports automatiques',
-      'Réservations en ligne illimitées',
-      'Copilot IA inclus 30 jours offerts',
     ],
-    footnote: 'Sans engagement — résiliable à tout moment',
-    cta: 'Passer à AfriBiz',
+    footnote: 'Promo de lancement : 0 FCFA/mois (5 000 FCFA/mois après le lancement)',
+    cta: 'Commencer gratuitement',
     href: '/signup',
     popular: true,
-    badge: '🚀 Recommandé',
+    badge: '🔥 Promo lancement : gratuit',
   },
   {
     key: 'platform-copilot',
     name: 'Copilot IA',
-    price: '3 000',
-    period: 'FCFA/mois',
-    description: 'Votre assistant virtuel intelligent',
+    price: 'Bientôt',
+    period: '',
+    description: 'Votre assistant virtuel intelligent — bientôt disponible',
     icon: Bot,
     gradient: 'from-purple-600 to-indigo-500',
     features: [
@@ -93,11 +70,11 @@ const staticPlans = [
       'Rapports intelligents',
       'Gestion prédictive',
     ],
-    footnote: 'Option Premium — à ajouter à tout plan',
-    cta: 'Activer le Copilot',
+    footnote: "Préparé pour le lancement — gratuit pour l'instant",
+    cta: 'En savoir plus',
     href: '/signup',
     popular: false,
-    badge: '✨ Option IA',
+    badge: '✨ Bientôt disponible',
   },
 ];
 
@@ -124,11 +101,11 @@ const devPlan = {
 const faqs = [
   {
     q: "C'est vraiment gratuit ?",
-    a: 'Oui ! Créer votre compte, configurer votre boutique et publier vos produits est 100% gratuit. Vous ne payez que lorsque vous vendez : 1% de commission sur chaque transaction réussie via Mobile Money ou carte bancaire.',
+    a: 'Oui ! AfriBiz est en promo de lancement : le plan est 100% gratuit (0 FCFA/mois). Vous ne payez que lorsque vous vendez : 1% de commission sur chaque transaction réussie via Mobile Money ou carte bancaire.',
   },
   {
     q: "Pas d'abonnement caché ?",
-    a: "Aucun abonnement obligatoire. Pas de carte bancaire requise pour s'inscrire. Nous prélevons uniquement une micro-commission (1%) sur vos ventes. Si vous ne vendez pas, vous ne payez rien.",
+    a: "Aucun abonnement pendant la promo de lancement. Pas de carte bancaire requise pour s'inscrire. Nous prélevons uniquement une micro-commission (1%) sur vos ventes. Si vous ne vendez pas, vous ne payez rien. Après le lancement, AfriBiz passera à 5 000 FCFA/mois.",
   },
   {
     q: "Comment fonctionne l'Escrow ?",
@@ -136,15 +113,15 @@ const faqs = [
   },
   {
     q: "Et le Copilot IA, c'est payant ?",
-    a: "Le Copilot IA est une option Premium à 3 000 FCFA par mois. Il analyse vos ventes et vous envoie des alertes WhatsApp automatisées : ruptures de stock imminentes, heures d'affluence, tendances...",
+    a: "Pour l'instant le Copilot IA est inclus gratuitement avec AfriBiz (promo de lancement). Quand nous intégrerons les vraies IA externes après le lancement, il deviendra une option premium. Vous serez prévenu avant tout changement.",
   },
   {
     q: 'Les développeurs sont payés comment ?',
     a: "Les développeurs publient leurs modules gratuitement sur notre marketplace. Quand un business achète leur module, le développeur reçoit 80% du prix. AfriBiz prend 20% pour l'hébergement et la distribution.",
   },
   {
-    q: 'Puis-passer au Copilot plus tard ?',
-    a: 'Absolument ! Vous pouvez utiliser AfriBiz gratuitement aussi longtemps que vous voulez. Le Copilot IA sera activable à la demande quand il sera disponible.',
+    q: 'Pourquoi AfriBiz passe-t-il payant après le lancement ?',
+    a: "La promo de lancement vise à attirer un maximum de commerçants. Après cette phase, AfriBiz coûtera 5 000 FCFA/mois (tout inclus). Les commissions de 1% sur les transactions et 2% sur l'escrow resteront inchangées, quelle que soit la période.",
   },
 ];
 
@@ -184,7 +161,14 @@ export default function PricingPage() {
         const apiPlans = json?.data?.plans;
         if (Array.isArray(apiPlans) && apiPlans.length > 0) {
           const mapped = apiPlans.map(mapApiPlan).filter(Boolean) as PlanCard[];
-          if (mapped.length > 0) setPlans(mapped);
+          if (mapped.length > 0) {
+            // Fusion : on garde les cartes API + les cartes statiques absentes de l'API
+            // (ex. Copilot « Bientôt » n'est pas vendu → isPublic=false → absent de l'API)
+            setPlans([
+              ...mapped,
+              ...staticPlans.filter((p) => !mapped.some((m) => m.key === p.key)),
+            ]);
+          }
         }
         if (json?.data?.commissions) {
           setLiveCommissions({
@@ -283,7 +267,7 @@ export default function PricingPage() {
           </motion.div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mt-16">
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-16">
             {plans.map((plan, i) => {
               const Icon = plan.icon;
               return (

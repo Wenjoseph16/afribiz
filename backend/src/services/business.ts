@@ -11,7 +11,7 @@ import {
   publishReviewPublished,
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
-import { FREE_PLAN_ID } from './planAccessService';
+import { DEFAULT_PLAN_ID } from './planAccessService';
 
 export async function getPublicBusiness(slug: string) {
   const business = await prisma.business.findUnique({
@@ -562,13 +562,13 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
     ...rest
   } = data;
 
-  // Résoudre le plan plateforme Gratuit (le business commence toujours sur le plan Gratuit).
-  // S'il n'existe pas en base, planId reste null → planAccessService retombe sur le Gratuit par défaut.
-  const freePlan = await prisma.subscriptionPlan.findUnique({
-    where: { id: FREE_PLAN_ID },
+  // Résoudre le plan plateforme par défaut (AfriBiz — GRATUIT au lancement).
+  // S'il n'existe pas en base, planId reste null → planAccessService retombe sur DEFAULT_PLAN_ID.
+  const defaultPlan = await prisma.subscriptionPlan.findUnique({
+    where: { id: DEFAULT_PLAN_ID },
     select: { id: true },
   });
-  const planId = freePlan ? FREE_PLAN_ID : null;
+  const planId = defaultPlan ? DEFAULT_PLAN_ID : null;
 
   const business = await prisma.$transaction(async (tx) => {
     // Type explicite : évite le flottement TS entre BusinessCreateInput et UncheckedCreateInput

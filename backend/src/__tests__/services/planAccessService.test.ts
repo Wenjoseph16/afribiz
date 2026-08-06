@@ -19,16 +19,9 @@ jest.mock('../../services/socket', () => ({
   getIO: () => ({ to: mockTo }),
 }));
 
-const freePlan = {
-  id: 'platform-free',
-  name: 'Gratuit',
-  privileges: [
-    { code: 'PRODUCTS_LIMIT', value: 10 },
-    { code: 'CLIENTS_LIMIT', value: 50 },
-    { code: 'BOOKINGS_LIMIT', value: 30 },
-  ],
-};
-
+// Le plan par défaut est désormais AfriBiz (platform-afribiz) — limites illimitées (-1)
+// ET Copilot IA inclus (gratuit pendant la promo de lancement).
+// L'ancien plan « platform-free » n'existe plus.
 const afribizPlan = {
   id: 'platform-afribiz',
   name: 'AfriBiz',
@@ -36,6 +29,18 @@ const afribizPlan = {
     { code: 'PRODUCTS_LIMIT', value: -1 },
     { code: 'CLIENTS_LIMIT', value: -1 },
     { code: 'BOOKINGS_LIMIT', value: -1 },
+    { code: 'COPILOT_ACCESS', value: 1 },
+  ],
+};
+
+// Un plan avec limites réelles pour tester le blocage + les alertes 80% (plan hypothétique)
+const limitedPlan = {
+  id: 'plan-limite',
+  name: 'Plan à limites',
+  privileges: [
+    { code: 'PRODUCTS_LIMIT', value: 10 },
+    { code: 'CLIENTS_LIMIT', value: 50 },
+    { code: 'BOOKINGS_LIMIT', value: 30 },
   ],
 };
 
@@ -51,17 +56,18 @@ describe('planAccessService', () => {
     jest.clearAllMocks();
   });
 
-  it('ne bloque pas quand le business na pas de plan explicite (fallback Gratuit avec marge)', async () => {
-    // business sans planId → fallback platform-free
+  it('ne bloque jamais avec le plan par défaut (AfriBiz — limites illimitées)', async () => {
+    // business sans planId → fallback platform-afribiz (illimité)
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(afribizPlan);
 
-    await expect(checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 5, 'produits')).resolves.toBeUndefined();
+    await expect(checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 500, 'produits')).resolves.toBeUndefined();
   });
 
-  it('bloque quand la limite du plan est atteinte', async () => {
-    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+  it('bloque quand la limite du plan explicite est atteinte', async () => {
+    // business avec un plan explicite à limites → le guard s applique réellement
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: 'plan-limite' });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
 
     await expect(checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 10, 'produits')).rejects.toThrow(
       AppError
@@ -97,25 +103,33 @@ describe('planAccessService', () => {
 
   it('getPlanPrivilegeValue retourne null pour un privilège absent', async () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     const value = await getPlanPrivilegeValue('biz-1', 'COPILOT_ACCESS');
     expect(value).toBeNull();
   });
 
-  it('hasCopilotAccess: vrai uniquement pour le plan Copilot IA ou COPILOT_ACCESS=1', async () => {
+  it('hasCopilotAccess: vrai pour AfriBiz (Copilot inclus) et le plan Copilot IA, faux sinon', async () => {
+    // AfriBiz (plan par défaut) : COPILOT_ACCESS=1 → accès
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(afribizPlan);
+    expect(await hasCopilotAccess('biz-1')).toBe(true);
+
+    // Plan sans privilège COPILOT → pas d accès
+    invalidatePlanCache();
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: 'plan-limite' });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     expect(await hasCopilotAccess('biz-1')).toBe(false);
 
-    // Invalide le cache 30s pour tester le changement de plan
+    // Plan Copilot IA → accès par défaut
     invalidatePlanCache();
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: 'platform-copilot' });
     (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(copilotPlan);
     expect(await hasCopilotAccess('biz-1')).toBe(true);
   });
 
   it('assertCopilotAccess lève une erreur 403 sans accès Copilot', async () => {
-    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: 'plan-limite' });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     await expect(assertCopilotAccess('biz-1')).rejects.toThrow(AppError);
     await expect(assertCopilotAccess('biz-1')).rejects.toThrow(/Copilot IA/);
   });
@@ -135,12 +149,12 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
   });
 
   it('crée une notification PLAN_LIMIT quand la limite est utilisée à >= 80%', async () => {
-    // business avec owner (fallback Gratuit : PRODUCTS_LIMIT = 10 → seuil = 8)
+    // business avec plan à limites explicite (PRODUCTS_LIMIT = 10 → seuil = 8)
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
-      planId: null,
+      planId: 'plan-limite',
       ownerId: 'owner-1',
     });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([]);
     (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
 
@@ -159,10 +173,10 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
 
   it('ne crée pas de doublon si une alerte identique existe déjà (anti-spam 7 jours)', async () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
-      planId: null,
+      planId: 'plan-limite',
       ownerId: 'owner-1',
     });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
     // Alerte existante pour CE business + CETTE ressource dans les 7 jours
     (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([
@@ -176,10 +190,10 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
 
   it('notifie à nouveau quand l alerte existante concerne un AUTRE business (propriétaire multi-business)', async () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
-      planId: null,
+      planId: 'plan-limite',
       ownerId: 'owner-1',
     });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-2' });
     // Alerte récente pour le business B (pas biz-1) → ne doit pas bloquer l alerte de biz-1
     (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([
@@ -195,10 +209,10 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
 
   it('ne notifie pas quand l usage est en dessous de 80%', async () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
-      planId: null,
+      planId: 'plan-limite',
       ownerId: 'owner-1',
     });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
 
     await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 7, 'produits');
@@ -208,10 +222,10 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
 
   it('reste non-bloquant si la création de notification échoue', async () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
-      planId: null,
+      planId: 'plan-limite',
       ownerId: 'owner-1',
     });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([]);
     (mockPrisma.notification.create as jest.Mock).mockRejectedValue(new Error('db down'));
 
@@ -220,8 +234,8 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
   });
 
   it('ne notifie pas quand le business n a pas de propriétaire', async () => {
-    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: 'plan-limite' });
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     (mockPrisma.notification.create as jest.Mock).mockResolvedValue({ id: 'notif-1' });
 
     await checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 8, 'produits');
@@ -231,10 +245,10 @@ describe('checkPlanLimit — alertes de quota à 80%', () => {
 
   it('pousse la notification en temps réel sur la room user:{ownerId}', async () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({
-      planId: null,
+      planId: 'plan-limite',
       ownerId: 'owner-1',
     });
-    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(freePlan);
+    (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(limitedPlan);
     (mockPrisma.notification.findMany as jest.Mock).mockResolvedValue([]);
     (mockPrisma.notification.create as jest.Mock).mockResolvedValue({
       id: 'notif-1',

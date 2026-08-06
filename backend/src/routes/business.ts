@@ -15,6 +15,7 @@ import {
   getBusinessBookings,
   getBusinessTrainings,
   getMyBusiness,
+  getMyBusinessPlan,
   getMyBusinessClients,
   getMyBusinessStats,
   getAggregatedStats,
@@ -101,6 +102,7 @@ router.get('/modules/developer-installations', getDeveloperModuleInstallations);
 router.get('/modules/installed', getBusinessInstalledModules);
 router.post('/modules/update/:installationId', confirmModuleUpdate);
 router.get('/me', getMyBusiness);
+router.get('/plan', getMyBusinessPlan);
 router.get('/clients', getMyBusinessClients);
 router.get('/stats', getMyBusinessStats);
 router.get('/stats/aggregated', getAggregatedStats);

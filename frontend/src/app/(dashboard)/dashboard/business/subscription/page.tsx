@@ -4,120 +4,71 @@ import { useState } from 'react';
 import {
   CreditCard,
   CheckCircle,
-  Clock,
   AlertTriangle,
-  ArrowLeft,
   Sparkles,
-  XCircle,
-  XOctagon,
+  Boxes,
+  Users,
+  CalendarCheck2,
+  Bot,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
-import { EmptyState } from '@/components/dashboard/EmptyState';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
 import { cn } from '@/lib/utils';
 
-interface Plan {
-  id: string;
-  name: string;
-  description: string | null;
-  type: string;
+interface Quota {
+  code: string;
+  label: string;
+  used: number;
+  limit: number | null;
+}
+
+interface PlanOverview {
+  planId: string;
+  planName: string;
   price: number;
   currency: string;
   billingCycle: string;
-  benefits: string[];
-  isPublic: boolean;
-  isActive: boolean;
-  featured: boolean;
   badge: string | null;
-  trialDays: number | null;
+  description: string | null;
+  benefits: string[];
+  isPromo: boolean;
+  quotas: Quota[];
 }
 
+const QUOTA_ICONS: Record<string, typeof Boxes> = {
+  PRODUCTS_LIMIT: Boxes,
+  CLIENTS_LIMIT: Users,
+  BOOKINGS_LIMIT: CalendarCheck2,
+};
+
 export default function BusinessSubscriptionPage() {
-  const qc = useQueryClient();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  // Fetch plans from API
-  const { data: plansData, isLoading } = useQuery({
-    queryKey: ['subscriptions', 'plans'],
+  const { data: overview, isLoading } = useQuery({
+    queryKey: ['business', 'plan'],
     queryFn: async () => {
-      const res = await apiClient.get('/subscriptions/plans');
-      const data = res.data.data;
-      return (data?.plans || data || []) as Plan[];
+      const res = await apiClient.get('/business/plan');
+      return res.data.data as PlanOverview;
     },
   });
 
-  // Fetch current subscription
-  const { data: currentSub, isLoading: subLoading } = useQuery({
-    queryKey: ['subscriptions', 'my-subscription'],
-    queryFn: async () => {
-      try {
-        const res = await apiClient.get('/subscriptions/my-subscription');
-        return res.data.data || null;
-      } catch (e) {
-        console.error('Erreur chargement abonnement:', e);
-        return null;
-      }
-    },
-  });
+  if (isLoading) return <Loader className="py-20" />;
 
-  // Subscribe mutation
-  const subscribeMutation = useMutation({
-    mutationFn: async (planId: string) => {
-      const res = await apiClient.post('/subscriptions/subscribe', { planId });
-      return res.data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['subscriptions'] });
-      setToast({ message: 'Abonnement souscrit avec succès !', type: 'success' });
-      setSelectedPlan(null);
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        'Erreur lors de la souscription';
-      setToast({ message: msg, type: 'error' });
-    },
-  });
-
-  // Cancel subscription mutation
-  const cancelMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiClient.post('/subscriptions/my-subscription/cancel');
-      return res.data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['subscriptions'] });
-      setToast({
-        message: 'Abonnement résilié avec succès. Vous repassez en mode gratuit (pay-as-you-go).',
-        type: 'success',
-      });
-      setShowCancelConfirm(false);
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        'Erreur lors de la résiliation';
-      setToast({ message: msg, type: 'error' });
-    },
-  });
-
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-
-  const plans: Plan[] = Array.isArray(plansData) ? plansData : [];
-  const hasActiveSub = !!currentSub;
-
-  if (isLoading || subLoading) return <Loader className="py-20" />;
+  const plan = overview;
+  const priceLabel = plan
+    ? plan.isPromo
+      ? '0 FCFA'
+      : `${Number(plan.price).toLocaleString('fr-FR')} FCFA`
+    : '—';
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Toast notification */}
+      {/* Toast */}
       {toast && (
         <div
           className={cn(
@@ -141,261 +92,153 @@ export default function BusinessSubscriptionPage() {
 
       <PageHeader
         title="Mon abonnement"
-        description="Gérez votre abonnement AfriBiz"
+        description="Votre plan AfriBiz — tout inclus, gratuit pour le lancement"
         breadcrumbs={[{ label: 'Business', href: '/dashboard/business' }, { label: 'Abonnement' }]}
       />
 
       {/* Current Plan */}
       <Card
         padding="lg"
-        className={cn(
-          'bg-gradient-to-br',
-          hasActiveSub
-            ? 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/50'
-            : 'from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900'
-        )}
+        className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200/50"
       >
-        {' '}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <div
-              className={cn(
-                'p-3 rounded-xl shrink-0',
-                hasActiveSub
-                  ? 'bg-emerald-100 dark:bg-emerald-900/40'
-                  : 'bg-brand-50 dark:bg-brand-900/20'
-              )}
-            >
-              <CreditCard
-                className={cn('h-6 w-6', hasActiveSub ? 'text-emerald-600' : 'text-brand')}
-              />
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-start gap-4 min-w-0">
+            <div className="p-3 rounded-xl shrink-0 bg-emerald-100 dark:bg-emerald-900/40">
+              <CreditCard className="h-6 w-6 text-emerald-600" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-                {currentSub?.plan?.name || 'Plan Gratuit'}
-              </h3>
-              <p className="text-sm text-gray-500">
-                {hasActiveSub
-                  ? 'Abonnement actif'
-                  : "Aucun abonnement actif — facturé à l'usage (1% par transaction)"}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {plan?.planName || 'AfriBiz'}
+                </h3>
+                {plan?.badge && (
+                  <Badge variant="success" size="sm" className="whitespace-normal">
+                    {plan.badge}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                {plan?.description || "L'abonnement unique, tout inclus."}
               </p>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                {hasActiveSub ? (
-                  <Badge variant="success" size="sm">
-                    Actif
-                  </Badge>
-                ) : (
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                <Badge variant="success" size="sm">
+                  Actif
+                </Badge>
+                {plan?.isPromo && (
                   <Badge variant="default" size="sm">
-                    Pay-as-you-go
+                    Promo de lancement
                   </Badge>
-                )}
-                {currentSub?.endDate && (
-                  <span className="text-xs text-gray-400">
-                    Prochaine échéance :{' '}
-                    {new Date(currentSub.endDate).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </span>
-                )}
-                {currentSub?.autoRenew && (
-                  <span className="text-xs text-emerald-600 font-medium">
-                    Renouvellement automatique
-                  </span>
                 )}
               </div>
             </div>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {currentSub?.plan?.price
-                ? `${Number(currentSub.plan.price).toLocaleString()} FCFA`
-                : '0 FCFA'}
-            </p>
-            <p className="text-xs text-gray-500">/ mois</p>
-            {hasActiveSub && (
-              <button
-                onClick={() => setShowCancelConfirm(true)}
-                className="mt-2 text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition-colors flex items-center gap-1"
-              >
-                <XOctagon className="h-3 w-3" />
-                Résilier l\'abonnement
-              </button>
-            )}
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{priceLabel}</p>
+            <p className="text-xs text-gray-500">/ mois · pendant la promo</p>
           </div>
         </div>
-        {/* Cancel confirmation modal */}
-        {showCancelConfirm && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowCancelConfirm(false)}
-          >
-            <div
-              className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/30">
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  Résilier l&apos;abonnement ?
-                </h3>
+
+        {plan?.benefits && plan.benefits.length > 0 && (
+          <div className="grid sm:grid-cols-2 gap-2 mt-6 pt-6 border-t border-emerald-100 dark:border-emerald-900/30">
+            {plan.benefits.map((b) => (
+              <div key={b} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                <span>{b}</span>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Vous allez perdre l&apos;accès aux avantages de votre plan{' '}
-                {currentSub?.plan?.name || 'actuel'}.
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                Vous repasserez en mode <strong>Pay-as-you-go</strong> : 1% de commission sur chaque
-                transaction, sans engagement.
-              </p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowCancelConfirm(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Conserver mon abonnement
-                </button>
-                <button
-                  onClick={() => cancelMutation.mutate()}
-                  disabled={cancelMutation.isPending}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  {cancelMutation.isPending ? (
-                    <>
-                      <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />{' '}
-                      Résiliation...
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-4 w-4" /> Oui, résilier
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
         )}
       </Card>
 
-      {/* Plans disponibles */}
-      {plans.length > 0 && (
-        <>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-            {hasActiveSub ? 'Changer de plan' : 'Choisissez un plan'}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {plans.map((plan) => {
-              const isSelected = selectedPlan === plan.id;
-              const isCurrent = currentSub?.planId === plan.id;
+      {/* Quotas d'utilisation */}
+      <Card title="Vos limites actuelles">
+        {plan?.quotas && plan.quotas.length > 0 ? (
+          <div className="space-y-5">
+            {plan.quotas.map((q) => {
+              const Icon = QUOTA_ICONS[q.code] || Boxes;
+              const unlimited = q.limit === null;
+              const pct = unlimited ? 0 : Math.min(100, Math.round((q.used / (q.limit || 1)) * 100));
+              const warn = !unlimited && pct >= 80;
               return (
-                <div
-                  key={plan.id}
-                  className={cn(
-                    'relative rounded-2xl border-2 p-5 transition-all cursor-pointer',
-                    isSelected
-                      ? 'border-brand bg-brand-5 dark:bg-brand-900/10 shadow-lg shadow-brand-500/10'
-                      : plan.featured
-                        ? 'border-brand-300 dark:border-brand-700 bg-white dark:bg-gray-800'
-                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300'
-                  )}
-                  onClick={() => !isCurrent && setSelectedPlan(plan.id)}
-                >
-                  {plan.featured && !isCurrent && (
-                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-brand text-white text-[10px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1">
-                      <Sparkles className="h-3 w-3" />
-                      {plan.badge || 'Populaire'}
+                <div key={q.code}>
+                  <div className="flex items-center justify-between mb-1.5 gap-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 min-w-0">
+                      <Icon className="h-4 w-4 text-brand shrink-0" />
+                      <span className="truncate">{q.label}</span>
                     </div>
-                  )}
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {plan.name}
-                    </h3>
-                    {plan.description && (
-                      <p className="text-xs text-gray-500 mt-1">{plan.description}</p>
-                    )}
-                    <div className="mt-2">
-                      <span className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-                        {plan.price === 0
-                          ? 'Gratuit'
-                          : `${Number(plan.price).toLocaleString()} FCFA`}
-                      </span>
-                      <span className="text-sm text-gray-500">/mois</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {unlimited ? (
+                        <Badge variant="success" size="sm">
+                          Illimité
+                        </Badge>
+                      ) : (
+                        <span
+                          className={cn(
+                            'text-xs font-semibold',
+                            warn ? 'text-amber-600' : 'text-gray-500'
+                          )}
+                        >
+                          {q.used} / {q.limit}
+                        </span>
+                      )}
                     </div>
-                    {plan.price === 0 && (
-                      <p className="text-xs text-gray-400 mt-1">Paiement à l&apos;usage</p>
-                    )}
-                    {plan.trialDays && plan.trialDays > 0 && (
-                      <p className="text-xs text-indigo-600 mt-1">
-                        {plan.trialDays} jours d&apos;essai
-                      </p>
-                    )}
                   </div>
-                  <ul className="space-y-2 mt-4">
-                    {plan.benefits.map((f, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
-                      >
-                        <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {isCurrent ? (
-                    <Button className="w-full mt-6" variant="secondary" disabled>
-                      <CheckCircle className="h-4 w-4 mr-1.5" />
-                      Plan actuel
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full mt-6"
-                      variant={isSelected ? 'primary' : 'outline'}
-                      isLoading={subscribeMutation.isPending && isSelected}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isSelected) {
-                          subscribeMutation.mutate(plan.id);
-                        } else {
-                          setSelectedPlan(plan.id);
-                        }
-                      }}
-                    >
-                      {isSelected ? 'Confirmer la souscription' : `Choisir ${plan.name}`}
-                    </Button>
+                  {!unlimited && (
+                    <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                      <div
+                        className={cn(
+                          'h-full rounded-full transition-all',
+                          warn ? 'bg-amber-500' : 'bg-gradient-to-r from-brand to-emerald-400'
+                        )}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                   )}
                 </div>
               );
             })}
           </div>
-        </>
-      )}
-
-      {/* Payment History */}
-      <Card title="Historique de facturation">
-        {currentSub?._count?.payments && currentSub._count.payments > 0 ? (
-          <p className="text-sm text-gray-500">
-            {currentSub._count.payments} paiement(s) enregistré(s)
-          </p>
         ) : (
-          <EmptyState
-            icon={<Clock className="h-8 w-8" />}
-            title="Aucune facture"
-            description="Votre historique de facturation apparaîtra ici après votre premier abonnement."
-          />
+          <p className="text-sm text-gray-500">Aucune limite — votre plan est illimité.</p>
         )}
+      </Card>
+
+      {/* Copilot inclus */}
+      <Card padding="lg" className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-purple-200/50">
+        <div className="flex items-start gap-4">
+          <div className="p-3 rounded-xl shrink-0 bg-purple-100 dark:bg-purple-900/40">
+            <Bot className="h-6 w-6 text-purple-600" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              Copilot IA
+              <Badge variant="success" size="sm">
+                Inclus gratuitement
+              </Badge>
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Votre assistant intelligent : brief du matin, alertes de stock, prévisions de ventes.
+              Inclus avec AfriBiz pendant la promo de lancement.
+            </p>
+            <Link
+              href="/dashboard/business/copilot"
+              className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 transition-colors"
+            >
+              <Sparkles className="h-4 w-4" />
+              Ouvrir mon Copilot
+            </Link>
+          </div>
+        </div>
       </Card>
 
       {/* Info */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300">
-        <p className="font-medium mb-1">💡 Pourquoi passer à un plan payant ?</p>
+        <p className="font-medium mb-1">💡 Comment la plateforme gagne de l&apos;argent ?</p>
         <ul className="list-disc list-inside space-y-1 text-xs">
-          <li>Réduisez vos commissions de 1% à 0% sur les transactions</li>
-          <li>Accédez à des fonctionnalités exclusives (API, marketplace prioritaire)</li>
-          <li>Bénéficiez d&apos;un support dédié et prioritaire</li>
-          <li>Pas d&apos;engagement — annulez à tout moment</li>
+          <li>1% de commission sur chaque transaction réussie (Mobile Money, carte)</li>
+          <li>2% de commission sur le service Escrow (tiers de confiance)</li>
+          <li>Aucun abonnement à payer pendant la promo de lancement</li>
+          <li>Après le lancement, AfriBiz passera à 5 000 FCFA/mois — les commissions resteront identiques</li>
         </ul>
       </div>
     </div>

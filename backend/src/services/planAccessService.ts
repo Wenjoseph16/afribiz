@@ -17,7 +17,11 @@ import { getIO } from './socket';
  * configuration manquante).
  */
 
-export const FREE_PLAN_ID = 'platform-free';
+// Plan plateforme par défaut. Au lancement : AfriBiz est GRATUIT (promo de lancement,
+// price=0 en base) avec limites illimitées. Le jour où la monétisation est activée,
+// l'admin repasse price=5000 → tout est réglé sans toucher au code.
+// NB: l'ancien plan « platform-free » n'existe plus.
+export const DEFAULT_PLAN_ID = 'platform-afribiz';
 
 // Alerte de quota : notifie le propriétaire quand une limite est utilisée à >= 80%.
 // Anti-spam : au maximum 1 alerte par ressource (produits/clients/réservations) et par période.
@@ -51,9 +55,9 @@ async function getPlanForBusiness(businessId: string): Promise<any | null> {
       });
     }
     if (!plan) {
-      // Fallback : plan Gratuit plateforme
+      // Fallback : plan par défaut (AfriBiz) — jamais de planId sans plan résolu
       plan = await prisma.subscriptionPlan.findUnique({
-        where: { id: FREE_PLAN_ID },
+        where: { id: DEFAULT_PLAN_ID },
         include: { privileges: { orderBy: { sortOrder: 'asc' } } },
       });
     }
@@ -92,11 +96,67 @@ export async function getPlanPrivilegeValue(
 
 export async function getBusinessPlanInfo(businessId: string) {
   const plan = await getPlanForBusiness(businessId);
-  if (!plan) return { planId: null, planName: 'Gratuit', privileges: [] };
+  // Le fallback résout toujours le plan AfriBiz (DEFAULT_PLAN_ID) —
+  // `plan` n'est null qu'en cas d'erreur DB. On affiche alors AfriBiz.
+  if (!plan) return { planId: null, planName: 'AfriBiz', privileges: [] };
   return {
     planId: plan.id,
     planName: plan.name,
     privileges: plan.privileges || [],
+  };
+}
+
+/**
+ * Vue complète du plan d'un business pour le dashboard /dashboard/business/subscription :
+ * plan + badge/promo + quotas d'utilisation réels (produits, clients CRM, réservations).
+ * - limit === null → illimité (AfriBiz au lancement)
+ * - usage réel compté en base, jamais bloquant (tolérant aux erreurs de comptage).
+ */
+export async function getBusinessPlanOverview(businessId: string) {
+  const plan = await getPlanForBusiness(businessId);
+  const safePlan =
+    plan ||
+    (await prisma.subscriptionPlan.findUnique({ where: { id: DEFAULT_PLAN_ID } }));
+
+  const privilegeValue = (code: string): number | null => {
+    const priv = safePlan?.privileges?.find((p: any) => p.code === code);
+    if (!priv || priv.value === undefined || priv.value === null) return null;
+    const v = Number(priv.value);
+    return v < 0 ? null : v;
+  };
+
+  // Comptage d'usage réel — jamais bloquant (une erreur de comptage → usage 0)
+  let usage = { products: 0, clients: 0, bookings: 0 };
+  try {
+    const [products, clients, bookings] = await Promise.all([
+      prisma.product.count({ where: { businessId } }),
+      prisma.businessClient.count({ where: { businessId } }),
+      prisma.booking.count({ where: { businessId } }),
+    ]);
+    usage = { products, clients, bookings };
+  } catch (e) {
+    logger.warn('getBusinessPlanOverview count failed', {
+      error: (e as Error).message,
+    });
+  }
+
+  const quotas = [
+    { code: 'PRODUCTS_LIMIT', label: 'Produits au catalogue', used: usage.products, limit: privilegeValue('PRODUCTS_LIMIT') },
+    { code: 'CLIENTS_LIMIT', label: 'Clients CRM', used: usage.clients, limit: privilegeValue('CLIENTS_LIMIT') },
+    { code: 'BOOKINGS_LIMIT', label: 'Réservations', used: usage.bookings, limit: privilegeValue('BOOKINGS_LIMIT') },
+  ];
+
+  return {
+    planId: safePlan?.id || DEFAULT_PLAN_ID,
+    planName: safePlan?.name || 'AfriBiz',
+    price: safePlan ? Number(safePlan.price) : 0,
+    currency: safePlan?.currency || 'FCFA',
+    billingCycle: safePlan?.billingCycle || 'MONTHLY',
+    badge: safePlan?.badge || null,
+    description: safePlan?.description || null,
+    benefits: safePlan?.benefits || [],
+    isPromo: safePlan ? Number(safePlan.price) === 0 : true,
+    quotas,
   };
 }
 
@@ -216,7 +276,7 @@ export async function assertCopilotAccess(businessId: string): Promise<void> {
   const ok = await hasCopilotAccess(businessId);
   if (!ok) {
     throw new AppError(
-      "L'assistant Copilot IA est une option Premium (3 000 FCFA/mois). Activez-la pour débloquer l'IA.",
+      "Votre plan ne donne pas accès à l'assistant Copilot IA. Le plan AfriBiz l'inclut gratuitement pour le lancement — passez au plan AfriBiz pour le débloquer.",
       403
     );
   }

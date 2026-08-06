@@ -112,62 +112,126 @@ async function seedUsers() {
 }
 
 // ============================================================
-// 1b. PLANS PLATEFORME (Gratuit / Basic / Premium — businessId=null)
+// 1b. PLANS PLATEFORME (businessId=null)
+// Stratégie lancement : UN SEUL plan vendu → AfriBiz, GRATUIT en promo (0 FCFA).
+// Le plan Copilot IA est PRÉPARÉ (en base, privilèges) mais pas vendu (isPublic=false)
+// → il sera activé quand de vraies IA externes seront intégrées après le lancement.
+// L'ancien plan « platform-free » n'existe plus.
 // ============================================================
 async function seedPlatformPlans() {
-  const plans: any[] = [
-    {
-      id: 'platform-free', businessId: null, name: 'Gratuit',
-      description: 'Accédez gratuitement à toutes les fonctionnalités de base d\'AfriBiz. Pas de carte bancaire requise.',
-      type: 'FREE_TRIAL', price: 0, currency: 'FCFA', billingCycle: 'MONTHLY', trialDays: null,
-      benefits: ['Profil public', '3 produits/services', 'Commandes manuelles', 'Support email', 'Paiement Mobile Money'],
-      isPublic: true, isActive: true, sortOrder: 1, featured: true, badge: '🔥 Populaire',
-    },
-    {
-      id: 'platform-basic', businessId: null, name: 'Basic',
-      description: 'Pour les petites entreprises qui souhaitent se développer avec des outils professionnels.',
-      type: 'STANDARD', price: 5000, currency: 'FCFA', billingCycle: 'MONTHLY', trialDays: null,
-      benefits: ['Tout le plan Gratuit', 'Produits/services illimités', 'Réservations en ligne', 'Promotions & coupons', 'Statistiques avancées', 'Support prioritaire'],
-      isPublic: false, isActive: true, sortOrder: 2, featured: false, badge: null,
-    },
-    {
-      id: 'platform-premium', businessId: null, name: 'Premium',
-      description: 'La solution complète pour les entreprises ambitieuses avec des fonctionnalités avancées.',
-      type: 'PREMIUM', price: 15000, currency: 'FCFA', billingCycle: 'MONTHLY', trialDays: null,
-      benefits: ['Tout le plan Basic', 'Module Marketplace développeur', 'Copilot IA', 'Paiement par lots', 'API dédiée', 'Support 24/7', 'Account manager dédié'],
-      isPublic: false, isActive: true, sortOrder: 3, featured: false, badge: '🚀 Bientôt disponible',
-    },
-  ];
+  // ── Migration : les business qui pointaient vers l'ancien platform-free → AfriBiz ──
+  await prisma.business.updateMany({
+    where: { planId: 'platform-free' },
+    data: { planId: 'platform-afribiz' },
+  });
 
-  for (const p of plans) {
-    await prisma.subscriptionPlan.upsert({
-      where: { id: p.id },
+  // ── Purge de TOUS les plans plateforme hors whitelist + leurs privilèges ──
+  // (source de vérité unique : seuls AfriBiz + Copilot existent. Tout autre plan
+  //  résiduel d'un ancien seed — ex. « AfriBiz Standard » — est purgé.)
+  await prisma.subscriptionPrivilege.deleteMany({
+    where: {
+      plan: { businessId: null, id: { notIn: ['platform-afribiz', 'platform-copilot'] } },
+    },
+  });
+  await prisma.subscriptionPlan.deleteMany({
+    where: { businessId: null, id: { notIn: ['platform-afribiz', 'platform-copilot'] } },
+  });
+
+  // ── Plan AfriBiz (plan par défaut, GRATUIT en promo de lancement) ──
+  const afribiz = {
+    id: 'platform-afribiz', businessId: null, name: 'AfriBiz',
+    description: "L'abonnement unique, tout inclus — GRATUIT pour le lancement (0 FCFA). Pas de carte bancaire requise.",
+    type: 'STANDARD', price: 0, currency: 'FCFA', billingCycle: 'MONTHLY', trialDays: null,
+    benefits: [
+      '100% des modules, sans limite',
+      'Paiements Mobile Money (Wave, TMoney, Flooz) + Escrow sécurisé',
+      'Commission transaction de 1% seulement quand vous vendez',
+      'Commission Escrow de 2% (tiers de confiance)',
+      'Copilot IA inclus gratuitement pour le lancement',
+      'Analytics avancés + rapports automatiques',
+    ],
+    // isPublic=true pour l'afficher sur /pricing · badge promo de lancement
+    isPublic: true, isActive: true, sortOrder: 1, featured: true,
+    badge: '🔥 Promo lancement : gratuit (5 000 FCFA/mois après)',
+  };
+  await prisma.subscriptionPlan.upsert({
+    where: { id: afribiz.id },
+    update: {
+      description: afribiz.description,
+      benefits: afribiz.benefits,
+      price: afribiz.price,
+      isPublic: afribiz.isPublic,
+      isActive: afribiz.isActive,
+      badge: afribiz.badge,
+    },
+    create: { id: afribiz.id, businessId: null, ...afribiz },
+  });
+
+  // Privilèges AfriBiz — limites illimitées (-1) + commissions 1%/2% + Copilot gratuit
+  // NB: les commissions réelles sont calculées dans monetizationConfig (global) —
+  // ces valeurs servent uniquement à l'affichage de la page /pricing.
+  await prisma.subscriptionPrivilege.deleteMany({
+    where: { planId: afribiz.id },
+  });
+  const afribizPrivileges: any[] = [
+    { id: 'prv-abz-products', planId: afribiz.id, code: 'PRODUCTS_LIMIT', label: 'Produits', description: 'Produits au catalogue — illimité', value: -1, valueType: 'COUNT', sortOrder: 1 },
+    { id: 'prv-abz-clients', planId: afribiz.id, code: 'CLIENTS_LIMIT', label: 'Clients CRM', description: 'Clients CRM — illimité', value: -1, valueType: 'COUNT', sortOrder: 2 },
+    { id: 'prv-abz-bookings', planId: afribiz.id, code: 'BOOKINGS_LIMIT', label: 'Réservations', description: 'Réservations — illimité', value: -1, valueType: 'COUNT', sortOrder: 3 },
+    { id: 'prv-abz-commission', planId: afribiz.id, code: 'COMMISSION_TRANSACTION', label: 'Commission transaction', description: '1% par transaction réussie', value: 1, valueType: 'PERCENT', sortOrder: 4 },
+    { id: 'prv-abz-escrow', planId: afribiz.id, code: 'COMMISSION_ESCROW', label: 'Commission Escrow', description: '2% sur le séquestre', value: 2, valueType: 'PERCENT', sortOrder: 5 },
+    { id: 'prv-abz-copilot', planId: afribiz.id, code: 'COPILOT_ACCESS', label: 'Copilot IA', description: 'Accès Copilot inclus (gratuit au lancement)', value: 1, valueType: 'FLAG', sortOrder: 6 },
+    { id: 'prv-abz-reports', planId: afribiz.id, code: 'REPORTS_AUTOMATION', label: 'Rapports automatiques', description: 'Rapports automatiques inclus', value: 1, valueType: 'BOOL', sortOrder: 7 },
+    { id: 'prv-abz-support', planId: afribiz.id, code: 'SUPPORT_LEVEL', label: 'Support', description: 'Support prioritaire', value: 2, valueType: 'TEXT', sortOrder: 8 },
+  ];
+  for (const pr of afribizPrivileges) {
+    await prisma.subscriptionPrivilege.upsert({
+      where: { id: pr.id },
       update: {},
-      create: { id: p.id, businessId: null, ...p },
+      create: { id: pr.id, planId: afribiz.id, code: pr.code, value: pr.value, valueType: pr.valueType, label: pr.label, description: pr.description, sortOrder: pr.sortOrder },
     });
-    // Privilèges du plan Gratuit — codes EXACTS utilisés par les guards (checkPlanLimit)
-    if (p.id === 'platform-free') {
-      // Nettoyage des doublons (anciens seeds) : garantir UNE ligne par code pour le plan.
-      // Sinon getPlanPrivilegeValue (find) peut lire une ligne obsolète même après édition admin.
-      await prisma.subscriptionPrivilege.deleteMany({
-        where: { planId: p.id, code: { in: ['PRODUCTS_LIMIT', 'CLIENTS_LIMIT', 'BOOKINGS_LIMIT', 'COPILOT_ACCESS'] } },
-      });
-      const privileges: any[] = [
-        { id: 'prv-free-products', planId: p.id, code: 'PRODUCTS_LIMIT', label: 'Produits', description: 'Nombre maximum de produits au catalogue', value: 10, valueType: 'COUNT', sortOrder: 1 },
-        { id: 'prv-free-clients', planId: p.id, code: 'CLIENTS_LIMIT', label: 'Clients CRM', description: 'Nombre maximum de clients CRM', value: 50, valueType: 'COUNT', sortOrder: 2 },
-        { id: 'prv-free-bookings', planId: p.id, code: 'BOOKINGS_LIMIT', label: 'Réservations', description: 'Nombre maximum de réservations actives', value: 30, valueType: 'COUNT', sortOrder: 3 },
-        { id: 'prv-free-copilot', planId: p.id, code: 'COPILOT_ACCESS', label: 'Copilot IA', description: 'Accès à l assistant Copilot IA', value: 1, valueType: 'FLAG', sortOrder: 4 },
-      ];
-      for (const pr of privileges) {
-        await prisma.subscriptionPrivilege.upsert({
-          where: { id: pr.id },
-          update: {},
-          create: { id: pr.id, planId: p.id, code: pr.code, value: pr.value, valueType: pr.valueType, label: pr.label, description: pr.description, sortOrder: pr.sortOrder },
-        });
-      }
-    }
   }
-  console.log('✓ 3 plans plateforme (Gratuit/Basic/Premium) + privilèges Gratuit');
+
+  // ── Plan Copilot IA — PRÉPARÉ mais PAS vendu (isPublic=false) :
+  // il sera mis en vente quand les vraies IA externes seront intégrées après le lancement.
+  const copilot = {
+    id: 'platform-copilot', businessId: null, name: 'Copilot IA',
+    description: "Option IA premium — préparée, disponible après le lancement (0 FCFA pour l'instant).",
+    type: 'PREMIUM', price: 0, currency: 'FCFA', billingCycle: 'MONTHLY', trialDays: null,
+    benefits: [
+      'Alertes intelligentes (rupture de stock prévue, pic de vente)',
+      'Prévisions de ventes et de demande',
+      'Recommandations de croissance personnalisées',
+      'Rapport de santé business hebdomadaire',
+      'Notifications WhatsApp automatisées',
+    ],
+    isPublic: false, isActive: true, sortOrder: 2, featured: false, badge: '✨ Bientôt disponible',
+  };
+  await prisma.subscriptionPlan.upsert({
+    where: { id: copilot.id },
+    update: {
+      description: copilot.description,
+      price: copilot.price,
+      benefits: copilot.benefits,
+      isPublic: copilot.isPublic,
+      badge: copilot.badge,
+    },
+    create: { id: copilot.id, businessId: null, ...copilot },
+  });
+  await prisma.subscriptionPrivilege.deleteMany({ where: { planId: copilot.id } });
+  const copilotPrivileges: any[] = [
+    { id: 'prv-cop-access', planId: copilot.id, code: 'COPILOT_ACCESS', label: 'Copilot IA', description: 'Accès IA', value: 1, valueType: 'FLAG', sortOrder: 1 },
+    { id: 'prv-cop-alerts', planId: copilot.id, code: 'COPILOT_ALERTS', label: 'Alertes intelligentes', description: 'Alertes IA', value: -1, valueType: 'COUNT', sortOrder: 2 },
+    { id: 'prv-cop-forecast', planId: copilot.id, code: 'COPILOT_FORECAST', label: 'Prévisions de ventes', description: 'Prévisions IA', value: 1, valueType: 'BOOL', sortOrder: 3 },
+  ];
+  for (const pr of copilotPrivileges) {
+    await prisma.subscriptionPrivilege.upsert({
+      where: { id: pr.id },
+      update: {},
+      create: { id: pr.id, planId: copilot.id, code: pr.code, value: pr.value, valueType: pr.valueType, label: pr.label, description: pr.description, sortOrder: pr.sortOrder },
+    });
+  }
+
+  console.log('✓ Plans plateforme : AfriBiz GRATUIT (promo lancement) + Copilot IA préparé (non vendu)');
 }
 
 // ============================================================
@@ -235,7 +299,7 @@ async function seedBusinesses() {
         description: d.description, shortDescription: d.shortDescription, tagline: d.tagline,
         email: d.email, phone: d.phone, country: d.country, city: d.city, region: d.region, address: d.address,
         foundedYear: d.foundedYear, employeeCount: d.employeeCount,
-        planId: 'platform-free',
+        planId: 'platform-afribiz',
         isActive: true, isVerified: true, isPremium: true, isNew: false,
         isTopSeller: true, isTopProvider: true, isRecommended: true,
         onboardingCompleted: true, onboardedAt: new Date('2025-08-01'),
