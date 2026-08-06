@@ -29,7 +29,7 @@ const steps = [
     title: 'Créez votre boutique',
     desc: 'Devenez vendeur et créez votre page business pour vendre produits et services.',
     icon: Store,
-    action: { label: 'Devenir vendeur', href: '/dashboard/become-business' },
+    action: { label: 'Devenir vendeur', href: '/dashboard/business/onboarding' },
     tips: [
       'Ajoutez vos produits avec photos',
       "Définissez vos horaires d'ouverture",

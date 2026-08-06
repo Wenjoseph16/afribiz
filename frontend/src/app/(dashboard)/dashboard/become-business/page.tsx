@@ -89,7 +89,7 @@ export default function BecomeBusinessPage() {
               reste vous revient intégralement.
             </p>
           </div>
-          <Link href="/dashboard/onboarding">
+          <Link href="/dashboard/business/onboarding">
             <Button size="lg" className="bg-white text-emerald-800 hover:bg-emerald-50">
               Commencer l&apos;onboarding Business
               <ArrowRight className="h-5 w-5 ml-2" />
@@ -123,7 +123,7 @@ export default function BecomeBusinessPage() {
         <p className="text-sm text-gray-500 mb-6">
           Rejoignez la marketplace AfriBiz et commencez à vendre en quelques minutes.
         </p>
-        <Link href="/dashboard/onboarding">
+        <Link href="/dashboard/business/onboarding">
           <Button size="lg">
             Commencer l&apos;onboarding Business
             <ArrowRight className="h-5 w-5 ml-2" />

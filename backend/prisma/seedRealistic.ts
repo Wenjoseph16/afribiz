@@ -52,11 +52,11 @@ async function hashPwd(pwd: string): Promise<string> {
   return bcrypt.hash(pwd, 12);
 }
 
-async function roleAssign(id: string, userId: string, role: UserRole, source = 'ACTIVATION') {
+async function roleAssign(id: string, userId: string, role: UserRole, source: string = 'ACTIVATION') {
   await prisma.userRoleAssignment.upsert({
     where: { id },
     update: {},
-    create: { id, userId, role, source },
+    create: { id, userId, role, source: source as any },
   });
 }
 
@@ -109,6 +109,65 @@ async function seedUsers() {
   }
 
   console.log(`✓ ${users.length} utilisateurs (mdp unique : ${PASSWORD})`);
+}
+
+// ============================================================
+// 1b. PLANS PLATEFORME (Gratuit / Basic / Premium — businessId=null)
+// ============================================================
+async function seedPlatformPlans() {
+  const plans: any[] = [
+    {
+      id: 'platform-free', businessId: null, name: 'Gratuit',
+      description: 'Accédez gratuitement à toutes les fonctionnalités de base d\'AfriBiz. Pas de carte bancaire requise.',
+      type: 'FREE_TRIAL', price: 0, currency: 'FCFA', billingCycle: 'MONTHLY', trialDays: null,
+      benefits: ['Profil public', '3 produits/services', 'Commandes manuelles', 'Support email', 'Paiement Mobile Money'],
+      isPublic: true, isActive: true, sortOrder: 1, featured: true, badge: '🔥 Populaire',
+    },
+    {
+      id: 'platform-basic', businessId: null, name: 'Basic',
+      description: 'Pour les petites entreprises qui souhaitent se développer avec des outils professionnels.',
+      type: 'STANDARD', price: 5000, currency: 'FCFA', billingCycle: 'MONTHLY', trialDays: null,
+      benefits: ['Tout le plan Gratuit', 'Produits/services illimités', 'Réservations en ligne', 'Promotions & coupons', 'Statistiques avancées', 'Support prioritaire'],
+      isPublic: false, isActive: true, sortOrder: 2, featured: false, badge: null,
+    },
+    {
+      id: 'platform-premium', businessId: null, name: 'Premium',
+      description: 'La solution complète pour les entreprises ambitieuses avec des fonctionnalités avancées.',
+      type: 'PREMIUM', price: 15000, currency: 'FCFA', billingCycle: 'MONTHLY', trialDays: null,
+      benefits: ['Tout le plan Basic', 'Module Marketplace développeur', 'Copilot IA', 'Paiement par lots', 'API dédiée', 'Support 24/7', 'Account manager dédié'],
+      isPublic: false, isActive: true, sortOrder: 3, featured: false, badge: '🚀 Bientôt disponible',
+    },
+  ];
+
+  for (const p of plans) {
+    await prisma.subscriptionPlan.upsert({
+      where: { id: p.id },
+      update: {},
+      create: { id: p.id, businessId: null, ...p },
+    });
+    // Privilèges du plan Gratuit — codes EXACTS utilisés par les guards (checkPlanLimit)
+    if (p.id === 'platform-free') {
+      // Nettoyage des doublons (anciens seeds) : garantir UNE ligne par code pour le plan.
+      // Sinon getPlanPrivilegeValue (find) peut lire une ligne obsolète même après édition admin.
+      await prisma.subscriptionPrivilege.deleteMany({
+        where: { planId: p.id, code: { in: ['PRODUCTS_LIMIT', 'CLIENTS_LIMIT', 'BOOKINGS_LIMIT', 'COPILOT_ACCESS'] } },
+      });
+      const privileges: any[] = [
+        { id: 'prv-free-products', planId: p.id, code: 'PRODUCTS_LIMIT', label: 'Produits', description: 'Nombre maximum de produits au catalogue', value: 10, valueType: 'COUNT', sortOrder: 1 },
+        { id: 'prv-free-clients', planId: p.id, code: 'CLIENTS_LIMIT', label: 'Clients CRM', description: 'Nombre maximum de clients CRM', value: 50, valueType: 'COUNT', sortOrder: 2 },
+        { id: 'prv-free-bookings', planId: p.id, code: 'BOOKINGS_LIMIT', label: 'Réservations', description: 'Nombre maximum de réservations actives', value: 30, valueType: 'COUNT', sortOrder: 3 },
+        { id: 'prv-free-copilot', planId: p.id, code: 'COPILOT_ACCESS', label: 'Copilot IA', description: 'Accès à l assistant Copilot IA', value: 1, valueType: 'FLAG', sortOrder: 4 },
+      ];
+      for (const pr of privileges) {
+        await prisma.subscriptionPrivilege.upsert({
+          where: { id: pr.id },
+          update: {},
+          create: { id: pr.id, planId: p.id, code: pr.code, value: pr.value, valueType: pr.valueType, label: pr.label, description: pr.description, sortOrder: pr.sortOrder },
+        });
+      }
+    }
+  }
+  console.log('✓ 3 plans plateforme (Gratuit/Basic/Premium) + privilèges Gratuit');
 }
 
 // ============================================================
@@ -176,6 +235,7 @@ async function seedBusinesses() {
         description: d.description, shortDescription: d.shortDescription, tagline: d.tagline,
         email: d.email, phone: d.phone, country: d.country, city: d.city, region: d.region, address: d.address,
         foundedYear: d.foundedYear, employeeCount: d.employeeCount,
+        planId: 'platform-free',
         isActive: true, isVerified: true, isPremium: true, isNew: false,
         isTopSeller: true, isTopProvider: true, isRecommended: true,
         onboardingCompleted: true, onboardedAt: new Date('2025-08-01'),
@@ -1067,6 +1127,7 @@ export async function seedRealistic() {
   await purgeLegacyData();
   await cleanupExisting();
   await seedUsers();
+  await seedPlatformPlans();
   await seedBusinesses();
   await seedCatalogs();
   await seedOrders();

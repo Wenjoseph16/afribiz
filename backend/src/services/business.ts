@@ -11,6 +11,7 @@ import {
   publishReviewPublished,
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
+import { FREE_PLAN_ID } from './planAccessService';
 
 export async function getPublicBusiness(slug: string) {
   const business = await prisma.business.findUnique({
@@ -561,33 +562,54 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
     ...rest
   } = data;
 
+  // Résoudre le plan plateforme Gratuit (le business commence toujours sur le plan Gratuit).
+  // S'il n'existe pas en base, planId reste null → planAccessService retombe sur le Gratuit par défaut.
+  const freePlan = await prisma.subscriptionPlan.findUnique({
+    where: { id: FREE_PLAN_ID },
+    select: { id: true },
+  });
+  const planId = freePlan ? FREE_PLAN_ID : null;
+
   const business = await prisma.$transaction(async (tx) => {
-    const created = await tx.business.create({
+    // Type explicite : évite le flottement TS entre BusinessCreateInput et UncheckedCreateInput
+    // (le spread `...rest` + `owner: { connect }` + `planId` fait choisir la mauvaise branche sinon)
+    const createData: Prisma.BusinessCreateInput = {
+      slug,
+      latitude,
+      longitude,
+      modules: { set: allModules },
+      plan: planId ? { connect: { id: planId } } : undefined,
+      onboardingCompleted: true,
+      onboardedAt: new Date(),
+      verificationLevel: 'ARGENT',
+      owner: {
+        connect: { id: ownerId },
+      },
+      ...rest,
+      logo: rest.logo || undefined,
+      coverImage: rest.coverImage || undefined,
+      website: rest.website || undefined,
+      whatsapp: rest.whatsapp || undefined,
+      managerName: rest.managerName || undefined,
+      managerBio: rest.managerBio || undefined,
+      experience: rest.experience || undefined,
+      skills: rest.skills || [],
+      certifications: rest.certifications || [],
+      facebook: rest.facebook || undefined,
+      instagram: rest.instagram || undefined,
+      tiktok: rest.tiktok || undefined,
+      linkedin: rest.linkedin || undefined,
+    };
+    const created = await tx.business.create({ data: createData });
+
+    // Wallet automatique : socle de la chaîne magique (commande → CA → retraits).
+    // Le wallet est créé dans la même transaction que le business (zéro business sans wallet).
+    await tx.wallet.create({
       data: {
-        slug,
-        latitude,
-        longitude,
-        modules: { set: allModules },
-        onboardingCompleted: true,
-        onboardedAt: new Date(),
-        verificationLevel: 'ARGENT',
-        owner: {
-          connect: { id: ownerId },
-        },
-        ...rest,
-        logo: rest.logo || undefined,
-        coverImage: rest.coverImage || undefined,
-        website: rest.website || undefined,
-        whatsapp: rest.whatsapp || undefined,
-        managerName: rest.managerName || undefined,
-        managerBio: rest.managerBio || undefined,
-        experience: rest.experience || undefined,
-        skills: rest.skills || [],
-        certifications: rest.certifications || [],
-        facebook: rest.facebook || undefined,
-        instagram: rest.instagram || undefined,
-        tiktok: rest.tiktok || undefined,
-        linkedin: rest.linkedin || undefined,
+        businessId: created.id,
+        balance: 0,
+        locked: 0,
+        currency: 'FCFA',
       },
     });
 
@@ -654,6 +676,8 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
     where: { id: business.id },
     include: {
       settings: true,
+      plan: { select: { id: true, name: true, price: true, currency: true, badge: true } },
+      wallet: true,
       owner: {
         select: {
           id: true,

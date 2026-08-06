@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
@@ -139,6 +140,7 @@ const QUICK_ACTIONS = [
 ];
 
 export default function BusinessDashboardPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const { business } = useBusinessStore();
 
@@ -148,6 +150,16 @@ export default function BusinessDashboardPage() {
     error: bizError,
     refetch: bizRefetch,
   } = useMyBusiness();
+
+  // Guard UX : rôle BUSINESS mais aucun profil business → rediriger vers le formulaire d'onboarding.
+  // Évite les pages cassées (produits, commandes…) vides pour un business non configuré.
+  const canAccess = user?.roles?.includes('BUSINESS');
+  const hasProfile = !!(business || myBusiness);
+  useEffect(() => {
+    if (user && canAccess && !bizLoading && !bizError && !hasProfile) {
+      router.replace('/dashboard/business/onboarding');
+    }
+  }, [user, canAccess, bizLoading, bizError, hasProfile, router]);
   const { data: stats, error: statsError } = useBusinessStats();
   const { data: notificationsData } = useNotifications({ limit: 5 });
   const { data: ordersData } = useOrders({ limit: 5 });
@@ -172,7 +184,6 @@ export default function BusinessDashboardPage() {
   });
 
   // Guard: access denied for non-business users
-  const canAccess = user?.roles?.includes('BUSINESS');
   if (user && !canAccess) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-8">

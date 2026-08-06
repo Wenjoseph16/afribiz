@@ -86,6 +86,12 @@ router.get('/:slug/trainings', getBusinessTrainings);
 router.get('/:slug/faqs', getPublicFaqs);
 router.get('/:slug/stats/live', getBusinessLiveStats);
 
+// POST /onboarding doit rester ACCESSIBLE aux clients (rôle CLIENT) : c'est LE point d'entrée
+// pour créer son premier business (on passe ensuite au rôle BUSINESS dans createBusiness).
+// S'il était derrière requireRole(['BUSINESS','ADMIN']), un nouveau vendeur ne pourrait jamais
+// soumettre le formulaire → parcours bloqué.
+router.post('/onboarding', authMiddleware, validateBody(onboardingSchema), createBusiness);
+
 // Protected routes — require BUSINESS or ADMIN role
 router.use(authMiddleware, requireRole(['BUSINESS', 'ADMIN']));
 
