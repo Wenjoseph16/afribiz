@@ -16,6 +16,7 @@ import {
   getBusinessTrainings,
   getMyBusiness,
   getMyBusinessPlan,
+  getMyBusinessAlertQueue,
   getMyBusinessClients,
   getMyBusinessStats,
   getAggregatedStats,
@@ -103,6 +104,7 @@ router.get('/modules/installed', getBusinessInstalledModules);
 router.post('/modules/update/:installationId', confirmModuleUpdate);
 router.get('/me', getMyBusiness);
 router.get('/plan', getMyBusinessPlan);
+router.get('/alert-queue', getMyBusinessAlertQueue);
 router.get('/clients', getMyBusinessClients);
 router.get('/stats', getMyBusinessStats);
 router.get('/stats/aggregated', getAggregatedStats);

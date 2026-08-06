@@ -93,6 +93,21 @@ const CopilotInsights = dynamic(
     loading: () => <div className="h-32 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
   }
 );
+const BusinessMorningBrief = dynamic(
+  () => import('@/components/dashboard/BusinessMorningBrief'),
+  {
+    ssr: false,
+    loading: () => <div className="h-40 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+  }
+);
+const BusinessPlanCard = dynamic(() => import('@/components/dashboard/BusinessPlanCard'), {
+  ssr: false,
+  loading: () => <div className="h-48 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+});
+const BusinessAlertQueue = dynamic(() => import('@/components/dashboard/BusinessAlertQueue'), {
+  ssr: false,
+  loading: () => <div className="h-48 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+});
 
 const QUICK_ACTIONS = [
   {
@@ -249,10 +264,6 @@ export default function BusinessDashboardPage() {
 
   // Derived values for memoized computations
   const unreadReviews = useMemo(() => reviews.filter((r: any) => !r.read).length, [reviews]);
-  const pendingBookings = useMemo(
-    () => bookings.filter((b: any) => ['pending', 'PENDING'].includes(b.status)).length,
-    [bookings]
-  );
   const newMessages = useMemo(
     () => conversations.filter((c: any) => c.unreadCount > 0).length,
     [conversations]
@@ -303,50 +314,11 @@ export default function BusinessDashboardPage() {
             },
           ]
         : []),
-      ...(growthStats.ordersPending > 0
-        ? [
-            {
-              id: 'orders',
-              type: 'order' as const,
-              priority: 'high' as const,
-              label: `${growthStats.ordersPending} commande${growthStats.ordersPending > 1 ? 's' : ''} en attente`,
-              description: 'Traitez les commandes pour satisfaire vos clients',
-              link: '/dashboard/orders',
-            },
-          ]
-        : []),
-      ...(pendingBookings > 0
-        ? [
-            {
-              id: 'bookings',
-              type: 'booking' as const,
-              priority: 'medium' as const,
-              label: `${pendingBookings} réservation${pendingBookings > 1 ? 's' : ''} à confirmer`,
-              description: 'Confirmez les réservations en attente',
-              link: '/dashboard/bookings',
-            },
-          ]
-        : []),
-      ...(aggStats?.alerts?.lowStock > 0
-        ? [
-            {
-              id: 'low-stock',
-              type: 'order' as const,
-              priority: 'medium' as const,
-              label: `${aggStats.alerts.lowStock} produit(s) en stock faible`,
-              description: 'Pensez à réapprovisionner votre inventaire',
-              link: '/dashboard/products/stock-alerts',
-            },
-          ]
-        : []),
+      // NB: commandes en attente, réservations à confirmer et stock faible sont
+      // désormais couverts par la file d'alertes serveur (BusinessAlertQueue) —
+      // pas de doublon à l'écran.
     ],
-    [
-      newMessages,
-      unreadReviews,
-      pendingBookings,
-      growthStats.ordersPending,
-      aggStats?.alerts?.lowStock,
-    ]
+    [newMessages, unreadReviews]
   );
 
   // Growth recommendations (rule-based, no AI) memoized
@@ -522,6 +494,9 @@ export default function BusinessDashboardPage() {
       {/* Copilot — Insights Benchmarks, Anomalies & Seasonal */}
       <CopilotInsights />
 
+      {/* Brief du matin — métriques, conseils & actions rapides (GrowthBrief) */}
+      <BusinessMorningBrief />
+
       {/* Growth Cockpit — Daily Summary */}
       <Card padding="lg">
         <GrowthSummaryCard stats={growthStats} businessName={biz?.name} />
@@ -575,6 +550,16 @@ export default function BusinessDashboardPage() {
               : undefined
           }
         />
+      </div>
+
+      {/* Plan & Alert queue — le cockpit d'action */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <BusinessAlertQueue />
+        </div>
+        <div>
+          <BusinessPlanCard />
+        </div>
       </div>
 
       {/* Modules overview chart */}

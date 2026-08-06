@@ -8,9 +8,12 @@ import { GrowthBriefType } from '@prisma/client';
 import { prisma } from '../lib/db';
 
 async function getBusinessId(req: AuthenticatedRequest): Promise<string> {
-  const qId = req.query.businessId as string | undefined;
-  if (qId) return qId;
   if (!req.user) throw new AppError('Non authentifié', 401);
+  // Le paramètre ?businessId= est réservé à l'usage interne/admin (Cron, débogage).
+  // Pour un utilisateur normal, on résout TOUJOURS le business depuis son compte :
+  // jamais de lecture croisée du brief/analytics d'un autre business (IDOR).
+  const qId = req.query.businessId as string | undefined;
+  if (qId && req.user.roles?.includes('ADMIN')) return qId;
   const business = await prisma.business.findUnique({
     where: { ownerId: req.user.id, deletedAt: null },
     select: { id: true },
@@ -25,7 +28,13 @@ export const getMorningBrief = catchAsyncErrors(
     const businessId = await getBusinessId(req);
 
     const brief = await growthEngine.getLatestBrief(businessId, 'MORNING_BRIEF' as GrowthBriefType);
-    if (brief) {
+    // Un brief stocké n'est valable que s'il date d'aujourd'hui (le cron régénère chaque matin).
+    // S'il est périmé (hier ou avant), on le régénère pour ne jamais afficher de vieilles données
+    // présentées comme « brief du matin ».
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const isFresh = !!brief?.date && new Date(brief.date).getTime() >= todayStart.getTime();
+    if (brief && isFresh) {
       res.json(successResponse(brief));
       return;
     }

@@ -13,6 +13,7 @@ import {
   getEscrowCommissionRate,
 } from '../services/monetizationConfig';
 import { getBusinessPlanOverview } from '../services/planAccessService';
+import { getBusinessAlertQueue } from '../services/businessAlerts';
 
 async function getBusinessId(req: AuthenticatedRequest) {
   if (!req.user) throw new AppError('Non authentifié', 401);
@@ -352,6 +353,15 @@ export const getMyBusinessPlan = catchAsyncErrors(
     const business = await getBusinessByOwner(req.user.id);
     const overview = await getBusinessPlanOverview(business.id);
     res.json({ success: true, data: overview });
+  }
+);
+
+export const getMyBusinessAlertQueue = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const business = await getBusinessByOwner(req.user.id);
+    const queue = await getBusinessAlertQueue(business.id);
+    res.json({ success: true, data: queue });
   }
 );
 

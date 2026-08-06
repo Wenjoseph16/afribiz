@@ -33,15 +33,39 @@ describe('growthEngine controller', () => {
   });
 
   describe('getMorningBrief', () => {
-    it('should return existing brief', async () => {
-      (ge.getLatestBrief as jest.Mock).mockResolvedValue({ id: 'b1', content: 'Brief' });
+    it('should return existing fresh brief (daté d\'aujourd\'hui)', async () => {
+      (ge.getLatestBrief as jest.Mock).mockResolvedValue({
+        id: 'b1',
+        content: 'Brief',
+        date: new Date(),
+      });
       const res = mockRes();
       ctrl.getMorningBrief(req(), res, jest.fn());
       await flush();
       expect(ge.getLatestBrief).toHaveBeenCalledWith('b1', 'MORNING_BRIEF');
+      expect(ge.generateMorningBrief).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({
         success: true,
-        data: { id: 'b1', content: 'Brief' },
+        data: expect.objectContaining({ id: 'b1', content: 'Brief' }),
+      });
+    });
+
+    it('should regenerate a stale brief (daté d\'hier)', async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      (ge.getLatestBrief as jest.Mock).mockResolvedValue({
+        id: 'b1-old',
+        content: 'Vieux brief',
+        date: yesterday,
+      });
+      (ge.generateMorningBrief as jest.Mock).mockResolvedValue({ id: 'b2', content: 'New' });
+      const res = mockRes();
+      ctrl.getMorningBrief(req(), res, jest.fn());
+      await flush();
+      expect(ge.generateMorningBrief).toHaveBeenCalledWith('b1');
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        data: { id: 'b2', content: 'New' },
       });
     });
 
