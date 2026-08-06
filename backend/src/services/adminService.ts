@@ -2589,6 +2589,37 @@ export const globalSearch = async (q?: string) => {
 };
 
 /** File d'alertes proactive : agrège les situations à traiter prioritairement. */
+/**
+ * Résout les IDs des admins actifs — même logique que le guard admin
+ * (primaryRole ADMIN + roles + adminRoleAssignment en complément).
+ * Source de vérité unique pour toutes les notifications ciblées admins.
+ */
+export const getActiveAdminIds = async (): Promise<string[]> => {
+  const [assignments, roleUsers] = await Promise.all([
+    prisma.adminRoleAssignment.findMany({ select: { userId: true } }),
+    prisma.user.findMany({
+      where: {
+        isActive: true,
+        OR: [{ primaryRole: 'ADMIN' }, { roles: { has: 'ADMIN' } }],
+      },
+      select: { id: true },
+    }),
+  ]);
+  const assignedIds = assignments.map((a) => a.userId);
+  // Les assignés passent aussi par User pour garantir isActive: true (même filtre partout)
+  const assignedActive = assignedIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: assignedIds }, isActive: true },
+        select: { id: true },
+      })
+    : [];
+  const ids = new Set<string>([
+    ...assignedActive.map((u) => u.id),
+    ...roleUsers.map((u) => u.id),
+  ]);
+  return Array.from(ids);
+};
+
 export const getAdminAlertQueue = async () => {
   const now = new Date();
   const since3d = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);

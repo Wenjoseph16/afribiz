@@ -9,6 +9,7 @@ import { prisma } from '../lib/db';
 import { sendEmail, emailTemplates } from '../lib/mail';
 import { logger } from '../lib/logger';
 import { NotificationType } from '@prisma/client';
+import { getActiveAdminIds } from '../services/adminService';
 
 export const getNotifications = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -374,13 +375,10 @@ export const checkNotificationFailureRate = catchAsyncErrors(
     const rate = total > 0 ? Math.round((failed / total) * 100) : 0;
     const threshold = 10;
 
-    if (rate > threshold) {
-      const admins = await prisma.adminRoleAssignment.findMany({
-        where: { role: { name: { in: ['SUPER_ADMIN', 'ADMIN'] } } },
-        select: { userId: true },
-      });
-      const adminIds = [...new Set(admins.map((a) => a.userId))];
+    // Résoudre les admins une seule fois (notification + email)
+    const adminIds = rate > threshold ? await getActiveAdminIds() : [];
 
+    if (rate > threshold) {
       // 1 requête au lieu de N — trouver toutes les notifications existantes en une fois
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const existingNotifications =
@@ -421,12 +419,14 @@ export const checkNotificationFailureRate = catchAsyncErrors(
     // Send email alert to admins if threshold exceeded
     if (rate > threshold) {
       try {
-        const admins = await prisma.adminRoleAssignment.findMany({
-          where: { role: { name: { in: ['SUPER_ADMIN', 'ADMIN'] } } },
-          include: { user: { select: { email: true, firstName: true } } },
-        });
+        const adminUsers = adminIds.length
+          ? await prisma.user.findMany({
+              where: { id: { in: adminIds } },
+              select: { email: true, firstName: true },
+            })
+          : [];
         const adminEmails = [
-          ...new Set(admins.map((a) => a.user.email).filter(Boolean)),
+          ...new Set(adminUsers.map((u) => u.email).filter(Boolean)),
         ] as string[];
         for (const email of adminEmails) {
           const tpl = emailTemplates.notificationFailureAlert(

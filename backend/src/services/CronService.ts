@@ -33,6 +33,8 @@ import { detectAllOpportunities } from './opportunityService';
 import { QueueService } from '../events/QueueService';
 import { recomputeAllScores } from './afriScoreService';
 import { generateAllCopilotNotifications } from './copilotNotificationService';
+import { getAdminAlertQueue, getActiveAdminIds } from './adminService';
+import { sendEmail } from '../lib/mail';
 
 const CRON_STATUS_KEY = 'cron_job_statuses';
 const CRON_LOG_KEY = 'cron_execution_logs';
@@ -236,11 +238,7 @@ export class CronService {
     if (CronService.isNotifyingAdmins) return;
     CronService.isNotifyingAdmins = true;
     try {
-      const admins = await prisma.adminRoleAssignment.findMany({
-        where: { role: { name: { in: ['SUPER_ADMIN', 'ADMIN'] } } },
-        select: { userId: true },
-      });
-      const adminIds = [...new Set(admins.map((a) => a.userId))];
+      const adminIds = await getActiveAdminIds();
       for (const userId of adminIds) {
         await prisma.notification.create({
           data: {
@@ -256,6 +254,125 @@ export class CronService {
       logger.error('CronService: failed to notify admins', { error: err });
     } finally {
       CronService.isNotifyingAdmins = false;
+    }
+  }
+
+  /**
+   * Résumé quotidien admin — email + notification in-app des alertes à traiter
+   * (KYC en attente, litiges ouverts, pubs à valider, payouts, tickets, fraude,
+   * abonnements qui expirent). Réutilise la même logique que la file d'alertes
+   * du dashboard admin (getAdminAlertQueue).
+   */
+  static async adminDailyDigest(): Promise<void> {
+    try {
+      const { alerts, total, urgent } = await getAdminAlertQueue();
+      if (total === 0) return; // Rien à signaler, pas d'email
+
+      // Résoudre les admins actifs (même logique que le guard — helper centralisé)
+      const adminIds = await getActiveAdminIds();
+      if (adminIds.length === 0) return;
+      const admins = await prisma.user.findMany({
+        where: { id: { in: adminIds } },
+        select: { id: true, email: true, firstName: true, lastName: true },
+      });
+      if (admins.length === 0) return;
+
+      const severityColor: Record<string, string> = {
+        CRITICAL: '#dc2626',
+        HIGH: '#d97706',
+        MEDIUM: '#2563eb',
+        LOW: '#6b7280',
+      };
+      const rows = alerts
+        .map(
+          (a) => `
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:10px 12px;font-size:14px;color:#0f172a;">${a.label}</td>
+              <td style="padding:10px 12px;text-align:center;">
+                <span style="display:inline-block;min-width:28px;padding:2px 10px;border-radius:999px;background:${severityColor[a.severity] || '#6b7280'}15;color:${severityColor[a.severity] || '#6b7280'};font-weight:600;font-size:13px;">${a.count}</span>
+              </td>
+              <td style="padding:10px 12px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.03em;">${a.severity}</td>
+            </tr>`
+        )
+        .join('');
+
+      const dateLabel = new Date().toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      const subject = `AfriBiz — ${total} alerte${total > 1 ? 's' : ''} à traiter (${urgent} prioritaire${urgent > 1 ? 's' : ''})`;
+      const html = `
+        <!DOCTYPE html>
+        <html><head><meta charset="UTF-8"></head>
+        <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;margin:0;padding:24px;">
+          <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;">
+            <div style="background:#0f172a;padding:24px;color:#ffffff;">
+              <h1 style="margin:0;font-size:20px;">📋 Résumé quotidien AfriBiz</h1>
+              <p style="margin:6px 0 0;font-size:13px;color:#94a3b8;">${dateLabel}</p>
+            </div>
+            <div style="padding:24px;">
+              <p style="font-size:14px;color:#334155;margin:0 0 16px;">
+                Bonjour${admins.length === 1 && admins[0].firstName ? ` ${admins[0].firstName}` : ''}, voici les points qui nécessitent votre attention aujourd'hui :
+              </p>
+              <table style="width:100%;border-collapse:collapse;background:#fff;">
+                <thead>
+                  <tr style="background:#f8fafc;">
+                    <th style="padding:10px 12px;text-align:left;font-size:12px;color:#64748b;text-transform:uppercase;">Alerte</th>
+                    <th style="padding:10px 12px;text-align:center;font-size:12px;color:#64748b;text-transform:uppercase;">Nombre</th>
+                    <th style="padding:10px 12px;text-align:left;font-size:12px;color:#64748b;text-transform:uppercase;">Priorité</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+              <div style="margin-top:20px;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:13px;color:#92400e;">
+                ⚠️ ${urgent} alerte${urgent > 1 ? 's' : ''} de priorité haute ou critique — traitez-les en priorité depuis le tableau de bord.
+              </div>
+              <p style="margin-top:20px;font-size:13px;color:#64748b;">
+                Pour traiter ces alertes : <a href="https://afribiz.com/dashboard/admin" style="color:#2563eb;">ouvrir le dashboard admin</a>
+              </p>
+            </div>
+          </div>
+        </body></html>
+      `;
+
+      for (const admin of admins) {
+        // Email
+        try {
+          await sendEmail(admin.email, subject, html);
+        } catch (err) {
+          logger.warn(`[cron] Échec envoi résumé admin à ${admin.email}`, { error: (err as Error).message });
+        }
+        // Notification in-app (dédupliquée sur 24h)
+        try {
+          const existing = await prisma.notification.findFirst({
+            where: {
+              userId: admin.id,
+              type: NotificationType.SYSTEM,
+              metadata: { path: ['source'], equals: 'admin-daily-digest' },
+              createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+            },
+          });
+          if (!existing) {
+            await prisma.notification.create({
+              data: {
+                userId: admin.id,
+                type: NotificationType.SYSTEM,
+                title: `📋 ${total} alerte${total > 1 ? 's' : ''} à traiter`,
+                description: `${urgent} prioritaire${urgent > 1 ? 's' : ''} — KYC, litiges, pubs, payouts. Consultez le dashboard.`,
+                metadata: { alerts, source: 'admin-daily-digest' },
+              },
+            });
+          }
+        } catch (err) {
+          logger.warn(`[cron] Échec notification résumé admin ${admin.id}`, { error: (err as Error).message });
+        }
+      }
+
+      logger.info(`[cron] Résumé quotidien admin envoyé à ${admins.length} admin(s) — ${total} alertes`);
+    } catch (err) {
+      logger.error('CronService: adminDailyDigest failed', { error: (err as Error).message });
     }
   }
 
@@ -380,6 +497,20 @@ export class CronService {
         category: 'client',
         schedule: 'Toutes les 15 min',
         cron: '*/15 * * * *',
+        enabled: true,
+        lastRun: null,
+        nextRun: null,
+        todayCount: 0,
+        errorCount: 0,
+        lastError: null,
+      },
+      {
+        id: 'admin-daily-digest',
+        name: 'Résumé quotidien admin',
+        description: 'Email + notification récapitulatifs des alertes à traiter (KYC, litiges, pubs, payouts, fraude)',
+        category: 'system',
+        schedule: 'Chaque jour à 07:00',
+        cron: '0 7 * * *',
         enabled: true,
         lastRun: null,
         nextRun: null,
@@ -857,6 +988,12 @@ export class CronService {
       '*/15 * * * *',
       () => CronService.checkBookingReminders(),
       'Rappel réservation envoyé'
+    );
+    scheduleIfEnabled(
+      'admin-daily-digest',
+      '0 7 * * *',
+      () => CronService.adminDailyDigest(),
+      'Résumé quotidien admin envoyé'
     );
     scheduleIfEnabled(
       'overdue-debts',
