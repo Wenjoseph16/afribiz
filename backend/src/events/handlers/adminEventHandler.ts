@@ -12,6 +12,7 @@ let registered = false;
  */
 
 const ADMIN_EVENT_TYPES: Record<string, { title: string; link: string }> = {
+  // Modération / validation
   [DomainEventType.REPORT_CREATED]: {
     title: 'Nouveau signalement',
     link: '/dashboard/admin/moderation',
@@ -20,6 +21,16 @@ const ADMIN_EVENT_TYPES: Record<string, { title: string; link: string }> = {
     title: 'Nouveau module à valider',
     link: '/dashboard/admin/modules',
   },
+  // KYC / Business
+  [DomainEventType.BUSINESS_REGISTERED]: {
+    title: 'Nouveau business inscrit',
+    link: '/dashboard/admin/businesses',
+  },
+  [DomainEventType.BUSINESS_KYC_SUBMITTED]: {
+    title: 'Vérification KYC à traiter',
+    link: '/dashboard/admin/businesses',
+  },
+  // Litiges / Escrow
   [DomainEventType.DISPUTE_OPENED]: { title: 'Litige ouvert', link: '/dashboard/admin/disputes' },
   [DomainEventType.ESCROW_DISPUTED]: {
     title: 'Escrow litigieux',
@@ -29,6 +40,25 @@ const ADMIN_EVENT_TYPES: Record<string, { title: string; link: string }> = {
   [DomainEventType.ESCROW_REFUNDED]: {
     title: 'Escrow remboursé',
     link: '/dashboard/admin/payments',
+  },
+  // Publicité
+  [DomainEventType.AD_CREATED]: {
+    title: 'Nouvelle campagne à valider',
+    link: '/dashboard/admin/ads',
+  },
+  // Support
+  [DomainEventType.SUPPORT_TICKET_CREATED]: {
+    title: 'Nouveau ticket support',
+    link: '/dashboard/admin/support',
+  },
+  [DomainEventType.ESCALATED_TICKET]: {
+    title: 'Ticket escaladé',
+    link: '/dashboard/admin/support',
+  },
+  // Sécurité / Fraude
+  [DomainEventType.FRAUD_ALERT]: {
+    title: 'Alerte fraude',
+    link: '/dashboard/admin/reports/fraud',
   },
 };
 

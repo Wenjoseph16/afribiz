@@ -28,6 +28,24 @@ export const publishBusinessActivated = def<{
   (p) => ({ businessId: p.businessId, businessName: p.businessName }),
   (p) => ({ businessId: p.businessId, businessName: p.businessName, link: '/dashboard' })
 );
+export const publishBusinessRegistered = def<{
+  userId: string;
+  businessId: string;
+  businessName: string;
+}>(
+  DomainEventType.BUSINESS_REGISTERED,
+  (p) => ({ businessId: p.businessId, businessName: p.businessName }),
+  (p) => ({ businessId: p.businessId, businessName: p.businessName, link: '/dashboard/business' })
+);
+export const publishBusinessKycSubmitted = def<{
+  userId: string;
+  businessId: string;
+  businessName: string;
+}>(
+  DomainEventType.BUSINESS_KYC_SUBMITTED,
+  (p) => ({ businessId: p.businessId, businessName: p.businessName }),
+  (p) => ({ businessId: p.businessId, businessName: p.businessName, link: '/dashboard/business' })
+);
 export const publishDeveloperActivated = def<{ userId: string }>(
   DomainEventType.DEVELOPER_ACTIVATED,
   () => ({})

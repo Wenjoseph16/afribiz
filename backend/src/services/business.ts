@@ -5,6 +5,8 @@ import { getPublicPortfolio } from './portfolio';
 import { resolveBusinessModules } from '../lib/businessModules';
 import {
   publishOnboardingCompleted,
+  publishBusinessRegistered,
+  publishBusinessKycSubmitted,
   publishReviewResponse,
   publishReviewPublished,
 } from '../events/publishers';
@@ -641,6 +643,13 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
     businessName: business.name,
   });
 
+  // Nouveau business inscrit → alerté les admins (room admin:alerts) pour la revue
+  publishBusinessRegistered({
+    userId: ownerId,
+    businessId: business.id,
+    businessName: business.name,
+  });
+
   return prisma.business.findUnique({
     where: { id: business.id },
     include: {
@@ -711,6 +720,14 @@ export async function submitVerification(
       verificationStatus: BusinessVerificationStatus.PENDING,
     },
   });
+
+  // KYC soumis → alerte les admins (room admin:alerts) : le dossier est à traiter
+  publishBusinessKycSubmitted({
+    userId,
+    businessId: updated.id,
+    businessName: updated.name,
+  });
+
   return updated;
 }
 

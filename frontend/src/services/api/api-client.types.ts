@@ -1090,6 +1090,7 @@ export interface ApiClientMethods {
   // ============================================
   // ADMIN EXTENDED (injectAdminExtended)
   // ============================================
+  adminGetAlertQueue(): Promise<any>;
   adminGetWarningStats(): Promise<any>;
   adminGetUserDetail(id: string): Promise<any>;
   adminGetUserActivity(id: string): Promise<any>;

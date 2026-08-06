@@ -1,6 +1,9 @@
 import type { ApiClientMethods } from './api-client.types';
 
 export function injectAdminExtended(api: ApiClientMethods) {
+  api.adminGetAlertQueue = function () {
+    return this.get('/admin/alerts');
+  };
   api.adminGetWarningStats = function () {
     return this.get('/admin/warnings/stats');
   };

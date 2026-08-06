@@ -21,6 +21,8 @@ import {
   Megaphone,
   Activity,
   ArrowLeft,
+  BellRing,
+  CheckCircle2,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card } from '@/components/ui/Card';
@@ -81,9 +83,62 @@ const sectionStyle = (accent: string) => ({
   borderTop: `3px solid ${accent}`,
 });
 
+function useAdminAlertQueue() {
+  return useQuery({
+    queryKey: ['admin', 'alerts'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.adminGetAlertQueue();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement file d\'alertes:', error);
+        return { alerts: [], total: 0, urgent: 0, generatedAt: new Date().toISOString() };
+      }
+    },
+    // Rafraîchi en temps réel par SocketProvider (événement admin:event → invalidation globale)
+    refetchInterval: 30000,
+    retry: false,
+  });
+}
+
+const severityStyles = (severity: string) => {
+  switch (severity) {
+    case 'CRITICAL':
+      return {
+        badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+        dot: 'bg-red-500',
+        pulse: 'animate-pulse',
+        border: 'border-red-200 dark:border-red-800 hover:border-red-400 dark:hover:border-red-600',
+      };
+    case 'HIGH':
+      return {
+        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+        dot: 'bg-amber-500',
+        pulse: '',
+        border: 'border-amber-200 dark:border-amber-800 hover:border-amber-400 dark:hover:border-amber-600',
+      };
+    case 'MEDIUM':
+      return {
+        badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+        dot: 'bg-blue-500',
+        pulse: '',
+        border: 'border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600',
+      };
+    default:
+      return {
+        badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
+        dot: 'bg-gray-400',
+        pulse: '',
+        border: 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500',
+      };
+  }
+};
+
 export default function AdminDashboardPage() {
   const { user } = useAuthStore();
   const { data: stats, isLoading, error, refetch } = useAdminDashboardStats();
+  const { data: alertQueue, isLoading: alertsLoading } = useAdminAlertQueue();
+  const alerts = alertQueue?.alerts ?? [];
 
   const isAdmin = user?.roles?.includes('ADMIN');
 
@@ -132,6 +187,69 @@ export default function AdminDashboardPage() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Centre de contrôle de la plateforme
         </p>
+      </div>
+
+      {/* Section 0 - File d'alertes (temps réel) */}
+      <div style={sectionStyle('#ef4444')}>
+        <div className="flex items-center justify-between gap-3 mb-4 pt-4">
+          <div className="flex items-center gap-2">
+            <BellRing className="h-5 w-5 text-red-500" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">File d'alertes</h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              </span>
+              Temps réel
+            </span>
+          </div>
+          {alertQueue?.urgent > 0 && (
+            <span className="text-xs font-semibold text-red-600 dark:text-red-400 shrink-0">
+              {alertQueue.urgent} prioritaire{alertQueue.urgent > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+
+        {alertsLoading ? (
+          <Loader size="sm" label="Chargement des alertes..." className="py-8" />
+        ) : alerts.length === 0 ? (
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/30 px-4 py-6">
+            <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+            <p className="text-sm text-emerald-700 dark:text-emerald-300">
+              Aucune alerte en attente. La plateforme fonctionne normalement.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            {alerts.map((a: any) => {
+              const s = severityStyles(a.severity);
+              return (
+                <Link key={a.key} href={a.link} className="group">
+                  <div
+                    className={`flex items-start justify-between gap-3 rounded-xl border bg-white dark:bg-gray-800/60 p-4 transition-all group-hover:shadow-md ${s.border}`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug">
+                        {a.label}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Cliquez pour traiter
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <span
+                        className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold ${s.badge} ${s.pulse}`}
+                      >
+                        {a.count}
+                      </span>
+                      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Section 1 - Plateforme */}
