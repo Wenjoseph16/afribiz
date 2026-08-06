@@ -21,6 +21,7 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
+import { useAdminConfirmation } from '@/hooks/useAdminConfirmation';
 
 type FraudTab = 'fraude' | 'spam' | 'arnaque' | 'faux_profils' | 'contenu_illegal' | 'abus';
 
@@ -84,16 +85,24 @@ export default function AdminFraudReportsPage() {
     },
   });
 
-  const banTargetMutation = useMutation({
-    mutationFn: (id: string) => apiClient.post(`/admin/reports/fraud/${id}/ban`),
-    onSuccess: () => {
+  const { requestConfirmation, modal } = useAdminConfirmation();
+
+  const handleBan = async (id: string) => {
+    const ok = await requestConfirmation({
+      title: 'Bannir la cible ?',
+      description:
+        'Le compte ciblé par ce signalement sera banni de la plateforme. Action sensible : confirmez avec votre mot de passe administrateur.',
+      confirmLabel: 'Bannir',
+      danger: true,
+      action: async (creds) => {
+        await apiClient.post(`/admin/reports/fraud/${id}/ban`, creds);
+      },
+    });
+    if (ok) {
       qc.invalidateQueries({ queryKey: ['admin', 'fraud-reports'] });
       setToast({ message: 'Cible bannie', type: 'success' });
-    },
-    onError: () => {
-      setToast({ message: 'Erreur lors du bannissement', type: 'error' });
-    },
-  });
+    }
+  };
 
   const reports = Array.isArray(data) ? data : (data?.reports ?? []);
   const totalPages = data?.totalPages ?? 1;
@@ -244,7 +253,7 @@ export default function AdminFraudReportsPage() {
                         <Button
                           variant="ghost"
                           size="xs"
-                          onClick={() => banTargetMutation.mutate(r.id)}
+                          onClick={() => handleBan(r.id)}
                         >
                           <Ban className="h-3.5 w-3.5 text-amber-500" /> Bannir cible
                         </Button>
@@ -290,6 +299,9 @@ export default function AdminFraudReportsPage() {
           </div>
         </div>
       )}
+
+      {/* Double validation (bannissement) */}
+      {modal}
     </div>
   );
 }

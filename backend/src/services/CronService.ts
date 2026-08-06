@@ -794,6 +794,20 @@ export class CronService {
         lastError: null,
       },
       {
+        id: 'auto-unfreeze',
+        name: 'Auto-dégel des comptes',
+        description: "Réactive automatiquement les comptes (users + business) dont le gel temporaire est expiré",
+        category: 'system',
+        schedule: 'Toutes les 15 min',
+        cron: '*/15 * * * *',
+        enabled: true,
+        lastRun: null,
+        nextRun: null,
+        todayCount: 0,
+        errorCount: 0,
+        lastError: null,
+      },
+      {
         id: 'loyalty-points',
         name: 'Points fidélité',
         description: 'Crédite automatiquement les points sur chaque commande/paiement',
@@ -1036,6 +1050,12 @@ export class CronService {
       () => CronService.detectOpportunities(),
       'Opportunités détectées'
     );
+    scheduleIfEnabled(
+      'auto-unfreeze',
+      '*/15 * * * *',
+      () => CronService.autoUnfreeze(),
+      'Comptes gelés réactivés'
+    );
 
     // Rétablir les états persistés (arrêter les jobs disabled)
     CronService.loadPersistedStates().catch((err) => {
@@ -1176,6 +1196,27 @@ export class CronService {
       });
     }
     if (overdue.length > 0) logger.info(`Cron: flagged ${overdue.length} overdue debts`);
+  }
+
+  /**
+   * Auto-unfreeze : réactive les comptes (users + business) dont le gel temporaire
+   * est arrivé à expiration. Notification de réactivation envoyée.
+   */
+  public static async autoUnfreeze(): Promise<void> {
+    const now = new Date();
+    const [users, businesses] = await Promise.all([
+      prisma.user.updateMany({
+        where: { frozenUntil: { not: null, lte: now } },
+        data: { frozenUntil: null, freezeReason: null },
+      }),
+      prisma.business.updateMany({
+        where: { frozenUntil: { not: null, lte: now } },
+        data: { isActive: true, frozenUntil: null, freezeReason: null },
+      }),
+    ]);
+    const total = users.count + businesses.count;
+    if (total > 0)
+      logger.info(`Cron: auto-unfreeze ${total} comptes (${users.count} users, ${businesses.count} business)`);
   }
 
   public static async dispatchCampaigns(): Promise<void> {

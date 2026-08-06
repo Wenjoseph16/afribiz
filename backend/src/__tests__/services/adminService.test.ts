@@ -73,6 +73,11 @@ import {
   banFraudReport,
   globalSearch,
   getAdminAlertQueue,
+  freezeUser,
+  unfreezeUser,
+  freezeBusiness,
+  unfreezeBusiness,
+  getFrozenAccounts,
   getPlatformSettings as getPlatSettings,
   updatePlatformSettings as updatePlatSettings,
   getAdminAuditLog,
@@ -714,6 +719,63 @@ describe('adminService', () => {
       jest.spyOn(mockPrisma.user, 'update').mockResolvedValue({ ...mockUser, isActive: false });
       const r = await banFraudReport('fx1', 'admin-1');
       expect(r.success).toBe(true);
+    });
+    test('freezeUser gele temporairement + audit', async () => {
+      jest.spyOn(mockPrisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest
+        .spyOn(mockPrisma.user, 'update')
+        .mockResolvedValue({ ...mockUser, frozenUntil: new Date(Date.now() + 48 * 3600_000) });
+      const r = await freezeUser('u1', { durationHours: 48, reason: 'Enquête' }, 'admin-1');
+      expect(r.frozenUntil).toBeDefined();
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ frozenUntil: expect.any(Date) }),
+        })
+      );
+    });
+    test('freezeUser refuse durée invalide', async () => {
+      await expect(freezeUser('u1', { durationHours: 0 })).rejects.toThrow('durée');
+    });
+    test('unfreezeUser lève le gel', async () => {
+      jest.spyOn(mockPrisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest
+        .spyOn(mockPrisma.user, 'update')
+        .mockResolvedValue({ ...mockUser, frozenUntil: null, freezeReason: null });
+      const r = await unfreezeUser('u1', 'admin-1');
+      expect(r.frozenUntil).toBeNull();
+    });
+    test('freezeBusiness desactive + gele', async () => {
+      jest.spyOn(mockPrisma.business, 'findUnique').mockResolvedValue(mockBiz);
+      jest
+        .spyOn(mockPrisma.business, 'update')
+        .mockResolvedValue({ ...mockBiz, isActive: false, frozenUntil: new Date() });
+      const r = await freezeBusiness('b1', { durationHours: 24, reason: 'Vérif' }, 'admin-1');
+      expect(r.isActive).toBe(false);
+    });
+    test('unfreezeBusiness réactive', async () => {
+      jest.spyOn(mockPrisma.business, 'findUnique').mockResolvedValue(mockBiz);
+      jest
+        .spyOn(mockPrisma.business, 'update')
+        .mockResolvedValue({ ...mockBiz, isActive: true, frozenUntil: null });
+      const r = await unfreezeBusiness('b1', 'admin-1');
+      expect(r.isActive).toBe(true);
+    });
+    test('getFrozenAccounts liste les gelés actifs', async () => {
+      jest.spyOn(mockPrisma.user, 'findMany').mockResolvedValue([
+        {
+          id: 'u1',
+          email: 'a@b.com',
+          firstName: 'A',
+          lastName: 'B',
+          frozenUntil: new Date(Date.now() + 3600_000),
+          freezeReason: 'test',
+          primaryRole: 'CLIENT',
+        },
+      ]);
+      jest.spyOn(mockPrisma.business, 'findMany').mockResolvedValue([]);
+      const r = await getFrozenAccounts();
+      expect(r.users).toHaveLength(1);
+      expect(r.users[0].remainingHours).toBeGreaterThan(0);
     });
     test('globalSearch retourne des résultats groupés', async () => {
       jest.spyOn(mockPrisma.user, 'findMany').mockResolvedValue([mockUser]);

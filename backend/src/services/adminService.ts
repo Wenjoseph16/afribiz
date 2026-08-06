@@ -1,6 +1,7 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { searchIdsByText } from '../lib/fulltext';
+import { createImpersonationToken as createImpersonationJwt } from '../lib/jwt';
 import { publishPaymentReceived, publishRefundProcessed } from '../events/publishers';
 import { SecurityLogRepository } from '../repositories/securityLogRepository';
 import { forceDisconnectUser } from './socket';
@@ -573,6 +574,262 @@ export const updateBusinessVerification = async (
     reason: rejectionReason,
   });
   return updated;
+};
+
+// ============================================
+// FREEZE / OBSERVATION TEMPORAIRE
+// ============================================
+
+/**
+ * Geler un utilisateur temporairement (observation/enquête).
+ * Auto-expiration via frozenUntil : le login vérifie ce champ et le cron
+ * auto-unfreeze réactive le compte à l'échéance.
+ */
+export const freezeUser = async (
+  id: string,
+  params: { durationHours: number; reason?: string },
+  adminUserId?: string
+) => {
+  if (!params.durationHours || params.durationHours <= 0)
+    throw new AppError('La durée du gel doit être supérieure à 0 heure', 400);
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new AppError('Utilisateur introuvable', 404);
+  if (user.primaryRole === 'ADMIN' && user.id !== adminUserId)
+    throw new AppError("Impossible de geler un autre administrateur", 403);
+
+  const frozenUntil = new Date(Date.now() + params.durationHours * 3600_000);
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { frozenUntil, freezeReason: params.reason || 'Gel temporaire (observation)' },
+  });
+
+  // Écosystème : audit + analytics + notification + déconnexion immédiate
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_USER_ACTION',
+      targetUserId: id,
+      reason: `Utilisateur gelé ${params.durationHours}h: ${updated.email}`,
+      metadata: {
+        action: 'freeze',
+        durationHours: params.durationHours,
+        reason: params.reason,
+        targetEmail: updated.email,
+      },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_USER_FROZEN',
+      properties: { targetUserId: id, durationHours: params.durationHours },
+    });
+  }
+  try {
+    forceDisconnectUser(id);
+  } catch (err) {
+    // non-bloquant
+  }
+  await notifyUserWarned({
+    userId: id,
+    reason: `Votre compte est temporairement gelé (${params.durationHours}h) : ${params.reason || 'enquête en cours'}.`,
+  });
+  return { ...updated, frozenUntil, freezeReason: updated.freezeReason };
+};
+
+/** Dégeler un utilisateur avant échéance. */
+export const unfreezeUser = async (id: string, adminUserId?: string) => {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new AppError('Utilisateur introuvable', 404);
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { frozenUntil: null, freezeReason: null },
+  });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_USER_ACTION',
+      targetUserId: id,
+      reason: `Utilisateur dégelé: ${updated.email}`,
+      metadata: { action: 'unfreeze', targetEmail: updated.email },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_USER_UNFROZEN',
+      properties: { targetUserId: id },
+    });
+  }
+  await notifyUserWarned({ userId: id, reason: 'Votre compte a été dégelé. Vous pouvez vous reconnecter.' });
+  return updated;
+};
+
+/**
+ * Geler un business temporairement : isActive=false (plus d'action possible),
+ * auto-réactivation par le cron à l'échéance de frozenUntil.
+ */
+export const freezeBusiness = async (
+  id: string,
+  params: { durationHours: number; reason?: string },
+  adminUserId?: string
+) => {
+  if (!params.durationHours || params.durationHours <= 0)
+    throw new AppError('La durée du gel doit être supérieure à 0 heure', 400);
+  const business = await prisma.business.findUnique({ where: { id } });
+  if (!business) throw new AppError('Commerce introuvable', 404);
+
+  const frozenUntil = new Date(Date.now() + params.durationHours * 3600_000);
+  const updated = await prisma.business.update({
+    where: { id },
+    data: {
+      isActive: false,
+      frozenUntil,
+      freezeReason: params.reason || 'Gel temporaire (observation)',
+    },
+  });
+
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_BUSINESS_ACTION',
+      targetUserId: business.ownerId,
+      reason: `Business gelé ${params.durationHours}h: ${business.name}`,
+      metadata: {
+        action: 'freeze',
+        businessId: id,
+        businessName: business.name,
+        durationHours: params.durationHours,
+        reason: params.reason,
+      },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_BUSINESS_FROZEN',
+      properties: { businessId: id, durationHours: params.durationHours },
+    });
+  }
+  await notifyBusinessStatusChanged({
+    businessId: id,
+    status: 'suspended',
+    reason: `Gel temporaire (${params.durationHours}h) : ${params.reason || 'enquête en cours'}`,
+  });
+  return { ...updated, frozenUntil, freezeReason: updated.freezeReason };
+};
+
+/** Dégeler un business avant échéance. */
+export const unfreezeBusiness = async (id: string, adminUserId?: string) => {
+  const business = await prisma.business.findUnique({ where: { id } });
+  if (!business) throw new AppError('Commerce introuvable', 404);
+  const updated = await prisma.business.update({
+    where: { id },
+    data: { isActive: true, frozenUntil: null, freezeReason: null },
+  });
+  if (adminUserId) {
+    await logAdminAction({
+      adminUserId,
+      action: 'ADMIN_BUSINESS_ACTION',
+      targetUserId: business.ownerId,
+      reason: `Business dégelé: ${business.name}`,
+      metadata: { action: 'unfreeze', businessId: id, businessName: business.name },
+    });
+    await trackAdminAction({
+      adminUserId,
+      eventName: 'ADMIN_BUSINESS_UNFROZEN',
+      properties: { businessId: id },
+    });
+  }
+  await notifyBusinessStatusChanged({ businessId: id, status: 'suspended', reason: undefined });
+  return updated;
+};
+
+/** Lister les comptes gelés actifs (users + business). */
+export const getFrozenAccounts = async () => {
+  const now = new Date();
+  const [users, businesses] = await Promise.all([
+    prisma.user.findMany({
+      where: { frozenUntil: { not: null } },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        frozenUntil: true,
+        freezeReason: true,
+        primaryRole: true,
+      },
+    }),
+    prisma.business.findMany({
+      where: { frozenUntil: { not: null } },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        frozenUntil: true,
+        freezeReason: true,
+        isActive: true,
+      },
+    }),
+  ]);
+  const normalize = (items: any[]) =>
+    items
+      .filter((i) => i.frozenUntil && i.frozenUntil > now)
+      .map((i) => ({
+        ...i,
+        remainingHours: Math.round(((i.frozenUntil.getTime() - now.getTime()) / 3600_000) * 10) / 10,
+      }));
+  return { users: normalize(users), businesses: normalize(businesses), total: users.length + businesses.length };
+};
+
+// ============================================
+// VOIR-COMME (IMPERSONATION LECTURE SEULE)
+// ============================================
+
+/**
+ * Générer un token d'impersonation (voir-comme) pour un utilisateur cible.
+ * Lecture seule : le middleware auth bloque toute mutation avec ce token.
+ */
+export const createImpersonationToken = async (targetUserId: string, adminUserId: string) => {
+  if (targetUserId === adminUserId)
+    throw new AppError("Vous êtes déjà cet utilisateur", 400);
+  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!target) throw new AppError('Utilisateur cible introuvable', 404);
+  if (!target.isActive) throw new AppError("Le compte cible est inactif", 400);
+  if (target.primaryRole === 'ADMIN')
+    throw new AppError('Impossible de voir-comme un autre administrateur', 403);
+
+  const admin = await prisma.user.findUnique({ where: { id: adminUserId } });
+  if (!admin || admin.primaryRole !== 'ADMIN')
+    throw new AppError('Action réservée aux administrateurs', 403);
+
+  const token = createImpersonationJwt({
+    id: target.id,
+    email: target.email,
+    primaryRole: target.primaryRole,
+    roles: target.roles,
+    impersonatorId: adminUserId,
+  });
+
+  await logAdminAction({
+    adminUserId,
+    action: 'ADMIN_USER_ACTION',
+    targetUserId: target.id,
+    reason: `Voir-comme lancé sur ${target.email}`,
+    metadata: { action: 'impersonate', targetEmail: target.email },
+  });
+  await trackAdminAction({
+    adminUserId,
+    eventName: 'ADMIN_IMPERSONATE',
+    properties: { targetUserId: target.id, targetEmail: target.email },
+  });
+
+  return {
+    token,
+    expiresIn: '15m',
+    target: {
+      id: target.id,
+      email: target.email,
+      firstName: target.firstName,
+      lastName: target.lastName,
+      primaryRole: target.primaryRole,
+    },
+  };
 };
 
 export const getDevelopers = async (query: {

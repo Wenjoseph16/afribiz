@@ -11,6 +11,8 @@ model User {
 
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
+  frozenUntil         DateTime?
+  freezeReason        String?
   lastLoginAt         DateTime?
   lastLoginIp         String?
 

@@ -11,6 +11,9 @@ export interface AuthenticatedRequest extends Request {
     roles: string[];
   };
   sessionId?: string;
+  /** Mode voir-comme : l'admin navigue en lecture seule avec l'identité d'un autre utilisateur */
+  isImpersonating?: boolean;
+  impersonatorId?: string;
 }
 
 /**
@@ -32,6 +35,23 @@ export const authMiddleware = catchAsyncErrors(
         primaryRole: decoded.primaryRole,
         roles: decoded.roles || [],
       };
+
+      // Mode voir-comme : lecture seule. Toute mutation est refusée (403),
+      // sauf les routes d'échappement nécessaires (logout, stop impersonation, refresh).
+      if (decoded.impersonating) {
+        req.isImpersonating = true;
+        req.impersonatorId = decoded.impersonatorId;
+        const method = req.method.toUpperCase();
+        const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+        const escaped = req.path.includes('/auth/logout') || req.path.includes('/impersonate/stop');
+        if (isMutation && !escaped) {
+          throw new AppError(
+            'Mode lecture seule (voir-comme) : les modifications sont désactivées',
+            403
+          );
+        }
+      }
+
       next();
     } catch (error: any) {
       throw new AppError(error.message || 'Invalid token', 401);

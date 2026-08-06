@@ -45,6 +45,8 @@ model Business {
   isPremium           Boolean                    @default(false)
   premiumSince        DateTime?
   premiumUntil        DateTime?
+  frozenUntil         DateTime?
+  freezeReason        String?
   isNew               Boolean                    @default(true)
   isTopSeller         Boolean                    @default(false)
   isTopProvider       Boolean                    @default(false)

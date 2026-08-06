@@ -6,6 +6,8 @@ export interface JWTPayload extends JwtPayloadBase {
   email: string;
   primaryRole: string;
   roles: string[];
+  impersonating?: boolean;
+  impersonatorId?: string;
   iat?: number;
   exp?: number;
 }
@@ -32,6 +34,34 @@ export const createAccessToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): str
     config.JWT_SECRET as jwt.Secret,
     {
       expiresIn: config.JWT_EXPIRES_IN,
+      algorithm: 'HS256',
+    } as SignOptions
+  );
+};
+
+/**
+ * Create impersonation token (voir-comme) : court (15 min), marqué comme
+ * impersonation pour que le middleware bloque les mutations (lecture seule).
+ */
+export const createImpersonationToken = (payload: {
+  id: string;
+  email: string;
+  primaryRole: string;
+  roles: string[];
+  impersonatorId: string;
+}): string => {
+  return jwt.sign(
+    {
+      id: payload.id,
+      email: payload.email,
+      primaryRole: payload.primaryRole,
+      roles: payload.roles,
+      impersonating: true,
+      impersonatorId: payload.impersonatorId,
+    },
+    config.JWT_SECRET as jwt.Secret,
+    {
+      expiresIn: '15m',
       algorithm: 'HS256',
     } as SignOptions
   );

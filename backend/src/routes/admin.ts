@@ -1,5 +1,6 @@
-import express, { Router, Response } from 'express';
+import express, { Router, Response, NextFunction } from 'express';
 import { authMiddleware, requireRole, AuthenticatedRequest } from '../middlewares/auth';
+import { requireAdminConfirmation } from '../middlewares/adminConfirmation';
 import { validateBody } from '../middlewares/validators';
 import { adminLimiter } from '../middlewares/rateLimiter';
 import { catchAsyncErrors } from '../middlewares/errorHandler';
@@ -45,6 +46,13 @@ import {
   getSystemLogs,
   getApiKeys,
   getFraudReports,
+  freezeUser,
+  unfreezeUser,
+  freezeBusiness,
+  unfreezeBusiness,
+  getFrozenAccounts,
+  startImpersonation,
+  stopImpersonation,
   approveFraudReport,
   rejectFraudReport,
   banFraudReport,
@@ -116,8 +124,24 @@ router.get('/admin/dashboard/stats', getDashboardStats);
 router.get('/admin/users', getUsers);
 router.get('/admin/presence', getPresence);
 router.get('/admin/users/:id', getUserById);
-router.put('/admin/users/:id/status', validateBody(updateUserStatusSchema), updateUserStatus);
+router.put(
+  '/admin/users/:id/status',
+  requireAdminConfirmation,
+  validateBody(updateUserStatusSchema),
+  updateUserStatus
+);
 router.get('/admin/users/:id/activity', getUserActivity);
+
+// Freeze / observation temporaire
+router.get('/admin/freezes', getFrozenAccounts);
+router.post('/admin/users/:id/freeze', requireAdminConfirmation, freezeUser);
+router.post('/admin/users/:id/unfreeze', unfreezeUser);
+router.post('/admin/businesses/:id/freeze', requireAdminConfirmation, freezeBusiness);
+router.post('/admin/businesses/:id/unfreeze', unfreezeBusiness);
+
+// Voir-comme (impersonation lecture seule)
+router.post('/admin/impersonate/stop', stopImpersonation);
+router.post('/admin/impersonate/:id', startImpersonation);
 
 // Businesses management
 router.get('/admin/businesses', getBusinesses);
@@ -132,7 +156,7 @@ router.put(
   validateBody(updateBusinessVerificationSchema),
   updateBusinessVerification
 );
-router.put('/admin/businesses/:id/plan', updateBusinessPlan);
+router.put('/admin/businesses/:id/plan', requireAdminConfirmation, updateBusinessPlan);
 
 // Developers management
 router.get('/admin/developers', getDevelopers);
@@ -152,8 +176,8 @@ router.put('/admin/modules/:id/status', validateBody(updateModuleStatusSchema), 
 
 // Developer Payouts Management
 router.get('/admin/payouts', getAllPayouts);
-router.post('/admin/payouts/:id/approve', approvePayout);
-router.post('/admin/payouts/:id/reject', rejectPayout);
+router.post('/admin/payouts/:id/approve', requireAdminConfirmation, approvePayout);
+router.post('/admin/payouts/:id/reject', requireAdminConfirmation, rejectPayout);
 
 // Payments & Escrows
 router.get('/admin/payments', getPayments);
@@ -173,7 +197,7 @@ router.get('/admin/reports', getDataReports);
 router.get('/admin/reports/fraud', getFraudReports);
 router.post('/admin/reports/fraud/:id/approve', approveFraudReport);
 router.post('/admin/reports/fraud/:id/reject', rejectFraudReport);
-router.post('/admin/reports/fraud/:id/ban', banFraudReport);
+router.post('/admin/reports/fraud/:id/ban', requireAdminConfirmation, banFraudReport);
 
 // Finance admin (dashboard /admin/payments)
 router.get('/admin/finance/overview', getAdminFinanceOverview);
@@ -205,8 +229,8 @@ router.get('/admin/audit-logs', getAdminAuditLog);
 
 router.get('/admin/escrow', getAdminEscrows);
 router.get('/admin/escrow/stats', getAdminEscrowStats);
-router.post('/admin/escrow/:id/release', releaseAdminEscrow);
-router.post('/admin/escrow/:id/refund', refundAdminEscrow);
+router.post('/admin/escrow/:id/release', requireAdminConfirmation, releaseAdminEscrow);
+router.post('/admin/escrow/:id/refund', requireAdminConfirmation, refundAdminEscrow);
 router.post(
   '/admin/escrow/:id/arbitrate',
   validateBody(arbitrateEscrowSchema),
@@ -218,15 +242,15 @@ router.post(
 // ============================================
 
 router.get('/admin/payments/stats', getAdminPaymentStats);
-router.post('/admin/payments/:id/validate', validatePayment);
-router.post('/admin/payments/:id/refund', refundPayment);
+router.post('/admin/payments/:id/validate', requireAdminConfirmation, validatePayment);
+router.post('/admin/payments/:id/refund', requireAdminConfirmation, refundPayment);
 
 // ============================================
 // SUBSCRIPTIONS ADMIN STATS & ACTIONS
 // ============================================
 
 router.get('/admin/subscriptions/stats', getAdminSubscriptionStats);
-router.post('/admin/subscriptions/:id/cancel', cancelAdminSubscription);
+router.post('/admin/subscriptions/:id/cancel', requireAdminConfirmation, cancelAdminSubscription);
 router.post('/admin/subscriptions/:id/renew', renewAdminSubscription);
 
 // ============================================
@@ -248,7 +272,18 @@ router.get('/admin/security/journal', getAdminSecurityJournal);
 // ============================================
 
 router.get('/admin/disputes/stats', getDisputesStats);
-router.put('/admin/disputes/:id/:action', updateDisputeStatus);
+router.put(
+  '/admin/disputes/:id/:action',
+  catchAsyncErrors(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    // La décision d'un litige est irréversible et sensible → double validation.
+    // La simple clôture reste libre.
+    if (req.params.action === 'decide') {
+      return requireAdminConfirmation(req, res, next);
+    }
+    next();
+  }),
+  updateDisputeStatus
+);
 
 // ============================================
 // MARKETPLACE ADMIN

@@ -140,6 +140,12 @@ export class AuthService {
     if (!user.isActive) throw new AppError('Compte désactivé', 403);
     if (user.lockedUntil && user.lockedUntil > new Date())
       throw new AppError('Compte temporairement verrouillé', 423);
+    // Gel temporaire par l'admin (observation/enquête) : auto-expire via frozenUntil
+    if (user.frozenUntil && user.frozenUntil > new Date())
+      throw new AppError(
+        `Compte gelé temporairement jusqu'au ${user.frozenUntil.toLocaleDateString('fr-FR')}. Contactez le support.`,
+        423
+      );
 
     const valid = await comparePasswords(payload.password, user.passwordHash);
     if (!valid) {

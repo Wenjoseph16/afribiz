@@ -1,6 +1,7 @@
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Topbar } from '@/components/dashboard/Topbar';
+import { ImpersonationBanner } from '@/components/dashboard/ImpersonationBanner';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex h-screen overflow-hidden">
           <Sidebar />
           <div className="flex-1 flex flex-col min-w-0 max-w-full">
+            <ImpersonationBanner />
             <Topbar />
             <main id="main-content" className="flex-1 p-4 lg:p-8 overflow-y-auto">
               <ErrorBoundary>{children}</ErrorBoundary>

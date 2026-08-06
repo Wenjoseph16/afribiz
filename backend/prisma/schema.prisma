@@ -838,6 +838,8 @@ model User {
 
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
+  frozenUntil         DateTime?
+  freezeReason        String?
   lastLoginAt         DateTime?
   lastLoginIp         String?
 
@@ -1611,6 +1613,8 @@ model Business {
   isPremium           Boolean                    @default(false)
   premiumSince        DateTime?
   premiumUntil        DateTime?
+  frozenUntil         DateTime?
+  freezeReason        String?
   isNew               Boolean                    @default(true)
   isTopSeller         Boolean                    @default(false)
   isTopProvider       Boolean                    @default(false)

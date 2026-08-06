@@ -899,3 +899,76 @@ export const rejectPayout = catchAsyncErrors(async (req: AuthenticatedRequest, r
   );
   res.json(result);
 });
+
+// ============================================
+// FREEZE / OBSERVATION TEMPORAIRE
+// ============================================
+
+export const freezeUser = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await adminService.freezeUser(
+      req.params.id,
+      { durationHours: req.body.durationHours, reason: req.body.reason },
+      req.user.id
+    );
+    res.json({
+      success: true,
+      data: result,
+      message: `Utilisateur gelé (${req.body.durationHours}h)`,
+    });
+  }
+);
+
+export const unfreezeUser = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await adminService.unfreezeUser(req.params.id, req.user.id);
+    res.json({ success: true, data: result, message: 'Utilisateur dégelé' });
+  }
+);
+
+export const freezeBusiness = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await adminService.freezeBusiness(
+      req.params.id,
+      { durationHours: req.body.durationHours, reason: req.body.reason },
+      req.user.id
+    );
+    res.json({
+      success: true,
+      data: result,
+      message: `Business gelé (${req.body.durationHours}h)`,
+    });
+  }
+);
+
+export const unfreezeBusiness = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await adminService.unfreezeBusiness(req.params.id, req.user.id);
+    res.json({ success: true, data: result, message: 'Business dégelé' });
+  }
+);
+
+export const getFrozenAccounts = catchAsyncErrors(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const result = await adminService.getFrozenAccounts();
+    res.json({ success: true, data: result });
+  }
+);
+
+export const startImpersonation = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await adminService.createImpersonationToken(req.params.id, req.user.id);
+    res.json({ success: true, data: result, message: 'Mode voir-comme activé' });
+  }
+);
+
+export const stopImpersonation = catchAsyncErrors(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    res.json({ success: true, message: 'Mode voir-comme désactivé' });
+  }
+);

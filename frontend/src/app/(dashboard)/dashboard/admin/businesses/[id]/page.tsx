@@ -16,6 +16,9 @@ import {
   Activity,
   BarChart3,
   TrendingUp,
+  Snowflake,
+  Flame,
+  Eye,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
@@ -24,6 +27,8 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
+import { startImpersonation } from '@/lib/impersonation';
+import { useAdminConfirmation } from '@/hooks/useAdminConfirmation';
 
 type BusinessTab = 'overview' | 'products' | 'scores' | 'documents' | 'payments' | 'disputes';
 
@@ -57,8 +62,89 @@ export default function AdminBusinessDetailPage() {
   const isAdmin = user?.roles?.includes('ADMIN');
 
   const [activeTab, setActiveTab] = useState<BusinessTab>('overview');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [freezeOpen, setFreezeOpen] = useState(false);
+  const [freezeHours, setFreezeHours] = useState(24);
+  const [freezeReason, setFreezeReason] = useState('');
+  const [freezeBusy, setFreezeBusy] = useState(false);
+  const { requestConfirmation, modal } = useAdminConfirmation();
 
-  const { data: business, isLoading } = useAdminBusinessDetail(id);
+  const { data: business, isLoading, refetch } = useAdminBusinessDetail(id);
+
+  const isFrozen = !!business?.frozenUntil && new Date(business.frozenUntil) > new Date();
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleFreeze = async () => {
+    setFreezeBusy(true);
+    try {
+      const ok = await requestConfirmation({
+        title: `Geler ${business?.name || 'ce business'} ?`,
+        description: `Le business sera indisponible pendant ${freezeHours} heure(s)${
+          freezeReason ? ` (motif : ${freezeReason})` : ''
+        }. Cette action restreint l'accès — elle nécessite votre mot de passe.`,
+        confirmLabel: 'Geler le business',
+        danger: true,
+        action: async (creds) => {
+          await apiClient.post(`/admin/businesses/${id}/freeze`, {
+            durationHours: freezeHours,
+            reason: freezeReason,
+            ...creds,
+          });
+        },
+      });
+      if (ok) {
+        showToast(`Business gelé ${freezeHours}h`);
+        setFreezeOpen(false);
+        setFreezeReason('');
+        refetch();
+      }
+    } catch (e: any) {
+      showToast(e?.response?.data?.message || e?.message || 'Erreur gel', 'error');
+    } finally {
+      setFreezeBusy(false);
+    }
+  };
+
+  const handleUnfreeze = async () => {
+    setFreezeBusy(true);
+    try {
+      await apiClient.post(`/admin/businesses/${id}/unfreeze`, {});
+      showToast('Business dégelé');
+      refetch();
+    } catch (e: any) {
+      showToast(e?.response?.data?.message || e?.message || 'Erreur dégel', 'error');
+    } finally {
+      setFreezeBusy(false);
+    }
+  };
+
+  const [impBusy, setImpBusy] = useState(false);
+
+  const handleImpersonate = async () => {
+    setImpBusy(true);
+    try {
+      const ownerId = business?.ownerId || business?.owner?.id;
+      if (!ownerId) throw new Error('Gérant introuvable');
+      const res = await apiClient.post(`/admin/impersonate/${ownerId}`, {});
+      const { token, target } = res.data.data;
+      startImpersonation(token, target);
+      showToast(`Mode voir-comme activé : ${target.email}`);
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 600);
+    } catch (e: any) {
+      showToast(
+        e?.response?.data?.message || e?.message || "Erreur d'impersonation",
+        'error'
+      );
+    } finally {
+      setImpBusy(false);
+    }
+  };
 
   const tabs = [
     { id: 'overview' as BusinessTab, label: 'Aperçu', icon: Building2 },
@@ -120,6 +206,12 @@ export default function AdminBusinessDetailPage() {
               >
                 {business.status}
               </span>
+              {isFrozen && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">
+                  <Snowflake className="h-3.5 w-3.5" />
+                  Gelé jusqu'au {new Date(business.frozenUntil).toLocaleDateString('fr-FR')}
+                </span>
+              )}
               {business.verificationStatus && (
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -139,9 +231,110 @@ export default function AdminBusinessDetailPage() {
               {business.country ? `· ${business.country}` : ''}
             </p>
             <p className="text-sm text-gray-400 mt-0.5">{business.email}</p>
+            {isFrozen && business.freezeReason && (
+              <p className="text-xs text-sky-600 dark:text-sky-400 mt-2">
+                Motif : {business.freezeReason}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleImpersonate}
+              disabled={impBusy}
+              title="Voir le dashboard du gérant (lecture seule, 15 min)"
+            >
+              <Eye className="h-4 w-4" />
+              Voir comme le gérant
+            </Button>
+            {isFrozen ? (
+              <Button size="sm" variant="outline" onClick={handleUnfreeze} disabled={freezeBusy}>
+                <Flame className="h-4 w-4" />
+                Dégeler
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setFreezeOpen(true)} disabled={freezeBusy}>
+                <Snowflake className="h-4 w-4" />
+                Geler temporairement
+              </Button>
+            )}
           </div>
         </div>
       </Card>
+
+      {/* Double validation (actions sensibles) */}
+      {modal}
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`p-3 rounded-xl text-sm font-medium ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
+          {toast.message}
+          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
+            &times;
+          </button>
+        </div>
+      )}
+
+      {/* Modal de gel */}
+      {freezeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setFreezeOpen(false)} />
+          <Card className="relative w-full max-w-md z-10" padding="lg">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-600">
+                <Snowflake className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100">Gel temporaire</h3>
+                <p className="text-xs text-gray-500">
+                  Le business devient indisponible pendant la durée choisie, puis se réactive
+                  automatiquement.
+                </p>
+              </div>
+            </div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Durée (heures)
+            </label>
+            <select
+              value={freezeHours}
+              onChange={(e) => setFreezeHours(Number(e.target.value))}
+              className="w-full mb-3 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+            >
+              {[1, 6, 12, 24, 48, 72, 168].map((h) => (
+                <option key={h} value={h}>
+                  {h} heure{h > 1 ? 's' : ''}
+                </option>
+              ))}
+            </select>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Motif
+            </label>
+            <textarea
+              value={freezeReason}
+              onChange={(e) => setFreezeReason(e.target.value)}
+              placeholder="Ex : contrôle qualité…"
+              rows={3}
+              className="w-full mb-4 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setFreezeOpen(false)}>
+                Annuler
+              </Button>
+              <Button size="sm" onClick={handleFreeze} disabled={freezeBusy}>
+                <Snowflake className="h-4 w-4" />
+                Geler
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">

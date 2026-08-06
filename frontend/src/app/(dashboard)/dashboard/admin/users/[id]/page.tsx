@@ -15,12 +15,17 @@ import {
   Monitor,
   Smartphone,
   Clock,
+  Snowflake,
+  Flame,
+  Eye,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { apiClient } from '@/services/apiClient';
+import { startImpersonation } from '@/lib/impersonation';
+import { useAdminConfirmation } from '@/hooks/useAdminConfirmation';
 
 type UserDetailTab = 'activity' | 'sessions' | 'payments' | 'reports';
 
@@ -117,6 +122,12 @@ export default function AdminUserDetailPage() {
 
   const [activeTab, setActiveTab] = useState<UserDetailTab>('activity');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [freezeOpen, setFreezeOpen] = useState(false);
+  const [freezeHours, setFreezeHours] = useState(24);
+  const [freezeReason, setFreezeReason] = useState('');
+  const [freezeBusy, setFreezeBusy] = useState(false);
+  const { requestConfirmation, modal } = useAdminConfirmation();
+  const { refetch } = useAdminUserDetail(id);
 
   const { data: user, isLoading: userLoading } = useAdminUserDetail(id);
   const { data: activityData, isLoading: activityLoading } = useAdminUserActivity(id);
@@ -128,6 +139,79 @@ export default function AdminUserDetailPage() {
   const sessions = Array.isArray(sessionsData) ? sessionsData : (sessionsData?.sessions ?? []);
   const payments = Array.isArray(paymentsData) ? paymentsData : (paymentsData?.payments ?? []);
   const reports = Array.isArray(reportsData) ? reportsData : (reportsData?.reports ?? []);
+
+  const isFrozen = !!user?.frozenUntil && new Date(user.frozenUntil) > new Date();
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleFreeze = async () => {
+    setFreezeBusy(true);
+    try {
+      const ok = await requestConfirmation({
+        title: `Geler ${user?.email || 'ce compte'} ?`,
+        description: `Le compte sera indisponible pendant ${freezeHours} heure(s)${
+          freezeReason ? ` (motif : ${freezeReason})` : ''
+        }. Cette action restreint l'accès — elle nécessite votre mot de passe.`,
+        confirmLabel: 'Geler le compte',
+        danger: true,
+        action: async (creds) => {
+          await apiClient.post(`/admin/users/${id}/freeze`, {
+            durationHours: freezeHours,
+            reason: freezeReason,
+            ...creds,
+          });
+        },
+      });
+      if (ok) {
+        showToast(`Utilisateur gelé ${freezeHours}h`);
+        setFreezeOpen(false);
+        setFreezeReason('');
+        refetch();
+      }
+    } catch (e: any) {
+      showToast(e?.response?.data?.message || e?.message || 'Erreur gel', 'error');
+    } finally {
+      setFreezeBusy(false);
+    }
+  };
+
+  const handleUnfreeze = async () => {
+    setFreezeBusy(true);
+    try {
+      await apiClient.post(`/admin/users/${id}/unfreeze`, {});
+      showToast('Utilisateur dégelé');
+      refetch();
+    } catch (e: any) {
+      showToast(e?.response?.data?.message || e?.message || 'Erreur dégel', 'error');
+    } finally {
+      setFreezeBusy(false);
+    }
+  };
+
+  const [impBusy, setImpBusy] = useState(false);
+
+  const handleImpersonate = async () => {
+    setImpBusy(true);
+    try {
+      const res = await apiClient.post(`/admin/impersonate/${id}`, {});
+      const { token, target } = res.data.data;
+      startImpersonation(token, target);
+      showToast(`Mode voir-comme activé : ${target.email}`);
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 600);
+    } catch (e: any) {
+      showToast(
+        e?.response?.data?.message || e?.message || "Erreur d'impersonation",
+        'error'
+      );
+    } finally {
+      setImpBusy(false);
+    }
+  };
 
   if (userLoading) return <Loader className="min-h-[60vh]" />;
 
@@ -148,6 +232,9 @@ export default function AdminUserDetailPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Double validation (actions sensibles) */}
+      {modal}
+
       {/* Toast */}
       {toast && (
         <div
@@ -188,6 +275,12 @@ export default function AdminUserDetailPage() {
               >
                 {user.status || 'N/A'}
               </span>
+              {isFrozen && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">
+                  <Snowflake className="h-3 w-3" />
+                  Gelé jusqu'au {new Date(user.frozenUntil).toLocaleDateString('fr-FR')}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
               <Mail className="h-3.5 w-3.5" />
@@ -203,9 +296,90 @@ export default function AdminUserDetailPage() {
                 </span>
               ))}
             </div>
+            {isFrozen && user.freezeReason && (
+              <p className="text-xs text-sky-600 dark:text-sky-400 mt-2">
+                Motif : {user.freezeReason}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleImpersonate}
+              disabled={impBusy}
+              title="Voir le dashboard comme cet utilisateur (lecture seule, 15 min)"
+            >
+              <Eye className="h-4 w-4" />
+              Voir comme
+            </Button>
+            {isFrozen ? (
+              <Button size="sm" variant="outline" onClick={handleUnfreeze} disabled={freezeBusy}>
+                <Flame className="h-4 w-4" />
+                Dégeler
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setFreezeOpen(true)} disabled={freezeBusy}>
+                <Snowflake className="h-4 w-4" />
+                Geler temporairement
+              </Button>
+            )}
           </div>
         </div>
       </Card>
+
+      {/* Modal de gel */}
+      {freezeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setFreezeOpen(false)} />
+          <Card className="relative w-full max-w-md z-10" padding="lg">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-lg bg-sky-50 dark:bg-sky-900/30 text-sky-600">
+                <Snowflake className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 dark:text-gray-100">Gel temporaire</h3>
+                <p className="text-xs text-gray-500">
+                  L'utilisateur ne pourra plus se connecter pendant la durée choisie.
+                </p>
+              </div>
+            </div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Durée (heures)
+            </label>
+            <select
+              value={freezeHours}
+              onChange={(e) => setFreezeHours(Number(e.target.value))}
+              className="w-full mb-3 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+            >
+              {[1, 6, 12, 24, 48, 72, 168].map((h) => (
+                <option key={h} value={h}>
+                  {h} heure{h > 1 ? 's' : ''}
+                </option>
+              ))}
+            </select>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Motif
+            </label>
+            <textarea
+              value={freezeReason}
+              onChange={(e) => setFreezeReason(e.target.value)}
+              placeholder="Ex : enquête en cours…"
+              rows={3}
+              className="w-full mb-4 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setFreezeOpen(false)}>
+                Annuler
+              </Button>
+              <Button size="sm" onClick={handleFreeze} disabled={freezeBusy}>
+                <Snowflake className="h-4 w-4" />
+                Geler
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-px">

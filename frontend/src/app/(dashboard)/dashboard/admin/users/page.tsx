@@ -14,8 +14,7 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -23,6 +22,7 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
+import { useAdminConfirmation } from '@/hooks/useAdminConfirmation';
 
 const ROLES = ['CLIENT', 'BUSINESS', 'DEVELOPER', 'ADMIN'];
 const STATUSES = ['ACTIF', 'SUSPENDU', 'BLOQUÉ'];
@@ -62,17 +62,6 @@ function useAdminUsers(params?: any) {
   });
 }
 
-function useAdminUserStatusAction() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, action }: { id: string; action: string }) =>
-      apiClient.updateUserStatus(id, action),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
-  });
-}
-
 export default function AdminUsersPage() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
@@ -82,13 +71,9 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [actionTarget, setActionTarget] = useState<{
-    id: string;
-    action: string;
-    name: string;
-  } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const limit = 20;
+  const { requestConfirmation, modal } = useAdminConfirmation();
 
   const params: any = { page, limit };
   if (search) params.search = search;
@@ -96,13 +81,29 @@ export default function AdminUsersPage() {
   if (statusFilter) params.status = statusFilter;
 
   const { data: usersData, isLoading } = useAdminUsers(params);
-  const statusMutation = useAdminUserStatusAction();
 
   const users = Array.isArray(usersData) ? usersData : (usersData?.users ?? []);
   const totalPages = usersData?.totalPages ?? 1;
 
   const handleStatusAction = async (id: string, action: string, userName: string) => {
-    setActionTarget({ id, action, name: userName });
+    const labels: Record<string, string> = {
+      suspend: 'suspendre',
+      activate: 'réactiver',
+      block: 'bloquer',
+    };
+    const ok = await requestConfirmation({
+      title: `Changer le statut de ${userName} ?`,
+      description: `Cette action va ${labels[action]} le compte « ${userName} ». Action sensible : confirmez avec votre mot de passe administrateur.`,
+      confirmLabel: labels[action],
+      danger: action === 'block',
+      action: async (creds) => {
+        await apiClient.put(`/admin/users/${id}/status`, { action, ...creds });
+      },
+    });
+    if (ok) {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      setToast({ message: `Utilisateur ${labels[action]} avec succès`, type: 'success' });
+    }
   };
 
   const applyFilters = () => {
@@ -285,7 +286,6 @@ export default function AdminUsersPage() {
                               variant="ghost"
                               size="xs"
                               onClick={() => handleStatusAction(u.id, 'suspend', u.name)}
-                              isLoading={statusMutation.isPending}
                             >
                               <UserX className="h-3.5 w-3.5 text-amber-500" />
                               Suspendre
@@ -294,7 +294,6 @@ export default function AdminUsersPage() {
                               variant="ghost"
                               size="xs"
                               onClick={() => handleStatusAction(u.id, 'block', u.name)}
-                              isLoading={statusMutation.isPending}
                             >
                               <Ban className="h-3.5 w-3.5 text-red-500" />
                               Bloquer
@@ -305,8 +304,7 @@ export default function AdminUsersPage() {
                           <Button
                             variant="ghost"
                             size="xs"
-                            onClick={() => handleStatusAction(u.id, 'reactivate', u.name)}
-                            isLoading={statusMutation.isPending}
+                            onClick={() => handleStatusAction(u.id, 'activate', u.name)}
                           >
                             <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
                             Réactiver
@@ -361,35 +359,8 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      <ConfirmationModal
-        open={!!actionTarget}
-        onClose={() => setActionTarget(null)}
-        onConfirm={async () => {
-          if (!actionTarget) return;
-          const actionLabels: Record<string, string> = {
-            suspend: 'suspendre',
-            reactivate: 'réactiver',
-            block: 'bloquer',
-          };
-          try {
-            await statusMutation.mutateAsync({ id: actionTarget.id, action: actionTarget.action });
-            setToast({
-              message: `Utilisateur ${actionLabels[actionTarget.action]} avec succès`,
-              type: 'success',
-            });
-          } catch {
-            setToast({
-              message: `Erreur lors de l'action ${actionLabels[actionTarget.action]}`,
-              type: 'error',
-            });
-          }
-          setActionTarget(null);
-        }}
-        title="Confirmer l'action"
-        description={`Êtes-vous sûr de vouloir effectuer cette action sur « ${actionTarget?.name} » ?`}
-        confirmLabel="Confirmer"
-        variant="warning"
-      />
+      {/* Double validation (actions sensibles) */}
+      {modal}
     </div>
   );
 }
