@@ -14,7 +14,12 @@ import {
   Sun,
   Command,
   ShoppingCart,
+  Store,
+  Code,
+  ShieldCheck,
+  Check,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/index';
 import { useAuthStore } from '@/stores/authStore';
@@ -44,18 +49,45 @@ export function CartIconWithCount() {
 
 export function Topbar() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { toggleSidebar } = useUiStore();
-  const { user, logout } = useAuthStore();
+  const { user, logout, selectedSpace, setSelectedSpace } = useAuthStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSpaceMenu, setShowSpaceMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const spaceRef = useRef<HTMLDivElement>(null);
   const { theme, toggle: toggleTheme } = useTheme();
+
+  // ⭐ Sélecteur d'espace (workspace) — mêmes règles déterministes que la Sidebar
+  const activeSpace =
+    selectedSpace && user?.roles?.includes(selectedSpace)
+      ? selectedSpace
+      : user?.primaryRole || 'CLIENT';
+  const spaces = [
+    { key: 'CLIENT', label: 'Espace Client', href: '/dashboard', icon: User },
+    { key: 'BUSINESS', label: 'Espace Business', href: '/dashboard/business', icon: Store },
+    { key: 'DEVELOPER', label: 'Espace Développeur', href: '/dashboard/developer', icon: Code },
+    { key: 'ADMIN', label: 'Espace Admin', href: '/dashboard/admin', icon: ShieldCheck },
+  ].filter((s) => (user?.roles ?? []).includes(s.key));
+  const currentSpace = spaces.find((s) => s.key === activeSpace) ?? spaces[0];
+  const CurrentSpaceIcon = currentSpace?.icon ?? User;
+
+  const goToSpace = (key: string, href: string) => {
+    setSelectedSpace(key);
+    setShowSpaceMenu(false);
+    queryClient.invalidateQueries();
+    router.push(href);
+  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setShowUserMenu(false);
+      }
+      if (spaceRef.current && !spaceRef.current.contains(e.target as Node)) {
+        setShowSpaceMenu(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -98,6 +130,51 @@ export function Topbar() {
               AfriBiz
             </span>
           </Link>
+
+          {/* Sélecteur d'espace — visible quand l'utilisateur a plusieurs espaces */}
+          {spaces.length > 1 && currentSpace && (
+            <div className="relative hidden md:block ml-1" ref={spaceRef}>
+              <button
+                onClick={() => setShowSpaceMenu((v) => !v)}
+                className="flex items-center gap-1.5 pl-2 pr-2 py-1.5 rounded-lg border border-border bg-muted/60 hover:bg-muted text-xs font-medium text-foreground/80 transition-colors"
+                aria-label={`Espace actif : ${currentSpace.label}`}
+              >
+                <CurrentSpaceIcon className="h-3.5 w-3.5 text-brand" />
+                <span className="hidden lg:inline">{currentSpace.label}</span>
+                <ChevronDown
+                  className={cn(
+                    'h-3 w-3 text-muted-foreground transition-transform duration-200',
+                    showSpaceMenu && 'rotate-180'
+                  )}
+                />
+              </button>
+
+              {showSpaceMenu && (
+                <div className="absolute left-0 mt-2 w-52 bg-card rounded-xl border border-border shadow-dropdown py-1 animate-fade-in-down z-40">
+                  {spaces.map((s) => {
+                    const SIcon = s.icon;
+                    const isCurrent = s.key === currentSpace.key;
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => goToSpace(s.key, s.href)}
+                        className={cn(
+                          'flex items-center gap-2.5 w-full px-3 py-2 text-sm transition-colors',
+                          isCurrent
+                            ? 'text-brand font-medium bg-muted'
+                            : 'text-foreground/80 hover:bg-muted'
+                        )}
+                      >
+                        <SIcon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{s.label}</span>
+                        {isCurrent && <Check className="ml-auto h-3.5 w-3.5 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Search bar */}
           <div className="hidden lg:flex relative group">

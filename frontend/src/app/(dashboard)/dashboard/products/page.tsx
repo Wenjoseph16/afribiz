@@ -76,9 +76,17 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const allProducts: ProductItem[] = Array.isArray(productsData)
+  // Normalisation : l'API renvoie la catégorie comme OBJET (relation Prisma), alors que
+  // l'interface attend une string. On extrait toujours le nom pour éviter le crash
+  // « Objects are not valid as a React child » sur {product.category}.
+  const rawProducts: any[] = Array.isArray(productsData)
     ? productsData
     : productsData?.products || productsData?.data || [];
+  const allProducts: ProductItem[] = rawProducts.map((p) => ({
+    ...p,
+    category:
+      typeof p.category === 'string' ? p.category : (p.category?.name as string | undefined),
+  }));
 
   const stats = statsData || {
     totalProducts: allProducts.length,

@@ -5,7 +5,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, ChevronDown, ChevronLeft, Package } from 'lucide-react';
+import {
+  X,
+  ChevronDown,
+  ChevronLeft,
+  Package,
+  User,
+  Store,
+  Code,
+  ShieldCheck,
+  Check,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/index';
 import { useAuthStore } from '@/stores/authStore';
@@ -13,16 +23,10 @@ import { useBusinessStore } from '@/stores/businessStore';
 import { useMyBusiness } from '@/features/hooks';
 import { useSidebarUnreadCount } from '@/hooks/useSidebarUnreadCount';
 import { APP_NAME, NAV_GROUPS } from '@/constants/index';
-import {
-  iconMap,
-  MODULE_ICON_MAP,
-  MODULE_LABEL_MAP,
-  MODULE_HREF_MAP,
-  MODULE_SUB_ITEMS,
-} from './sidebar-data';
+import { iconMap, MODULE_SUB_ITEMS } from './sidebar-data';
 import { DEVELOPER_NAV_GROUPS, BUSINESS_CORE_NAV } from './sidebar-data';
 
-// MODULE_LABEL_MAP et MODULE_HREF_MAP sont importés depuis ./sidebar-data
+// La navigation business (10 pôles) et les sous-nav de modules viennent de ./sidebar-data
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -35,6 +39,7 @@ export function Sidebar() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   const { data: unreadData } = useSidebarUnreadCount();
   const unreadTotal = unreadData?.total ?? 0;
@@ -51,14 +56,13 @@ export function Sidebar() {
     [setSelectedSpace, queryClient, closeSidebar, router]
   );
 
-  // Liste des pages partagées entre l'espace client et l'espace business
-  // Ces pages existent à la racine /dashboard/* mais sont aussi accessibles depuis l'espace business
-
-  // ⭐ Espace VISITÉ :
-  // - Les chemins explicites (/dashboard/business/*) → TOUJOURS espace business
-  // - Les chemins core business (BUSINESS_CORE_NAV) → espace business UNIQUEMENT si activeSpace === BUSINESS
-  // - Le reste → espace client
-  // S'assure que selectedSpace (persisté localStorage) correspond à un rôle réellement possédé
+  // ⭐ ESPACE ACTIF — modèle déterministe (workspace) :
+  // - Les chemins EXPLICITES (/dashboard/business/*, /dashboard/developer/*,
+  //   /dashboard/admin/*) forcent leur espace.
+  // - Toute autre page /dashboard/* reste dans l'espace CHOISI explicitement
+  //   (selectedSpace persisté via « Mes espaces ») : plus aucun rebond client↔business
+  //   par inférence de chemin — c'est le fix du bug « ça me ramène dans l'espace client ».
+  // - S'assure que selectedSpace correspond à un rôle réellement possédé.
   const activeSpace =
     selectedSpace && user?.roles?.includes(selectedSpace)
       ? selectedSpace
@@ -67,40 +71,28 @@ export function Sidebar() {
   const onExplicitBusinessPath = currentPath.startsWith('/dashboard/business');
   const onExplicitDeveloperPath = currentPath.startsWith('/dashboard/developer');
   const onExplicitAdminPath = currentPath.startsWith('/dashboard/admin');
-  const coreBusinessPaths = BUSINESS_CORE_NAV.flatMap((g) => g.items.map((i) => i.href));
-  // Les liens des modules métier (Produits, Services, Réservations…) pointent vers des
-  // chemins partagés /dashboard/* — ils doivent compter comme chemins business, sinon le
-  // simple clic rebascule l'espace en CLIENT et la sidebar « ramène dans l'espace client ».
-  const moduleHrefs = [
-    MODULE_HREF_MAP['MODULE_MARKETPLACE'] || '/dashboard/marketplace',
-    ...(business?.modules || [])
-      .filter((mod) => mod !== 'MODULE_MARKETPLACE')
-      .map((mod) => MODULE_HREF_MAP[mod] || `/dashboard/${mod.toLowerCase()}`),
-  ];
-  const subItemHrefs = Object.values(MODULE_SUB_ITEMS).flat().map((s) => s.href);
-  const businessPaths = [...coreBusinessPaths, ...moduleHrefs, ...subItemHrefs];
-  const onSharedBusinessPath = businessPaths.some(
-    (p) => currentPath === p || currentPath.startsWith(p + '/')
-  );
 
-  // ✅ Logique claire :
-  // - Chemins explicites (/dashboard/business/*) → TOUJOURS espace business
-  // - Chemins core business → espace business SI activeSpace === 'BUSINESS'
-  // - /dashboard/developer/* → espace dev
-  // - /dashboard/admin/* → espace admin
-  // - Tout le reste → espace client
-  const inBusinessSpace =
-    onExplicitBusinessPath || (onSharedBusinessPath && activeSpace === 'BUSINESS');
   const inDeveloperSpace = onExplicitDeveloperPath;
   const inAdminSpace = onExplicitAdminPath;
-  const inClientSpace = !inBusinessSpace && !inDeveloperSpace && !inAdminSpace;
+  const inBusinessSpace =
+    onExplicitBusinessPath ||
+    (!inDeveloperSpace && !inAdminSpace && activeSpace === 'BUSINESS');
+  // /dashboard (accueil client) reste TOUJOURS affiché en espace client : le contenu de
+  // cette page EST le dashboard client. selectedSpace n'est pas modifié, donc un gérant
+  // en espace business qui repasse par /dashboard/products (chemin partagé) retrouve
+  // bien sa sidebar business — pas de rebond.
+  const onExplicitClientPath = currentPath === '/dashboard' || currentPath === '/dashboard/';
+  const inClientSpace =
+    onExplicitClientPath || (!inBusinessSpace && !inDeveloperSpace && !inAdminSpace);
 
   // ⭐ Rôles ACCESSIBLES (pour afficher/masquer les boutons dans 'Mes espaces')
   const canAccessDeveloper = user?.roles?.includes('DEVELOPER');
   const canAccessBusiness = user?.roles?.includes('BUSINESS') || !!business;
   const canAccessAdmin = user?.roles?.includes('ADMIN');
 
-  // Synchronise selectedSpace avec le chemin explicite visité
+  // Synchronise selectedSpace avec les chemins EXPLICITES (espaces dédiés).
+  // Jamais de retour automatique vers CLIENT : l'espace est un choix persistant,
+  // modifiable uniquement via le sélecteur « Mes espaces » (sidebar + topbar).
   useEffect(() => {
     const path = currentPath;
     if (path.startsWith('/dashboard/business') && activeSpace !== 'BUSINESS') {
@@ -109,52 +101,27 @@ export function Sidebar() {
       setSelectedSpace('DEVELOPER');
     } else if (path.startsWith('/dashboard/admin') && activeSpace !== 'ADMIN') {
       setSelectedSpace('ADMIN');
-    } else if (
-      !path.startsWith('/dashboard/business') &&
-      !path.startsWith('/dashboard/developer') &&
-      !path.startsWith('/dashboard/admin') &&
-      activeSpace === 'BUSINESS' &&
-      !onSharedBusinessPath
-    ) {
-      setSelectedSpace('CLIENT');
     }
-  }, [currentPath, business?.modules]);
+  }, [currentPath]);
 
   useEffect(() => {
     if (myBusiness) setBusiness(myBusiness);
   }, [myBusiness, setBusiness]);
 
-  useEffect(() => {
-    if (business?.modules.length) {
-      setExpandedGroups((prev) => ({
-        ...prev,
-        modules: true,
-      }));
-    }
-  }, [business?.modules.length]);
+
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return currentPath === '/dashboard';
     return currentPath === href || currentPath.startsWith(href + '/');
   };
 
-  const moduleNav = [
-    {
-      label: MODULE_LABEL_MAP['MODULE_MARKETPLACE'] || 'Marketplace',
-      href: MODULE_HREF_MAP['MODULE_MARKETPLACE'] || '/dashboard/marketplace',
-      icon: MODULE_ICON_MAP['MODULE_MARKETPLACE'] || 'Store',
-    },
-    ...(business?.modules || [])
-      .filter((mod) => mod !== 'MODULE_MARKETPLACE')
-      .map((mod) => ({
-        label: MODULE_LABEL_MAP[mod] || mod,
-        href: MODULE_HREF_MAP[mod] || `/dashboard/${mod.toLowerCase()}`,
-        icon: MODULE_ICON_MAP[mod] || 'LayoutDashboard',
-      })),
-  ];
 
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleItem = (href: string) => {
+    setExpandedItems((prev) => ({ ...prev, [href]: prev[href] === false }));
   };
 
   const renderNavItems = (
@@ -263,72 +230,90 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-1 scrollbar-thin">
-        {/* Role switcher — show all dashboards the user has access to */}
+        {/* Sélecteur d'espace pro (workspace) — icône + libellé + état actif */}
         {!sidebarCollapsed && (canAccessBusiness || canAccessDeveloper || canAccessAdmin) && (
-          <div className="px-3 pb-2 mb-2 border-b border-white/10">
-            <p className="text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em] mb-1.5">
+          <div className="px-3 pb-3 mb-2 border-b border-white/10">
+            <p className="text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em] mb-2">
               Mes espaces
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => switchSpace('CLIENT', '/dashboard')}
-                className={cn(
-                  'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
-                  inClientSpace
-                    ? 'bg-emerald-500/20 text-emerald-200'
-                    : 'text-white/50 hover:text-white hover:bg-white/10'
-                )}
-              >
-                Client
-              </button>
-              {canAccessBusiness && (
-                <button
-                  onClick={() => switchSpace('BUSINESS', '/dashboard/business')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
-                    inBusinessSpace
-                      ? 'bg-emerald-500/20 text-emerald-200'
-                      : 'text-white/50 hover:text-white hover:bg-white/10'
-                  )}
-                >
-                  Business
-                </button>
-              )}
-              {canAccessDeveloper && (
-                <button
-                  onClick={() => switchSpace('DEVELOPER', '/dashboard/developer')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
-                    inDeveloperSpace
-                      ? 'bg-indigo-500/20 text-indigo-200'
-                      : 'text-white/50 hover:text-white hover:bg-white/10'
-                  )}
-                >
-                  Développeur
-                </button>
-              )}
-              {canAccessAdmin && (
-                <button
-                  onClick={() => switchSpace('ADMIN', '/dashboard/admin')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
-                    inAdminSpace
-                      ? 'bg-rose-500/20 text-rose-200'
-                      : 'text-white/50 hover:text-white hover:bg-white/10'
-                  )}
-                >
-                  Admin
-                </button>
-              )}
+            <div className="space-y-1">
+              {[
+                {
+                  key: 'CLIENT',
+                  label: 'Client',
+                  icon: User,
+                  href: '/dashboard',
+                  active: inClientSpace,
+                  visible: true,
+                  accent: 'bg-sky-500/20 border-sky-400/30 text-sky-200',
+                },
+                {
+                  key: 'BUSINESS',
+                  label: 'Business',
+                  icon: Store,
+                  href: '/dashboard/business',
+                  active: inBusinessSpace,
+                  visible: canAccessBusiness,
+                  accent: 'bg-emerald-500/20 border-emerald-400/30 text-emerald-200',
+                },
+                {
+                  key: 'DEVELOPER',
+                  label: 'Développeur',
+                  icon: Code,
+                  href: '/dashboard/developer',
+                  active: inDeveloperSpace,
+                  visible: canAccessDeveloper,
+                  accent: 'bg-indigo-500/20 border-indigo-400/30 text-indigo-200',
+                },
+                {
+                  key: 'ADMIN',
+                  label: 'Admin',
+                  icon: ShieldCheck,
+                  href: '/dashboard/admin',
+                  active: inAdminSpace,
+                  visible: canAccessAdmin,
+                  accent: 'bg-rose-500/20 border-rose-400/30 text-rose-200',
+                },
+              ]
+                .filter((s) => s.visible)
+                .map((space) => {
+                  const SpaceIcon = space.icon;
+                  return (
+                    <button
+                      key={space.key}
+                      onClick={() => switchSpace(space.key, space.href)}
+                      className={cn(
+                        'flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200',
+                        space.active
+                          ? space.accent
+                          : 'border-transparent text-white/50 hover:text-white hover:bg-white/10'
+                      )}
+                    >
+                      <SpaceIcon
+                        className={cn(
+                          'h-3.5 w-3.5 shrink-0',
+                          space.active ? 'text-current' : 'text-white/40'
+                        )}
+                      />
+                      <span className="truncate">{space.label}</span>
+                      {space.active && <Check className="ml-auto h-3 w-3 shrink-0" />}
+                    </button>
+                  );
+                })}
             </div>
           </div>
         )}
 
-        {/* Core sections */}
+        {/* Core sections — espace business : 10 pôles filtrés par modules actifs */}
         {inBusinessSpace
           ? BUSINESS_CORE_NAV.map((group) => {
+              // Un item portant `module` n'apparaît que si le business a activé ce module
+              const visibleItems = (group.items as any[]).filter(
+                (item) => !item.module || business?.modules?.includes(item.module)
+              );
+              if (visibleItems.length === 0) return null;
               const isExpanded = expandedGroups[group.label] !== false;
-              const anyActive = group.items.some((item) => isActive(item.href));
+              const anyActive = visibleItems.some((item) => isActive(item.href));
               return (
                 <div key={group.label} className="mb-1">
                   {!sidebarCollapsed && (
@@ -353,45 +338,100 @@ export function Sidebar() {
                   )}
                   {(isExpanded || sidebarCollapsed) && (
                     <div className={cn(sidebarCollapsed ? 'space-y-0.5' : 'mt-0.5 space-y-0.5')}>
-                      {group.items.map((item) => {
+                      {visibleItems.map((item) => {
                         const Icon = iconMap[item.icon];
                         const active = isActive(item.href);
                         const isMessagerie = item.href === '/dashboard/business/messages';
+                        const subItems = MODULE_SUB_ITEMS[item.label] || [];
+                        // Sous-nav repliée par défaut : on ne l'ouvre que si l'utilisateur
+                        // clique sur la flèche OU si un sous-item est actif (page courante).
+                        const itemExpanded = expandedItems[item.href] === true;
+                        const anySubActive = subItems.some((sub) => isActive(sub.href));
+                        const showSub = !sidebarCollapsed && (itemExpanded || anySubActive);
                         return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={closeSidebar}
-                            title={sidebarCollapsed ? item.label : undefined}
-                            className={cn(
-                              'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
-                              sidebarCollapsed
-                                ? 'justify-center p-2.5 mx-auto w-10 h-10'
-                                : 'px-3 py-2.5',
-                              active
-                                ? 'bg-emerald-500/20 text-emerald-200 shadow-sm'
-                                : 'text-white/60 hover:text-white hover:bg-white/5'
+                          <div key={item.href}>
+                            <div className="relative flex items-center">
+                              <Link
+                                href={item.href}
+                                onClick={closeSidebar}
+                                title={sidebarCollapsed ? item.label : undefined}
+                                className={cn(
+                                  'relative flex flex-1 items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
+                                  sidebarCollapsed
+                                    ? 'justify-center p-2.5 mx-auto w-10 h-10'
+                                    : 'px-3 py-2.5',
+                                  active
+                                    ? 'bg-emerald-500/20 text-emerald-200 shadow-sm'
+                                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                                )}
+                              >
+                                {active && !sidebarCollapsed && (
+                                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-400 rounded-r-full" />
+                                )}
+                                {Icon && (
+                                  <Icon
+                                    className={cn(
+                                      'shrink-0',
+                                      sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4'
+                                    )}
+                                  />
+                                )}
+                                {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                                {/* Badge messages non lus — espace business */}
+                                {!sidebarCollapsed && unreadTotal > 0 && isMessagerie && (
+                                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm shadow-red-500/30">
+                                    {unreadTotal > 99 ? '99+' : unreadTotal}
+                                  </span>
+                                )}
+                                {sidebarCollapsed && unreadTotal > 0 && isMessagerie && (
+                                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-950" />
+                                )}
+                              </Link>
+                              {/* Toggle sous-nav du pôle */}
+                              {!sidebarCollapsed && subItems.length > 0 && (
+                                <button
+                                  onClick={() => toggleItem(item.href)}
+                                  className={cn(
+                                    'p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors',
+                                    anySubActive && 'text-white'
+                                  )}
+                                  aria-label={`Sous-menu ${item.label}`}
+                                >
+                                  <ChevronDown
+                                    className={cn(
+                                      'h-3.5 w-3.5 transition-transform duration-200',
+                                      showSub && 'rotate-180'
+                                    )}
+                                  />
+                                </button>
+                              )}
+                            </div>
+                            {/* Sous-nav du pôle (Catégories, Stats, Zones…) */}
+                            {showSub && subItems.length > 0 && (
+                              <div className="ml-6 mt-0.5 space-y-0.5 border-l border-white/10 pl-2">
+                                {subItems.map((sub) => {
+                                  const SubIcon = iconMap[sub.icon] || Package;
+                                  const subActive = isActive(sub.href);
+                                  return (
+                                    <Link
+                                      key={sub.href}
+                                      href={sub.href}
+                                      onClick={closeSidebar}
+                                      className={cn(
+                                        'flex items-center gap-2 rounded-lg text-xs font-medium transition-all duration-200 py-1.5 px-2',
+                                        subActive
+                                          ? 'text-white bg-white/10'
+                                          : 'text-white/40 hover:text-white hover:bg-white/5'
+                                      )}
+                                    >
+                                      <SubIcon className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">{sub.label}</span>
+                                    </Link>
+                                  );
+                                })}
+                              </div>
                             )}
-                          >
-                            {active && !sidebarCollapsed && (
-                              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-400 rounded-r-full" />
-                            )}
-                            {Icon && (
-                              <Icon
-                                className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')}
-                              />
-                            )}
-                            {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-                            {/* Badge messages non lus — espace business */}
-                            {!sidebarCollapsed && unreadTotal > 0 && isMessagerie && (
-                              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm shadow-red-500/30">
-                                {unreadTotal > 99 ? '99+' : unreadTotal}
-                              </span>
-                            )}
-                            {sidebarCollapsed && unreadTotal > 0 && isMessagerie && (
-                              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-950" />
-                            )}
-                          </Link>
+                          </div>
                         );
                       })}
                     </div>
@@ -671,96 +711,7 @@ export function Sidebar() {
           </>
         )}
 
-        {/* Modules section — visible uniquement dans l'espace business */}
-        {inBusinessSpace && moduleNav.length > 0 && (
-          <div className="mb-1">
-            <button
-              onClick={() => toggleGroup('modules')}
-              className={cn(
-                'flex items-center w-full rounded-xl transition-colors',
-                sidebarCollapsed
-                  ? 'justify-center p-2.5'
-                  : 'px-3 py-2 text-white/60 hover:text-white hover:bg-white/5'
-              )}
-            >
-              {!sidebarCollapsed && (
-                <>
-                  <span className="text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em]">
-                    Mes modules
-                  </span>
-                  <ChevronDown
-                    className={cn(
-                      'ml-auto h-3.5 w-3.5 transition-transform duration-200',
-                      expandedGroups['modules'] && 'rotate-180'
-                    )}
-                  />
-                </>
-              )}
-            </button>
-            {(expandedGroups['modules'] || sidebarCollapsed) && (
-              <div className={cn(sidebarCollapsed ? 'space-y-0.5' : 'mt-0.5 space-y-0.5')}>
-                {moduleNav.map((item) => {
-                  const Icon = iconMap[item.icon];
-                  const active = isActive(item.href);
-                  const subItems = MODULE_SUB_ITEMS[item.label] || [];
-                  return (
-                    <div key={item.href}>
-                      <Link
-                        href={item.href}
-                        onClick={closeSidebar}
-                        title={sidebarCollapsed ? item.label : undefined}
-                        className={cn(
-                          'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
-                          sidebarCollapsed
-                            ? 'justify-center p-2.5 mx-auto w-10 h-10'
-                            : 'px-3 py-2.5',
-                          active
-                            ? 'bg-white/15 text-white shadow-sm'
-                            : 'text-white/50 hover:text-white hover:bg-white/5'
-                        )}
-                      >
-                        {active && !sidebarCollapsed && (
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-400 rounded-r-full shadow-glow" />
-                        )}
-                        {Icon && (
-                          <Icon
-                            className={cn('shrink-0', sidebarCollapsed ? 'h-5 w-5' : 'h-4 w-4')}
-                          />
-                        )}
-                        {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-                      </Link>
-                      {/* Sub-nav for modules */}
-                      {!sidebarCollapsed && expandedGroups['modules'] && subItems.length > 0 && (
-                        <div className="ml-6 mt-0.5 space-y-0.5 border-l border-white/10 pl-2">
-                          {subItems.map((sub) => {
-                            const SubIcon = iconMap[sub.icon] || Package;
-                            const subActive = isActive(sub.href);
-                            return (
-                              <Link
-                                key={sub.href}
-                                href={sub.href}
-                                onClick={closeSidebar}
-                                className={cn(
-                                  'flex items-center gap-2 rounded-lg text-xs font-medium transition-all duration-200 py-1.5 px-2',
-                                  subActive
-                                    ? 'text-white bg-white/10'
-                                    : 'text-white/40 hover:text-white hover:bg-white/5'
-                                )}
-                              >
-                                <SubIcon className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{sub.label}</span>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+
 
         {/* Module analysis link */}
         {!sidebarCollapsed && (
