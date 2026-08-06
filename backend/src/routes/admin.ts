@@ -63,6 +63,7 @@ import {
   getAdminFinanceDebtRecovery,
   searchAdmin,
   getAdminAlertQueue,
+  getRecentAdminActivity,
   getAdminAuditLog,
   // NEW CONTROLLERS
   getAdminEscrows,
@@ -209,6 +210,7 @@ router.get('/admin/finance/debt-recovery', getAdminFinanceDebtRecovery);
 // Recherche globale + file d'alertes proactive
 router.get('/admin/search', searchAdmin);
 router.get('/admin/alerts', getAdminAlertQueue);
+router.get('/admin/recent-activity', getRecentAdminActivity);
 
 // Notifications
 router.get('/admin/notifications', getNotifications);

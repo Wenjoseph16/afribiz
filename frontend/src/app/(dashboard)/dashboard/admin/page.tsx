@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Users,
@@ -101,6 +102,85 @@ function useAdminAlertQueue() {
   });
 }
 
+function useAdminRecentActivity() {
+  return useQuery({
+    queryKey: ['admin', 'recent-activity'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.adminGetRecentActivity();
+        return res.data.data;
+      } catch (error) {
+        console.warn('Erreur chargement activité récente:', error);
+        return { businesses: [], users: [], escrows: [], campaigns: [], modules: [] };
+      }
+    },
+    // Rafraîchi en temps réel par le socket admin:event (invalidation globale)
+    refetchInterval: 30000,
+    retry: false,
+  });
+}
+
+function timeAgo(iso?: string): string {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "à l'instant";
+  if (mins < 60) return `il y a ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  const days = Math.floor(hours / 24);
+  return `il y a ${days} j`;
+}
+
+function RecentList({
+  title,
+  icon,
+  accent,
+  items,
+  emptyLabel,
+}: {
+  title: string;
+  icon: ReactNode;
+  accent: string;
+  items: any[];
+  emptyLabel: string;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`${accent}`}>{icon}</span>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-xs text-gray-400 dark:text-gray-500 py-3">{emptyLabel}</p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((it: any) => (
+            <li key={it.id}>
+              <Link
+                href={it.link || '/dashboard/admin'}
+                className="group flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 -mx-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40"
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-800 dark:text-gray-100 truncate">
+                    {it.label || it.name || it.email}
+                  </p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    {it.sublabel || it.primaryRole || ''}
+                  </p>
+                </div>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">
+                  {timeAgo(it.createdAt)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const severityStyles = (severity: string) => {
   switch (severity) {
     case 'CRITICAL':
@@ -139,6 +219,7 @@ export default function AdminDashboardPage() {
   const { data: stats, isLoading, error, refetch } = useAdminDashboardStats();
   const { data: alertQueue, isLoading: alertsLoading } = useAdminAlertQueue();
   const alerts = alertQueue?.alerts ?? [];
+  const { data: recent } = useAdminRecentActivity();
 
   const isAdmin = user?.roles?.includes('ADMIN');
 
@@ -250,6 +331,55 @@ export default function AdminDashboardPage() {
             })}
           </div>
         )}
+      </div>
+
+      {/* Section 0b - Activité récente (temps réel) */}
+      <div style={sectionStyle('#0ea5e9')}>
+        <div className="flex items-center justify-between gap-3 mb-4 pt-4">
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-sky-500" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Activité récente
+            </h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              </span>
+              En direct
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <RecentList
+            title="Derniers business"
+            icon={<Building2 className="h-4 w-4" />}
+            accent="text-orange-500"
+            items={recent?.businesses ?? []}
+            emptyLabel="Aucune inscription récente"
+          />
+          <RecentList
+            title="Derniers utilisateurs"
+            icon={<Users className="h-4 w-4" />}
+            accent="text-blue-500"
+            items={recent?.users ?? []}
+            emptyLabel="Aucune inscription récente"
+          />
+          <RecentList
+            title="Escrows / Litiges"
+            icon={<ShieldCheck className="h-4 w-4" />}
+            accent="text-purple-500"
+            items={recent?.escrows ?? []}
+            emptyLabel="Aucun escrow récent"
+          />
+          <RecentList
+            title="Campagnes & modules"
+            icon={<Megaphone className="h-4 w-4" />}
+            accent="text-emerald-500"
+            items={[...(recent?.campaigns ?? []), ...(recent?.modules ?? [])]}
+            emptyLabel="Aucune campagne / module récent"
+          />
+        </div>
       </div>
 
       {/* Section 1 - Plateforme */}

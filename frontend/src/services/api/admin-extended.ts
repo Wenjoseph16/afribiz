@@ -4,6 +4,9 @@ export function injectAdminExtended(api: ApiClientMethods) {
   api.adminGetAlertQueue = function () {
     return this.get('/admin/alerts');
   };
+  api.adminGetRecentActivity = function () {
+    return this.get('/admin/recent-activity');
+  };
   api.adminGetWarningStats = function () {
     return this.get('/admin/warnings/stats');
   };

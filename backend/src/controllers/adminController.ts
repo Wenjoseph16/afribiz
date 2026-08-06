@@ -827,6 +827,13 @@ export const getAdminAlertQueue = catchAsyncErrors(
   }
 );
 
+export const getRecentAdminActivity = catchAsyncErrors(
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const result = await adminService.getRecentAdminActivity();
+    res.json({ success: true, data: result });
+  }
+);
+
 export const getPlatformSettings = catchAsyncErrors(
   async (_req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
     const settings = await adminService.getPlatformSettings();

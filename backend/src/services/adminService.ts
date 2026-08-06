@@ -2644,6 +2644,119 @@ export const updatePlatformSettings = async (
   return adminFeaturesService.updatePlatformSettings(data, adminUserId);
 };
 
+// ============================================
+// ACTIVITÉ RÉCENTE (dashboard admin temps réel)
+// ============================================
+
+/**
+ * Dernières actions/inscriptions à travers la plateforme pour alimenter
+ * la section « Activité récente » du dashboard admin (rafraîchie via le
+ * socket admin:event → invalidation globale du frontend).
+ */
+export const getRecentAdminActivity = async () => {
+  const [recentBusinesses, recentUsers, recentEscrows, recentCampaigns, recentModules] =
+    await Promise.all([
+      prisma.business.findMany({
+        where: { deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          createdAt: true,
+          verificationStatus: true,
+          owner: { select: { email: true } },
+        },
+      }),
+      prisma.user.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          primaryRole: true,
+          createdAt: true,
+        },
+      }),
+      prisma.escrow.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          createdAt: true,
+          business: { select: { name: true } },
+        },
+      }),
+      prisma.adCampaign.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          createdAt: true,
+          business: { select: { name: true } },
+        },
+      }),
+      prisma.developerModule.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          createdAt: true,
+          developer: { select: { companyName: true } },
+        },
+      }),
+    ]);
+
+  return {
+    businesses: recentBusinesses.map((b) => ({
+      ...b,
+      kind: 'BUSINESS',
+      label: b.name,
+      sublabel: b.owner?.email || '',
+      link: `/dashboard/admin/businesses`,
+    })),
+    users: recentUsers.map((u) => ({
+      ...u,
+      name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+      kind: 'USER',
+      label: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+      sublabel: u.primaryRole,
+      link: `/dashboard/admin/users`,
+    })),
+    escrows: recentEscrows.map((e) => ({
+      ...e,
+      amount: Number(e.amount),
+      kind: 'ESCROW',
+      label: e.business?.name || 'Vendeur',
+      sublabel: `Escrow ${e.status} — ${Number(e.amount)} FCFA`,
+      link: '/dashboard/admin/escrow',
+    })),
+    campaigns: recentCampaigns.map((c) => ({
+      ...c,
+      kind: 'CAMPAIGN',
+      label: c.name || 'Campagne',
+      sublabel: `${c.business?.name || 'Business'} — ${c.status}`,
+      link: '/dashboard/admin/ads',
+    })),
+    modules: recentModules.map((m) => ({
+      ...m,
+      kind: 'MODULE',
+      label: m.name,
+      sublabel: `${m.developer?.companyName || 'Développeur'} — ${m.status}`,
+      link: '/dashboard/admin/modules',
+    })),
+  };
+};
+
 export const getAdminAuditLog = async (query: {
   adminId?: string;
   action?: string;
