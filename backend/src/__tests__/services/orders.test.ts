@@ -18,6 +18,8 @@ jest.mock('../../events/publishers', () => ({
   publishOrderPlaced: jest.fn(),
   publishOrderStatusChanged: jest.fn(),
   publishNewClient: jest.fn(),
+  publishInvoiceSent: jest.fn(),
+  publishInvoicePaid: jest.fn(),
 }));
 
 const mockBusiness = {
@@ -201,6 +203,12 @@ describe('OrdersService', () => {
         ...mockOrder,
         status: 'ACCEPTED',
         acceptedAt: new Date(),
+      });
+      // Facture auto : pas d'invoice existante, création réussie
+      (mockPrisma.invoice.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockPrisma.invoice.create as jest.Mock).mockResolvedValue({
+        id: 'invoice-1',
+        invoiceNumber: 'FAC-20250101-00001',
       });
     });
 

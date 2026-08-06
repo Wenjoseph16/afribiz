@@ -16,9 +16,14 @@ export class NotificationPreferenceRepository {
 
   async getEnabledChannels(userId: string, type: NotificationType): Promise<NotificationChannel[]> {
     const prefs = await prisma.notificationPreference.findMany({
-      where: { userId, type, enabled: true },
+      where: { userId, type },
     });
-    return prefs.map((p) => p.channel);
+    // Aucune préférence enregistrée → opt-in par défaut sur le canal in-app,
+    // sinon la cloche est muette pour tout utilisateur non configuré.
+    if (prefs.length === 0) return ['IN_APP' as NotificationChannel];
+    // Préférences existantes → seul ce qui est explicitement activé est livré
+    // (un opt-out explicite est donc respecté).
+    return prefs.filter((p) => p.enabled).map((p) => p.channel);
   }
 
   async setPreference(key: PreferenceKey, enabled: boolean): Promise<void> {

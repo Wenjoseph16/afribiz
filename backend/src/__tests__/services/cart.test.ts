@@ -8,6 +8,8 @@ jest.mock('../../events/publishers', () => ({
   publishCartItemAdded: jest.fn(),
   publishCheckoutInitiated: jest.fn(),
   publishCheckoutCompleted: jest.fn(),
+  publishOrderPlaced: jest.fn(),
+  publishNewClient: jest.fn(),
 }));
 jest.mock('../../services/paymentProcessor', () => ({
   processMobileMoney: jest
@@ -98,6 +100,11 @@ describe('Cart Service', () => {
     jest.spyOn(mockPrisma.cart, 'findUnique').mockResolvedValue(cartWithItems as any);
     jest.spyOn(mockPrisma.cart, 'create').mockResolvedValue(cartWithItems as any);
     jest.spyOn(mockPrisma.product, 'findUnique').mockResolvedValue({ businessId: 'biz-1' } as any);
+    jest.spyOn(mockPrisma.business, 'findUnique').mockResolvedValue({
+      id: 'biz-1',
+      name: 'Test Biz',
+      ownerId: 'owner-1',
+    } as any);
     (mockPrisma as any).$transaction = jest.fn().mockImplementation(async (fn: any) => fn(mockTx));
     jest.spyOn(mockPrisma.cartItem, 'deleteMany').mockResolvedValue({ count: 0 });
     jest.spyOn(mockPrisma.cart, 'update').mockResolvedValue(cartWithItems as any);

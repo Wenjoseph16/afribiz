@@ -7,6 +7,8 @@ import {
   publishNewClient,
   publishPaymentReceived,
   publishPaymentFailed,
+  publishInvoiceSent,
+  publishInvoicePaid,
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
 import {
@@ -220,6 +222,97 @@ export async function createOrder(ownerId: string, data: any) {
   return order;
 }
 
+/**
+ * Facture automatique : créée à la validation de la commande (CONFIRMED/ACCEPTED),
+ * marquée PAID à la livraison (DELIVERED). Liée via Invoice.orderId (unique).
+ */
+async function ensureInvoiceForOrder(order: any, business: any, status: string) {
+  try {
+    const finalized = ['DELIVERED', 'COMPLETED'].includes(status);
+    const billable = finalized || ['CONFIRMED', 'ACCEPTED', 'PREPARING', 'READY'].includes(status);
+    if (!billable) return;
+
+    const existing = await prisma.invoice.findUnique({
+      where: { orderId: order.id },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      const invoiceNumber =
+        'FAC-' +
+        new Date().getFullYear() +
+        String(new Date().getMonth() + 1).padStart(2, '0') +
+        String(new Date().getDate()).padStart(2, '0') +
+        '-' +
+        String(Math.floor(Math.random() * 99999)).padStart(5, '0');
+      const items = (order.items || []).map((i: any) => ({
+        description: i.name || '',
+        quantity: i.quantity || 1,
+        unitPrice: Number(i.unitPrice) || 0,
+        total: Number(i.total) || 0,
+      }));
+      const invoice = await prisma.invoice.create({
+        data: {
+          invoiceNumber,
+          orderId: order.id,
+          businessId: order.businessId || business.id,
+          clientId: order.buyerId || null,
+          clientName: order.contactName || null,
+          clientPhone: order.contactPhone || null,
+          title: `Commande ${order.orderNumber || ''}`,
+          items: items as any,
+          subtotal: Number(order.subtotal || order.totalAmount || 0),
+          taxAmount: Number(order.taxAmount || 0) || undefined,
+          discountAmount: Number(order.discountAmount || 0) || undefined,
+          totalAmount: Number(order.totalAmount || 0),
+          amountPaid: finalized ? Number(order.totalAmount || 0) : 0,
+          currency: order.currency || 'FCFA',
+          status: finalized ? 'PAID' : 'SENT',
+          paidAt: finalized ? new Date() : undefined,
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          invoiceItems: { create: items },
+        },
+        select: { id: true, invoiceNumber: true },
+      });
+      if (finalized) {
+        publishInvoicePaid(
+          order.buyerId || business.ownerId || '',
+          order.businessId || business.id,
+          {
+            invoiceId: invoice.id,
+            clientName: order.contactName || 'Client',
+            amount: Number(order.totalAmount || 0),
+          }
+        );
+      } else {
+        publishInvoiceSent(
+          order.buyerId || business.ownerId || '',
+          order.businessId || business.id,
+          {
+            invoiceId: invoice.id,
+            clientName: order.contactName || 'Client',
+            amount: Number(order.totalAmount || 0),
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          }
+        );
+      }
+    } else if (finalized) {
+      await prisma.invoice.update({
+        where: { id: existing.id },
+        data: { status: 'PAID', amountPaid: Number(order.totalAmount || 0), paidAt: new Date() },
+      });
+      publishInvoicePaid(order.buyerId || business.ownerId || '', order.businessId || business.id, {
+        invoiceId: existing.id,
+        clientName: order.contactName || 'Client',
+        amount: Number(order.totalAmount || 0),
+      });
+    }
+  } catch (e) {
+    // Facture non bloquante : la commande reste valide même si la facture échoue
+    console.warn('[orders] ensureInvoiceForOrder:', (e as Error).message);
+  }
+}
+
 export async function updateOrderStatus(
   ownerId: string,
   orderId: string,
@@ -284,6 +377,9 @@ export async function updateOrderStatus(
     eventName: 'ORDER_STATUS_CHANGED',
     properties: { orderId: order.id, status },
   }).catch(() => {});
+
+  // Facture automatique : créée à la validation, marquée PAID à la livraison
+  await ensureInvoiceForOrder(updated, business, status);
 
   return updated;
 }

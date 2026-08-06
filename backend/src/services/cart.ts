@@ -4,6 +4,8 @@ import {
   publishCartItemAdded,
   publishCheckoutInitiated,
   publishCheckoutCompleted,
+  publishOrderPlaced,
+  publishNewClient,
 } from '../events/publishers';
 import {
   processMobileMoney,
@@ -314,6 +316,33 @@ export async function guestCheckout(data: {
     return created;
   });
 
+  // Notifier le business : nouvelle commande invité (temps réel + notification propriétaire)
+  if (businessId) {
+    try {
+      const biz = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { id: true, name: true, ownerId: true },
+      });
+      if (biz) {
+        publishOrderPlaced({
+          userId: biz.ownerId,
+          orderId: order.id,
+          businessName: biz.name,
+          amount: total.toString(),
+          businessId: biz.id,
+        });
+        publishNewClient({
+          userId: biz.ownerId,
+          businessId: biz.id,
+          clientId: '',
+          clientName: data.contactName || 'Client',
+        });
+      }
+    } catch {
+      // Notification non bloquante
+    }
+  }
+
   return order;
 }
 
@@ -520,6 +549,33 @@ export async function checkout(
     orderId: order.id,
     totalAmount: total.toString(),
   });
+
+  // Notifier le business : nouvelle commande (temps réel via room business:{id} + notification propriétaire)
+  if (businessId) {
+    try {
+      const biz = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { id: true, name: true, ownerId: true },
+      });
+      if (biz) {
+        publishOrderPlaced({
+          userId: biz.ownerId,
+          orderId: order.id,
+          businessName: biz.name,
+          amount: total.toString(),
+          businessId: biz.id,
+        });
+        publishNewClient({
+          userId: biz.ownerId,
+          businessId: biz.id,
+          clientId: userId,
+          clientName: data.contactName || 'Client',
+        });
+      }
+    } catch {
+      // Notification non bloquante : la commande reste créée même si la notif échoue
+    }
+  }
 
   return order;
 }
