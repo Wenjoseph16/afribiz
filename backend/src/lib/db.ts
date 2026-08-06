@@ -27,17 +27,21 @@ const SOFT_DELETE_MODELS = new Set([
 ]);
 
 prisma.$use(async (params, next) => {
-  const { model, action, args } = params;
+  const { model, action } = params;
+  let { args } = params;
   if (!model || !SOFT_DELETE_MODELS.has(model)) return next(params);
 
   const isQuery = ['findUnique', 'findFirst', 'findMany', 'count', 'aggregate'].includes(action);
   const isMutation = ['update', 'updateMany', 'delete', 'deleteMany'].includes(action);
 
+  // Certains appels (ex: count() sans argument) passent args === undefined → on initialise
   if (isQuery || isMutation) {
-    if (!args.where) args.where = {};
+    if (!args) args = {};
+    if (args.where === undefined) args.where = {};
     if (args.where.deletedAt === undefined) {
       args.where.deletedAt = null;
     }
+    params.args = args;
   }
 
   return next(params);
