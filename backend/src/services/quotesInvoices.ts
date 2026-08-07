@@ -46,7 +46,9 @@ const invoiceInclude = {
 
 export async function listQuotes(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page = 1, limit = 20, status, search } = filters;
+  const { page: rawPage = 1, limit: rawLimit = 20, status, search } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: Prisma.QuoteWhereInput = { businessId: business.id };
   if (status) where.status = status as any;
   if (search)
@@ -269,7 +271,9 @@ export async function deleteQuote(ownerId: string, quoteId: string) {
 
 export async function listInvoices(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page = 1, limit = 20, status, search, dateFrom, dateTo, overdue } = filters;
+  const { page: rawPage = 1, limit: rawLimit = 20, status, search, dateFrom, dateTo, overdue } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: Prisma.InvoiceWhereInput = { businessId: business.id };
   if (status) where.status = status as any;
   if (overdue === 'true') {
@@ -451,7 +455,9 @@ export async function getFinStats(ownerId: string) {
 // ===================== CLIENT-FACING QUOTES & INVOICES =====================
 
 export async function listClientQuotes(clientId: string, filters: any) {
-  const { page = 1, limit = 20, status } = filters;
+  const { page: rawPage = 1, limit: rawLimit = 20, status } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: Prisma.QuoteWhereInput = { clientId };
   if (status) where.status = status as any;
   const skip = (page - 1) * limit;
@@ -506,7 +512,9 @@ export async function getClientQuote(clientId: string, quoteId: string) {
 }
 
 export async function listClientInvoices(clientId: string, filters: any) {
-  const { page = 1, limit = 20, status } = filters;
+  const { page: rawPage = 1, limit: rawLimit = 20, status } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: Prisma.InvoiceWhereInput = { clientId };
   if (status) where.status = status as any;
   const skip = (page - 1) * limit;
