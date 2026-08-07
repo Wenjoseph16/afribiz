@@ -19,6 +19,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Button } from '@/components/ui/Button';
@@ -136,24 +138,19 @@ export default function EmployeesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Employés
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez votre équipe et leurs rôles
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
+      <PageHeader
+        title="Centre de gestion des équipes"
+        description="Gérez vos employés, leurs rôles et suivez la performance de votre équipe."
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Équipe' }, { label: 'Employés' }]}
+        actions={
           <Link href="/dashboard/employees/new">
             <Button size="sm">
               <UserPlus className="h-4 w-4 mr-1.5" />
               Nouvel employé
             </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       <CopilotTips moduleKey="EMPLOYEES" />
 

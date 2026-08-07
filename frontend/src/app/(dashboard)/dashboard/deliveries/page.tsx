@@ -19,6 +19,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -140,16 +142,12 @@ export default function DeliveriesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Livraisons
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos livraisons et suivez les expéditions
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
+      <PageHeader
+        title="Centre des livraisons"
+        description="Gérez vos expéditions, suivez vos coursiers et maîtrisez vos zones de livraison."
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Ventes' }, { label: 'Livraisons' }]}
+        actions={
+          <>
           <Link href="/dashboard/deliveries/stats">
             <Button variant="outline" size="sm">
               <Package className="h-4 w-4 mr-1.5" />
@@ -174,8 +172,9 @@ export default function DeliveriesPage() {
               Nouvelle livraison
             </Button>
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <CopilotTips moduleKey="DELIVERIES" />
 
