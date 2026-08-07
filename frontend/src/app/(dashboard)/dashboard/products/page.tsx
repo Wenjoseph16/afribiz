@@ -31,6 +31,10 @@ import {
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { LiveBadge } from '@/components/ui/LiveBadge';
+import { Drawer } from '@/components/ui/Drawer';
+import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import ModuleCharts from '@/components/dashboard/ModuleCharts';
 import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
@@ -75,6 +79,7 @@ export default function ProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Normalisation : l'API renvoie la catégorie comme OBJET (relation Prisma), alors que
   // l'interface attend une string. On extrait toujours le nom pour éviter le crash
@@ -311,45 +316,46 @@ export default function ProductsPage() {
     );
   }
 
+  const selectedProduct = allProducts.find((p) => p.id === selectedId) || null;
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Produits
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez votre catalogue de produits
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link href="/dashboard/products/stock-alerts">
-            <Button variant="outline" size="sm">
-              <AlertTriangle className="h-4 w-4 mr-1.5" />
-              Alertes
-            </Button>
-          </Link>
-          <Link href="/dashboard/products/categories">
-            <Button variant="outline" size="sm">
-              <Tag className="h-4 w-4 mr-1.5" />
-              Catégories
-            </Button>
-          </Link>
-          <Link href="/dashboard/products/import">
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-1.5" />
-              Import/Export
-            </Button>
-          </Link>
-          <Link href="/dashboard/products/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Ajouter
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Centre de gestion du catalogue"
+        description="Pilotez vos produits, stocks et promotions en temps réel — du premier article au best-seller"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Produits' },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/products/stock-alerts">
+              <Button variant="outline" size="sm">
+                <AlertTriangle className="h-4 w-4 mr-1.5" />
+                Alertes
+              </Button>
+            </Link>
+            <Link href="/dashboard/products/categories">
+              <Button variant="outline" size="sm">
+                <Tag className="h-4 w-4 mr-1.5" />
+                Catégories
+              </Button>
+            </Link>
+            <Link href="/dashboard/products/import">
+              <Button variant="outline" size="sm">
+                <Upload className="h-4 w-4 mr-1.5" />
+                Import/Export
+              </Button>
+            </Link>
+            <Link href="/dashboard/products/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Ajouter
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
       <CopilotTips moduleKey="PRODUCTS" />
 
@@ -633,7 +639,7 @@ export default function ProductsPage() {
           ))}
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-soft">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
@@ -681,12 +687,101 @@ export default function ProductsPage() {
                   product={product}
                   isSelected={selectedProducts.includes(product.id)}
                   onToggleSelect={() => toggleSelect(product.id)}
+                  onOpenDetail={() => setSelectedId(product.id)}
                 />
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Drawer 360° produit */}
+      <Drawer
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedId(null)}
+        icon={<Package className="h-5 w-5" />}
+        title={selectedProduct?.name || 'Produit'}
+        subtitle={selectedProduct?.category}
+        footer={
+          selectedProduct ? (
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/dashboard/products/${selectedProduct.id}/edit`}>
+                <Button variant="outline" size="sm">
+                  <Pencil className="h-4 w-4" />
+                  Modifier
+                </Button>
+              </Link>
+              <Link href={`/dashboard/products/${selectedProduct.id}`}>
+                <Button variant="secondary" size="sm">
+                  <Eye className="h-4 w-4" />
+                  Voir la fiche
+                </Button>
+              </Link>
+            </div>
+          ) : undefined
+        }
+      >
+        {selectedProduct && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <LiveBadge
+                tone={selectedProduct.isActive ? 'success' : 'muted'}
+                label={selectedProduct.isActive ? 'Actif' : 'Inactif'}
+                pulse={selectedProduct.isActive}
+              />
+              {selectedProduct.isPromotional && (
+                <span className="inline-flex items-center rounded-full border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-2.5 py-0.5 text-xs font-medium text-red-600 dark:text-red-300">
+                  Promo active
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">Prix</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {(selectedProduct.price ?? 0).toLocaleString()} FCFA
+                </p>
+              </div>
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">Stock</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedProduct.stock} unité{selectedProduct.stock > 1 ? 's' : ''}
+                </p>
+              </div>
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">Vendus</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedProduct.soldCount || 0}
+                </p>
+              </div>
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">Note</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {(selectedProduct.rating ?? 0).toFixed(1)} ★
+                </p>
+              </div>
+            </div>
+
+            {selectedProduct.sku && (
+              <div className="rounded-lg bg-gray-50 dark:bg-gray-700/30 px-3 py-2 text-sm">
+                <span className="text-gray-500">SKU : </span>
+                <span className="font-mono text-gray-900 dark:text-gray-100">
+                  {selectedProduct.sku}
+                </span>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              {getBadges(selectedProduct).map((b, i) => (
+                <span key={i} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${b.className}`}>
+                  {b.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </Drawer>
 
       <ConfirmationModal
         open={deleteProductTarget}
@@ -793,22 +888,25 @@ function ProductRow({
   product,
   isSelected,
   onToggleSelect,
+  onOpenDetail,
 }: {
   product: ProductItem;
   isSelected: boolean;
   onToggleSelect: () => void;
+  onOpenDetail: () => void;
 }) {
   const stockStatus =
     product.stock === 0 ? 'out' : product.stock <= (product.lowStockThreshold || 5) ? 'low' : 'ok';
   const badges = getBadges(product);
   return (
     <tr
+      onClick={onOpenDetail}
       className={cn(
-        'hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group',
+        'hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group cursor-pointer',
         isSelected && 'bg-brand/5'
       )}
     >
-      <td className="p-4">
+      <td className="p-4" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onToggleSelect}
           className="text-gray-400 hover:text-brand transition-colors"
@@ -820,7 +918,7 @@ function ProductRow({
           )}
         </button>
       </td>
-      <td className="p-4">
+      <td className="p-4" onClick={(e) => e.stopPropagation()}>
         <Link href={`/dashboard/products/${product.id}`} className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
             <Package className="h-5 w-5 text-gray-400" />
@@ -874,23 +972,14 @@ function ProductRow({
         <span className="text-sm text-gray-600 dark:text-gray-300">{product.soldCount}</span>
       </td>
       <td className="p-4 text-right">
-        <span
-          className={cn('inline-flex items-center gap-1.5 text-xs font-medium', {
-            'text-emerald-600': product.isActive,
-            'text-gray-400': !product.isActive,
-          })}
-        >
-          <span
-            className={cn(
-              'w-2 h-2 rounded-full',
-              product.isActive ? 'bg-emerald-500' : 'bg-gray-300'
-            )}
-          />
-          {product.isActive ? 'Actif' : 'Inactif'}
-        </span>
+        <LiveBadge
+          tone={product.isActive ? 'success' : 'muted'}
+          label={product.isActive ? 'Actif' : 'Inactif'}
+          pulse={product.isActive}
+        />
       </td>
-      <td className="p-4">
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Link
             href={`/dashboard/products/${product.id}`}
             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-brand transition-colors"
