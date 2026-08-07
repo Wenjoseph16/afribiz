@@ -30,8 +30,8 @@ const promoInclude = {
 export async function listPromotions(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
   const {
-    page = 1,
-    limit = 20,
+    page: rawPage = 1,
+    limit: rawLimit = 20,
     promotionType,
     isActive,
     isFeatured,
@@ -39,6 +39,8 @@ export async function listPromotions(ownerId: string, filters: any) {
     dateFrom,
     dateTo,
   } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: Prisma.PromotionWhereInput = { businessId: business.id, deletedAt: null };
   if (promotionType) where.promotionType = promotionType as any;
   if (isActive !== undefined) where.isActive = isActive === 'true';
@@ -164,7 +166,9 @@ export async function deletePromotion(ownerId: string, promoId: string) {
 
 export async function listCoupons(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page = 1, limit = 20, status, search, promotionId } = filters;
+  const { page: rawPage = 1, limit: rawLimit = 20, status, search, promotionId } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: any = { businessId: business.id };
   if (status) where.status = status;
   if (promotionId) where.promotionId = promotionId;
@@ -214,7 +218,9 @@ export async function createCoupon(ownerId: string, data: any) {
 
 export async function listBundles(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page = 1, limit = 20, isActive } = filters;
+  const { page: rawPage = 1, limit: rawLimit = 20, isActive } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: any = { businessId: business.id };
   if (isActive !== undefined) where.isActive = isActive === 'true';
   const skip = (page - 1) * limit;
@@ -267,7 +273,9 @@ export async function createBundle(ownerId: string, data: any) {
 
 export async function listCampaigns(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page = 1, limit = 20, status } = filters;
+  const { page: rawPage = 1, limit: rawLimit = 20, status } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: any = { businessId: business.id };
   if (status) where.status = status;
   const skip = (page - 1) * limit;
