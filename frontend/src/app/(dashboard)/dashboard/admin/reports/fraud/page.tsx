@@ -186,8 +186,8 @@ export default function AdminFraudReportsPage() {
               <thead>
                 <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                   <th className="p-4 font-medium">Date</th>
-                  <th className="p-4 font-medium">Signalé par</th>
-                  <th className="p-4 font-medium">Cible</th>
+                  <th className="p-4 font-medium">Compte concerné</th>
+                  <th className="p-4 font-medium">Motif</th>
                   <th className="p-4 font-medium">Type</th>
                   <th className="p-4 font-medium">Description</th>
                   <th className="p-4 font-medium">Statut</th>
@@ -203,11 +203,9 @@ export default function AdminFraudReportsPage() {
                     <td className="p-4 text-xs text-gray-900 dark:text-gray-100">
                       {r.createdAt ? new Date(r.createdAt).toLocaleString('fr-FR') : '-'}
                     </td>
-                    <td className="p-4 text-gray-500">
-                      {r.reporter?.name || r.reporter?.email || r.reporterId?.slice(0, 8) || '-'}
-                    </td>
                     <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
-                      {r.target?.name || r.target?.email || r.targetId?.slice(0, 8) || '-'}
+                      {r.client?.email ||
+                        (r.client ? `${r.client.firstName ?? ''} ${r.client.lastName ?? ''}`.trim() : '-')}
                     </td>
                     <td className="p-4">
                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
@@ -215,19 +213,23 @@ export default function AdminFraudReportsPage() {
                       </span>
                     </td>
                     <td className="p-4 text-xs text-gray-500 max-w-[200px] truncate">
-                      {r.description || r.reason || '-'}
+                      {r.reason || r.description || '-'}
                     </td>
                     <td className="p-4">
                       <span
                         className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                          r.status === 'APPROVED'
+                          r.status === 'ACTION_TAKEN' || r.status === 'APPROVED'
                             ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                             : r.status === 'REJECTED'
                               ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                               : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                         }`}
                       >
-                        {r.status || 'PENDING'}
+                        {r.status === 'ACTION_TAKEN' || r.status === 'APPROVED'
+                          ? 'Traitée'
+                          : r.status === 'REJECTED'
+                            ? 'Rejetée'
+                            : 'En attente'}
                       </span>
                     </td>
                     <td className="p-4">

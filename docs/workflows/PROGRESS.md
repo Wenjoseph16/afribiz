@@ -98,9 +98,9 @@
 |---|---|---|
 | F1 Escrow consolidé | 🟢 | Routes + stats + release/refund/arbitrate + page câblée |
 | F2 Payouts | 🟢 | Routes approve/reject + page developers/commissions |
-| F3 Dettes & recouvrement | 🔴 | Frontend attend `/admin/finance/debt-recovery` → **route inexistante** (travail perdu au restore) |
+| F3 Dettes & recouvrement | 🟢 | `getAdminFinanceDebtRecovery` implémenté (total/settled, taux recouvrement, top débiteurs) ; route `GET /admin/finance/debt-recovery` câblée + tests ✅ |
 | F4 Revenus par source | 🟡 | Route `/admin/revenue/stats` + `:period` existe, page câblée ; `getPlatformRevenue` à confirmer |
-| F5 Fraude | 🔴 | `getFraudReports` = **STUB vide** (`{items:[], total:0}`) ; actions approve/reject/ban **inexistantes** ; page frontend sur routes fantômes |
+| F5 Fraude | 🟢 | `getFraudReports` réel (`prisma.fraudEvent`, filtres type/statut, pagination) + actions approve/reject/ban (ban avec double validation) ; routes `/admin/reports/fraud*` + page câblée (shape client/reason aligné) ✅ |
 
 ### LOT 4 — Confiance & sécurité
 
@@ -132,16 +132,20 @@
 
 | Élément | Constat |
 |---|---|
-| `getFraudReports` | Stub vide → remplacé par une vraie implémentation |
+| ~~`getFraudReports`~~ | ~~Stub vide~~ → ✅ remplacé par une vraie implémentation (`prisma.fraudEvent`) au commit `974452d` |
 | Pages `ads/packages` et `datahub` | Aucun import API (statiques) → à câbler ou retirer |
 
 ### Bilan
 
 | Statut | Nombre |
 |---|---|
-| 🟢 Fonctionne | 9 |
+| 🟢 Fonctionne | 11 |
 | 🟡 Partiel | 8 |
-| 🔴 À construire | 7 |
+| 🔴 À construire | 5 |
+
+> Réconciliation 07/08/2026 : F3 et F5 marqués 🟢 (implémentés par le commit
+> `974452d` « Phase 1 - fraude, finance, recherche globale » + vérifiés 164 tests).
+> L'audit initial du 05/08 datait d'avant ces corrections.
 
 ---
 
