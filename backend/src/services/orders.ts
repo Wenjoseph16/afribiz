@@ -48,6 +48,8 @@ const orderInclude = {
   debts: true,
   deliveryZone: { select: { id: true, name: true, fee: true } },
   payments: true,
+  // Facture auto (P4) : créée à la validation, passée PAID à la livraison
+  invoice: { select: { id: true, invoiceNumber: true, status: true } },
 } satisfies Prisma.OrderInclude;
 
 // ===================== ORDERS =====================
