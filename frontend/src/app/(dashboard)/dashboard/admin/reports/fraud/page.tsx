@@ -205,7 +205,9 @@ export default function AdminFraudReportsPage() {
                     </td>
                     <td className="p-4 font-semibold text-gray-900 dark:text-gray-100">
                       {r.client?.email ||
-                        (r.client ? `${r.client.firstName ?? ''} ${r.client.lastName ?? ''}`.trim() : '-')}
+                        (r.client
+                          ? `${r.client.firstName ?? ''} ${r.client.lastName ?? ''}`.trim()
+                          : '-')}
                     </td>
                     <td className="p-4">
                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
