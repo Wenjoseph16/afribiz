@@ -14,7 +14,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     // Timeout de sécurité : si l'hydratation ne se produit pas après 2s, on force
     const safetyTimeout = setTimeout(() => setHydrated(true), 500);
 
-    // Restaurer manuellement le token depuis localStorage
+    // Forcer l'hydratation Zustand D'ABORD : restaure user + selectedSpace depuis
+    // auth-storage. Si on fait setState() avant, le middleware persist ré-écrit
+    // auth-storage avec l'état vide par défaut (user: null, selectedSpace: 'CLIENT')
+    // par-dessus le storage persisté, que rehydrate() lit ensuite -> l'utilisateur
+    // est perdu au refresh (espace client + données vides sur toute la plateforme).
+    useAuthStore.persist.rehydrate();
+
+    // Restaurer manuellement le token depuis localStorage (fallback si absent du store)
     const storedToken = localStorage.getItem('accessToken');
     if (storedToken && !useAuthStore.getState().accessToken) {
       useAuthStore.setState({
@@ -22,9 +29,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         refreshToken: localStorage.getItem('refreshToken'),
       });
     }
-
-    // Forcer l'hydratation Zustand
-    useAuthStore.persist.rehydrate();
 
     const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
       setHydrated(true);

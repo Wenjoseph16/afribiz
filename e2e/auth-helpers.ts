@@ -98,6 +98,10 @@ export async function authenticateViaApi(
 
   await context.addInitScript((tokens) => {
     try {
+      // Le apiClient lit localStorage 'accessToken' (intercepteur axios) :
+      // sans ces clés simples, TOUTES les requêtes partent sans header Bearer -> 401.
+      window.localStorage.setItem('accessToken', tokens.accessToken);
+      window.localStorage.setItem('refreshToken', tokens.refreshToken);
       window.localStorage.setItem('auth-storage', JSON.stringify({
         state: {
           accessToken: tokens.accessToken,
