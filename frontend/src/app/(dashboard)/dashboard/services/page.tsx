@@ -23,6 +23,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -260,35 +262,34 @@ export default function ServicesPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Services
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gérez vos prestations</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={handleExport}
-            className="px-3 py-1.5 text-sm font-medium border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-gray-600 dark:text-gray-300"
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </button>
-          <Link href="/dashboard/services/categories">
-            <Button variant="outline" size="sm">
-              <Tag className="h-4 w-4 mr-1.5" />
-              Catégories
-            </Button>
-          </Link>
-          <Link href="/dashboard/services/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nouveau service
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Centre des prestations"
+        description="Gérez vos services, suivez les réservations et mettez en avant vos meilleures offres."
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Catalogue' }, { label: 'Services' }]}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleExport}
+              className="px-3 py-1.5 text-sm font-medium border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-gray-600 dark:text-gray-300"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+            <Link href="/dashboard/services/categories">
+              <Button variant="outline" size="sm">
+                <Tag className="h-4 w-4 mr-1.5" />
+                Catégories
+              </Button>
+            </Link>
+            <Link href="/dashboard/services/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nouveau service
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
       <CopilotTips moduleKey="SERVICES" />
 
@@ -407,6 +408,12 @@ export default function ServicesPage() {
       )}
 
       {/* Filters */}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          {filteredServices.length} service{filteredServices.length > 1 ? 's' : ''}
+        </span>
+        <LiveBadge tone="brand" label="Temps réel" />
+      </div>
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-1 overflow-x-auto scrollbar-hide">

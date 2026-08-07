@@ -19,8 +19,8 @@ const menuItemInclude = { category: true, variants: true } as const;
 export async function listMenuItems(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
   const {
-    page = 1,
-    limit = 20,
+    page: rawPage = 1,
+    limit: rawLimit = 20,
     categoryId,
     status,
     search,
@@ -30,6 +30,8 @@ export async function listMenuItems(ownerId: string, filters: any) {
     sortBy,
     sortOrder,
   } = filters;
+  const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: Prisma.MenuItemWhereInput = { businessId: business.id };
   if (categoryId) where.categoryId = categoryId;
   if (status) where.status = status as any;

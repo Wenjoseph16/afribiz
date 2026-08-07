@@ -23,6 +23,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -259,30 +261,27 @@ export default function MenuPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Menu / Carte
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos plats et articles de menu
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/menu/categories">
-            <Button variant="outline" size="sm">
-              <Tag className="h-4 w-4 mr-1.5" />
-              Catégories
-            </Button>
-          </Link>
-          <Link href="/dashboard/menu/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nouveau plat
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Centre de gestion du menu"
+        description="Pilotez vos plats, suivez les ventes et mettez en avant vos meilleures recettes."
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Catalogue' }, { label: 'Menu' }]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/menu/categories">
+              <Button variant="outline" size="sm">
+                <Tag className="h-4 w-4 mr-1.5" />
+                Catégories
+              </Button>
+            </Link>
+            <Link href="/dashboard/menu/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nouveau plat
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
       <CopilotTips moduleKey="MENU" />
 
@@ -358,6 +357,23 @@ export default function MenuPage() {
           ))}
         </div>
       )}
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {filtered.length} plat{filtered.length > 1 ? 's' : ''}
+          </span>
+          <LiveBadge tone="brand" label="Temps réel" />
+        </div>
+        {viewMode === 'list' && filtered.length > 0 && (
+          <button
+            onClick={toggleSelectAll}
+            className="text-xs font-medium text-brand hover:underline"
+          >
+            {selectedIds.length === filtered.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+          </button>
+        )}
+      </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
         <div className="flex gap-1 overflow-x-auto">
