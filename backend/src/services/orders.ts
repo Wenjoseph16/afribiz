@@ -11,15 +11,18 @@ import {
   publishInvoicePaid,
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
-import {
-  hasBusinessModule,
-  activeModuleAssignmentsSelect,
-} from '../lib/businessModules';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, name: true, modules: true, settings: true, ...activeModuleAssignmentsSelect },
+    select: {
+      id: true,
+      name: true,
+      modules: true,
+      settings: true,
+      ...activeModuleAssignmentsSelect,
+    },
   });
   if (!business) throw new AppError('Business not found', 404);
   if (!hasBusinessModule(business, 'ORDERS'))

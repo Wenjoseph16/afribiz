@@ -44,10 +44,7 @@ export const requireAdminConfirmationInner = async (
   // Garde anti brute-force
   const guard = failureMap.get(req.user.id);
   if (guard && guard.lockedUntil > Date.now()) {
-    throw new AppError(
-      'Trop de tentatives de confirmation. Réessayez dans quelques minutes.',
-      429
-    );
+    throw new AppError('Trop de tentatives de confirmation. Réessayez dans quelques minutes.', 429);
   }
 
   const { adminPassword, otpCode } = (req.body || {}) as {
@@ -56,11 +53,9 @@ export const requireAdminConfirmationInner = async (
   };
 
   if (!adminPassword) {
-    throw new AppError(
-      'Action sensible : confirmez avec votre mot de passe administrateur.',
-      403,
-      { code: 'CONFIRMATION_REQUIRED' }
-    );
+    throw new AppError('Action sensible : confirmez avec votre mot de passe administrateur.', 403, {
+      code: 'CONFIRMATION_REQUIRED',
+    });
   }
 
   const user = await prisma.user.findUnique({
@@ -86,11 +81,9 @@ export const requireAdminConfirmationInner = async (
   // 2FA activée → OTP obligatoire
   if (user.twoFactorEnabled) {
     if (!otpCode) {
-      throw new AppError(
-        'Code 2FA requis pour confirmer cette action.',
-        403,
-        { code: 'OTP_REQUIRED' }
-      );
+      throw new AppError('Code 2FA requis pour confirmer cette action.', 403, {
+        code: 'OTP_REQUIRED',
+      });
     }
     const otpValid = await TwoFactorService.verifyToken(req.user.id, otpCode);
     if (!otpValid) {
@@ -110,6 +103,4 @@ export const requireAdminConfirmationInner = async (
  * Middleware Express — enveloppe le handler interne et transmet les erreurs à
  * `next(error)` (pattern catchAsyncErrors du projet).
  */
-export const requireAdminConfirmation = catchAsyncErrors(
-  requireAdminConfirmationInner
-);
+export const requireAdminConfirmation = catchAsyncErrors(requireAdminConfirmationInner);

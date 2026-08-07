@@ -75,8 +75,7 @@ export function Sidebar() {
   const inDeveloperSpace = onExplicitDeveloperPath;
   const inAdminSpace = onExplicitAdminPath;
   const inBusinessSpace =
-    onExplicitBusinessPath ||
-    (!inDeveloperSpace && !inAdminSpace && activeSpace === 'BUSINESS');
+    onExplicitBusinessPath || (!inDeveloperSpace && !inAdminSpace && activeSpace === 'BUSINESS');
   // /dashboard (accueil client) reste TOUJOURS affiché en espace client : le contenu de
   // cette page EST le dashboard client. selectedSpace n'est pas modifié, donc un gérant
   // en espace business qui repasse par /dashboard/products (chemin partagé) retrouve
@@ -108,13 +107,10 @@ export function Sidebar() {
     if (myBusiness) setBusiness(myBusiness);
   }, [myBusiness, setBusiness]);
 
-
-
   const isActive = (href: string) => {
     if (href === '/dashboard') return currentPath === '/dashboard';
     return currentPath === href || currentPath.startsWith(href + '/');
   };
-
 
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -376,7 +372,9 @@ export function Sidebar() {
                                     )}
                                   />
                                 )}
-                                {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                                {!sidebarCollapsed && (
+                                  <span className="truncate">{item.label}</span>
+                                )}
                                 {/* Badge messages non lus — espace business */}
                                 {!sidebarCollapsed && unreadTotal > 0 && isMessagerie && (
                                   <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm shadow-red-500/30">
@@ -710,8 +708,6 @@ export function Sidebar() {
             })}
           </>
         )}
-
-
 
         {/* Module analysis link */}
         {!sidebarCollapsed && (

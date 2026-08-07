@@ -315,6 +315,9 @@ export function injectAdminExtended(api: ApiClientMethods) {
   api.adminGetBusinesses = function (params?: any) {
     return this.get('/admin/businesses', { params });
   };
+  api.adminGetBusinessById = function (id: string) {
+    return this.get('/admin/businesses/' + id);
+  };
   api.adminGetBusinessDetail = function (id: string) {
     return this.get('/admin/businesses/' + id);
   };

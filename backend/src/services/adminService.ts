@@ -595,7 +595,7 @@ export const freezeUser = async (
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new AppError('Utilisateur introuvable', 404);
   if (user.primaryRole === 'ADMIN' && user.id !== adminUserId)
-    throw new AppError("Impossible de geler un autre administrateur", 403);
+    throw new AppError('Impossible de geler un autre administrateur', 403);
 
   const frozenUntil = new Date(Date.now() + params.durationHours * 3600_000);
   const updated = await prisma.user.update({
@@ -657,7 +657,10 @@ export const unfreezeUser = async (id: string, adminUserId?: string) => {
       properties: { targetUserId: id },
     });
   }
-  await notifyUserWarned({ userId: id, reason: 'Votre compte a été dégelé. Vous pouvez vous reconnecter.' });
+  await notifyUserWarned({
+    userId: id,
+    reason: 'Votre compte a été dégelé. Vous pouvez vous reconnecter.',
+  });
   return updated;
 };
 
@@ -772,9 +775,14 @@ export const getFrozenAccounts = async () => {
       .filter((i) => i.frozenUntil && i.frozenUntil > now)
       .map((i) => ({
         ...i,
-        remainingHours: Math.round(((i.frozenUntil.getTime() - now.getTime()) / 3600_000) * 10) / 10,
+        remainingHours:
+          Math.round(((i.frozenUntil.getTime() - now.getTime()) / 3600_000) * 10) / 10,
       }));
-  return { users: normalize(users), businesses: normalize(businesses), total: users.length + businesses.length };
+  return {
+    users: normalize(users),
+    businesses: normalize(businesses),
+    total: users.length + businesses.length,
+  };
 };
 
 // ============================================
@@ -786,11 +794,10 @@ export const getFrozenAccounts = async () => {
  * Lecture seule : le middleware auth bloque toute mutation avec ce token.
  */
 export const createImpersonationToken = async (targetUserId: string, adminUserId: string) => {
-  if (targetUserId === adminUserId)
-    throw new AppError("Vous êtes déjà cet utilisateur", 400);
+  if (targetUserId === adminUserId) throw new AppError('Vous êtes déjà cet utilisateur', 400);
   const target = await prisma.user.findUnique({ where: { id: targetUserId } });
   if (!target) throw new AppError('Utilisateur cible introuvable', 404);
-  if (!target.isActive) throw new AppError("Le compte cible est inactif", 400);
+  if (!target.isActive) throw new AppError('Le compte cible est inactif', 400);
   if (target.primaryRole === 'ADMIN')
     throw new AppError('Impossible de voir-comme un autre administrateur', 403);
 
@@ -2484,7 +2491,12 @@ export const getFraudReports = async (query: {
       status: f.blocked ? 'ACTION_TAKEN' : 'PENDING',
       blocked: f.blocked,
       client: f.user
-        ? { id: f.user.id, firstName: f.user.firstName, lastName: f.user.lastName, email: f.user.email }
+        ? {
+            id: f.user.id,
+            firstName: f.user.firstName,
+            lastName: f.user.lastName,
+            email: f.user.email,
+          }
         : null,
       ipAddress: f.ipAddress,
       country: f.country,
@@ -2560,17 +2572,38 @@ export const globalSearch = async (q?: string) => {
   const [users, businesses, orders, disputes, developers] = await Promise.all([
     prisma.user.findMany({
       where: { OR: [{ email: contains }, { firstName: contains }, { lastName: contains }] },
-      select: { id: true, firstName: true, lastName: true, email: true, primaryRole: true, avatar: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        primaryRole: true,
+        avatar: true,
+      },
       take: 8,
     }),
     prisma.business.findMany({
       where: { OR: [{ name: contains }, { slug: contains }, { email: contains }] },
-      select: { id: true, name: true, slug: true, type: true, verificationStatus: true, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        type: true,
+        verificationStatus: true,
+        isActive: true,
+      },
       take: 8,
     }),
     prisma.order.findMany({
       where: { orderNumber: { contains: term } },
-      select: { id: true, orderNumber: true, status: true, totalAmount: true, buyerId: true, businessId: true },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        totalAmount: true,
+        buyerId: true,
+        businessId: true,
+      },
       take: 8,
     }),
     prisma.dispute.findMany({
@@ -2613,10 +2646,7 @@ export const getActiveAdminIds = async (): Promise<string[]> => {
         select: { id: true },
       })
     : [];
-  const ids = new Set<string>([
-    ...assignedActive.map((u) => u.id),
-    ...roleUsers.map((u) => u.id),
-  ]);
+  const ids = new Set<string>([...assignedActive.map((u) => u.id), ...roleUsers.map((u) => u.id)]);
   return Array.from(ids);
 };
 
@@ -2625,19 +2655,29 @@ export const getAdminAlertQueue = async () => {
   const since3d = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
   const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  const [kyc, disputesOpen, disputesOld, adsPending, payoutsPending, ticketsOpen, fraudHigh, subsExpiring] =
-    await Promise.all([
-      prisma.business.count({ where: { verificationStatus: 'PENDING' } }),
-      prisma.dispute.count({ where: { status: { in: ['OUVERT', 'EN_COURS'] } } }),
-      prisma.dispute.count({ where: { status: { in: ['OUVERT', 'EN_COURS'] }, createdAt: { lt: since3d } } }),
-      prisma.adCampaign.count({ where: { status: 'PENDING' } }),
-      prisma.developerPayout.count({ where: { status: 'PENDING' } }),
-      prisma.developerSupportTicket.count({ where: { status: 'OPEN' } }),
-      prisma.fraudEvent.count({ where: { severity: { in: ['HIGH', 'CRITICAL'] }, blocked: false } }),
-      prisma.businessSubscription.count({
-        where: { status: 'ACTIVE', endDate: { not: null, lte: in7d } },
-      }),
-    ]);
+  const [
+    kyc,
+    disputesOpen,
+    disputesOld,
+    adsPending,
+    payoutsPending,
+    ticketsOpen,
+    fraudHigh,
+    subsExpiring,
+  ] = await Promise.all([
+    prisma.business.count({ where: { verificationStatus: 'PENDING' } }),
+    prisma.dispute.count({ where: { status: { in: ['OUVERT', 'EN_COURS'] } } }),
+    prisma.dispute.count({
+      where: { status: { in: ['OUVERT', 'EN_COURS'] }, createdAt: { lt: since3d } },
+    }),
+    prisma.adCampaign.count({ where: { status: 'PENDING' } }),
+    prisma.developerPayout.count({ where: { status: 'PENDING' } }),
+    prisma.developerSupportTicket.count({ where: { status: 'OPEN' } }),
+    prisma.fraudEvent.count({ where: { severity: { in: ['HIGH', 'CRITICAL'] }, blocked: false } }),
+    prisma.businessSubscription.count({
+      where: { status: 'ACTIVE', endDate: { not: null, lte: in7d } },
+    }),
+  ]);
 
   const alerts: {
     key: string;
@@ -2650,14 +2690,50 @@ export const getAdminAlertQueue = async () => {
     if (count > 0) alerts.push({ key, label, count, severity, link });
   };
 
-  push('kyc', 'Commerces en attente de vérification KYC', kyc, kyc > 5 ? 'HIGH' : 'MEDIUM', '/dashboard/admin/businesses');
-  push('disputes', 'Litiges ouverts', disputesOpen, disputesOpen > 5 ? 'HIGH' : 'MEDIUM', '/dashboard/admin/disputes');
-  push('disputes-old', 'Litiges non traités depuis plus de 3 jours', disputesOld, 'HIGH', '/dashboard/admin/disputes');
+  push(
+    'kyc',
+    'Commerces en attente de vérification KYC',
+    kyc,
+    kyc > 5 ? 'HIGH' : 'MEDIUM',
+    '/dashboard/admin/businesses'
+  );
+  push(
+    'disputes',
+    'Litiges ouverts',
+    disputesOpen,
+    disputesOpen > 5 ? 'HIGH' : 'MEDIUM',
+    '/dashboard/admin/disputes'
+  );
+  push(
+    'disputes-old',
+    'Litiges non traités depuis plus de 3 jours',
+    disputesOld,
+    'HIGH',
+    '/dashboard/admin/disputes'
+  );
   push('ads', 'Campagnes publicitaires à valider', adsPending, 'MEDIUM', '/dashboard/admin/ads');
-  push('payouts', 'Payouts développeurs en attente', payoutsPending, 'MEDIUM', '/dashboard/admin/developers/commissions');
+  push(
+    'payouts',
+    'Payouts développeurs en attente',
+    payoutsPending,
+    'MEDIUM',
+    '/dashboard/admin/developers/commissions'
+  );
   push('support', 'Tickets support ouverts', ticketsOpen, 'MEDIUM', '/dashboard/admin/support');
-  push('fraud', 'Alertes fraude à haut risque', fraudHigh, 'CRITICAL', '/dashboard/admin/reports/fraud');
-  push('subscriptions', 'Abonnements arrivant à expiration', subsExpiring, 'LOW', '/dashboard/admin/subscriptions');
+  push(
+    'fraud',
+    'Alertes fraude à haut risque',
+    fraudHigh,
+    'CRITICAL',
+    '/dashboard/admin/reports/fraud'
+  );
+  push(
+    'subscriptions',
+    'Abonnements arrivant à expiration',
+    subsExpiring,
+    'LOW',
+    '/dashboard/admin/subscriptions'
+  );
 
   const urgent = alerts.filter((a) => a.severity === 'CRITICAL' || a.severity === 'HIGH').length;
   return { alerts, total: alerts.length, urgent, generatedAt: now };

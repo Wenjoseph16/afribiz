@@ -50,7 +50,9 @@ export async function getPublicBusiness(slug: string) {
   const { moduleAssignments, ...businessRest } = business;
   const activeModules = (moduleAssignments || []).map((a) => a.module as BusinessModule);
   const mergedModules =
-    activeModules.length > 0 ? activeModules : (businessRest.modules as BusinessModule[] | undefined) || [];
+    activeModules.length > 0
+      ? activeModules
+      : (businessRest.modules as BusinessModule[] | undefined) || [];
 
   return {
     ...businessRest,

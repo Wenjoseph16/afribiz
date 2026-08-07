@@ -1,7 +1,13 @@
 import { prisma } from '../lib/db';
 import { DebtStatus } from '@prisma/client';
 
-const ACTIVE_DEBT_STATUSES: DebtStatus[] = ['ACTIVE', 'PARTIALLY_PAID', 'OVERDUE', 'CRITICAL', 'DISPUTED'];
+const ACTIVE_DEBT_STATUSES: DebtStatus[] = [
+  'ACTIVE',
+  'PARTIALLY_PAID',
+  'OVERDUE',
+  'CRITICAL',
+  'DISPUTED',
+];
 
 /**
  * Vue d'ensemble financière de la plateforme.
@@ -10,27 +16,42 @@ const ACTIVE_DEBT_STATUSES: DebtStatus[] = ['ACTIVE', 'PARTIALLY_PAID', 'OVERDUE
 export async function getAdminFinanceOverview() {
   const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [rev30, fees30, txTotal, txPending, escActive, escTotalHeld, escDisputed, debtActive, debtOwed, debtOverdue, highRisk, blacklisted] =
-    await Promise.all([
-      prisma.payment.aggregate({
-        _sum: { amount: true },
-        where: { status: 'COMPLETED', paidAt: { gte: since30d } },
-      }),
-      prisma.escrow.aggregate({
-        _sum: { fee: true },
-        where: { status: 'RELEASED', releasedAt: { gte: since30d } },
-      }),
-      prisma.payment.count(),
-      prisma.payment.count({ where: { status: 'PENDING' } }),
-      prisma.escrow.count({ where: { status: 'HELD' } }),
-      prisma.escrow.aggregate({ _sum: { amount: true }, where: { status: 'HELD' } }),
-      prisma.escrow.count({ where: { status: 'DISPUTED' } }),
-      prisma.debt.count({ where: { status: { in: ACTIVE_DEBT_STATUSES } } }),
-      prisma.debt.aggregate({ _sum: { remainingAmount: true }, where: { status: { in: ACTIVE_DEBT_STATUSES } } }),
-      prisma.debt.count({ where: { status: { in: ['OVERDUE', 'CRITICAL'] } } }),
-      prisma.fraudEvent.count({ where: { severity: { in: ['HIGH', 'CRITICAL'] }, blocked: false } }),
-      prisma.fraudEvent.count({ where: { action: 'BLOCK', blocked: true } }),
-    ]);
+  const [
+    rev30,
+    fees30,
+    txTotal,
+    txPending,
+    escActive,
+    escTotalHeld,
+    escDisputed,
+    debtActive,
+    debtOwed,
+    debtOverdue,
+    highRisk,
+    blacklisted,
+  ] = await Promise.all([
+    prisma.payment.aggregate({
+      _sum: { amount: true },
+      where: { status: 'COMPLETED', paidAt: { gte: since30d } },
+    }),
+    prisma.escrow.aggregate({
+      _sum: { fee: true },
+      where: { status: 'RELEASED', releasedAt: { gte: since30d } },
+    }),
+    prisma.payment.count(),
+    prisma.payment.count({ where: { status: 'PENDING' } }),
+    prisma.escrow.count({ where: { status: 'HELD' } }),
+    prisma.escrow.aggregate({ _sum: { amount: true }, where: { status: 'HELD' } }),
+    prisma.escrow.count({ where: { status: 'DISPUTED' } }),
+    prisma.debt.count({ where: { status: { in: ACTIVE_DEBT_STATUSES } } }),
+    prisma.debt.aggregate({
+      _sum: { remainingAmount: true },
+      where: { status: { in: ACTIVE_DEBT_STATUSES } },
+    }),
+    prisma.debt.count({ where: { status: { in: ['OVERDUE', 'CRITICAL'] } } }),
+    prisma.fraudEvent.count({ where: { severity: { in: ['HIGH', 'CRITICAL'] }, blocked: false } }),
+    prisma.fraudEvent.count({ where: { action: 'BLOCK', blocked: true } }),
+  ]);
 
   return {
     revenue: {
@@ -100,7 +121,11 @@ export async function getAdminFinanceTransactions(query: {
 /**
  * Liste paginée des escrows pour l'onglet "Escrows" du dashboard finance.
  */
-export async function getAdminFinanceEscrows(query: { page?: number; limit?: number; status?: string }) {
+export async function getAdminFinanceEscrows(query: {
+  page?: number;
+  limit?: number;
+  status?: string;
+}) {
   const page = query.page || 1;
   const limit = query.limit || 15;
   const where: any = {};
@@ -163,7 +188,12 @@ export async function getAdminFinanceFraudAlerts() {
       severity: ev.severity,
       reason: ev.ruleName,
       client: ev.user
-        ? { id: ev.user.id, firstName: ev.user.firstName, lastName: ev.user.lastName, email: ev.user.email }
+        ? {
+            id: ev.user.id,
+            firstName: ev.user.firstName,
+            lastName: ev.user.lastName,
+            email: ev.user.email,
+          }
         : null,
       amount: metadataAmount(ev.metadata),
       createdAt: ev.createdAt,
@@ -181,7 +211,10 @@ export async function getAdminFinanceDebtRecovery() {
   const [totalDebts, settledDebts, activeSum, paidSum, topDebtors] = await Promise.all([
     prisma.debt.count({ where: { deletedAt: null } }),
     prisma.debt.count({ where: { status: 'SETTLED' } }),
-    prisma.debt.aggregate({ _sum: { remainingAmount: true }, where: { status: { in: ACTIVE_DEBT_STATUSES } } }),
+    prisma.debt.aggregate({
+      _sum: { remainingAmount: true },
+      where: { status: { in: ACTIVE_DEBT_STATUSES } },
+    }),
     prisma.debt.aggregate({ _sum: { amountPaid: true } }),
     prisma.debt.groupBy({
       by: ['buyerId'],

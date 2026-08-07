@@ -813,12 +813,10 @@ export const getAdminFinanceDebtRecovery = catchAsyncErrors(
 // RECHERCHE GLOBALE + FILE D'ALERTES
 // ============================================
 
-export const searchAdmin = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {
-    const result = await adminService.globalSearch(req.query.q as string);
-    res.json({ success: true, data: result });
-  }
-);
+export const searchAdmin = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const result = await adminService.globalSearch(req.query.q as string);
+  res.json({ success: true, data: result });
+});
 
 export const getAdminAlertQueue = catchAsyncErrors(
   async (_req: AuthenticatedRequest, res: Response) => {
@@ -911,45 +909,39 @@ export const rejectPayout = catchAsyncErrors(async (req: AuthenticatedRequest, r
 // FREEZE / OBSERVATION TEMPORAIRE
 // ============================================
 
-export const freezeUser = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) throw new AppError('Non authentifié', 401);
-    const result = await adminService.freezeUser(
-      req.params.id,
-      { durationHours: req.body.durationHours, reason: req.body.reason },
-      req.user.id
-    );
-    res.json({
-      success: true,
-      data: result,
-      message: `Utilisateur gelé (${req.body.durationHours}h)`,
-    });
-  }
-);
+export const freezeUser = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new AppError('Non authentifié', 401);
+  const result = await adminService.freezeUser(
+    req.params.id,
+    { durationHours: req.body.durationHours, reason: req.body.reason },
+    req.user.id
+  );
+  res.json({
+    success: true,
+    data: result,
+    message: `Utilisateur gelé (${req.body.durationHours}h)`,
+  });
+});
 
-export const unfreezeUser = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) throw new AppError('Non authentifié', 401);
-    const result = await adminService.unfreezeUser(req.params.id, req.user.id);
-    res.json({ success: true, data: result, message: 'Utilisateur dégelé' });
-  }
-);
+export const unfreezeUser = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new AppError('Non authentifié', 401);
+  const result = await adminService.unfreezeUser(req.params.id, req.user.id);
+  res.json({ success: true, data: result, message: 'Utilisateur dégelé' });
+});
 
-export const freezeBusiness = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) throw new AppError('Non authentifié', 401);
-    const result = await adminService.freezeBusiness(
-      req.params.id,
-      { durationHours: req.body.durationHours, reason: req.body.reason },
-      req.user.id
-    );
-    res.json({
-      success: true,
-      data: result,
-      message: `Business gelé (${req.body.durationHours}h)`,
-    });
-  }
-);
+export const freezeBusiness = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new AppError('Non authentifié', 401);
+  const result = await adminService.freezeBusiness(
+    req.params.id,
+    { durationHours: req.body.durationHours, reason: req.body.reason },
+    req.user.id
+  );
+  res.json({
+    success: true,
+    data: result,
+    message: `Business gelé (${req.body.durationHours}h)`,
+  });
+});
 
 export const unfreezeBusiness = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {

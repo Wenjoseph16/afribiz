@@ -7,18 +7,19 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { useAuthStore } from '@/stores/authStore';
 import {
   DollarSign,
-  CreditCard,
   Shield,
   AlertTriangle,
   Banknote,
   TrendingUp,
   Users,
   Clock,
-  CheckCircle,
   Wallet,
   Receipt,
   Activity,
@@ -42,19 +43,8 @@ function useAdminFinanceOverview() {
   return useQuery({
     queryKey: ['admin', 'finance', 'overview'],
     queryFn: async () => {
-      try {
-        const res = await apiClient.adminGetFinanceOverview();
-        return res.data.data;
-      } catch (error) {
-        console.warn('Erreur chargement finance overview:', error);
-        return {
-          revenue: { total30d: 0, fees30d: 0 },
-          transactions: { total: 0, pending: 0 },
-          escrows: { active: 0, totalHeld: 0, disputes: 0 },
-          debts: { active: 0, totalOwed: 0, overdue: 0 },
-          risks: { highRisk: 0, blacklisted: 0 },
-        };
-      }
+      const res = await apiClient.adminGetFinanceOverview();
+      return res.data.data;
     },
     retry: false,
   });
@@ -69,13 +59,8 @@ function useAdminTransactions(params?: {
   return useQuery({
     queryKey: ['admin', 'finance', 'transactions', params],
     queryFn: async () => {
-      try {
-        const res = await apiClient.adminGetFinanceTransactions(params);
-        return res.data.data;
-      } catch (error) {
-        console.warn('Erreur chargement transactions:', error);
-        return { transactions: [], totalPages: 1, page: 1 };
-      }
+      const res = await apiClient.adminGetFinanceTransactions(params);
+      return res.data.data;
     },
     retry: false,
   });
@@ -85,13 +70,8 @@ function useAdminEscrows(params?: { page?: number; limit?: number; status?: stri
   return useQuery({
     queryKey: ['admin', 'finance', 'escrows', params],
     queryFn: async () => {
-      try {
-        const res = await apiClient.adminGetFinanceEscrows(params);
-        return res.data.data;
-      } catch (error) {
-        console.warn('Erreur chargement escrows:', error);
-        return { escrows: [], totalPages: 1, page: 1 };
-      }
+      const res = await apiClient.adminGetFinanceEscrows(params);
+      return res.data.data;
     },
     retry: false,
   });
@@ -101,13 +81,8 @@ function useAdminFraudAlerts() {
   return useQuery({
     queryKey: ['admin', 'finance', 'fraud'],
     queryFn: async () => {
-      try {
-        const res = await apiClient.adminGetFinanceFraudAlerts();
-        return res.data.data;
-      } catch (error) {
-        console.warn('Erreur chargement alertes fraude:', error);
-        return [];
-      }
+      const res = await apiClient.adminGetFinanceFraudAlerts();
+      return res.data.data;
     },
     retry: false,
   });
@@ -117,13 +92,8 @@ function useAdminDebtRecovery() {
   return useQuery({
     queryKey: ['admin', 'finance', 'debts'],
     queryFn: async () => {
-      try {
-        const res = await apiClient.adminGetFinanceDebtRecovery();
-        return res.data.data;
-      } catch (error) {
-        console.warn('Erreur chargement recouvrement:', error);
-        return [];
-      }
+      const res = await apiClient.adminGetFinanceDebtRecovery();
+      return res.data.data;
     },
     retry: false,
   });
@@ -137,19 +107,36 @@ export default function AdminFinancePage() {
   const [txStatus, setTxStatus] = useState('');
   const [escrowStatus, setEscrowStatus] = useState('');
 
-  const { data: overview, isLoading: overviewLoading } = useAdminFinanceOverview();
-  const { data: txData, isLoading: txLoading } = useAdminTransactions({
-    page: txPage,
-    limit: 15,
-    status: txStatus || undefined,
-  });
-  const { data: escrowData, isLoading: escrowLoading } = useAdminEscrows({
-    page: escrowPage,
-    limit: 15,
-    status: escrowStatus || undefined,
-  });
-  const { data: fraudData, isLoading: fraudLoading } = useAdminFraudAlerts();
-  const { data: debtData, isLoading: debtLoading } = useAdminDebtRecovery();
+  const {
+    data: overview,
+    isLoading: overviewLoading,
+    isError: overviewError,
+    refetch: refetchOverview,
+  } = useAdminFinanceOverview();
+  const {
+    data: txData,
+    isLoading: txLoading,
+    isError: txError,
+    refetch: refetchTx,
+  } = useAdminTransactions({ page: txPage, limit: 15, status: txStatus || undefined });
+  const {
+    data: escrowData,
+    isLoading: escrowLoading,
+    isError: escrowError,
+    refetch: refetchEscrows,
+  } = useAdminEscrows({ page: escrowPage, limit: 15, status: escrowStatus || undefined });
+  const {
+    data: fraudData,
+    isLoading: fraudLoading,
+    isError: fraudError,
+    refetch: refetchFraud,
+  } = useAdminFraudAlerts();
+  const {
+    data: debtData,
+    isLoading: debtLoading,
+    isError: debtError,
+    refetch: refetchDebts,
+  } = useAdminDebtRecovery();
 
   if (!user?.roles?.includes('ADMIN')) {
     return (
@@ -192,16 +179,15 @@ export default function AdminFinancePage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Administration financière
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Supervision des transactions, escrows, alertes et recouvrement
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Tour de contrôle financière"
+        description="Trésorerie, séquestre, fraude et recouvrement"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Admin', href: '/dashboard/admin' },
+          { label: 'Finances' },
+        ]}
+      />
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
@@ -229,6 +215,15 @@ export default function AdminFinancePage() {
       {activeTab === 'overview' &&
         (overviewLoading ? (
           <Loader className="py-12" />
+        ) : overviewError ? (
+          <Card padding="none">
+            <ErrorState
+              icon={<AlertTriangle className="h-8 w-8" />}
+              title="Impossible de charger les statistiques financières"
+              message="Le service de trésorerie est injoignable."
+              onRetry={() => refetchOverview()}
+            />
+          </Card>
         ) : !overview ? (
           <EmptyState
             icon={<PieChart className="h-8 w-8" />}
@@ -237,125 +232,68 @@ export default function AdminFinancePage() {
           />
         ) : (
           <div className="space-y-6">
-            {/* Revenue & Transactions */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand">
-                    <DollarSign className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {formatAmount(overview.revenue?.total30d || 0)}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Revenu (30j)</p>
-                  </div>
-                </div>
-              </Card>
-              <Card padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
-                    <Wallet className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {formatAmount(overview.revenue?.fees30d || 0)}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Commission (30j)</p>
-                  </div>
-                </div>
-              </Card>
-              <Card padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600">
-                    <Receipt className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {overview.transactions?.total || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Transactions total</p>
-                  </div>
-                </div>
-              </Card>
-              <Card padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600">
-                    <Clock className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {overview.transactions?.pending || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">En attente</p>
-                  </div>
-                </div>
-              </Card>
+              <StatsCard
+                icon={<DollarSign className="h-5 w-5" />}
+                iconBg="bg-brand-50 dark:bg-brand-900/30"
+                iconColor="text-brand"
+                label="Revenu (30j)"
+                value={formatAmount(overview.revenue?.total30d || 0)}
+              />
+              <StatsCard
+                icon={<Wallet className="h-5 w-5" />}
+                iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+                iconColor="text-emerald-600 dark:text-emerald-400"
+                label="Commission (30j)"
+                value={formatAmount(overview.revenue?.fees30d || 0)}
+              />
+              <StatsCard
+                icon={<Receipt className="h-5 w-5" />}
+                iconBg="bg-blue-50 dark:bg-blue-900/30"
+                iconColor="text-blue-600 dark:text-blue-400"
+                label="Transactions total"
+                value={(overview.transactions?.total || 0).toLocaleString('fr-FR')}
+              />
+              <StatsCard
+                icon={<Clock className="h-5 w-5" />}
+                iconBg="bg-amber-50 dark:bg-amber-900/30"
+                iconColor="text-amber-600 dark:text-amber-400"
+                label="En attente"
+                value={(overview.transactions?.pending || 0).toLocaleString('fr-FR')}
+              />
             </div>
 
-            {/* Escrows & Debts */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600">
-                    <Shield className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {overview.escrows?.active || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Escrows actifs</p>
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
-                      {formatAmount(overview.escrows?.totalHeld || 0)}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-              <Card padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600">
-                    <AlertCircle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {overview.escrows?.disputes || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Litiges escrow</p>
-                  </div>
-                </div>
-              </Card>
-              <Card padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-orange-600">
-                    <Banknote className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {overview.debts?.active || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Dettes actives</p>
-                    <p className="text-xs text-orange-600 dark:text-orange-400">
-                      {formatAmount(overview.debts?.totalOwed || 0)}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-              <Card padding="md">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600">
-                    <AlertTriangle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {overview.debts?.overdue || 0}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Dettes impayées</p>
-                  </div>
-                </div>
-              </Card>
+              <StatsCard
+                icon={<Shield className="h-5 w-5" />}
+                iconBg="bg-amber-50 dark:bg-amber-900/30"
+                iconColor="text-amber-600 dark:text-amber-400"
+                label="Escrows actifs"
+                value={overview.escrows?.active || 0}
+              />
+              <StatsCard
+                icon={<AlertCircle className="h-5 w-5" />}
+                iconBg="bg-red-50 dark:bg-red-900/30"
+                iconColor="text-red-600 dark:text-red-400"
+                label="Litiges escrow"
+                value={overview.escrows?.disputes || 0}
+              />
+              <StatsCard
+                icon={<Banknote className="h-5 w-5" />}
+                iconBg="bg-orange-50 dark:bg-orange-900/30"
+                iconColor="text-orange-600 dark:text-orange-400"
+                label="Dettes actives"
+                value={`${overview.debts?.active || 0}`}
+              />
+              <StatsCard
+                icon={<TrendingUp className="h-5 w-5" />}
+                iconBg="bg-rose-50 dark:bg-rose-900/30"
+                iconColor="text-rose-600 dark:text-rose-400"
+                label="Impayées"
+                value={overview.debts?.overdue || 0}
+              />
             </div>
 
-            {/* Risks */}
             <Card padding="md">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -376,8 +314,8 @@ export default function AdminFinancePage() {
                 </div>
                 <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50">
                   <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                    {overview.escrows?.active > 0 || overview.debts?.active > 0
-                      ? '⚠️ Actif'
+                    {(overview.escrows?.disputes ?? 0) > 0 || (overview.debts?.overdue ?? 0) > 0
+                      ? '⚠️ Attention'
                       : '✅ OK'}
                   </p>
                   <p className="text-xs text-emerald-600 dark:text-emerald-300">État général</p>
@@ -420,6 +358,14 @@ export default function AdminFinancePage() {
 
           {txLoading ? (
             <Loader className="py-12" />
+          ) : txError ? (
+            <Card padding="none">
+              <ErrorState
+                icon={<AlertTriangle className="h-8 w-8" />}
+                title="Impossible de charger les transactions"
+                onRetry={() => refetchTx()}
+              />
+            </Card>
           ) : !txData?.transactions?.length ? (
             <EmptyState
               icon={<Receipt className="h-8 w-8" />}
@@ -533,6 +479,14 @@ export default function AdminFinancePage() {
 
           {escrowLoading ? (
             <Loader className="py-12" />
+          ) : escrowError ? (
+            <Card padding="none">
+              <ErrorState
+                icon={<AlertTriangle className="h-8 w-8" />}
+                title="Impossible de charger les escrows"
+                onRetry={() => refetchEscrows()}
+              />
+            </Card>
           ) : !escrowData?.escrows?.length ? (
             <EmptyState
               icon={<Shield className="h-8 w-8" />}
@@ -623,6 +577,14 @@ export default function AdminFinancePage() {
       {activeTab === 'fraud' &&
         (fraudLoading ? (
           <Loader className="py-12" />
+        ) : fraudError ? (
+          <Card padding="none">
+            <ErrorState
+              icon={<AlertTriangle className="h-8 w-8" />}
+              title="Impossible de charger les alertes de fraude"
+              onRetry={() => refetchFraud()}
+            />
+          </Card>
         ) : !fraudData?.alerts?.length ? (
           <EmptyState
             icon={<Shield className="h-8 w-8" />}
@@ -699,6 +661,14 @@ export default function AdminFinancePage() {
       {activeTab === 'debts' &&
         (debtLoading ? (
           <Loader className="py-12" />
+        ) : debtError ? (
+          <Card padding="none">
+            <ErrorState
+              icon={<AlertTriangle className="h-8 w-8" />}
+              title="Impossible de charger le recouvrement"
+              onRetry={() => refetchDebts()}
+            />
+          </Card>
         ) : !debtData ? (
           <EmptyState
             icon={<TrendingUp className="h-8 w-8" />}
@@ -708,31 +678,34 @@ export default function AdminFinancePage() {
         ) : (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card padding="md">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total dettes</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {debtData.totalDebts || 0}
-                </p>
-              </Card>
-              <Card padding="md">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Dettes soldées</p>
-                <p className="text-2xl font-bold text-emerald-600">{debtData.settledDebts || 0}</p>
-              </Card>
-              <Card padding="md">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Montant total dû</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {formatAmount(debtData.totalDebtAmount || 0)}
-                </p>
-              </Card>
-              <Card padding="md">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Montant recouvré</p>
-                <p className="text-2xl font-bold text-brand">
-                  {formatAmount(debtData.recoveredAmount || 0)}
-                </p>
-              </Card>
+              <StatsCard
+                icon={<Banknote className="h-5 w-5" />}
+                iconBg="bg-orange-50 dark:bg-orange-900/30"
+                iconColor="text-orange-600 dark:text-orange-400"
+                label="Total dettes"
+                value={debtData.totalDebts || 0}
+              />
+              <StatsCard
+                icon={<Activity className="h-5 w-5" />}
+                iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+                iconColor="text-emerald-600 dark:text-emerald-400"
+                label="Dettes soldées"
+                value={debtData.settledDebts || 0}
+              />
+              <StatsCard
+                icon={<Wallet className="h-5 w-5" />}
+                label="Montant total dû"
+                value={formatAmount(debtData.totalDebtAmount || 0)}
+              />
+              <StatsCard
+                icon={<TrendingUp className="h-5 w-5" />}
+                iconBg="bg-brand-50 dark:bg-brand-900/30"
+                iconColor="text-brand"
+                label="Recouvré"
+                value={formatAmount(debtData.recoveredAmount || 0)}
+              />
             </div>
 
-            {/* Recovery rate bar */}
             <Card padding="md">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -759,7 +732,6 @@ export default function AdminFinancePage() {
               </div>
             </Card>
 
-            {/* Top debtors */}
             {debtData.topDebtors?.length > 0 && (
               <Card padding="md" title="Top débiteurs" titleIcon={<UserX className="h-4 w-4" />}>
                 <div className="space-y-2">

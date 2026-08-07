@@ -33,7 +33,7 @@ describe('growthEngine controller', () => {
   });
 
   describe('getMorningBrief', () => {
-    it('should return existing fresh brief (daté d\'aujourd\'hui)', async () => {
+    it("should return existing fresh brief (daté d'aujourd'hui)", async () => {
       (ge.getLatestBrief as jest.Mock).mockResolvedValue({
         id: 'b1',
         content: 'Brief',
@@ -50,7 +50,7 @@ describe('growthEngine controller', () => {
       });
     });
 
-    it('should regenerate a stale brief (daté d\'hier)', async () => {
+    it("should regenerate a stale brief (daté d'hier)", async () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       (ge.getLatestBrief as jest.Mock).mockResolvedValue({

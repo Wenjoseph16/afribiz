@@ -24,10 +24,7 @@ export function resolveBusinessModules(business: BusinessModulesShape): string[]
   return Array.from(new Set([...assigned, ...legacy]));
 }
 
-export function hasBusinessModule(
-  business: BusinessModulesShape,
-  moduleName: string
-): boolean {
+export function hasBusinessModule(business: BusinessModulesShape, moduleName: string): boolean {
   return resolveBusinessModules(business).includes(moduleName);
 }
 

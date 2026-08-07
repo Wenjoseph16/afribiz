@@ -1263,6 +1263,7 @@ export interface ApiClientMethods {
   adminDownloadBackup(id: string): Promise<any>;
   adminGetNotificationsList(params?: any): Promise<any>;
   adminGetBusinesses(params?: any): Promise<any>;
+  adminGetBusinessById(id: string): Promise<any>;
   adminGetBusinessDetail(id: string): Promise<any>;
   adminUpdateBusinessStatus(id: string, action: string): Promise<any>;
   adminGetFinanceOverview(): Promise<any>;

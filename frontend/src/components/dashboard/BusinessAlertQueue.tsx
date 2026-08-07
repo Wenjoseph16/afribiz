@@ -35,14 +35,26 @@ interface AlertQueue {
 }
 
 const ALERT_META: Record<string, { icon: typeof AlertTriangle; color: string }> = {
-  'pending-orders': { icon: ShoppingBag, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30' },
-  'pending-bookings': { icon: CalendarCheck2, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30' },
+  'pending-orders': {
+    icon: ShoppingBag,
+    color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30',
+  },
+  'pending-bookings': {
+    icon: CalendarCheck2,
+    color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30',
+  },
   'low-stock': { icon: PackageOpen, color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/30' },
-  'unanswered-reviews': { icon: Star, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' },
+  'unanswered-reviews': {
+    icon: Star,
+    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30',
+  },
   'active-debts': { icon: Wallet, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
   'overdue-debts': { icon: Wallet, color: 'text-red-600 bg-red-50 dark:bg-red-900/30' },
   'active-deliveries': { icon: Truck, color: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/30' },
-  'unpaid-invoices': { icon: FileText, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' },
+  'unpaid-invoices': {
+    icon: FileText,
+    color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30',
+  },
   'expiring-promotions': { icon: Percent, color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30' },
 };
 
@@ -91,9 +103,7 @@ export default function BusinessAlertQueue() {
           <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center mb-3">
             <CheckCircle2 className="h-6 w-6 text-emerald-500" />
           </div>
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Tout est en ordre
-          </p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Tout est en ordre</p>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
             Aucune action requise pour le moment.
           </p>

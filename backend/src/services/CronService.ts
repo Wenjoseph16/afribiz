@@ -342,7 +342,9 @@ export class CronService {
         try {
           await sendEmail(admin.email, subject, html);
         } catch (err) {
-          logger.warn(`[cron] Échec envoi résumé admin à ${admin.email}`, { error: (err as Error).message });
+          logger.warn(`[cron] Échec envoi résumé admin à ${admin.email}`, {
+            error: (err as Error).message,
+          });
         }
         // Notification in-app (dédupliquée sur 24h)
         try {
@@ -366,11 +368,15 @@ export class CronService {
             });
           }
         } catch (err) {
-          logger.warn(`[cron] Échec notification résumé admin ${admin.id}`, { error: (err as Error).message });
+          logger.warn(`[cron] Échec notification résumé admin ${admin.id}`, {
+            error: (err as Error).message,
+          });
         }
       }
 
-      logger.info(`[cron] Résumé quotidien admin envoyé à ${admins.length} admin(s) — ${total} alertes`);
+      logger.info(
+        `[cron] Résumé quotidien admin envoyé à ${admins.length} admin(s) — ${total} alertes`
+      );
     } catch (err) {
       logger.error('CronService: adminDailyDigest failed', { error: (err as Error).message });
     }
@@ -507,7 +513,8 @@ export class CronService {
       {
         id: 'admin-daily-digest',
         name: 'Résumé quotidien admin',
-        description: 'Email + notification récapitulatifs des alertes à traiter (KYC, litiges, pubs, payouts, fraude)',
+        description:
+          'Email + notification récapitulatifs des alertes à traiter (KYC, litiges, pubs, payouts, fraude)',
         category: 'system',
         schedule: 'Chaque jour à 07:00',
         cron: '0 7 * * *',
@@ -927,7 +934,8 @@ export class CronService {
       {
         id: 'auto-unfreeze',
         name: 'Auto-dégel des comptes',
-        description: "Réactive automatiquement les comptes (users + business) dont le gel temporaire est expiré",
+        description:
+          'Réactive automatiquement les comptes (users + business) dont le gel temporaire est expiré',
         category: 'system',
         schedule: 'Toutes les 15 min',
         cron: '*/15 * * * *',
@@ -1353,7 +1361,9 @@ export class CronService {
     ]);
     const total = users.count + businesses.count;
     if (total > 0)
-      logger.info(`Cron: auto-unfreeze ${total} comptes (${users.count} users, ${businesses.count} business)`);
+      logger.info(
+        `Cron: auto-unfreeze ${total} comptes (${users.count} users, ${businesses.count} business)`
+      );
   }
 
   public static async dispatchCampaigns(): Promise<void> {

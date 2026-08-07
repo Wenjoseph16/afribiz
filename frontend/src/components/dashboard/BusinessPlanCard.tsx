@@ -53,9 +53,7 @@ export default function BusinessPlanCard() {
   });
 
   if (isLoading) {
-    return (
-      <div className="h-48 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />
-    );
+    return <div className="h-48 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />;
   }
 
   if (!plan) return null;
@@ -82,7 +80,9 @@ export default function BusinessPlanCard() {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              {plan.isPromo ? '0 FCFA/mois pendant le lancement' : `${plan.price.toLocaleString('fr-FR')} FCFA/mois`}
+              {plan.isPromo
+                ? '0 FCFA/mois pendant le lancement'
+                : `${plan.price.toLocaleString('fr-FR')} FCFA/mois`}
             </p>
           </div>
         </div>

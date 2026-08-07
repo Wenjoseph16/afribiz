@@ -3,10 +3,7 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 import { eventBus } from '../events/EventBus';
-import {
-  hasBusinessModule,
-  activeModuleAssignmentsSelect,
-} from '../lib/businessModules';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { DomainEventType, DomainEvent } from '../events/events';
 
 async function getBusinessByOwner(ownerId: string) {

@@ -62,7 +62,14 @@ export async function findSimilarBusinesses(
 
   const candidates = await prisma.business.findMany({
     where: { id: { not: businessId }, isActive: true, deletedAt: null, country: business.country },
-    select: { id: true, type: true, ...activeModuleAssignmentsSelect, city: true, rating: true, reviewCount: true },
+    select: {
+      id: true,
+      type: true,
+      ...activeModuleAssignmentsSelect,
+      city: true,
+      rating: true,
+      reviewCount: true,
+    },
     take: 100,
   });
 

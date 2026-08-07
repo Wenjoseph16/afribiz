@@ -2,10 +2,7 @@ import { DeliveryStatus, DriverStatus } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { getBusinessByOwner } from '../lib/businessAccess';
-import {
-  hasBusinessModule,
-  activeModuleAssignmentsSelect,
-} from '../lib/businessModules';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import {
   publishDeliveryAssigned,
   publishDeliveryStarted,

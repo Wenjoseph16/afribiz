@@ -92,7 +92,7 @@ function useAdminAlertQueue() {
         const res = await apiClient.adminGetAlertQueue();
         return res.data.data;
       } catch (error) {
-        console.warn('Erreur chargement file d\'alertes:', error);
+        console.warn("Erreur chargement file d'alertes:", error);
         return { alerts: [], total: 0, urgent: 0, generatedAt: new Date().toISOString() };
       }
     },
@@ -195,21 +195,24 @@ const severityStyles = (severity: string) => {
         badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
         dot: 'bg-amber-500',
         pulse: '',
-        border: 'border-amber-200 dark:border-amber-800 hover:border-amber-400 dark:hover:border-amber-600',
+        border:
+          'border-amber-200 dark:border-amber-800 hover:border-amber-400 dark:hover:border-amber-600',
       };
     case 'MEDIUM':
       return {
         badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
         dot: 'bg-blue-500',
         pulse: '',
-        border: 'border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600',
+        border:
+          'border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600',
       };
     default:
       return {
         badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
         dot: 'bg-gray-400',
         pulse: '',
-        border: 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500',
+        border:
+          'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500',
       };
   }
 };
@@ -275,7 +278,9 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between gap-3 mb-4 pt-4">
           <div className="flex items-center gap-2">
             <BellRing className="h-5 w-5 text-red-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">File d'alertes</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              File d'alertes
+            </h2>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />

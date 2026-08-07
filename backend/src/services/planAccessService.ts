@@ -115,8 +115,7 @@ export async function getBusinessPlanInfo(businessId: string) {
 export async function getBusinessPlanOverview(businessId: string) {
   const plan = await getPlanForBusiness(businessId);
   const safePlan =
-    plan ||
-    (await prisma.subscriptionPlan.findUnique({ where: { id: DEFAULT_PLAN_ID } }));
+    plan || (await prisma.subscriptionPlan.findUnique({ where: { id: DEFAULT_PLAN_ID } }));
 
   const privilegeValue = (code: string): number | null => {
     const priv = safePlan?.privileges?.find((p: any) => p.code === code);
@@ -141,9 +140,24 @@ export async function getBusinessPlanOverview(businessId: string) {
   }
 
   const quotas = [
-    { code: 'PRODUCTS_LIMIT', label: 'Produits au catalogue', used: usage.products, limit: privilegeValue('PRODUCTS_LIMIT') },
-    { code: 'CLIENTS_LIMIT', label: 'Clients CRM', used: usage.clients, limit: privilegeValue('CLIENTS_LIMIT') },
-    { code: 'BOOKINGS_LIMIT', label: 'Réservations', used: usage.bookings, limit: privilegeValue('BOOKINGS_LIMIT') },
+    {
+      code: 'PRODUCTS_LIMIT',
+      label: 'Produits au catalogue',
+      used: usage.products,
+      limit: privilegeValue('PRODUCTS_LIMIT'),
+    },
+    {
+      code: 'CLIENTS_LIMIT',
+      label: 'Clients CRM',
+      used: usage.clients,
+      limit: privilegeValue('CLIENTS_LIMIT'),
+    },
+    {
+      code: 'BOOKINGS_LIMIT',
+      label: 'Réservations',
+      used: usage.bookings,
+      limit: privilegeValue('BOOKINGS_LIMIT'),
+    },
   ];
 
   return {

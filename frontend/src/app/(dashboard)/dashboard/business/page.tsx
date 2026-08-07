@@ -93,13 +93,10 @@ const CopilotInsights = dynamic(
     loading: () => <div className="h-32 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
   }
 );
-const BusinessMorningBrief = dynamic(
-  () => import('@/components/dashboard/BusinessMorningBrief'),
-  {
-    ssr: false,
-    loading: () => <div className="h-40 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
-  }
-);
+const BusinessMorningBrief = dynamic(() => import('@/components/dashboard/BusinessMorningBrief'), {
+  ssr: false,
+  loading: () => <div className="h-40 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+});
 const BusinessPlanCard = dynamic(() => import('@/components/dashboard/BusinessPlanCard'), {
   ssr: false,
   loading: () => <div className="h-48 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,

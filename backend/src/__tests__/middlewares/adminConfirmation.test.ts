@@ -121,9 +121,9 @@ describe('requireAdminConfirmationInner', () => {
     (comparePasswords as jest.Mock).mockResolvedValue(false);
     for (let i = 0; i < 8; i++) {
       const req = makeReq({ body: { adminPassword: 'mauvais' } });
-      await expect(
-        requireAdminConfirmationInner(req, {} as any, jest.fn())
-      ).rejects.toBeInstanceOf(AppError);
+      await expect(requireAdminConfirmationInner(req, {} as any, jest.fn())).rejects.toBeInstanceOf(
+        AppError
+      );
     }
     // Avec un bon mot de passe, le verrou bloque AVANT la vérification
     (comparePasswords as jest.Mock).mockClear();

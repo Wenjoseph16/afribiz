@@ -172,13 +172,7 @@ export async function getBusinessAlertQueue(businessId: string) {
     'MEDIUM',
     '/dashboard/debts-payments'
   );
-  push(
-    'overdue-debts',
-    'Dettes en retard',
-    overdueDebts,
-    'CRITICAL',
-    '/dashboard/debts-payments'
-  );
+  push('overdue-debts', 'Dettes en retard', overdueDebts, 'CRITICAL', '/dashboard/debts-payments');
   push(
     'active-deliveries',
     'Livraisons en cours',

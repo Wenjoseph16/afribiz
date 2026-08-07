@@ -137,10 +137,7 @@ export default function AdminBusinessDetailPage() {
         window.location.href = '/dashboard';
       }, 600);
     } catch (e: any) {
-      showToast(
-        e?.response?.data?.message || e?.message || "Erreur d'impersonation",
-        'error'
-      );
+      showToast(e?.response?.data?.message || e?.message || "Erreur d'impersonation", 'error');
     } finally {
       setImpBusy(false);
     }
@@ -254,7 +251,12 @@ export default function AdminBusinessDetailPage() {
                 Dégeler
               </Button>
             ) : (
-              <Button size="sm" variant="outline" onClick={() => setFreezeOpen(true)} disabled={freezeBusy}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setFreezeOpen(true)}
+                disabled={freezeBusy}
+              >
                 <Snowflake className="h-4 w-4" />
                 Geler temporairement
               </Button>

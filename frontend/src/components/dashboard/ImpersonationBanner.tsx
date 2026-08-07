@@ -42,7 +42,9 @@ export function ImpersonationBanner() {
         <Eye className="h-4 w-4 shrink-0" />
         <p className="truncate">
           <strong>Mode voir-comme (lecture seule)</strong>
-          {target ? ` — vous observez le compte de ${target.firstName} ${target.lastName} (${target.email})` : ''}
+          {target
+            ? ` — vous observez le compte de ${target.firstName} ${target.lastName} (${target.email})`
+            : ''}
         </p>
       </div>
       <Button

@@ -141,7 +141,10 @@ export default function BusinessSubscriptionPage() {
         {plan?.benefits && plan.benefits.length > 0 && (
           <div className="grid sm:grid-cols-2 gap-2 mt-6 pt-6 border-t border-emerald-100 dark:border-emerald-900/30">
             {plan.benefits.map((b) => (
-              <div key={b} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <div
+                key={b}
+                className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
+              >
                 <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                 <span>{b}</span>
               </div>
@@ -157,7 +160,9 @@ export default function BusinessSubscriptionPage() {
             {plan.quotas.map((q) => {
               const Icon = QUOTA_ICONS[q.code] || Boxes;
               const unlimited = q.limit === null;
-              const pct = unlimited ? 0 : Math.min(100, Math.round((q.used / (q.limit || 1)) * 100));
+              const pct = unlimited
+                ? 0
+                : Math.min(100, Math.round((q.used / (q.limit || 1)) * 100));
               const warn = !unlimited && pct >= 80;
               return (
                 <div key={q.code}>
@@ -204,7 +209,10 @@ export default function BusinessSubscriptionPage() {
       </Card>
 
       {/* Copilot inclus */}
-      <Card padding="lg" className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-purple-200/50">
+      <Card
+        padding="lg"
+        className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-purple-200/50"
+      >
         <div className="flex items-start gap-4">
           <div className="p-3 rounded-xl shrink-0 bg-purple-100 dark:bg-purple-900/40">
             <Bot className="h-6 w-6 text-purple-600" />
@@ -238,7 +246,10 @@ export default function BusinessSubscriptionPage() {
           <li>1% de commission sur chaque transaction réussie (Mobile Money, carte)</li>
           <li>2% de commission sur le service Escrow (tiers de confiance)</li>
           <li>Aucun abonnement à payer pendant la promo de lancement</li>
-          <li>Après le lancement, AfriBiz passera à 5 000 FCFA/mois — les commissions resteront identiques</li>
+          <li>
+            Après le lancement, AfriBiz passera à 5 000 FCFA/mois — les commissions resteront
+            identiques
+          </li>
         </ul>
       </div>
     </div>

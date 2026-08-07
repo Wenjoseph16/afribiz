@@ -1,19 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import {
-  Shield,
-  Plus,
-  Settings,
-  Users,
-  UserCog,
-  Trash2,
-  Check,
-  X,
-  Search,
-  Save,
-  ChevronRight,
-} from 'lucide-react';
+import { Shield, Plus, Settings, Users, UserCog, Trash2, Check, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Card } from '@/components/ui/Card';
@@ -23,9 +11,12 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { Modal } from '@/components/ui/Modal';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { PageHeader } from '@/components/dashboard/PageHeader';
+import { useToast } from '@/components/ui/ToastProvider';
 import { apiClient } from '@/services/apiClient';
+import { AlertTriangle } from 'lucide-react';
 
 const RESOURCES = [
   'users',
@@ -53,18 +44,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   support: 'Support',
 };
 
-const ACTIONS = [
-  'READ',
-  'CREATE',
-  'UPDATE',
-  'DELETE',
-  'APPROVE',
-  'REJECT',
-  'SUSPEND',
-  'BAN',
-  'EXPORT',
-  'CONFIGURE',
-];
+const ACTIONS = ['READ', 'CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'SUSPEND', 'BAN'];
 
 const ACTION_LABELS: Record<string, string> = {
   READ: 'Lecture',
@@ -75,173 +55,20 @@ const ACTION_LABELS: Record<string, string> = {
   REJECT: 'Rejet',
   SUSPEND: 'Suspension',
   BAN: 'Bannissement',
-  EXPORT: 'Export',
-  CONFIGURE: 'Configuration',
 };
 
-const MOCK_ROLES = [
-  {
-    id: '1',
-    name: 'Super Admin',
-    description: 'Accès complet à toutes les fonctionnalités',
-    isSystem: true,
-    userCount: 2,
-  },
-  {
-    id: '2',
-    name: 'Finance',
-    description: 'Gestion financière et transactions',
-    isSystem: true,
-    userCount: 3,
-  },
-  {
-    id: '3',
-    name: 'Support',
-    description: 'Support client et gestion des tickets',
-    isSystem: true,
-    userCount: 5,
-  },
-  {
-    id: '4',
-    name: 'Modération',
-    description: 'Modération des contenus et signalements',
-    isSystem: true,
-    userCount: 4,
-  },
-  {
-    id: '5',
-    name: 'Marketing',
-    description: 'Campagnes marketing et publicités',
-    isSystem: false,
-    userCount: 2,
-  },
-  {
-    id: '6',
-    name: 'Product',
-    description: 'Gestion des produits et fonctionnalités',
-    isSystem: false,
-    userCount: 1,
-  },
-];
-
-const MOCK_PERMISSIONS: Record<string, string[]> = {
-  '1': [
-    'READ',
-    'CREATE',
-    'UPDATE',
-    'DELETE',
-    'APPROVE',
-    'REJECT',
-    'SUSPEND',
-    'BAN',
-    'EXPORT',
-    'CONFIGURE',
-  ],
-  '2': ['READ', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT'],
-  '3': ['READ', 'UPDATE', 'APPROVE', 'REJECT', 'SUSPEND'],
-  '4': ['READ', 'UPDATE', 'APPROVE', 'REJECT', 'SUSPEND', 'BAN'],
-  '5': ['READ', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT'],
-  '6': ['READ', 'CREATE', 'UPDATE', 'DELETE'],
-};
-
-const MOCK_PERMISSION_GRID: Record<string, Record<string, boolean>> = {
-  '1': {
-    READ: true,
-    CREATE: true,
-    UPDATE: true,
-    DELETE: true,
-    APPROVE: true,
-    REJECT: true,
-    SUSPEND: true,
-    BAN: true,
-    EXPORT: true,
-    CONFIGURE: true,
-  },
-  '2': {
-    READ: true,
-    CREATE: true,
-    UPDATE: true,
-    DELETE: true,
-    APPROVE: false,
-    REJECT: false,
-    SUSPEND: false,
-    BAN: false,
-    EXPORT: true,
-    CONFIGURE: false,
-  },
-  '3': {
-    READ: true,
-    CREATE: false,
-    UPDATE: true,
-    DELETE: false,
-    APPROVE: true,
-    REJECT: true,
-    SUSPEND: true,
-    BAN: false,
-    EXPORT: false,
-    CONFIGURE: false,
-  },
-  '4': {
-    READ: true,
-    CREATE: false,
-    UPDATE: true,
-    DELETE: false,
-    APPROVE: true,
-    REJECT: true,
-    SUSPEND: true,
-    BAN: true,
-    EXPORT: false,
-    CONFIGURE: false,
-  },
-  '5': {
-    READ: true,
-    CREATE: true,
-    UPDATE: true,
-    DELETE: true,
-    APPROVE: false,
-    REJECT: false,
-    SUSPEND: false,
-    BAN: false,
-    EXPORT: true,
-    CONFIGURE: false,
-  },
-  '6': {
-    READ: true,
-    CREATE: true,
-    UPDATE: true,
-    DELETE: true,
-    APPROVE: false,
-    REJECT: false,
-    SUSPEND: false,
-    BAN: false,
-    EXPORT: false,
-    CONFIGURE: false,
-  },
-};
-
-const MOCK_USERS: Record<string, any[]> = {
-  '1': [
-    { id: 'u1', name: 'Admin Principal', email: 'super@afribiz.com', roles: ['ADMIN'] },
-    { id: 'u2', name: 'Admin Secondaire', email: 'admin2@afribiz.com', roles: ['ADMIN'] },
-  ],
-  '2': [
-    { id: 'u3', name: 'Fatoumata Diallo', email: 'fatou@afribiz.com', roles: ['ADMIN'] },
-    { id: 'u4', name: 'Moussa Koné', email: 'moussa@afribiz.com', roles: ['ADMIN'] },
-    { id: 'u5', name: 'Aminata Traoré', email: 'amina@afribiz.com', roles: ['ADMIN'] },
-  ],
-  '3': [{ id: 'u6', name: 'Ousmane Sissoko', email: 'ousmane@afribiz.com', roles: ['ADMIN'] }],
-};
+interface AdminPermission {
+  id: string;
+  resource: string;
+  action: string;
+}
 
 function useRoles() {
   return useQuery({
     queryKey: ['admin', 'roles'],
     queryFn: async () => {
-      try {
-        const res = await apiClient.adminGetRoles();
-        return res.data.data;
-      } catch {
-        return MOCK_ROLES;
-      }
+      const res = await apiClient.adminGetRoles();
+      return res.data.data;
     },
   });
 }
@@ -250,45 +77,79 @@ function useAdminUsers() {
   return useQuery({
     queryKey: ['admin', 'users', 'admins'],
     queryFn: async () => {
-      try {
-        const res = await apiClient.adminGetUsersAdmins();
-        return res.data.data;
-      } catch {
-        return Object.values(MOCK_USERS).flat();
-      }
+      const res = await apiClient.adminGetUsersAdmins();
+      return res.data.data;
     },
   });
 }
 
+function usePermissions() {
+  return useQuery({
+    queryKey: ['admin', 'permissions'],
+    queryFn: async () => {
+      const res = await apiClient.get('/admin/permissions');
+      return res.data.data as AdminPermission[];
+    },
+  });
+}
+
+function permissionIdsForRole(role: any): Set<string> {
+  const ids = new Set<string>();
+  for (const p of role?.permissions || []) {
+    const permId = p?.permission?.id || p?.permissionId;
+    if (permId) ids.add(permId);
+  }
+  return ids;
+}
+
 export default function AdminRolesPage() {
   const qc = useQueryClient();
-  const [selectedRoleId, setSelectedRoleId] = useState<string | null>('1');
+  const { notify } = useToast();
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [unassignTarget, setUnassignTarget] = useState<{ userId: string; userName: string } | null>(
     null
   );
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [newRole, setNewRole] = useState({ name: '', description: '' });
   const [assignUserId, setAssignUserId] = useState('');
 
-  const { data: roles, isLoading: rolesLoading } = useRoles();
-  const { data: adminUsers } = useAdminUsers();
+  const {
+    data: roles,
+    isLoading: rolesLoading,
+    isError: rolesError,
+    refetch: refetchRoles,
+  } = useRoles();
+  const { data: adminUsers, isError: usersError, refetch: refetchUsers } = useAdminUsers();
+  const { data: rawPermissions, isError: permsError, refetch: refetchPerms } = usePermissions();
 
-  const roleList = Array.isArray(roles) ? roles : MOCK_ROLES;
-  const allUsers = Array.isArray(adminUsers) ? adminUsers : Object.values(MOCK_USERS).flat();
-
-  // Build permission grid from API or mock
-  const [permGrid, setPermGrid] = useState<Record<string, Record<string, boolean>>>(() => {
-    const saved = sessionStorage.getItem('admin_perm_grid');
-    if (saved) return JSON.parse(saved);
-    return MOCK_PERMISSION_GRID;
-  });
+  const roleList = Array.isArray(roles) ? roles : [];
+  const allUsers = Array.isArray(adminUsers) ? adminUsers : [];
 
   const selectedRole = roleList.find((r: any) => r.id === selectedRoleId) || null;
-  const rolePermissions = selectedRoleId ? permGrid[selectedRoleId] || {} : {};
-  const assignedUsers = selectedRoleId ? MOCK_USERS[selectedRoleId] || [] : [];
+
+  // Map (resource, action) -> permission id from the flat permission list
+  const permissionIdByKey = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const perm of Array.isArray(rawPermissions) ? rawPermissions : []) {
+      map[`${perm.resource}_${perm.action}`] = perm.id;
+    }
+    return map;
+  }, [rawPermissions]);
+
+  const enabledIds = useMemo(
+    () => (selectedRole ? permissionIdsForRole(selectedRole) : new Set<string>()),
+    [selectedRole]
+  );
+
+  const assignedUsers = useMemo(
+    () => allUsers.filter((u: any) => (u.roles || []).some((r: any) => r.id === selectedRoleId)),
+    [allUsers, selectedRoleId]
+  );
+
+  const hasError = rolesError || usersError || permsError;
+  const isLoading = rolesLoading;
 
   const createMutation = useMutation({
     mutationFn: (data: any) => apiClient.adminCreateRole(data),
@@ -296,9 +157,14 @@ export default function AdminRolesPage() {
       qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
       setShowCreateModal(false);
       setNewRole({ name: '', description: '' });
-      setToast({ message: 'Rôle créé avec succès', type: 'success' });
+      notify({ title: 'Rôle créé', variant: 'success' });
     },
-    onError: () => setToast({ message: 'Erreur lors de la création', type: 'error' }),
+    onError: () =>
+      notify({
+        title: 'Erreur',
+        description: 'Échec de la création du rôle.',
+        variant: 'error',
+      }),
   });
 
   const assignMutation = useMutation({
@@ -306,11 +172,17 @@ export default function AdminRolesPage() {
       apiClient.adminAssignRole({ roleId, userId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'users', 'admins'] });
       setShowAssignModal(false);
       setAssignUserId('');
-      setToast({ message: 'Utilisateur assigné au rôle', type: 'success' });
+      notify({ title: 'Utilisateur assigné au rôle', variant: 'success' });
     },
-    onError: () => setToast({ message: "Erreur lors de l'assignation", type: 'error' }),
+    onError: () =>
+      notify({
+        title: 'Erreur',
+        description: "Échec de l'assignation.",
+        variant: 'error',
+      }),
   });
 
   const unassignMutation = useMutation({
@@ -318,33 +190,46 @@ export default function AdminRolesPage() {
       apiClient.adminUnassignRole({ roleId, userId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
-      setToast({ message: 'Utilisateur retiré du rôle', type: 'success' });
+      qc.invalidateQueries({ queryKey: ['admin', 'users', 'admins'] });
+      notify({ title: 'Utilisateur retiré du rôle', variant: 'success' });
     },
-    onError: () => setToast({ message: 'Erreur lors du retrait', type: 'error' }),
+    onError: () => notify({ title: 'Erreur', description: 'Échec du retrait.', variant: 'error' }),
+  });
+
+  const permissionMutation = useMutation({
+    mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
+      apiClient.put(`/admin/roles/${roleId}`, { permissionIds }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'roles'] });
+    },
+    onError: () =>
+      notify({
+        title: 'Erreur',
+        description: 'Échec de la mise à jour des permissions.',
+        variant: 'error',
+      }),
   });
 
   const togglePermission = (resource: string, action: string) => {
-    if (!selectedRoleId) return;
-    if (selectedRole?.isSystem) return;
+    if (!selectedRole || !selectedRoleId || selectedRole.isSystem) return;
+    const key = `${resource}_${action}`;
+    const permId = permissionIdByKey[key];
+    if (!permId) return;
 
-    const newActions = { ...((permGrid as any)?.[selectedRoleId]?.[resource] || {}) };
-    newActions[action] = !newActions[action];
-    setPermGrid((prev) => {
-      const updated = {
-        ...prev,
-        [selectedRoleId]: {
-          ...prev[selectedRoleId],
-          [resource]: newActions,
-        },
-      };
-      return updated;
-    });
-    apiClient
-      .put(`/admin/roles/${selectedRoleId}`, { permissions: { [resource]: newActions } })
-      .catch((err) => {
-        console.error('Failed to update permissions:', err);
-      });
+    const next = new Set(enabledIds);
+    if (next.has(permId)) {
+      next.delete(permId);
+    } else {
+      next.add(permId);
+    }
+    permissionMutation.mutate({ roleId: selectedRoleId, permissionIds: [...next] });
   };
+
+  const isEnabled = (resource: string, action: string) =>
+    enabledIds.has(permissionIdByKey[`${resource}_${action}`] || '');
+
+  const hasPermissionEntry = (resource: string, action: string) =>
+    Boolean(permissionIdByKey[`${resource}_${action}`]);
 
   const handleAssign = () => {
     if (!selectedRoleId || !assignUserId) return;
@@ -356,23 +241,14 @@ export default function AdminRolesPage() {
     setUnassignTarget({ userId, userName });
   };
 
+  const retryAll = () => {
+    refetchRoles();
+    refetchUsers();
+    refetchPerms();
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {toast && (
-        <div
-          className={`p-3 rounded-xl text-sm font-medium ${
-            toast.type === 'success'
-              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-              : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-          }`}
-        >
-          {toast.message}
-          <button onClick={() => setToast(null)} className="float-right ml-2 font-bold">
-            &times;
-          </button>
-        </div>
-      )}
-
       <PageHeader
         title="Gestion des rôles"
         description="Gérez les rôles administrateurs et leurs permissions"
@@ -389,53 +265,70 @@ export default function AdminRolesPage() {
         }
       />
 
-      {rolesLoading ? (
+      {isLoading && rolesLoading ? (
         <Loader className="py-20" />
+      ) : hasError ? (
+        <Card padding="none">
+          <ErrorState
+            icon={<AlertTriangle className="h-8 w-8" />}
+            title="Impossible de charger les rôles"
+            message="Le service de gouvernance est injoignable. Vérifiez votre connexion ou réessayez."
+            onRetry={retryAll}
+          />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left panel - Roles list */}
           <div className="lg:col-span-1 space-y-3">
             <Card title="Rôles" titleIcon={<UserCog className="h-4 w-4" />}>
               <div className="space-y-1">
-                {roleList.map((role: any) => (
-                  <button
-                    key={role.id}
-                    onClick={() => setSelectedRoleId(role.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center justify-between ${
-                      selectedRoleId === role.id
-                        ? 'bg-brand text-white shadow-sm'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Shield
-                        className={`h-4 w-4 ${selectedRoleId === role.id ? 'text-white' : 'text-gray-400'}`}
-                      />
-                      <div>
-                        <span className="font-semibold">{role.name}</span>
-                        {role.isSystem && (
-                          <Badge
-                            variant={selectedRoleId === role.id ? 'brand' : 'default'}
-                            size="xs"
-                            className="ml-2"
-                          >
-                            Système
-                          </Badge>
-                        )}
+                {roleList.length > 0 ? (
+                  roleList.map((role: any) => (
+                    <button
+                      key={role.id}
+                      onClick={() => setSelectedRoleId(role.id)}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center justify-between ${
+                        selectedRoleId === role.id
+                          ? 'bg-brand text-white shadow-sm'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Shield
+                          className={`h-4 w-4 ${selectedRoleId === role.id ? 'text-white' : 'text-gray-400'}`}
+                        />
+                        <div>
+                          <span className="font-semibold">{role.name}</span>
+                          {role.isSystem && (
+                            <Badge
+                              variant={selectedRoleId === role.id ? 'brand' : 'default'}
+                              size="xs"
+                              className="ml-2"
+                            >
+                              Système
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-xs ${selectedRoleId === role.id ? 'text-white/70' : 'text-gray-400'}`}
-                      >
-                        {role.userCount || 0} membre{(role.userCount || 0) > 1 ? 's' : ''}
-                      </span>
-                      <ChevronRight
-                        className={`h-3.5 w-3.5 ${selectedRoleId === role.id ? 'text-white/70' : 'text-gray-300'}`}
-                      />
-                    </div>
-                  </button>
-                ))}
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs ${selectedRoleId === role.id ? 'text-white/70' : 'text-gray-400'}`}
+                        >
+                          {role._count?.admins ?? 0} membre
+                        </span>
+                        <ChevronRight
+                          className={`h-3.5 w-3.5 ${selectedRoleId === role.id ? 'text-white/70' : 'text-gray-300'}`}
+                        />
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <EmptyState
+                    icon={<Shield className="h-6 w-6" />}
+                    title="Aucun rôle"
+                    description="Créez votre premier rôle administrateur."
+                  />
+                )}
               </div>
             </Card>
           </div>
@@ -496,26 +389,32 @@ export default function AdminRolesPage() {
                               {RESOURCE_LABELS[resource]}
                             </td>
                             {ACTIONS.map((action) => {
-                              const checked = !!(rolePermissions[resource] as any)?.[
-                                action as string
-                              ];
-                              return (
+                              const exists = hasPermissionEntry(resource, action);
+                              const checked = exists && isEnabled(resource, action);
+                              return exists ? (
                                 <td key={action} className="py-2.5 px-2 text-center">
                                   <button
                                     onClick={() => togglePermission(resource, action)}
-                                    disabled={selectedRole?.isSystem}
+                                    disabled={selectedRole.isSystem || permissionMutation.isPending}
                                     className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
                                       checked
                                         ? 'bg-brand text-white'
                                         : 'bg-gray-100 dark:bg-gray-700 text-gray-300 dark:text-gray-600'
-                                    } ${selectedRole?.isSystem ? 'cursor-not-allowed opacity-50' : 'hover:opacity-80 cursor-pointer'}`}
+                                    } ${
+                                      selectedRole.isSystem || permissionMutation.isPending
+                                        ? 'cursor-not-allowed opacity-50'
+                                        : 'hover:opacity-80 cursor-pointer'
+                                    }`}
+                                    title={selectedRole.isSystem ? 'Rôle système verrouillé' : ''}
                                   >
-                                    {checked ? (
-                                      <Check className="h-3.5 w-3.5" />
-                                    ) : (
-                                      <X className="h-3.5 w-3.5" />
-                                    )}
+                                    <Check
+                                      className={`h-3.5 w-3.5 ${checked ? '' : 'opacity-0'}`}
+                                    />
                                   </button>
+                                </td>
+                              ) : (
+                                <td key={action} className="py-2.5 px-2 text-center">
+                                  <span className="text-gray-300 dark:text-gray-600">—</span>
                                 </td>
                               );
                             })}
@@ -524,13 +423,10 @@ export default function AdminRolesPage() {
                       </tbody>
                     </table>
                   </div>
-                  {!selectedRole?.isSystem && (
-                    <div className="mt-4 flex justify-end">
-                      <Button size="sm">
-                        <Save className="h-4 w-4" />
-                        Enregistrer
-                      </Button>
-                    </div>
+                  {selectedRole.isSystem && (
+                    <p className="mt-3 text-xs text-gray-400">
+                      Les rôles système sont verrouillés et ne peuvent pas être modifiés.
+                    </p>
                   )}
                 </Card>
 
@@ -547,32 +443,35 @@ export default function AdminRolesPage() {
                 >
                   {assignedUsers.length > 0 ? (
                     <div className="space-y-2">
-                      {assignedUsers.map((u: any) => (
-                        <div
-                          key={u.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-sm font-bold text-brand shrink-0">
-                              {u.name?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                {u.name}
-                              </p>
-                              <p className="text-xs text-gray-500">{u.email}</p>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => handleUnassign(u.id, u.name)}
-                            isLoading={unassignMutation.isPending}
+                      {assignedUsers.map((u: any) => {
+                        const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email;
+                        return (
+                          <div
+                            key={u.id}
+                            className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50"
                           >
-                            <Trash2 className="h-3.5 w-3.5 text-red-400" />
-                          </Button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-sm font-bold text-brand shrink-0">
+                                {name[0]?.toUpperCase() || 'U'}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                  {name}
+                                </p>
+                                <p className="text-xs text-gray-500">{u.email}</p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => handleUnassign(u.id, name)}
+                              isLoading={unassignMutation.isPending}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                            </Button>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <EmptyState
@@ -654,8 +553,11 @@ export default function AdminRolesPage() {
             onChange={(e) => setAssignUserId(e.target.value)}
             placeholder="Sélectionnez un utilisateur"
             options={allUsers
-              .filter((u: any) => !assignedUsers.find((au: any) => au.id === u.id))
-              .map((u: any) => ({ value: u.id, label: `${u.name} (${u.email})` }))}
+              .filter((u: any) => !(u.roles || []).some((r: any) => r.id === selectedRoleId))
+              .map((u: any) => ({
+                value: u.id,
+                label: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+              }))}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button

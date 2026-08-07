@@ -70,26 +70,57 @@ export default function BusinessMorningBrief() {
   // metrics est un Json nullable en base — toujours protéger l'accès
   const m = brief.metrics || {};
   const metrics = [
-    { icon: ShoppingBag, label: 'Commandes du jour', value: m.ordersToday, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30' },
-    { icon: CalendarCheck2, label: 'Réservations du jour', value: m.bookingsToday, color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30' },
-    { icon: MessageCircle, label: 'Messages non lus', value: m.unreadMessages, color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/30' },
-    { icon: ListTodo, label: 'Tâches en retard', value: m.tasksDue, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
-    { icon: Clock, label: 'Paiements en attente', value: m.paymentsPending, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' },
-    { icon: Percent, label: 'Promos actives', value: m.activePromotions, color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30' },
+    {
+      icon: ShoppingBag,
+      label: 'Commandes du jour',
+      value: m.ordersToday,
+      color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30',
+    },
+    {
+      icon: CalendarCheck2,
+      label: 'Réservations du jour',
+      value: m.bookingsToday,
+      color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30',
+    },
+    {
+      icon: MessageCircle,
+      label: 'Messages non lus',
+      value: m.unreadMessages,
+      color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/30',
+    },
+    {
+      icon: ListTodo,
+      label: 'Tâches en retard',
+      value: m.tasksDue,
+      color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30',
+    },
+    {
+      icon: Clock,
+      label: 'Paiements en attente',
+      value: m.paymentsPending,
+      color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30',
+    },
+    {
+      icon: Percent,
+      label: 'Promos actives',
+      value: m.activePromotions,
+      color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30',
+    },
   ];
 
   const topAdvice = (brief.advice || []).slice(0, 3);
 
   return (
-    <Card padding="lg" className="bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-amber-950/20 dark:via-gray-900 dark:to-orange-950/20 border-amber-100 dark:border-amber-900/40">
+    <Card
+      padding="lg"
+      className="bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-amber-950/20 dark:via-gray-900 dark:to-orange-950/20 border-amber-100 dark:border-amber-900/40"
+    >
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
           <Sunrise className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-            Brief du matin
-          </h3>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Brief du matin</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {brief.date
               ? new Date(brief.date).toLocaleDateString('fr-FR', {

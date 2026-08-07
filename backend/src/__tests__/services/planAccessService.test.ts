@@ -61,7 +61,9 @@ describe('planAccessService', () => {
     (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue({ planId: null });
     (mockPrisma.subscriptionPlan.findUnique as jest.Mock).mockResolvedValue(afribizPlan);
 
-    await expect(checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 500, 'produits')).resolves.toBeUndefined();
+    await expect(
+      checkPlanLimit('biz-1', 'PRODUCTS_LIMIT', 500, 'produits')
+    ).resolves.toBeUndefined();
   });
 
   it('bloque quand la limite du plan explicite est atteinte', async () => {

@@ -2,10 +2,7 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { publishUpcomingEvent } from '../events/publishers';
 import { toDataURL } from 'qrcode';
-import {
-  hasBusinessModule,
-  activeModuleAssignmentsSelect,
-} from '../lib/businessModules';
+import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 // ===== Helper =====
 async function getBusiness(userId: string) {

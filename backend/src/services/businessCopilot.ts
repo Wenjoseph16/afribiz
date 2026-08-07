@@ -2,10 +2,7 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 import { cache } from '../lib/cache';
-import {
-  resolveBusinessModules,
-  activeModuleAssignmentsSelect,
-} from '../lib/businessModules';
+import { resolveBusinessModules, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 /**
  * Valeurs par défaut des poids pour le calcul du health score (utilisées

@@ -250,11 +250,7 @@ export default function AdminFraudReportsPage() {
                             </Button>
                           </>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => handleBan(r.id)}
-                        >
+                        <Button variant="ghost" size="xs" onClick={() => handleBan(r.id)}>
                           <Ban className="h-3.5 w-3.5 text-amber-500" /> Bannir cible
                         </Button>
                       </div>

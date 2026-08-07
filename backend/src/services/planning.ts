@@ -9,7 +9,8 @@ async function getBusinessByOwner(ownerId: string) {
     select: { id: true, name: true, ...activeModuleAssignmentsSelect, settings: true },
   });
   if (!business) throw new AppError('Business not found', 404);
-  if (!hasBusinessModule(business, 'PLANNING')) throw new AppError('Module Planning non activé', 403);
+  if (!hasBusinessModule(business, 'PLANNING'))
+    throw new AppError('Module Planning non activé', 403);
   return business;
 }
 
