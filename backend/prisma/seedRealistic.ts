@@ -784,6 +784,48 @@ async function seedWhatsApp() {
 // 10. WALLETS + TRANSACTIONS (business)
 // ============================================================
 // ============================================================
+// 7a. CAMPAGNES MARKETING (module MARKETING — resto Saveur d'Abidjan)
+// Des campagnes réelles avec ouvertures/clics pour alimenter la page marketing
+// et le tracking public /api/track/campaign/:id.
+// ============================================================
+async function seedMarketing() {
+  const campaigns: any[] = [
+    {
+      id: 'cmp-1', businessId: B.RESTO, name: 'Offre plat du jour',
+      description: 'Promotion WhatsApp du plat du jour — envoyée aux 3 clients avec téléphone.',
+      channels: ['WHATSAPP'], message: 'Bonjour {{1}} 🍛 Le plat du jour est là ! Commandez avant 14h.',
+      targetAudience: 'Clients avec téléphone',
+      sentAt: new Date('2026-07-20'), status: 'COMPLETED',
+      sentCount: 3, openedCount: 2, clickedCount: 1,
+    },
+    {
+      id: 'cmp-2', businessId: B.RESTO, name: 'Satisfaction client Août',
+      description: 'Campagne de satisfaction envoyée en début de mois.',
+      channels: ['WHATSAPP', 'EMAIL'], message: 'Bonjour {{1}} ⭐ Comment s\'est passée votre expérience ?',
+      targetAudience: 'Clients fidèles',
+      sentAt: new Date('2026-08-02'), status: 'COMPLETED',
+      sentCount: 3, openedCount: 1, clickedCount: 1,
+    },
+    {
+      id: 'cmp-3', businessId: B.RESTO, name: 'Promo Rentrée scolaire',
+      description: 'Offre spéciale rentrée — brouillon prêt à envoyer.',
+      channels: ['WHATSAPP'], message: 'Bonjour {{1}} 🎒 Offre spéciale rentrée : -20% sur les plats à emporter !',
+      targetAudience: 'Tous les clients',
+      scheduledAt: new Date('2026-09-01'), status: 'DRAFT',
+      sentCount: 0, openedCount: 0, clickedCount: 0,
+    },
+  ];
+  for (const c of campaigns) {
+    await prisma.marketingCampaign.upsert({
+      where: { id: c.id },
+      update: {},
+      create: { id: c.id, businessId: c.businessId, name: c.name, description: c.description, channels: c.channels, message: c.message, targetAudience: c.targetAudience, scheduledAt: c.scheduledAt || null, sentAt: c.sentAt || null, status: c.status, sentCount: c.sentCount, openedCount: c.openedCount, clickedCount: c.clickedCount },
+    });
+  }
+  console.log('✓ Marketing : 3 campagnes réelles (2 envoyées avec ouvertures/clics + 1 brouillon)');
+}
+
+// ============================================================
 // 7b. TONTINE / ÉPARGNE (module SAVINGS — salon Kenza Beauté)
 // Un vrai groupe de tontine avec membres, cycle en cours et cotisations.
 // ============================================================
@@ -825,7 +867,7 @@ async function seedSavings() {
     create: {
       id: 'sc-sal-1', groupId: 'sg-sal-1', cycleNumber: 1,
       startDate: new Date('2026-07-01'), status: 'ACTIVE',
-      totalAmount: 50000, totalCollected: 30000, totalDistributed: 20000,
+      totalAmount: 50000, totalCollected: 30000, totalDistributed: 10000,
       payoutDate: new Date('2026-07-28'),
     },
   });
@@ -1360,6 +1402,7 @@ export async function seedRealistic() {
   await seedDevelopers();
   await seedMessages();
   await seedWhatsApp();
+  await seedMarketing();
   await seedSavings();
   await seedWallets();
   await seedCms();

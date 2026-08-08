@@ -194,8 +194,8 @@ export async function sendCampaignViaWhatsApp(
         },
       });
     }
-    // Lien de tracking public : incrémente openedCount (puis redirige vers la page publique)
-    const trackLink = `${config.BACKEND_URL || 'http://localhost:3001'}/api/track/campaign/${campaign.id}?action=open&redirect=/business/${business.slug}`;
+    // Lien de tracking public : un clic = ouverture + clic, puis redirection vers la page publique
+    const trackLink = `${config.BACKEND_URL || 'http://localhost:3001'}/api/track/campaign/${campaign.id}?action=click&redirect=/business/${business.slug}`;
     await prisma.whatsAppMessage.create({
       data: {
         sessionId: session.id,

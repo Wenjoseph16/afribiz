@@ -1,5 +1,4 @@
-import { Response } from 'express';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { prisma } from '../lib/db';
 import { logger } from '../lib/logger';
 import { config } from '../config/env';
@@ -24,11 +23,13 @@ export async function trackCampaignAction(req: Request, res: Response): Promise<
       : null;
 
   // 1) Incrément (fire-and-forget, tolérant aux erreurs)
+  // Sémantique : un lien cliqué depuis WhatsApp/SMS/email compte comme OUVERTURE + CLIC.
+  // Le pixel 1x1 (action=open, emails) ne compte que l'ouverture.
   try {
     if (action === 'click') {
       await prisma.marketingCampaign.update({
         where: { id: campaignId },
-        data: { clickedCount: { increment: 1 } },
+        data: { openedCount: { increment: 1 }, clickedCount: { increment: 1 } },
       });
     } else {
       await prisma.marketingCampaign.update({
