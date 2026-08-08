@@ -75,8 +75,10 @@ export default function PlanningPage() {
     ? tasksData
     : tasksData?.tasks || tasksData?.data || [];
 
-  const stats = statsData || {
-    total: allTasks.length,
+  // Les clés du backend sont totalTasks/todoTasks/overdueTasks — on calcule les 4 KPI
+  // depuis les tâches chargées (précis et immunisé contre les écarts de forme).
+  const stats = {
+    total: statsData?.totalTasks ?? allTasks.length,
     completed: allTasks.filter((t) => t.status === 'DONE').length,
     pending: allTasks.filter((t) => t.status === 'TODO').length,
     overdue: allTasks.filter(
