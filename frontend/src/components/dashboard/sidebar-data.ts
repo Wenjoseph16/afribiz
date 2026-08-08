@@ -2,6 +2,7 @@ import type { NavGroup } from '@/constants/index';
 import {
   LayoutDashboard,
   Globe,
+  PiggyBank,
   Users,
   MessageCircle,
   Star,
@@ -79,6 +80,7 @@ import {
 export const iconMap: Record<string, React.ComponentType<any>> = {
   LayoutDashboard,
   Globe,
+  PiggyBank,
   Users,
   MessageCircle,
   Star,
@@ -357,6 +359,12 @@ export const BUSINESS_CORE_NAV: NavGroup[] = [
         href: '/dashboard/business/orders',
         icon: 'ShoppingCart',
         module: 'ORDERS',
+      },
+      {
+        label: 'Épargne Achat',
+        href: '/dashboard/business/layaway',
+        icon: 'PiggyBank',
+        module: 'SAVINGS',
       },
       {
         label: 'Réservations',

@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { Product } from '@/types/business';
 import {
   ShoppingCart,
@@ -13,11 +15,13 @@ import {
   Sparkles,
   TrendingUp,
   Clock,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/helpers';
 import { ProductViewTracker, useProductClick } from '@/components/customer360/ProductTracker';
 import { useCartStore } from '@/stores/cartStore';
+import { apiClient } from '@/services/apiClient';
 
 interface ProductsProps {
   businessId: string;
@@ -28,6 +32,7 @@ interface ProductsProps {
 type ProductFilter = 'all' | 'featured' | 'popular' | 'recent' | 'sale';
 
 export function Products({ businessId, businessName, products }: ProductsProps) {
+  const router = useRouter();
   const trackClick = useProductClick();
   const addItem = useCartStore((s) => s.addItem);
   const openDrawer = useCartStore((s) => s.openDrawer);
@@ -35,6 +40,43 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<ProductFilter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [layawayStarting, setLayawayStarting] = useState<string | null>(null);
+
+  // Badge 🔒 Épargne — offres actives sur les produits de ce business (1 seul appel)
+  const productIds = useMemo(() => products.map((p) => p.id), [products]);
+  const { data: layawayMap } = useQuery({
+    queryKey: ['layaway-offers', businessId, productIds],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getActiveLayawayOffers('PRODUCT', productIds);
+        return res.data.data?.offers || {};
+      } catch {
+        return {};
+      }
+    },
+    enabled: productIds.length > 0,
+    staleTime: 60_000,
+  });
+
+  const handleLayaway = async (product: Product) => {
+    const offer = (layawayMap || {})[product.id];
+    if (!offer) return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token) {
+      router.push('/login?redirect=/dashboard/my-layaway');
+      return;
+    }
+    setLayawayStarting(product.id);
+    try {
+      await apiClient.createLayawayPlan(offer.id);
+      router.push('/dashboard/my-layaway');
+    } catch {
+      // Plan déjà existant → on y va quand même
+      router.push('/dashboard/my-layaway');
+    } finally {
+      setLayawayStarting(null);
+    }
+  };
 
   if (!products?.length) return null;
 
@@ -213,6 +255,11 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
                         -{product.discountPercent || ''}%
                       </span>
                     )}
+                    {(layawayMap || {})[product.id] && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded-full shadow-sm flex items-center gap-0.5">
+                        <Lock className="w-2.5 h-2.5" /> Épargne dispo
+                      </span>
+                    )}
                   </div>
 
                   <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 hover:scale-110">
@@ -298,6 +345,20 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
                       )}
                       {justAddedId === product.id ? 'Ajouté' : 'Commander'}
                     </button>
+                    {(layawayMap || {})[product.id] && (
+                      <button
+                        onClick={() => handleLayaway(product)}
+                        disabled={layawayStarting === product.id}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
+                      >
+                        {layawayStarting === product.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Lock className="w-3 h-3" />
+                        )}
+                        Épargner
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

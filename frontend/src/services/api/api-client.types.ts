@@ -911,6 +911,21 @@ export interface ApiClientMethods {
   // ============================================
   getFavorites(params?: any): Promise<any>;
   addFavorite(type: string, referenceId: string): Promise<any>;
+  // ── Épargne Achat (Layaway) ──
+  createLayawayOffer(data: any): Promise<any>;
+  getLayawayOffers(): Promise<any>;
+  toggleLayawayOffer(id: string, isActive: boolean): Promise<any>;
+  deleteLayawayOffer(id: string): Promise<any>;
+  getBusinessLayawayPlans(): Promise<any>;
+  getBusinessLayawayStats(): Promise<any>;
+  getActiveLayawayOffer(itemType: string, itemId: string): Promise<any>;
+  getActiveLayawayOffers(itemType: string, itemIds: string[]): Promise<any>;
+  createLayawayPlan(offerId: string): Promise<any>;
+  getMyLayawayPlans(): Promise<any>;
+  getLayawayPlan(id: string): Promise<any>;
+  contributeLayaway(id: string, data: any): Promise<any>;
+  cancelLayawayPlan(id: string): Promise<any>;
+  confirmLayawayCheckout(id: string): Promise<any>;
   removeFavorite(id: string): Promise<any>;
 
   // ============================================

@@ -26,6 +26,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Panier', href: '/dashboard/cart', icon: 'ShoppingCart' },
       { label: 'Commandes', href: '/dashboard/orders', icon: 'ShoppingBag' },
+      { label: 'Mes épargnes', href: '/dashboard/my-layaway', icon: 'PiggyBank' },
       { label: 'Réservations', href: '/dashboard/bookings', icon: 'Calendar' },
       { label: 'Locations', href: '/dashboard/my-rentals', icon: 'Car' },
       { label: 'Événements', href: '/dashboard/my-events', icon: 'CalendarDays' },
