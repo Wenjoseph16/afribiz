@@ -22,6 +22,8 @@ import {
   Award,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { Button } from '@/components/ui/Button';
@@ -113,24 +115,22 @@ export default function PortfolioPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Portfolio
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos réalisations et projets
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link href="/dashboard/portfolio/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nouvel élément
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Centre des réalisations"
+        description="Valorisez vos projets et preuves de savoir-faire"
+        breadcrumbs={[{ label: 'Croissance' }, { label: 'Portfolio' }]}
+        actions={
+          <>
+            <LiveBadge label="Temps réel" />
+            <Link href="/dashboard/portfolio/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nouvel élément
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       <CopilotTips moduleKey="PORTFOLIO" />
 
