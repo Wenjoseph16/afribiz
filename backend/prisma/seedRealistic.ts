@@ -688,6 +688,99 @@ async function seedMessages() {
 }
 
 // ============================================================
+// 9bis. WHATSAPP BUSINESS (templates + sessions pour le resto)
+// ============================================================
+async function seedWhatsApp() {
+  const businessId = B.RESTO;
+
+  // ── Templates : 5 modèles approuvés (catalogue WhatsApp Business) ──
+  const templates = [
+    {
+      id: 'wa-tpl-1', name: 'confirmation_commande', category: 'UTILITY', language: 'fr',
+      header: 'Confirmation de commande',
+      body: 'Bonjour {{1}} 👋\nVotre commande n°{{2}} est bien reçue. Total : {{3}} FCFA.\nNotre équipe vous livre très vite à {{4}}.\n— Saveur d\'Abidjan',
+      footer: 'Répondez CONFIRMER pour valider', buttons: [{ type: 'QUICK_REPLY', text: 'CONFIRMER' }, { type: 'QUICK_REPLY', text: 'ANNULER' }],
+      status: 'APPROVED', templateId: 'wa-tpl-1-meta',
+    },
+    {
+      id: 'wa-tpl-2', name: 'livraison_en_cours', category: 'UTILITY', language: 'fr',
+      header: '🚚 Votre commande est en route',
+      body: 'Bonjour {{1}}, votre commande n°{{2}} est en cours de livraison.\nLe livreur {{3}} arrive dans environ {{4}} min.\n— Saveur d\'Abidjan',
+      footer: 'Suivez votre commande sur AfriBiz', buttons: null,
+      status: 'APPROVED', templateId: 'wa-tpl-2-meta',
+    },
+    {
+      id: 'wa-tpl-3', name: 'plat_du_jour', category: 'MARKETING', language: 'fr',
+      header: '🍛 Le plat du jour',
+      body: 'Aujourd\'hui, découvrez notre {{1}} à {{2}} FCFA seulement !\nCommandez avant 14h et profitez de {{3}} FCFA de réduction.\n— Saveur d\'Abidjan',
+      footer: 'Avec {{4}} ❤️', buttons: [{ type: 'QUICK_REPLY', text: 'Je commande' }, { type: 'QUICK_REPLY', text: 'Voir le menu' }],
+      status: 'APPROVED', templateId: 'wa-tpl-3-meta',
+    },
+    {
+      id: 'wa-tpl-4', name: 'rappel_reservation', category: 'UTILITY', language: 'fr',
+      header: 'Rappel de votre réservation',
+      body: 'Bonjour {{1}}, ceci est un rappel : votre table pour {{2}} personnes est réservée le {{3}} à {{4}}.\nPour modifier ou annuler, répondez à ce message.\n— Saveur d\'Abidjan',
+      footer: 'Merci de votre confiance', buttons: null,
+      status: 'APPROVED', templateId: 'wa-tpl-4-meta',
+    },
+    {
+      id: 'wa-tpl-5', name: 'satisfaction_client', category: 'MARKETING', language: 'fr',
+      header: '⭐ Comment s\'est passée votre expérience ?',
+      body: 'Bonjour {{1}}, nous espérons que votre commande n°{{2}} vous a plu.\nDonnez-nous votre avis et gagnez {{3}} points fidélité.\n— Saveur d\'Abidjan',
+      footer: 'Votre avis nous aide à grandir', buttons: [{ type: 'QUICK_REPLY', text: '😍 Génial' }, { type: 'QUICK_REPLY', text: '😐 Moyen' }, { type: 'QUICK_REPLY', text: '😞 Décevant' }],
+      status: 'APPROVED', templateId: 'wa-tpl-5-meta',
+    },
+  ];
+  for (const t of templates) {
+    await prisma.whatsAppTemplate.upsert({
+      where: { id: t.id }, update: {},
+      create: { id: t.id, businessId, name: t.name, category: t.category, language: t.language, header: t.header, body: t.body, footer: t.footer, buttons: t.buttons as any, status: t.status, templateId: t.templateId },
+    });
+  }
+  console.log(`✓ ${templates.length} templates WhatsApp (${businessId})`);
+
+  // ── Sessions : 3 vrais clients du resto + messages ──
+  const sessions = [
+    {
+      id: 'wa-ses-1', clientPhone: '+2250100000002', clientName: 'Awa Coulibaly', status: 'ACTIVE', lastMessageAt: new Date('2026-07-15T13:20:00Z'),
+      messages: [
+        { id: 'wa-msg-1-1', fromBusiness: true, messageType: 'text', content: 'Bonjour Awa 👋 Votre commande n°CMD-2026-001 (2 attiéké poisson, 1 jus bissap) est confirmée. Total : 6 500 FCFA. Livraison à Cocody Angré estimée à 14h10. — Saveur d\'Abidjan', status: 'delivered', waMessageId: 'wamid-1-1' },
+        { id: 'wa-msg-1-2', fromBusiness: false, messageType: 'text', content: 'Merci ! Est-ce que je peux ajouter un dessert ?', status: 'read', waMessageId: 'wamid-1-2' },
+        { id: 'wa-msg-1-3', fromBusiness: true, messageType: 'text', content: 'Bien sûr 😊 Nous ajoutons un alloco (500 FCFA) à votre commande. Total mis à jour : 7 000 FCFA. Le livreur arrive dans 20 min !', status: 'delivered', waMessageId: 'wamid-1-3' },
+      ],
+    },
+    {
+      id: 'wa-ses-2', clientPhone: '+233202020202', clientName: 'Kofi Mensah', status: 'ACTIVE', lastMessageAt: new Date('2026-07-02T18:45:00Z'),
+      messages: [
+        { id: 'wa-msg-2-1', fromBusiness: true, messageType: 'text', content: 'Kofi, ne manquez pas notre plat du jour : poulet braisé + alloco à 3 500 FCFA 🍗 Commandez avant 14h et profitez de 500 FCFA de réduction ! — Saveur d\'Abidjan', status: 'delivered', waMessageId: 'wamid-2-1' },
+        { id: 'wa-msg-2-2', fromBusiness: false, messageType: 'text', content: 'Je prends ! Une commande poulet braisé pour livraison à Accra.', status: 'read', waMessageId: 'wamid-2-2' },
+        { id: 'wa-msg-2-3', fromBusiness: true, messageType: 'text', content: 'Commande n°CMD-2026-003 confirmée ✅ Poulet braisé + alloco — 3 500 FCFA. Merci Kofi, à très vite !', status: 'delivered', waMessageId: 'wamid-2-3' },
+      ],
+    },
+    {
+      id: 'wa-ses-3', clientPhone: '+22370000001', clientName: 'Aminata Koné', status: 'ACTIVE', lastMessageAt: new Date('2026-07-05T12:10:00Z'),
+      messages: [
+        { id: 'wa-msg-3-1', fromBusiness: false, messageType: 'text', content: 'Bonsoir, je voudrais réserver une table pour 4 personnes samedi soir.', status: 'read', waMessageId: 'wamid-3-1' },
+        { id: 'wa-msg-3-2', fromBusiness: true, messageType: 'text', content: 'Bonsoir Aminata 🌟 Votre table pour 4 personnes est réservée samedi à 20h00 à Angré. Pour modifier ou annuler, répondez simplement à ce message. — Saveur d\'Abidjan', status: 'delivered', waMessageId: 'wamid-3-2' },
+      ],
+    },
+  ];
+  for (const s of sessions) {
+    await prisma.whatsAppSession.upsert({
+      where: { id: s.id }, update: {},
+      create: { id: s.id, businessId, clientPhone: s.clientPhone, clientName: s.clientName, status: s.status, lastMessageAt: s.lastMessageAt },
+    });
+    for (const m of s.messages) {
+      await prisma.whatsAppMessage.upsert({
+        where: { id: m.id }, update: {},
+        create: { id: m.id, sessionId: s.id, fromBusiness: m.fromBusiness, messageType: m.messageType, content: m.content, status: m.status, waMessageId: m.waMessageId },
+      });
+    }
+  }
+  console.log(`✓ ${sessions.length} sessions WhatsApp + ${sessions.reduce((acc, s) => acc + s.messages.length, 0)} messages`);
+}
+
+// ============================================================
 // 10. WALLETS + TRANSACTIONS (business)
 // ============================================================
 async function seedWallets() {
@@ -1200,6 +1293,7 @@ export async function seedRealistic() {
   await seedSocial();
   await seedDevelopers();
   await seedMessages();
+  await seedWhatsApp();
   await seedWallets();
   await seedCms();
   await seedOperations();
