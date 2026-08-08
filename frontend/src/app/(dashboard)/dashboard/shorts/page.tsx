@@ -16,6 +16,8 @@ import {
   Play,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ShortsFeedDynamic as ShortsFeed } from '@/components/stories/ShortsFeedDynamic';
@@ -43,40 +45,40 @@ export default function ShortsPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Shorts Business</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Vidéos courtes de vos commerces préférés
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setView('feed')}
-            className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium transition-all',
-              view === 'feed'
-                ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
-                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
-            )}
-          >
-            <Play className="w-4 h-4 inline mr-1" />
-            Feed
-          </button>
-          <button
-            onClick={() => setView('browse')}
-            className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium transition-all',
-              view === 'browse'
-                ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
-                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
-            )}
-          >
-            <Film className="w-4 h-4 inline mr-1" />
-            Parcourir
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Shorts Business"
+        description="Vidéos courtes de vos commerces préférés"
+        breadcrumbs={[{ label: 'Social Commerce' }, { label: 'Shorts' }]}
+        actions={
+          <>
+            <LiveBadge label="Temps réel" />
+            <button
+              onClick={() => setView('feed')}
+              className={cn(
+                'px-4 py-2 rounded-full text-sm font-medium transition-all',
+                view === 'feed'
+                  ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
+              )}
+            >
+              <Play className="w-4 h-4 inline mr-1" />
+              Feed
+            </button>
+            <button
+              onClick={() => setView('browse')}
+              className={cn(
+                'px-4 py-2 rounded-full text-sm font-medium transition-all',
+                view === 'browse'
+                  ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
+              )}
+            >
+              <Film className="w-4 h-4 inline mr-1" />
+              Parcourir
+            </button>
+          </>
+        }
+      />
 
       {view === 'feed' ? (
         /* TikTok-like feed view */

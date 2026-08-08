@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import {
   Wallet,
   Plus,
@@ -126,34 +128,31 @@ export default function SavingsPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Wallet className="w-6 h-6 text-brand-500" />
-            Tontine & Épargne Collective
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos groupes d&apos;épargne avec des transactions sécurisées via escrow
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </button>
-          <Link
-            href="/dashboard/savings/new"
-            className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Nouveau groupe
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Tontine & Épargne Collective"
+        description="Gérez vos groupes d&apos;épargne avec des transactions sécurisées via escrow"
+        breadcrumbs={[{ label: 'Croissance' }, { label: 'Tontine' }]}
+        actions={
+          <>
+            <LiveBadge label="Temps réel" />
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </button>
+            <Link
+              href="/dashboard/savings/new"
+              className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors flex items-center gap-2 text-sm font-medium active:scale-[0.98] transition-transform"
+            >
+              <Plus className="w-4 h-4" />
+              Nouveau groupe
+            </Link>
+          </>
+        }
+      />
 
       {/* Loading */}
       {loading && !stats && (

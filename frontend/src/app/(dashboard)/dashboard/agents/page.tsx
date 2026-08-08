@@ -15,6 +15,8 @@ import {
   Trash2,
   TrendingUp,
 } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
@@ -138,28 +140,28 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Réseau d'Agents</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos agents de dépôt/retrait, commissions et KYC
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowTransaction(true)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Activity className="w-4 h-4" /> Transaction
-          </button>
-          <button
-            onClick={() => setShowNew(true)}
-            className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" /> Nouvel agent
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Réseau d&apos;Agents"
+        description="Gérez vos agents de dépôt/retrait, commissions et KYC"
+        breadcrumbs={[{ label: 'Finance' }, { label: 'Agents' }]}
+        actions={
+          <>
+            <LiveBadge label="Temps réel" />
+            <button
+              onClick={() => setShowTransaction(true)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm font-medium"
+            >
+              <Activity className="w-4 h-4" /> Transaction
+            </button>
+            <button
+              onClick={() => setShowNew(true)}
+              className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors flex items-center gap-2 text-sm font-medium active:scale-[0.98] transition-transform"
+            >
+              <Plus className="w-4 h-4" /> Nouvel agent
+            </button>
+          </>
+        }
+      />
 
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2 text-sm">
