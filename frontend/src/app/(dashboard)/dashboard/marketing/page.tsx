@@ -94,7 +94,19 @@ export default function MarketingPage() {
   if (isLoading) return <Loader variant="spinner" size="md" fullScreen />;
 
   const campaigns = Array.isArray(data) ? data : (data?.campaigns ?? []);
-  const filtered = filter === 'all' ? campaigns : campaigns.filter((c: any) => c.status === filter);
+  // L'enum CampaignStatus est en MAJUSCULES (ACTIVE/SCHEDULED/COMPLETED/PAUSED/DRAFT)
+  const statusFilterMap: Record<string, string> = {
+    all: 'all',
+    active: 'ACTIVE',
+    scheduled: 'SCHEDULED',
+    completed: 'COMPLETED',
+    paused: 'PAUSED',
+    draft: 'DRAFT',
+  };
+  const filtered =
+    filter === 'all'
+      ? campaigns
+      : campaigns.filter((c: any) => c.status === statusFilterMap[filter]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -119,19 +131,19 @@ export default function MarketingPage() {
         <StatsCard
           icon={<Target className="h-5 w-5" />}
           label="Actives"
-          value={campaigns.filter((c: any) => c.status === 'active').length}
+          value={campaigns.filter((c: any) => c.status === 'ACTIVE').length}
         />
         <StatsCard
           icon={<Users className="h-5 w-5" />}
           label="Planifiées"
-          value={campaigns.filter((c: any) => c.status === 'scheduled').length}
+          value={campaigns.filter((c: any) => c.status === 'SCHEDULED').length}
         />
         <StatsCard
           icon={<Eye className="h-5 w-5" />}
           label="Taux succès"
           value={
             campaigns.length > 0
-              ? `${Math.round((campaigns.filter((c: any) => c.status === 'completed').length / campaigns.length) * 100)}%`
+              ? `${Math.round((campaigns.filter((c: any) => c.status === 'COMPLETED').length / campaigns.length) * 100)}%`
               : '0%'
           }
         />
@@ -139,17 +151,24 @@ export default function MarketingPage() {
 
       <Card title="Campagnes" titleIcon={<Megaphone className="h-4 w-4" />}>
         <div className="flex flex-wrap gap-2 mb-4">
-          {['all', 'active', 'scheduled', 'completed', 'paused'].map((s) => (
+          {[
+            { key: 'all', label: 'Toutes' },
+            { key: 'active', label: 'Actives' },
+            { key: 'scheduled', label: 'Planifiées' },
+            { key: 'completed', label: 'Envoyées' },
+            { key: 'paused', label: 'En pause' },
+            { key: 'draft', label: 'Brouillons' },
+          ].map((s) => (
             <button
-              key={s}
-              onClick={() => setFilter(s)}
+              key={s.key}
+              onClick={() => setFilter(s.key)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                filter === s
+                filter === s.key
                   ? 'bg-brand text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
               }`}
             >
-              {s}
+              {s.label}
             </button>
           ))}
         </div>
@@ -219,14 +238,14 @@ export default function MarketingPage() {
             Sélectionnez un template WhatsApp approuvé. Le message sera envoyé à tous vos clients
             ayant un téléphone, et créera une session WhatsApp pour chacun.
           </p>
-          {templates.length === 0 ? (
-            <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-center text-sm text-gray-500">
+          {templates.filter((t: any) => t.status === 'APPROVED').length === 0 ? (
+            <div className="p-6 rounded-xl bg-gray-100 dark:bg-gray-800/50 text-center text-sm text-gray-500">
               <MessageCircle className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-              Aucun template WhatsApp disponible. Créez-en un depuis{' '}
+              Aucun template WhatsApp approuvé. Créez-en un depuis{' '}
               <Link href="/dashboard/whatsapp" className="text-brand-500 underline">
                 WhatsApp Business
-              </Link>
-              .
+              </Link>{' '}
+              et attendez qu'il soit APPROVED.
             </div>
           ) : (
             <Select

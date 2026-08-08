@@ -42,7 +42,9 @@ test('P19: campagne marketing envoyee via template WhatsApp', async ({ page, con
   await page.waitForTimeout(6000);
   const mgSent = await page.locator('text=Envoyée').count();
   const mgDraftName = await page.locator('text=P19 Campagne Test DRAFT').count();
-  console.log('P19-MARKETING | envoyees:', mgSent, '| draft presente:', mgDraftName > 0);
+  const mgFilterEnvoyees = await page.locator('button:has-text("Envoyées")').count();
+  const mgStatEnvoyees = await page.locator('text=Taux succès').count();
+  console.log('P19-MARKETING | envoyees:', mgSent, '| draft presente:', mgDraftName > 0, '| filtreEnvoyees:', mgFilterEnvoyees, '| statTaux:', mgStatEnvoyees);
 
   // ── Bouton Envoyer WhatsApp sur la campagne DRAFT ──
   const sendBtn = page.getByRole('button', { name: /Envoyer WhatsApp/ }).first();
