@@ -3607,3 +3607,76 @@ model AdSlot {
   @@index([page, position, isActive])
 }
 
+// ============================================
+// ÉPARGNE ACHAT (Layaway sécurisé — escrow)
+// ============================================
+
+enum LayawayStatus {
+  ACTIVE
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model LayawayOffer {
+  id             String       @id @default(uuid())
+  businessId     String
+  itemType       String
+  itemId         String
+  durationDays   Int          @default(90)
+  minInstallment Decimal      @default(2000) @db.Decimal(12, 2)
+  isActive       Boolean      @default(true)
+  planCount      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  plans          LayawayPlan[]
+
+  @@unique([itemType, itemId])
+  @@index([businessId])
+}
+
+model LayawayPlan {
+  id             String               @id @default(uuid())
+  businessId     String
+  clientId       String
+  offerId       String
+  offer         LayawayOffer  @relation(fields: [offerId], references: [id])
+  itemType       String
+  itemId         String
+  itemName       String
+  itemImage      String?
+  targetAmount   Decimal              @db.Decimal(12, 2)
+  savedAmount    Decimal              @default(0) @db.Decimal(12, 2)
+  minInstallment Decimal              @default(2000) @db.Decimal(12, 2)
+  durationDays   Int                  @default(90)
+  status         LayawayStatus        @default(ACTIVE)
+  escrowId       String?
+  orderId        String?
+  startedAt      DateTime             @default(now())
+  expiresAt      DateTime?
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+  contributions  LayawayContribution[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([clientId])
+  @@index([businessId])
+  @@index([offerId])
+  @@index([status])
+}
+
+model LayawayContribution {
+  id        String      @id @default(uuid())
+  planId    String
+  plan   LayawayPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  amount    Decimal     @db.Decimal(12, 2)
+  currency  String      @default("FCFA")
+  method    String
+  status    String      @default("PAID")
+  paymentId String?
+  reference String?
+  createdAt DateTime    @default(now())
+
+  @@index([planId])
+}

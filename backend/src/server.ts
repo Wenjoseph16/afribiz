@@ -130,6 +130,7 @@ import {
   whatsappRoutes,
   whatsappWebhookRoutes,
   trackingRoutes,
+  layawayRoutes,
   offlineSyncRoutes,
   voiceCatalogueRoutes,
   ussdRoutes,
@@ -313,6 +314,7 @@ app.use('/api/payments', paymentsRoutes);
 app.use('/api/payments/escrow/client', escrowClientRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/follow', followRoutes);
+app.use('/api/layaway', layawayRoutes);
 app.use('/api/social', socialAccountRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/saves', savedItemRoutes);
