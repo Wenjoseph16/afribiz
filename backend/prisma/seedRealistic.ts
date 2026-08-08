@@ -268,7 +268,7 @@ const BIZ_DEFS: any[] = [
     shortDescription: 'High-tech & smartphones', tagline: 'La tech pour tous',
     email: 'contact@techstoreafrique.com', phone: '+233202020202', country: 'Ghana', city: 'Accra', region: 'Osu',
     address: 'Oxford Street, Osu', foundedYear: 2021, employeeCount: 8, rating: 4.5, reviewCount: 78,
-    modules: ['PRODUCTS', 'ORDERS', 'DELIVERIES', 'DEBTS_PAYMENTS', 'PROMOTIONS', 'CRM', 'MARKETING', 'DOCUMENTS', 'QUOTES_INVOICES'],
+    modules: ['PRODUCTS', 'ORDERS', 'DELIVERIES', 'DEBTS_PAYMENTS', 'PROMOTIONS', 'CRM', 'MARKETING', 'DOCUMENTS', 'QUOTES_INVOICES', 'SAVINGS'],
   },
   {
     id: B.BTP, ownerId: U.OWNER_BTP, name: 'BuildPro BTP', slug: 'buildpro-btp', type: BusinessType.ARTISAN,
@@ -891,6 +891,79 @@ async function seedSavings() {
   console.log('✓ Tontine Épargne : 1 groupe + 5 membres + 1 cycle + 5 cotisations (module SAVINGS du salon)');
 }
 
+// ============================================================
+// 7c. ÉPARGNE ACHAT (Layaway sécurisé — escrow)
+// Offres sur des articles + plans de clients en cours, argent en escrow.
+// ============================================================
+async function seedLayaway() {
+  // ── Purge complète (source de vérité unique : on recrée un état propre, connecté) ──
+  // NB: les plans qui référencent des offres créées hors seed (test API, IDs UUID)
+  // deviendraient orphelins — on purge tout et on recrée des IDs déterministes.
+  await prisma.layawayContribution.deleteMany({});
+  await prisma.layawayPlan.deleteMany({});
+  await prisma.escrow.deleteMany({ where: { id: { startsWith: 'lw-esc-' } } });
+  await prisma.layawayOffer.deleteMany({});
+
+  // ── Offres d'épargne ──
+  await prisma.layawayOffer.upsert({
+    where: { itemType_itemId: { itemType: 'PRODUCT', itemId: 'prod-bout-1' } },
+    update: {},
+    create: { id: 'lw-off-1', businessId: B.BOUTIQUE, itemType: 'PRODUCT', itemId: 'prod-bout-1', durationDays: 90, minInstallment: 5000, isActive: true, planCount: 1 },
+  });
+  await prisma.layawayOffer.upsert({
+    where: { itemType_itemId: { itemType: 'SERVICE', itemId: 'sv-sal-1' } },
+    update: {},
+    create: { id: 'lw-off-2', businessId: B.SALON, itemType: 'SERVICE', itemId: 'sv-sal-1', durationDays: 60, minInstallment: 2000, isActive: true, planCount: 1 },
+  });
+
+  // ── Plan client1 : Smartphone TechX Pro (60 000 / 150 000 épargnés) ──
+  await prisma.layawayPlan.upsert({
+    where: { id: 'lw-plan-1' },
+    update: {},
+    create: {
+      id: 'lw-plan-1', businessId: B.BOUTIQUE, clientId: U.CLIENT_1, offerId: 'lw-off-1',
+      itemType: 'PRODUCT', itemId: 'prod-bout-1', itemName: 'Smartphone TechX Pro',
+      itemImage: null, targetAmount: 150000, savedAmount: 60000, minInstallment: 5000,
+      durationDays: 90, status: 'ACTIVE', escrowId: 'lw-esc-1',
+      startedAt: new Date('2026-07-15'), expiresAt: new Date('2026-10-13'),
+    },
+  });
+  await prisma.escrow.upsert({
+    where: { id: 'lw-esc-1' },
+    update: {},
+    create: { id: 'lw-esc-1', businessId: B.BOUTIQUE, amount: 60000, currency: 'FCFA', status: 'HELD', fee: 0, feeRate: 0, notes: 'Épargne Achat — Smartphone TechX Pro (client sécurisé)' },
+  });
+  const con1: any[] = [
+    { id: 'lw-con-1', planId: 'lw-plan-1', amount: 50000, currency: 'FCFA', method: 'WAVE', status: 'PAID', reference: 'TRF-LW-001', createdAt: new Date('2026-07-16') },
+    { id: 'lw-con-2', planId: 'lw-plan-1', amount: 10000, currency: 'FCFA', method: 'ORANGE', status: 'PAID', reference: 'TRF-LW-002', createdAt: new Date('2026-08-01') },
+  ];
+  for (const c of con1) await prisma.layawayContribution.upsert({ where: { id: c.id }, update: {}, create: c });
+
+  // ── Plan client3 : Coupe + Brushing du salon (2 000 / 5 000) ──
+  await prisma.layawayPlan.upsert({
+    where: { id: 'lw-plan-2' },
+    update: {},
+    create: {
+      id: 'lw-plan-2', businessId: B.SALON, clientId: U.CLIENT_3, offerId: 'lw-off-2',
+      itemType: 'SERVICE', itemId: 'sv-sal-1', itemName: 'Coupe + Brushing',
+      itemImage: null, targetAmount: 5000, savedAmount: 2000, minInstallment: 2000,
+      durationDays: 60, status: 'ACTIVE', escrowId: 'lw-esc-2',
+      startedAt: new Date('2026-08-01'), expiresAt: new Date('2026-09-30'),
+    },
+  });
+  await prisma.escrow.upsert({
+    where: { id: 'lw-esc-2' },
+    update: {},
+    create: { id: 'lw-esc-2', businessId: B.SALON, amount: 2000, currency: 'FCFA', status: 'HELD', fee: 0, feeRate: 0, notes: 'Épargne Achat — Coupe + Brushing (client sécurisé)' },
+  });
+  await prisma.layawayContribution.upsert({
+    where: { id: 'lw-con-3' }, update: {},
+    create: { id: 'lw-con-3', planId: 'lw-plan-2', amount: 2000, currency: 'FCFA', method: 'WAVE', status: 'PAID', reference: 'TRF-LW-003', createdAt: new Date('2026-08-02') },
+  });
+
+  console.log('✓ Épargne Achat : 2 offres + 2 plans clients en cours (60 000 + 2 000 FCFA en escrow)');
+}
+
 async function seedWallets() {
   const txs: any[] = [
     { id: 'wtx-1', walletId: 'wallet-techstore-afrique', type: 'PAYMENT', amount: 160000, balanceBefore: 2000000, balanceAfter: 2160000, reference: 'CMD-2026-004', description: 'Vente smartphone TechX Pro', status: 'COMPLETED' },
@@ -1404,6 +1477,7 @@ export async function seedRealistic() {
   await seedWhatsApp();
   await seedMarketing();
   await seedSavings();
+  await seedLayaway();
   await seedWallets();
   await seedCms();
   await seedOperations();
