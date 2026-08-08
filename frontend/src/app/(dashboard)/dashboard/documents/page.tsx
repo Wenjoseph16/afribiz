@@ -15,6 +15,8 @@ import {
   Loader,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -152,26 +154,28 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Documents
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Centralisez tous vos documents professionnels
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Centre documentaire"
+        description="Centralisez contrats, factures et certifications au même endroit."
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Équipe' },
+          { label: 'Documents' },
+        ]}
+        actions={
           <Button size="sm">
             <Upload className="h-4 w-4 mr-1.5" />
             Uploader
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <CopilotTips moduleKey="DOCUMENTS" />
 
       {/* Stats Cards */}
+      <div className="flex items-center justify-end">
+        <LiveBadge tone="brand" label="Temps réel" />
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatsCard
           icon={<FolderOpen className="h-5 w-5" />}
