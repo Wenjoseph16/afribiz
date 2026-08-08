@@ -252,7 +252,7 @@ const BIZ_DEFS: any[] = [
     shortDescription: 'Coiffure & soins de beauté', tagline: 'Révélez votre éclat',
     email: 'contact@kenzabeaute.com', phone: '+221770001122', country: 'Sénégal', city: 'Dakar', region: 'Almadies',
     address: 'Route des Almadies', foundedYear: 2020, employeeCount: 6, rating: 4.8, reviewCount: 54,
-    modules: ['SERVICES', 'BOOKINGS', 'CRM', 'PROMOTIONS', 'PORTFOLIO', 'EMPLOYEES', 'PLANNING', 'MARKETING', 'AFRISCORE'],
+    modules: ['SERVICES', 'BOOKINGS', 'CRM', 'PROMOTIONS', 'PORTFOLIO', 'EMPLOYEES', 'PLANNING', 'MARKETING', 'AFRISCORE', 'SAVINGS'],
   },
   {
     id: B.HOTEL, ownerId: U.OWNER_HOTEL, name: 'Hôtel Palmier', slug: 'hotel-palmier', type: BusinessType.HOTEL,
@@ -783,6 +783,72 @@ async function seedWhatsApp() {
 // ============================================================
 // 10. WALLETS + TRANSACTIONS (business)
 // ============================================================
+// ============================================================
+// 7b. TONTINE / ÉPARGNE (module SAVINGS — salon Kenza Beauté)
+// Un vrai groupe de tontine avec membres, cycle en cours et cotisations.
+// ============================================================
+async function seedSavings() {
+  // ── Groupe de tontine du salon ──
+  await prisma.savingsGroup.upsert({
+    where: { id: 'sg-sal-1' },
+    update: {},
+    create: {
+      id: 'sg-sal-1', businessId: B.SALON, name: 'Tontine Épargne Beauté',
+      description: 'Épargne collective des clientes fidèles du salon — tour de rôle chaque fin de mois.',
+      type: 'ROTATING', currency: 'FCFA', contributionAmount: 10000,
+      frequency: 'weekly', maxMembers: 12,
+      startDate: new Date('2026-06-01'), status: 'ACTIVE',
+      rules: { contribution: 10000, rotation: 'mensuelle', goal: 'Épargne + projets personnels' },
+    },
+  });
+
+  // ── Membres (vraies clientes, dont 3 avec un compte AfriBiz) ──
+  const members: any[] = [
+    { id: 'sm-sal-1', userId: U.CLIENT_1, name: 'Awa Coulibaly', phone: '+2250100000002', email: 'client1@afribiz.com', role: 'admin', totalContributed: 40000, reliabilityScore: 95 },
+    { id: 'sm-sal-2', userId: U.CLIENT_3, name: 'Fatou Ndiaye', phone: '+221770001122', email: 'client3@afribiz.com', role: 'member', totalContributed: 30000, reliabilityScore: 90 },
+    { id: 'sm-sal-3', userId: U.CLIENT_5, name: 'Aminata Koné', phone: '+22370000001', email: 'client5@afribiz.com', role: 'member', totalContributed: 30000, reliabilityScore: 85 },
+    { id: 'sm-sal-4', name: 'Mariam Sow', phone: '+221770001123', role: 'member', totalContributed: 10000, reliabilityScore: 72 },
+    { id: 'sm-sal-5', name: 'Khady Fall', phone: '+221770001124', role: 'member', totalContributed: 20000, reliabilityScore: 80 },
+  ];
+  for (const m of members) {
+    await prisma.savingsMember.upsert({
+      where: { id: m.id },
+      update: {},
+      create: { id: m.id, groupId: 'sg-sal-1', ...m },
+    });
+  }
+
+  // ── Cycle n°1 en cours (juillet 2026) ──
+  await prisma.savingsCycle.upsert({
+    where: { id: 'sc-sal-1' },
+    update: {},
+    create: {
+      id: 'sc-sal-1', groupId: 'sg-sal-1', cycleNumber: 1,
+      startDate: new Date('2026-07-01'), status: 'ACTIVE',
+      totalAmount: 50000, totalCollected: 30000, totalDistributed: 20000,
+      payoutDate: new Date('2026-07-28'),
+    },
+  });
+
+  // ── Cotisations du cycle (3 payées, 1 en attente, 1 en retard) ──
+  const contributions: any[] = [
+    { id: 'cont-sal-1', cycleId: 'sc-sal-1', memberId: 'sm-sal-1', amount: 10000, status: 'PAID', paidAt: new Date('2026-07-03'), method: 'MOBILE_MONEY', reference: 'TRF-TONT-001' },
+    { id: 'cont-sal-2', cycleId: 'sc-sal-1', memberId: 'sm-sal-2', amount: 10000, status: 'PAID', paidAt: new Date('2026-07-03'), method: 'MOBILE_MONEY', reference: 'TRF-TONT-002' },
+    { id: 'cont-sal-3', cycleId: 'sc-sal-1', memberId: 'sm-sal-3', amount: 10000, status: 'PAID', paidAt: new Date('2026-07-10'), method: 'CASH', reference: 'ESP-TONT-003' },
+    { id: 'cont-sal-4', cycleId: 'sc-sal-1', memberId: 'sm-sal-4', amount: 10000, status: 'PENDING', notes: 'À régler cette semaine' },
+    { id: 'cont-sal-5', cycleId: 'sc-sal-1', memberId: 'sm-sal-5', amount: 10000, status: 'LATE', notes: 'Rappel envoyé par WhatsApp' },
+  ];
+  for (const c of contributions) {
+    await prisma.savingsContribution.upsert({
+      where: { id: c.id },
+      update: {},
+      create: { id: c.id, ...c },
+    });
+  }
+
+  console.log('✓ Tontine Épargne : 1 groupe + 5 membres + 1 cycle + 5 cotisations (module SAVINGS du salon)');
+}
+
 async function seedWallets() {
   const txs: any[] = [
     { id: 'wtx-1', walletId: 'wallet-techstore-afrique', type: 'PAYMENT', amount: 160000, balanceBefore: 2000000, balanceAfter: 2160000, reference: 'CMD-2026-004', description: 'Vente smartphone TechX Pro', status: 'COMPLETED' },
@@ -1294,6 +1360,7 @@ export async function seedRealistic() {
   await seedDevelopers();
   await seedMessages();
   await seedWhatsApp();
+  await seedSavings();
   await seedWallets();
   await seedCms();
   await seedOperations();
