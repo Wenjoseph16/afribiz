@@ -23,6 +23,8 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SearchFilterBar } from '@/components/ui/SearchFilterBar';
@@ -158,24 +160,23 @@ export default function EventsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Événements
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos événements et billetterie
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
+      <PageHeader
+        title="Centre des événements"
+        description="Organisez vos événements, vendez vos billets et suivez la participation."
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Événements' },
+          { label: 'Tous les événements' },
+        ]}
+        actions={
           <Link href="/dashboard/events/new">
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1.5" />
               Créer un événement
             </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       <CopilotTips moduleKey="EVENTS" />
 
@@ -338,6 +339,7 @@ export default function EventsPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <LiveBadge tone="brand" label="Temps réel" />
           <SearchFilterBar
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}

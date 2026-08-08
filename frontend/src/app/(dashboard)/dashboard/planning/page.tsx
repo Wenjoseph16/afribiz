@@ -21,6 +21,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -35,11 +37,11 @@ interface PlanningTask {
   assignee: string;
   dueDate: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'TODO' | 'IN_PROGRESS' | 'ON_HOLD' | 'DONE' | 'BLOCKED' | 'CANCELLED' | 'VALIDATION';
   createdAt: string;
 }
 
-type TabType = 'all' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
+type TabType = 'all' | 'todo' | 'in_progress' | 'done' | 'cancelled';
 
 const priorityConfig = {
   LOW: { color: 'text-gray-500 bg-gray-100 dark:bg-gray-800', label: 'Basse' },
@@ -48,12 +50,19 @@ const priorityConfig = {
   URGENT: { color: 'text-red-600 bg-red-50 dark:bg-red-900/20', label: 'Urgente' },
 };
 
-const statusConfig = {
-  PENDING: { color: 'text-gray-500 bg-gray-100 dark:bg-gray-800', label: 'En attente' },
+const statusConfig: Record<string, { color: string; label: string }> = {
+  TODO: { color: 'text-gray-600 bg-gray-100 dark:bg-gray-800', label: 'À faire' },
   IN_PROGRESS: { color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20', label: 'En cours' },
-  COMPLETED: { color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20', label: 'Terminée' },
+  ON_HOLD: { color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20', label: 'En pause' },
+  DONE: { color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20', label: 'Terminée' },
+  BLOCKED: { color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/20', label: 'Bloquée' },
   CANCELLED: { color: 'text-red-600 bg-red-50 dark:bg-red-900/20', label: 'Annulée' },
+  VALIDATION: { color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20', label: 'À valider' },
 };
+
+function statusColor(status: string) {
+  return statusConfig[status] || statusConfig.TODO;
+}
 
 export default function PlanningPage() {
   const { data: tasksData, isLoading, error, refetch } = usePlanningTasks();
@@ -68,25 +77,28 @@ export default function PlanningPage() {
 
   const stats = statsData || {
     total: allTasks.length,
-    completed: allTasks.filter((t) => t.status === 'COMPLETED').length,
-    pending: allTasks.filter((t) => t.status === 'PENDING').length,
+    completed: allTasks.filter((t) => t.status === 'DONE').length,
+    pending: allTasks.filter((t) => t.status === 'TODO').length,
     overdue: allTasks.filter(
       (t) =>
-        t.status !== 'COMPLETED' && t.status !== 'CANCELLED' && new Date(t.dueDate) < new Date()
+        t.status !== 'DONE' &&
+        t.status !== 'CANCELLED' &&
+        t.status !== 'BLOCKED' &&
+        new Date(t.dueDate) < new Date()
     ).length,
   };
 
   const filtered = useMemo(() => {
     let f = [...allTasks];
     switch (activeTab) {
-      case 'pending':
-        f = f.filter((t) => t.status === 'PENDING');
+      case 'todo':
+        f = f.filter((t) => t.status === 'TODO');
         break;
       case 'in_progress':
         f = f.filter((t) => t.status === 'IN_PROGRESS');
         break;
-      case 'completed':
-        f = f.filter((t) => t.status === 'COMPLETED');
+      case 'done':
+        f = f.filter((t) => t.status === 'DONE');
         break;
       case 'cancelled':
         f = f.filter((t) => t.status === 'CANCELLED');
@@ -116,24 +128,23 @@ export default function PlanningPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Planification
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos tâches et planning
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
+      <PageHeader
+        title="Centre de pilotage des tâches"
+        description="Organisez votre équipe, suivez les échéances et priorisez ce qui compte."
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Équipe' },
+          { label: 'Planning & Tâches' },
+        ]}
+        actions={
           <Link href="/dashboard/planning/new">
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1.5" />
               Nouvelle tâche
             </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       <CopilotTips moduleKey="PLANNING" />
 
@@ -173,10 +184,14 @@ export default function PlanningPage() {
         (() => {
           const now = new Date();
           const overdue = allTasks.filter(
-            (t) => t.status !== 'COMPLETED' && t.status !== 'CANCELLED' && new Date(t.dueDate) < now
+            (t) =>
+              t.status !== 'DONE' &&
+              t.status !== 'CANCELLED' &&
+              t.status !== 'BLOCKED' &&
+              new Date(t.dueDate) < now
           );
           const inProgress = allTasks.filter((t) => t.status === 'IN_PROGRESS');
-          const pending = allTasks.filter((t) => t.status === 'PENDING');
+          const pending = allTasks.filter((t) => t.status === 'TODO');
           const urgentOrHigh = allTasks.filter(
             (t) => t.priority === 'URGENT' || t.priority === 'HIGH'
           );
@@ -246,7 +261,7 @@ export default function PlanningPage() {
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5 space-y-4">
         <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-          {(['all', 'pending', 'in_progress', 'completed', 'cancelled'] as TabType[]).map((tab) => (
+          {(['all', 'todo', 'in_progress', 'done', 'cancelled'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -259,11 +274,11 @@ export default function PlanningPage() {
             >
               {tab === 'all'
                 ? 'Toutes'
-                : tab === 'pending'
-                  ? 'En attente'
+                : tab === 'todo'
+                  ? 'À faire'
                   : tab === 'in_progress'
                     ? 'En cours'
-                    : tab === 'completed'
+                    : tab === 'done'
                       ? 'Terminées'
                       : 'Annulées'}
             </button>
@@ -271,6 +286,10 @@ export default function PlanningPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            {filtered.length} tâche{filtered.length > 1 ? 's' : ''}
+          </span>
+          <LiveBadge tone="brand" label="Temps réel" />
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -369,7 +388,10 @@ function getBadge(task: PlanningTask): { label: string; class: string } | null {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const dueDate = new Date(task.dueDate);
   const isOverdue =
-    task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && dueDate < new Date();
+    task.status !== 'DONE' &&
+    task.status !== 'CANCELLED' &&
+    task.status !== 'BLOCKED' &&
+    dueDate < new Date();
   const isNew = task.createdAt && new Date(task.createdAt) > thirtyDaysAgo;
 
   // Priorité: En retard > Urgent > Nouveau
@@ -394,9 +416,12 @@ function getBadge(task: PlanningTask): { label: string; class: string } | null {
 function TaskCard({ task }: { task: PlanningTask }) {
   const dueDate = new Date(task.dueDate);
   const isOverdue =
-    task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && dueDate < new Date();
-  const pConf = priorityConfig[task.priority];
-  const sConf = statusConfig[task.status];
+    task.status !== 'DONE' &&
+      task.status !== 'CANCELLED' &&
+      task.status !== 'BLOCKED' &&
+      dueDate < new Date();
+  const pConf = priorityConfig[task.priority] || priorityConfig.MEDIUM;
+  const sConf = statusColor(task.status);
   const badge = getBadge(task);
   return (
     <Link
@@ -456,9 +481,12 @@ function TaskCard({ task }: { task: PlanningTask }) {
 function TaskRow({ task }: { task: PlanningTask }) {
   const dueDate = new Date(task.dueDate);
   const isOverdue =
-    task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && dueDate < new Date();
-  const pConf = priorityConfig[task.priority];
-  const sConf = statusConfig[task.status];
+    task.status !== 'DONE' &&
+      task.status !== 'CANCELLED' &&
+      task.status !== 'BLOCKED' &&
+      dueDate < new Date();
+  const pConf = priorityConfig[task.priority] || priorityConfig.MEDIUM;
+  const sConf = statusColor(task.status);
   const badge = getBadge(task);
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">

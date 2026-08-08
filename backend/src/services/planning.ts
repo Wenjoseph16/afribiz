@@ -122,6 +122,8 @@ const taskInclude: any = {};
 export async function listTasks(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
   const { page = 1, limit = 50, status, priority, assignedTo, dateFrom, dateTo, search } = filters;
+  const parsedPage = parseInt(String(page), 10) || 1;
+  const parsedLimit = Math.min(100, parseInt(String(limit), 10) || 50);
   const where: Prisma.PlanningTaskWhereInput = { businessId: business.id } as any;
   if (status) where.status = status as any;
   if (priority) where.priority = priority as any;
@@ -133,18 +135,18 @@ export async function listTasks(ownerId: string, filters: any) {
     where.dueDate = dueFilter;
   }
   if (search) where.title = { contains: search, mode: 'insensitive' };
-  const skip = (page - 1) * limit;
+  const skip = (parsedPage - 1) * parsedLimit;
   const [tasks, total] = await Promise.all([
     prisma.planningTask.findMany({
       where,
       include: taskInclude,
       skip,
-      take: limit,
+      take: parsedLimit,
       orderBy: { dueDate: 'desc' },
     }),
     prisma.planningTask.count({ where }),
   ]);
-  return { tasks, total, page, limit, totalPages: Math.ceil(total / limit) };
+  return { tasks, total, page: parsedPage, limit: parsedLimit, totalPages: Math.ceil(total / parsedLimit) };
 }
 
 export async function getTask(ownerId: string, taskId: string) {
@@ -237,15 +239,17 @@ export async function deleteTask(ownerId: string, taskId: string) {
 export async function listSchedules(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
   const { page = 1, limit = 50, dayOfWeek, employeeId } = filters;
+  const parsedPage = parseInt(String(page), 10) || 1;
+  const parsedLimit = Math.min(100, parseInt(String(limit), 10) || 50);
   const where: any = { businessId: business.id };
   if (dayOfWeek !== undefined) where.dayOfWeek = parseInt(dayOfWeek);
   if (employeeId) where.employeeId = employeeId;
-  const skip = (page - 1) * limit;
+  const skip = (parsedPage - 1) * parsedLimit;
   const [schedules, total] = await Promise.all([
     prisma.employeeSchedule.findMany({
       where,
       skip,
-      take: limit,
+      take: parsedLimit,
       orderBy: { dayOfWeek: 'asc' },
       include: {
         employee: { select: { id: true, firstName: true, lastName: true, position: true } },
@@ -253,7 +257,7 @@ export async function listSchedules(ownerId: string, filters: any) {
     }),
     prisma.employeeSchedule.count({ where }),
   ]);
-  return { schedules, total, page, limit, totalPages: Math.ceil(total / limit) };
+  return { schedules, total, page: parsedPage, limit: parsedLimit, totalPages: Math.ceil(total / parsedLimit) };
 }
 
 export async function upsertSchedule(ownerId: string, data: any) {
@@ -348,15 +352,17 @@ async function logPlanning(
 export async function listPlanningLogs(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
   const { page = 1, limit = 50, action, entityType } = filters;
+  const parsedPage = parseInt(String(page), 10) || 1;
+  const parsedLimit = Math.min(100, parseInt(String(limit), 10) || 50);
   const where: any = { businessId: business.id };
   if (action) where.action = action;
   if (entityType) where.entityType = entityType;
-  const skip = (page - 1) * limit;
+  const skip = (parsedPage - 1) * parsedLimit;
   const [logs, total] = await Promise.all([
-    prisma.planningLog.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+    prisma.planningLog.findMany({ where, skip, take: parsedLimit, orderBy: { createdAt: 'desc' } }),
     prisma.planningLog.count({ where }),
   ]);
-  return { logs, total, page, limit, totalPages: Math.ceil(total / limit) };
+  return { logs, total, page: parsedPage, limit: parsedLimit, totalPages: Math.ceil(total / parsedLimit) };
 }
 
 // ===================== STATS =====================

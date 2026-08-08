@@ -6,6 +6,7 @@ import {
   Car,
   Plus,
   Search,
+  Boxes,
   Grid3X3,
   List,
   Eye,
@@ -20,6 +21,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -86,7 +89,44 @@ export default function RentalsPage() {
     return f;
   }, [allRentals, activeTab, searchQuery]);
 
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
+  if (error) {
+    const status = (error as any)?.response?.status;
+    const errMsg = (error as any)?.response?.data?.error || error.message;
+    if (status === 403 || /module/i.test(errMsg)) {
+      return (
+        <div className="space-y-6 animate-fade-in">
+          <PageHeader
+            title="Centre des locations"
+            description="Gérez vos articles et équipements en location, suivez les retours et les revenus."
+            breadcrumbs={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Locations' },
+              { label: 'Tous les articles' },
+            ]}
+          />
+          <Card className="text-center py-14">
+            <div className="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center mx-auto mb-4">
+              <Boxes className="h-7 w-7 text-brand" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              Module Locations non activé
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-5">
+              Ce module n&apos;est pas encore activé sur votre abonnement. Activez-le pour
+              mettre vos articles en location et encaisser en ligne.
+            </p>
+            <Link href="/dashboard/modules-analysis">
+              <Button size="sm">
+                <Sparkles className="h-4 w-4 mr-1.5" />
+                Voir mes modules
+              </Button>
+            </Link>
+          </Card>
+        </div>
+      );
+    }
+    return <ErrorState title={errMsg.includes('status code') ? undefined : 'Une erreur est survenue'} message={errMsg} onRetry={refetch} />;
+  }
   if (isLoading)
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -96,26 +136,29 @@ export default function RentalsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Locations
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos articles et équipements en location
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
+      <PageHeader
+        title="Centre des locations"
+        description="Gérez vos articles et équipements en location, suivez les retours et les revenus."
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Locations' },
+          { label: 'Tous les articles' },
+        ]}
+        actions={
           <Link href="/dashboard/rentals/new">
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1.5" />
               Nouvel article
             </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       <CopilotTips moduleKey="RENTALS" />
+
+      <div className="flex items-center justify-end">
+        <LiveBadge tone="brand" label="Temps réel" />
+      </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatsCard
