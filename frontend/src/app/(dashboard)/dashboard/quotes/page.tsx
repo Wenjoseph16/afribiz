@@ -13,7 +13,6 @@ import {
   Send,
   TrendingUp,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Select } from '@/components/ui/Select';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { LiveBadge } from '@/components/ui/LiveBadge';
@@ -56,7 +55,7 @@ export default function QuotesPage() {
             <LiveBadge label="Temps réel" />
             <Link
               href="/dashboard/quotes/new"
-              className="inline-flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors active:scale-[0.98] transition-transform"
+              className="inline-flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-700 transition-all active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
               Nouveau devis

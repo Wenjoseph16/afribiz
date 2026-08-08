@@ -143,7 +143,7 @@ export default function UnitsPage() {
             </button>
             <button
               onClick={() => setShowNew(true)}
-              className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors flex items-center gap-2 text-sm font-medium active:scale-[0.98] transition-transform"
+              className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-all flex items-center gap-2 text-sm font-medium active:scale-[0.98]"
             >
               <Plus className="w-4 h-4" /> Ajouter
             </button>
