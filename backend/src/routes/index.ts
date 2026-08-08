@@ -95,6 +95,7 @@ export { default as shortRoutes } from './shortRoutes';
 export { default as signatureRoutes } from './signatureRoutes';
 export { default as simulationRoutes } from './simulation';
 export { default as smartSearchRoutes } from './smartSearchRoutes';
+export { default as trackingRoutes } from './tracking';
 export { default as socialAccountRoutes } from './socialAccountRoutes';
 export { default as storyRoutes } from './storyRoutes';
 export { default as stripeWebhookRoutes } from './stripeWebhook';

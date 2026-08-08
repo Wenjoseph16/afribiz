@@ -140,12 +140,8 @@ export default function MarketingPage() {
         />
         <StatsCard
           icon={<Eye className="h-5 w-5" />}
-          label="Taux succès"
-          value={
-            campaigns.length > 0
-              ? `${Math.round((campaigns.filter((c: any) => c.status === 'COMPLETED').length / campaigns.length) * 100)}%`
-              : '0%'
-          }
+          label="Ouvertures totales"
+          value={campaigns.reduce((s: number, c: any) => s + (c.openedCount || 0), 0)}
         />
       </div>
 
@@ -197,6 +193,11 @@ export default function MarketingPage() {
                     {(c.channels?.length ? c.channels.join(', ') : 'WHATSAPP')} ·{' '}
                     {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
                     {c.sentCount > 0 ? ` · ${c.sentCount} envoyés` : ''}
+                    {c.openedCount > 0 ? ` · ${c.openedCount} ouverts` : ''}
+                    {c.clickedCount > 0 ? ` · ${c.clickedCount} clics` : ''}
+                    {c.sentCount > 0 && c.openedCount > 0
+                      ? ` · ${Math.min(100, Math.round((c.openedCount / c.sentCount) * 100))}% ouverts`
+                      : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

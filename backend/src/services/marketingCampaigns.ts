@@ -2,6 +2,7 @@ import { NotificationType } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
+import { config } from '../config/env';
 import { publishCampaignSent } from '../events/publishers';
 
 // ── Birthday Campaign ──
@@ -146,7 +147,7 @@ export async function sendCampaignViaWhatsApp(
 ) {
   const business = await prisma.business.findUnique({
     where: { ownerId, deletedAt: null },
-    select: { id: true, name: true, phone: true },
+    select: { id: true, name: true, slug: true, phone: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
 
@@ -193,14 +194,16 @@ export async function sendCampaignViaWhatsApp(
         },
       });
     }
+    // Lien de tracking public : incrémente openedCount (puis redirige vers la page publique)
+    const trackLink = `${config.BACKEND_URL || 'http://localhost:3001'}/api/track/campaign/${campaign.id}?action=open&redirect=/business/${business.slug}`;
     await prisma.whatsAppMessage.create({
       data: {
         sessionId: session.id,
         fromBusiness: true,
-        content: interpolate(template.body, c),
+        content: `${interpolate(template.body, c)}\n\n${trackLink}`,
         messageType: 'text',
         status: 'sent',
-        metadata: { source: 'campaign', campaignId, templateId: template.id },
+        metadata: { source: 'campaign', campaignId, templateId: template.id, trackLink },
       },
     });
     // Actualise la session

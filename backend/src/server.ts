@@ -129,6 +129,7 @@ import {
   taxRoutes,
   whatsappRoutes,
   whatsappWebhookRoutes,
+  trackingRoutes,
   offlineSyncRoutes,
   voiceCatalogueRoutes,
   ussdRoutes,
@@ -290,6 +291,9 @@ app.use('/api/payments', stripeWebhookRoutes);
 
 // WhatsApp Webhook (before CSRF — Meta sends callbacks without CSRF token)
 app.use('/api/whatsapp', whatsappWebhookRoutes);
+
+// Campaign tracking — public (clicks from WhatsApp/SMS/email, no auth, before CSRF)
+app.use('/api/track', trackingRoutes);
 
 // CSRF Protection — double-submit cookie pattern
 // Sets csrf-token cookie on GET; validates x-csrf-token header on POST/PUT/PATCH/DELETE

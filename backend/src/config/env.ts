@@ -14,6 +14,10 @@ export const config = {
   // Frontend Configuration
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
 
+  // URL publique du backend — utilisée pour construire les liens de tracking
+  // (ex. campagnes : lien cliquable → incrémente openedCount/clickedCount → redirection).
+  BACKEND_URL: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || '3001'}`,
+
   // Email Configuration (Using Mailtrap for development)
   SMTP_HOST: process.env.SMTP_HOST || 'smtp.mailtrap.io',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '2525', 10),
