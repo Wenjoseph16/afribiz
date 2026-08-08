@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { cn } from '@/lib/utils';
 import ModuleCharts from '@/components/dashboard/ModuleCharts';
 import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
@@ -48,16 +50,20 @@ export default function FinancePage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-          Finance
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Gérez vos devis, factures et suivi financier
-        </p>
-      </div>
+      <PageHeader
+        title="Centre financier"
+        description="Pilotez vos devis, factures et la trésorerie de votre entreprise."
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Finance' },
+          { label: 'Vue d\'ensemble' },
+        ]}
+      />
 
       {/* Stats */}
+      <div className="flex items-center justify-end">
+        <LiveBadge tone="brand" label="Temps réel" />
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatsCard
           icon={<DollarSign className="h-5 w-5" />}
