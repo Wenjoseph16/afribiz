@@ -24,6 +24,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import {
   useMyReferralCode,
   useMyReferrals,
@@ -145,16 +147,12 @@ export default function ReferralsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Parrainage
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Invitez vos amis et gagnez des récompenses
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Parrainage"
+        description="Invitez vos amis et gagnez des récompenses"
+        breadcrumbs={[{ label: 'Fidélité' }, { label: 'Parrainage' }]}
+        actions={<LiveBadge label="Temps réel" />}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

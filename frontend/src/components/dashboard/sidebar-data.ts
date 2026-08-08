@@ -480,6 +480,7 @@ export const BUSINESS_CORE_NAV: NavGroup[] = [
       },
       { label: 'Automatisations', href: '/dashboard/automations', icon: 'Activity' },
       { label: 'Paiements hybrides', href: '/dashboard/hybrid-payments', icon: 'CreditCard' },
+      { label: 'WhatsApp Business', href: '/dashboard/whatsapp', icon: 'MessageSquare' },
       { label: 'Catalogue Vocal', href: '/dashboard/voice', icon: 'Mic' },
       { label: 'Mode Hors-ligne', href: '/dashboard/offline-sync', icon: 'Download' },
       { label: 'Unités de mesure', href: '/dashboard/units', icon: 'Ruler' },

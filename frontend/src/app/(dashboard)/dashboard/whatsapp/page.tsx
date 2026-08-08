@@ -13,6 +13,8 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
@@ -129,22 +131,24 @@ export default function WhatsAppPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">WhatsApp Business</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos templates, sessions et messages WhatsApp
-          </p>
-        </div>
-        {activeTab === 'templates' && (
-          <button
-            onClick={() => setShowNewTemplate(true)}
-            className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" /> Nouveau template
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="WhatsApp Business"
+        description="Gérez vos templates, sessions et messages WhatsApp"
+        breadcrumbs={[{ label: 'Config & Intégrations' }, { label: 'WhatsApp' }]}
+        actions={
+          <>
+            <LiveBadge label="Temps réel" />
+            {activeTab === 'templates' && (
+              <button
+                onClick={() => setShowNewTemplate(true)}
+                className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-all flex items-center gap-2 text-sm font-medium active:scale-[0.98]"
+              >
+                <Plus className="w-4 h-4" /> Nouveau template
+              </button>
+            )}
+          </>
+        }
+      />
 
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2 text-sm">
