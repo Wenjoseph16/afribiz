@@ -12,6 +12,7 @@ import {
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
 import { DEFAULT_PLAN_ID } from './planAccessService';
+import * as afriScoreService from './afriScoreService';
 
 export async function getPublicBusiness(slug: string) {
   const business = await prisma.business.findUnique({
@@ -210,6 +211,10 @@ export async function createBusinessReview(
     businessId: business.id,
     businessName: business.name,
     rating: data.rating,
+  });
+  // L'avis influence l'AfriScore (composante satisfaction) : recalcule non-bloquant
+  afriScoreService.computeBusinessScore(business.id).catch((err) => {
+    console.warn('[business] afriscore recompute failed:', (err as Error).message);
   });
 
   // Analytics — avis business publié (fire-and-forget, non-bloquant)

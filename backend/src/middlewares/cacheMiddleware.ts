@@ -36,7 +36,13 @@ export function cacheResponse(options: CacheMiddlewareOptions) {
       return;
     }
 
-    const cacheKey = `${prefix}:${keyFrom ? keyFrom(req) : req.originalUrl}`;
+    // Clé par défaut : URL + identité quand elle existe. Sans cela, un endpoint
+    // authentifié (ex. /afriscore/mine) serait mis en cache une fois pour TOUS les
+    // utilisateurs → fuite de données cross-compte (score d'un autre business).
+    const reqAny = req as any;
+    const identity = reqAny.user?.id || reqAny.partner?.id || '';
+    const defaultKey = identity ? `${req.originalUrl}::${identity}` : req.originalUrl;
+    const cacheKey = `${prefix}:${keyFrom ? keyFrom(req) : defaultKey}`;
 
     try {
       const cached = await cache.get<any>(cacheKey);

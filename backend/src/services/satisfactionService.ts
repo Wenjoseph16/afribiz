@@ -2,6 +2,7 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { publishSurveyResponded } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
+import * as afriScoreService from './afriScoreService';
 
 /**
  * Enregistre la réponse à l'enquête de satisfaction (note 1-5 + commentaire),
@@ -75,6 +76,13 @@ export async function submitSatisfaction(
     value: score,
     properties: { orderId: data.orderId || null, bookingId: data.bookingId || null, feedback: data.feedback?.trim() || null },
   }).catch(() => {});
+
+  // La note influence l'AfriScore (composante satisfaction) : recalcule non-bloquant
+  if (businessId) {
+    afriScoreService.computeBusinessScore(businessId).catch((err) => {
+      console.warn('[satisfaction] afriscore recompute failed:', (err as Error).message);
+    });
+  }
 
   return response;
 }

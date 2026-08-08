@@ -80,7 +80,7 @@ const COMPONENT_META: Record<string, { label: string; icon: any; desc: string }>
   satisfaction: {
     label: 'Satisfaction client',
     icon: Star,
-    desc: 'Avis, notes et recommandations',
+    desc: 'Avis publics + enquêtes de satisfaction',
   },
   operationalReliability: {
     label: 'Fiabilité opérationnelle',
@@ -244,6 +244,58 @@ export default function AfriScorePage() {
           );
         })}
       </div>
+
+      {/* Satisfaction Detail — avis publics + enquêtes */}
+      {(() => {
+        const sat = (components.satisfaction as any)?.meta;
+        if (!sat) return null;
+        const items = [
+          {
+            label: 'Note publique',
+            value: sat.avgRating ? `${Number(sat.avgRating).toFixed(1)} / 5` : '—',
+            sub: `${sat.reviewCount || 0} avis`, 
+          },
+          {
+            label: 'Satisfaction (avis)',
+            value: sat.satisfactionRate ? `${Math.round(sat.satisfactionRate)}%` : '—',
+            sub: 'avis positifs (≥ 4★)',
+          },
+          {
+            label: 'Moyenne enquêtes',
+            value: sat.surveyAvg ? `${Number(sat.surveyAvg).toFixed(1)} / 5` : '—',
+            sub: `${sat.surveyResponses || 0} réponses`,
+          },
+          {
+            label: 'Taux de réponse',
+            value: sat.surveyResponseRate ? `${Math.round(sat.surveyResponseRate)}%` : '—',
+            sub: `${sat.surveysSent || 0} enquêtes envoyées`,
+          },
+        ];
+        return (
+          <Card>
+            <div className="flex items-center gap-2 mb-4">
+              <Star className="h-4 w-4 text-amber-500" />
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Satisfaction client — avis &amp; enquêtes
+              </h3>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {items.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 p-4"
+                >
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{item.label}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
+                    {item.value}
+                  </p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* Score History */}
       <Card>

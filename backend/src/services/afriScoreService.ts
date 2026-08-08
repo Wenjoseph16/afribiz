@@ -10,6 +10,10 @@ const SCORE_CATEGORIES = [
   { min: 0, category: 'VERY_LOW' as const },
 ];
 
+// Échantillon minimum d'enquêtes pour mesurer l'engagement : en dessous,
+// le taux de réponse n'est ni récompensé ni pénalisé (pas statistiquement fiable).
+const SURVEY_MIN_SAMPLE = 3;
+
 export function getScoreCategory(score: number): string {
   for (const cat of SCORE_CATEGORIES) {
     if (score >= cat.min) return cat.category;
@@ -220,6 +224,32 @@ export async function computeSatisfaction(
     select: { rating: true, createdAt: true },
   });
 
+  // Enquêtes de satisfaction : moyenne des notes + taux de réponse réel
+  // (réponses reçues / enquêtes envoyées via satisfactionSurveySentAt).
+  // Le count des réponses est fourni par l'agrégat (_count._all) — pas de requête dupliquée.
+  const [surveyAgg, sentOrders, sentBookings] = await Promise.all([
+    prisma.satisfactionSurveyResponse.aggregate({
+      where: { businessId },
+      _avg: { score: true },
+      _count: { _all: true },
+    }),
+    prisma.order.count({
+      where: { businessId, satisfactionSurveySentAt: { not: null } },
+    }),
+    prisma.booking.count({
+      where: { businessId, satisfactionSurveySentAt: { not: null } },
+    }),
+  ]);
+  const surveyAvg = surveyAgg._avg.score ?? null;
+  const surveyResponses = surveyAgg._count._all || 0;
+  const surveysSent = sentOrders + sentBookings;
+  // Seuil minimum : un échantillon < 3 enquêtes n'est pas statistiquement
+  // significatif — l'engagement n'est ni récompensé ni pénalisé en dessous.
+  // Décision assumée : ≥ 3 envoyées avec 0 réponse → pénalité engagement (signal réel).
+  const surveyEngagementEligible = surveysSent >= SURVEY_MIN_SAMPLE;
+  const surveyResponseRate =
+    surveyEngagementEligible ? Math.round((surveyResponses / surveysSent) * 1000) / 10 : null;
+
   const avgRating = business.rating || 0;
   const reviewCount = business.reviewCount || 0;
   const positiveReviews = reviews.filter((r) => r.rating >= 4).length;
@@ -228,6 +258,12 @@ export async function computeSatisfaction(
   const ratingScore = clamp(Math.round((avgRating / 5) * 200), 0, 200);
   const reviewCountScore = clamp(Math.round(Math.min(reviewCount / 10, 1) * 200), 0, 200);
   const satisfactionScore = clamp(Math.round((satisfactionRate / 100) * 200), 0, 200);
+  const surveyAvgScore =
+    surveyAvg !== null ? clamp(Math.round((surveyAvg / 5) * 200), 0, 200) : null;
+  const surveyEngagementScore =
+    surveyResponseRate !== null
+      ? clamp(Math.round((surveyResponseRate / 100) * 200), 0, 200)
+      : null;
 
   let responseTimeScore = 0;
   const messages = await prisma.conversation.findMany({
@@ -257,9 +293,22 @@ export async function computeSatisfaction(
     }
   }
 
-  const weights = [0.4, 0.2, 0.2, 0.2];
-  const scores = [ratingScore, reviewCountScore, satisfactionScore, responseTimeScore];
-  const score = weightedScore(scores, weights);
+  // Pondération conditionnelle : un composant SANS données n'est pas pénalisé
+  // (ex. un business sans enquêtes ne reçoit pas 0 pour la moyenne d'enquête).
+  // weightedScore renormalise par la somme des poids actifs.
+  const parts: { score: number; weight: number }[] = [
+    { score: ratingScore, weight: 0.3 },
+    { score: satisfactionScore, weight: 0.2 },
+    { score: reviewCountScore, weight: 0.1 },
+    { score: responseTimeScore, weight: 0.15 },
+  ];
+  if (surveyAvgScore !== null) parts.push({ score: surveyAvgScore, weight: 0.15 });
+  if (surveyEngagementScore !== null) parts.push({ score: surveyEngagementScore, weight: 0.1 });
+
+  const score = weightedScore(
+    parts.map((p) => p.score),
+    parts.map((p) => p.weight)
+  );
 
   return {
     score,
@@ -271,6 +320,13 @@ export async function computeSatisfaction(
       ratingScore,
       reviewCountScore,
       satisfactionScore,
+      surveyAvg,
+      surveyResponses,
+      surveysSent,
+      surveyResponseRate,
+      surveyAvgScore,
+      surveyEngagementScore,
+      surveyEngagementEligible,
     },
   };
 }
