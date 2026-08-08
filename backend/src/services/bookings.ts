@@ -1,7 +1,11 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
-import { publishBookingCreated, publishBookingStatusChanged } from '../events/publishers';
+import {
+  publishBookingCreated,
+  publishBookingStatusChanged,
+  publishSatisfactionSurvey,
+} from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
 import { checkPlanLimit } from './planAccessService';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
@@ -323,6 +327,28 @@ export async function updateBookingStatus(
     businessName: business.name,
     businessId: business.id,
   });
+
+  // Enquête de satisfaction — déclenchement immédiat au check-out d'un séjour
+  // (COMPLETED). Réserve atomique via updateMany où satisfactionSurveySentAt: null :
+  // deux clics parallèles ne peuvent pas créer 2 enquêtes (cf. fix épargne-achat).
+  if (status === 'COMPLETED' && booking.clientId) {
+    try {
+      const claimed = await prisma.booking.updateMany({
+        where: { id: bookingId, satisfactionSurveySentAt: null },
+        data: { satisfactionSurveySentAt: new Date() },
+      });
+      if (claimed.count === 1) {
+        publishSatisfactionSurvey({
+          userId: booking.clientId,
+          bookingId,
+          businessName: business.name,
+        });
+      }
+    } catch (err) {
+      // Non bloquant : le cron de rattrapage couvre le cas où la réserve échoue
+      console.warn('[satisfaction] booking survey claim failed:', (err as Error).message);
+    }
+  }
 
   return updated;
 }

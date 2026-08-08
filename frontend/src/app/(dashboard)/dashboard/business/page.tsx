@@ -105,6 +105,13 @@ const BusinessAlertQueue = dynamic(() => import('@/components/dashboard/Business
   ssr: false,
   loading: () => <div className="h-48 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
 });
+const BusinessSatisfactionCard = dynamic(
+  () => import('@/components/dashboard/BusinessSatisfactionCard'),
+  {
+    ssr: false,
+    loading: () => <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+  }
+);
 
 // ─── Mapping module BusinessModule -> vraie page du dashboard ───
 // Les codes enum (QUOTES_INVOICES, DEBTS_PAYMENTS…) ne correspondent pas
@@ -613,6 +620,9 @@ export default function BusinessDashboardPage() {
           <BusinessPlanCard />
         </div>
       </div>
+
+      {/* Satisfaction client — agrégation des notes d'enquête (commandes + séjours) */}
+      <BusinessSatisfactionCard />
 
       {/* Modules overview chart */}
       {orders.length + bookings.length + reviews.length + conversations.length > 0 && (

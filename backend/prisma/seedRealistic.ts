@@ -490,7 +490,7 @@ async function seedOrders() {
       items: [{ id: 'oi-3', productId: 'prod-res-2', name: 'Mafé Poulet', quantity: 1, unitPrice: 4500, total: 4500 }, { id: 'oi-4', productId: 'prod-res-3', name: 'Jus de Bissap', quantity: 1, unitPrice: 1500, total: 1500 }],
     },
     {
-      id: 'ord-3', businessId: B.RESTO, buyerId: U.CLIENT_5, orderNumber: 'CMD-2026-003', type: 'DELIVERY', source: 'WEB_SITE', status: 'PENDING',
+      id: 'ord-3', businessId: B.RESTO, buyerId: U.CLIENT_5, orderNumber: 'CMD-2026-003', type: 'DELIVERY', source: 'WEB_SITE', status: 'DELIVERED',
       totalAmount: 3500, subtotal: 3500, deliveryFee: 0, discountAmount: 0, currency: 'FCFA',
       deliveryAddress: 'Bamako, Faladié', contactPhone: '+22370000001', contactName: 'Aminata Koné',
       paidAt: null, paymentMethod: null, paymentStatus: 'UNPAID', createdAt: new Date('2026-07-05'),
@@ -1500,6 +1500,7 @@ export async function seedRealistic() {
   await seedOperations();
   await seedFraud();
   await seedFinance();
+  await seedSatisfaction();
   console.log('\n✅ Seed réaliste terminé. Mdp unique : ' + PASSWORD);
 }
 
@@ -1603,6 +1604,81 @@ async function seedFinance() {
     },
   });
   console.log('✓ Finance : 3 paiements + 1 escrow liés à de vraies commandes');
+}
+
+// ============================================================
+// SATISFACTION (réponses d'enquête liées à de vraies commandes/séjours)
+// ============================================================
+async function seedSatisfaction() {
+  // Réponses + flag dédup : chaque référence n'a été enquêtée qu'une fois.
+  const responses = [
+    {
+      id: 'sat-1', userId: U.CLIENT_1, businessId: B.RESTO, orderId: 'ord-1',
+      score: 5, feedback: 'L\'attiéké était délicieux et la livraison rapide. Je recommande !',
+      createdAt: new Date('2026-07-25T18:30:00Z'),
+    },
+    {
+      id: 'sat-2', userId: U.CLIENT_5, businessId: B.RESTO, orderId: 'ord-3',
+      score: 4, feedback: 'Très bon mafé, petit délai sur la livraison mais ça vaut le coup.',
+      createdAt: new Date('2026-07-28T19:10:00Z'),
+    },
+    {
+      id: 'sat-3', userId: U.CLIENT_2, businessId: B.BOUTIQUE, orderId: 'ord-4',
+      score: 4, feedback: 'Pagne de qualité conforme à la photo. Service client réactif.',
+      createdAt: new Date('2026-08-01T15:45:00Z'),
+    },
+    {
+      id: 'sat-4', userId: U.CLIENT_3, businessId: B.BOUTIQUE, orderId: 'ord-5',
+      score: 5, feedback: 'Commande reçue en 2 jours, emballage soigné. Parfait !',
+      createdAt: new Date('2026-08-05T11:20:00Z'),
+    },
+    {
+      id: 'sat-5', userId: U.CLIENT_3, businessId: B.HOTEL, bookingId: 'bk-3',
+      score: 4, feedback: 'Séjour agréable, chambre spacieuse. Petit déjeuner à améliorer.',
+      createdAt: new Date('2026-08-03T09:15:00Z'),
+    },
+    {
+      id: 'sat-6', userId: U.CLIENT_1, businessId: B.SALON, bookingId: 'bk-1',
+      score: 5, feedback: 'Manucure magnifique, équipe adorable. Je reviendrai !',
+      createdAt: new Date('2026-07-21T17:00:00Z'),
+    },
+  ];
+  for (const r of responses) {
+    await prisma.satisfactionSurveyResponse.upsert({
+      where: { id: r.id },
+      update: {
+        userId: r.userId, businessId: r.businessId, score: r.score,
+        feedback: r.feedback, createdAt: r.createdAt,
+      },
+      create: {
+        id: r.id, userId: r.userId, businessId: r.businessId,
+        orderId: r.orderId || null, bookingId: r.bookingId || null,
+        score: r.score, feedback: r.feedback, createdAt: r.createdAt,
+      },
+    });
+  }
+
+  // Flags dédup : seules les références LIVRÉES / SÉJOUR TERMINÉ ont été enquêtées.
+  await prisma.order.updateMany({
+    where: { id: { in: ['ord-1', 'ord-3', 'ord-4', 'ord-5'] } },
+    data: { satisfactionSurveySentAt: new Date('2026-07-26T08:00:00Z') },
+  });
+  await prisma.booking.updateMany({
+    where: { id: { in: ['bk-3', 'bk-1'] } },
+    data: { satisfactionSurveySentAt: new Date('2026-08-04T08:00:00Z') },
+  });
+
+  // Hygiène : réinitialise les flags posés lors de tests (références non seedées)
+  // pour que l'enquête soit re-déclenchée au prochain DELIVERED / check-out réel.
+  await prisma.order.updateMany({
+    where: { id: { notIn: ['ord-1', 'ord-3', 'ord-4', 'ord-5'] }, satisfactionSurveySentAt: { not: null } },
+    data: { satisfactionSurveySentAt: null },
+  });
+  await prisma.booking.updateMany({
+    where: { id: { notIn: ['bk-3', 'bk-1'] }, satisfactionSurveySentAt: { not: null } },
+    data: { satisfactionSurveySentAt: null },
+  });
+  console.log('✓ Satisfaction : 6 réponses d\'enquête liées à de vraies commandes/séjours');
 }
 
 // Exécution directe (npx tsx prisma/seedRealistic.ts)

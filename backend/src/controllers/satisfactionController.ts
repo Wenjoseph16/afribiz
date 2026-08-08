@@ -29,3 +29,11 @@ export const getContext = catchAsyncErrors(
     res.json({ success: true, data });
   }
 );
+
+export const getBusinessStats = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Authentification requise', 401);
+    const data = await satisfactionService.getBusinessSatisfactionStats(req.user.id);
+    res.json({ success: true, data });
+  }
+);

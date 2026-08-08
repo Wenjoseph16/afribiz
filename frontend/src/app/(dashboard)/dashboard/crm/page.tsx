@@ -32,6 +32,15 @@ import {
   useCrmDeleteTag,
   useCrmAddClientNote,
 } from '@/features/crm/hooks';
+import dynamic from 'next/dynamic';
+
+const BusinessSatisfactionCard = dynamic(
+  () => import('@/components/dashboard/BusinessSatisfactionCard'),
+  {
+    ssr: false,
+    loading: () => <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+  }
+);
 
 // ─── Types ─────────────────────────────────────────────────
 interface Client {
@@ -203,6 +212,9 @@ export default function CrmPage() {
           color="bg-amber-500"
         />
       </motion.div>
+
+      {/* ═══ SATISFACTION — notes d'enquête agrégées ═══ */}
+      <BusinessSatisfactionCard />
 
       {/* ═══ MAIN CONTENT ═══ */}
       <div className="grid lg:grid-cols-3 gap-6">

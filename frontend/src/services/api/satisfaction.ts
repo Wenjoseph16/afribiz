@@ -7,4 +7,7 @@ export function injectSatisfaction(api: ApiClientMethods) {
   api.getSatisfactionContext = function (params: any) {
     return this.get('/satisfaction/context', { params });
   };
+  api.getBusinessSatisfactionStats = function () {
+    return this.get('/satisfaction/stats');
+  };
 }
