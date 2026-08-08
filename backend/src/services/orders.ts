@@ -230,16 +230,19 @@ export async function createOrder(ownerId: string, data: any) {
 /**
  * Facture automatique : créée à la validation de la commande (CONFIRMED/ACCEPTED),
  * marquée PAID à la livraison (DELIVERED). Liée via Invoice.orderId (unique).
+ *
+ * `prepaid` (ex. commandes Épargne Achat, déjà payées en escrow) : la facture est
+ * créée directement PAID avec le montant réglé, et l'événement invoice.paid est publié.
  */
-async function ensureInvoiceForOrder(order: any, business: any, status: string) {
+export async function ensureInvoiceForOrder(order: any, business: any, status: string, prepaid = false) {
   try {
-    const finalized = ['DELIVERED', 'COMPLETED'].includes(status);
+    const finalized = prepaid || ['DELIVERED', 'COMPLETED'].includes(status);
     const billable = finalized || ['CONFIRMED', 'ACCEPTED', 'PREPARING', 'READY'].includes(status);
     if (!billable) return;
 
     const existing = await prisma.invoice.findUnique({
       where: { orderId: order.id },
-      select: { id: true },
+      select: { id: true, status: true },
     });
 
     if (!existing) {
@@ -274,7 +277,8 @@ async function ensureInvoiceForOrder(order: any, business: any, status: string) 
           currency: order.currency || 'FCFA',
           status: finalized ? 'PAID' : 'SENT',
           paidAt: finalized ? new Date() : undefined,
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          // Pas d'échéance sur une facture déjà réglée
+          dueDate: finalized ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           invoiceItems: { create: items },
         },
         select: { id: true, invoiceNumber: true },
@@ -302,15 +306,20 @@ async function ensureInvoiceForOrder(order: any, business: any, status: string) 
         );
       }
     } else if (finalized) {
-      await prisma.invoice.update({
-        where: { id: existing.id },
-        data: { status: 'PAID', amountPaid: Number(order.totalAmount || 0), paidAt: new Date() },
-      });
-      publishInvoicePaid(order.buyerId || business.ownerId || '', order.businessId || business.id, {
-        invoiceId: existing.id,
-        clientName: order.contactName || 'Client',
-        amount: Number(order.totalAmount || 0),
-      });
+      // Éviter un doublon « Facture payée » : une facture déjà PAID (ex. Épargne Achat,
+      // réglée dès la création) ne doit pas republier l'événement quand la commande
+      // passe simplement à DELIVERED.
+      if (existing.status !== 'PAID') {
+        await prisma.invoice.update({
+          where: { id: existing.id },
+          data: { status: 'PAID', amountPaid: Number(order.totalAmount || 0), paidAt: new Date() },
+        });
+        publishInvoicePaid(order.buyerId || business.ownerId || '', order.businessId || business.id, {
+          invoiceId: existing.id,
+          clientName: order.contactName || 'Client',
+          amount: Number(order.totalAmount || 0),
+        });
+      }
     }
   } catch (e) {
     // Facture non bloquante : la commande reste valide même si la facture échoue

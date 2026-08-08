@@ -6,6 +6,7 @@ import { getIO } from './socket';
 import { processMobileMoney } from './paymentProcessor';
 import { trackAnalyticsEvent } from './analyticsService';
 import { publishOrderPlaced } from '../events/publishers';
+import { ensureInvoiceForOrder } from './orders';
 
 const ESCROW_COMMISSION_RATE = 0.01; // 1% sur la libération (cohérent avec monetizationConfig)
 
@@ -644,9 +645,21 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
 
   const fee = Math.round(target * ESCROW_COMMISSION_RATE * 100) / 100;
   const netAmount = target - fee;
-  const orderNumber = `CMD-LW-${String(plan.id).slice(0, 6).toUpperCase()}`;
+  // Numéro unique garanti : orderNumber est contraint UNIQUE en base (P2002 sinon),
+  // et le préfixe dérivé de l'id seul pouvait entrer en collision (ex. lw-plan-1 / lw-plan-10).
+  const orderNumber = `CMD-LW-${String(plan.id).slice(0, 4).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
   const result = await prisma.$transaction(async (tx) => {
+    // 0. Réserve atomique du plan (READY → COMPLETED) : un seul confirm possible,
+    //    même en cas de double clic ou de requêtes parallèles (anti-double commande/facture).
+    const claimed = await tx.layawayPlan.updateMany({
+      where: { id: plan.id, clientId, status: 'READY' },
+      data: { status: 'COMPLETED', completedAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      throw new AppError('Ce plan a déjà été converti en commande', 409);
+    }
+
     // 1. Commande (comme un checkout normal, statut CONFIRMED + payé)
     const order = await tx.order.create({
       data: {
@@ -718,27 +731,47 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
       });
     }
 
-    // 3. Plan complet
+    // 3. Lier la commande au plan (déjà réservé COMPLETED par l'étape 0)
     const updatedPlan = await tx.layawayPlan.update({
       where: { id: plan.id },
-      data: { status: 'COMPLETED', orderId: order.id, completedAt: new Date() },
+      data: { orderId: order.id },
     });
 
     return { order, updatedPlan };
   });
 
-  // Notifications + socket + événement commande
-  await notify(
-    clientId,
-    plan.businessId,
-    NotificationType.ORDER_PLACED,
-    '🚚 Votre achat est lancé !',
-    `${plan.itemName} commandé (${target} FCFA). Suivez votre commande ${orderNumber}.`,
-    `/dashboard/orders/${result.order.id}`
-  ).catch(() => {});
-  emitUser(clientId, 'layaway:checkout-confirmed', { planId: plan.id, orderId: result.order.id });
+  const owner = await prisma.business.findUnique({
+    where: { id: plan.businessId },
+    select: { id: true, name: true, ownerId: true },
+  });
 
-  const owner = await prisma.business.findUnique({ where: { id: plan.businessId }, select: { ownerId: true } });
+  // 1. Facture automatique — la commande épargne est déjà payée (escrow libéré) :
+  //    facture créée directement PAID, liée via Invoice.orderId (non bloquant).
+  try {
+    const orderWithItems = await prisma.order.findUnique({
+      where: { id: result.order.id },
+      include: { items: true },
+    });
+    if (orderWithItems && owner) {
+      await ensureInvoiceForOrder(orderWithItems as any, owner as any, 'CONFIRMED', true);
+    }
+  } catch (err) {
+    logger.warn('Layaway invoice auto-creation failed', { error: (err as Error).message });
+  }
+
+  // 2. Flux commande standard — ciblé sur l'acheteur : notification « Commande passée »,
+  //    points de fidélité (LoyaltyAutomation), tâches auto (advancedTasks) et
+  //    rafraîchissement temps réel de la room business:{id} (businessRoomHandler).
+  emitUser(clientId, 'layaway:checkout-confirmed', { planId: plan.id, orderId: result.order.id });
+  publishOrderPlaced({
+    userId: clientId,
+    orderId: result.order.id,
+    businessName: plan.itemName,
+    amount: String(target),
+    businessId: plan.businessId,
+  });
+
+  // 3. Notification propriétaire — message clair et actionnable (wallet + commission).
   if (owner?.ownerId) {
     await notify(
       owner.ownerId,
@@ -749,15 +782,6 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
       `/dashboard/orders/${result.order.id}`
     ).catch(() => {});
     emitBusiness(plan.businessId, 'layaway:completed', { planId: plan.id, orderId: result.order.id });
-
-    // Alimente le flux commande existant (notification + socket standard)
-    publishOrderPlaced({
-      userId: owner.ownerId,
-      orderId: result.order.id,
-      businessName: plan.itemName,
-      amount: String(target),
-      businessId: plan.businessId,
-    });
   }
 
   trackAnalyticsEvent({
