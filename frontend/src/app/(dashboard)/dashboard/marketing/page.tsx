@@ -1,12 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Megaphone, Plus, BarChart3, Target, Users, Eye } from 'lucide-react';
+import { Megaphone, Plus, Send, MessageCircle, Loader2, Target, Users, Eye } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -16,6 +18,11 @@ import Link from 'next/link';
 
 export default function MarketingPage() {
   const [filter, setFilter] = useState('all');
+  const [sendTarget, setSendTarget] = useState<any | null>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['marketing-campaigns'],
     queryFn: async () => {
@@ -28,6 +35,34 @@ export default function MarketingPage() {
     },
     retry: false,
   });
+
+  const openSendModal = async (campaign: any) => {
+    setSendTarget(campaign);
+    setSendError('');
+    setSelectedTemplate('');
+    try {
+      const res = await apiClient.getWhatsAppTemplates();
+      const list = res.data?.data || [];
+      setTemplates(Array.isArray(list) ? list : []);
+    } catch {
+      setTemplates([]);
+    }
+  };
+
+  const confirmSend = async () => {
+    if (!sendTarget || !selectedTemplate) return;
+    setSending(true);
+    setSendError('');
+    try {
+      await apiClient.sendCampaignWhatsApp(sendTarget.id, { templateId: selectedTemplate });
+      setSendTarget(null);
+      setSending(false);
+      refetch();
+    } catch (e: any) {
+      setSendError(e?.response?.data?.message || e?.message || 'Erreur lors de l envoi');
+      setSending(false);
+    }
+  };
 
   if (error) {
     const status = (error as any)?.response?.status || (error as any)?.status;
@@ -140,30 +175,91 @@ export default function MarketingPage() {
                 <div>
                   <p className="text-sm font-medium">{c.name}</p>
                   <p className="text-xs text-gray-500">
-                    {c.channel} · {new Date(c.startDate).toLocaleDateString()}
+                    {(c.channels?.length ? c.channels.join(', ') : 'WHATSAPP')} ·{' '}
+                    {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
+                    {c.sentCount > 0 ? ` · ${c.sentCount} envoyés` : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold">{c.budget} CFA</span>
                   <Badge
                     variant={
-                      c.status === 'active'
+                      c.status === 'ACTIVE'
                         ? 'success'
-                        : c.status === 'scheduled'
+                        : c.status === 'SCHEDULED'
                           ? 'warning'
-                          : c.status === 'paused'
-                            ? 'default'
-                            : 'info'
+                          : c.status === 'COMPLETED'
+                            ? 'info'
+                            : c.status === 'PAUSED'
+                              ? 'default'
+                              : 'info'
                     }
                   >
-                    {c.status}
+                    {c.status === 'COMPLETED' ? 'Envoyée' : c.status === 'SCHEDULED' ? 'Planifiée' : c.status === 'ACTIVE' ? 'Active' : c.status === 'PAUSED' ? 'En pause' : 'Brouillon'}
                   </Badge>
+                  {c.status === 'DRAFT' && (
+                    <Button size="sm" variant="secondary" onClick={() => openSendModal(c)}>
+                      <Send className="h-3.5 w-3.5 mr-1.5" />
+                      Envoyer WhatsApp
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </Card>
+
+      <Modal
+        open={!!sendTarget}
+        onClose={() => setSendTarget(null)}
+        title={`Envoyer « ${sendTarget?.name || ''} » via WhatsApp`}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Sélectionnez un template WhatsApp approuvé. Le message sera envoyé à tous vos clients
+            ayant un téléphone, et créera une session WhatsApp pour chacun.
+          </p>
+          {templates.length === 0 ? (
+            <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-center text-sm text-gray-500">
+              <MessageCircle className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+              Aucun template WhatsApp disponible. Créez-en un depuis{' '}
+              <Link href="/dashboard/whatsapp" className="text-brand-500 underline">
+                WhatsApp Business
+              </Link>
+              .
+            </div>
+          ) : (
+            <Select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value)}
+              options={templates
+                .filter((t: any) => t.status === 'APPROVED')
+                .map((t: any) => ({ value: t.id, label: `${t.name} (${t.category})` }))}
+            />
+          )}
+          {sendError && (
+            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+              {sendError}
+            </p>
+          )}
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={confirmSend}
+            disabled={sending || !selectedTemplate}
+          >
+            {sending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Envoi en cours...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" /> Envoyer à tous les clients
+              </>
+            )}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

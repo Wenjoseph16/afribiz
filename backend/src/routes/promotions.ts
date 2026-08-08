@@ -21,6 +21,7 @@ import {
   createBundle,
   listCampaigns,
   createCampaign,
+  sendCampaignWhatsApp,
   getLoyaltyProgram,
   updateLoyaltyProgram,
   getClientLoyalty,
@@ -33,14 +34,17 @@ router.use(authMiddleware);
 
 // ─── Routes publiques (lecture) ───
 // Accessible à tous les utilisateurs authentifiés (CLIENT, BUSINESS, ADMIN)
+// ATTENTION: les routes statiques (coupons, bundles, campaigns, loyalty, stats)
+// doivent être déclarées AVANT '/:id', sinon Express matche '/:id' en premier
+// et toutes ces listes renvoient un 404 (id = 'campaigns' introuvable).
 router.get('/', listPromotions);
-router.get('/:id', getPromotion);
 router.get('/coupons', listCoupons);
 router.get('/bundles', listBundles);
 router.get('/campaigns', listCampaigns);
 router.get('/loyalty/program', getLoyaltyProgram);
 router.get('/loyalty/clients/:clientId', getClientLoyalty);
 router.get('/stats', getPromoStats);
+router.get('/:id', getPromotion);
 
 // ─── Routes protégées (écriture) ───
 // Réservé aux BUSINESS et ADMIN
@@ -74,6 +78,11 @@ router.post(
   requireRole(['BUSINESS', 'ADMIN']),
   validateBody(createCampaignSchema),
   createCampaign
+);
+router.post(
+  '/campaigns/:id/send-whatsapp',
+  requireRole(['BUSINESS', 'ADMIN']),
+  sendCampaignWhatsApp
 );
 router.put(
   '/loyalty/program',

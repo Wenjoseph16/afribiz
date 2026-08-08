@@ -316,6 +316,7 @@ export interface ApiClientMethods {
   createPromoBundle(data: any): Promise<any>;
   getPromoCampaigns(params?: any): Promise<any>;
   createPromoCampaign(data: any): Promise<any>;
+  sendCampaignWhatsApp(campaignId: string, data: any): Promise<any>;
   getLoyaltyProgram(): Promise<any>;
   updateLoyaltyProgram(data: any): Promise<any>;
   getPromoStats(): Promise<any>;

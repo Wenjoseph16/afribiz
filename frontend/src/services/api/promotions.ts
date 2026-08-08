@@ -34,6 +34,9 @@ export function injectPromotions(api: ApiClientMethods) {
   api.createPromoCampaign = function (data: any) {
     return this.post('/business/promotions/campaigns', data);
   };
+  api.sendCampaignWhatsApp = function (campaignId: string, data: any) {
+    return this.post(`/business/promotions/campaigns/${campaignId}/send-whatsapp`, data);
+  };
   api.getLoyaltyProgram = function () {
     return this.get('/business/promotions/loyalty/program');
   };

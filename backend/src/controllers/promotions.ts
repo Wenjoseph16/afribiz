@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import * as promoService from '../services/promotions';
+import * as marketingService from '../services/marketingCampaigns';
 
 // ===================== PROMOTIONS =====================
 
@@ -82,6 +83,20 @@ export const createCampaign = catchAsyncErrors(async (req: AuthenticatedRequest,
   const campaign = await promoService.createCampaign(req.user.id, req.body);
   res.status(201).json({ success: true, data: campaign, message: 'Campagne créée' });
 });
+
+export const sendCampaignWhatsApp = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const { templateId } = req.body;
+    if (!templateId) throw new AppError('templateId requis', 400);
+    const result = await marketingService.sendCampaignViaWhatsApp(
+      req.user.id,
+      req.params.id,
+      templateId
+    );
+    res.json({ success: true, data: result, message: 'Campagne envoyée via WhatsApp' });
+  }
+);
 
 // ===================== LOYALTY =====================
 

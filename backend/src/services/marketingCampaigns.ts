@@ -136,6 +136,102 @@ async function publishCampaignSends(businessIds: Set<string>, campaignId: string
   }
 }
 
+// ── Envoi campagne via template WhatsApp (lien Marketing ↔ WhatsApp Business) ──
+// Envoie le body d'un template WhatsApp à chaque client du business ayant un téléphone,
+// crée (ou réutilise) une session WhatsApp par client + un message, met à jour la campagne.
+export async function sendCampaignViaWhatsApp(
+  ownerId: string,
+  campaignId: string,
+  templateId: string
+) {
+  const business = await prisma.business.findUnique({
+    where: { ownerId, deletedAt: null },
+    select: { id: true, name: true, phone: true },
+  });
+  if (!business) throw new AppError('Business non trouvé', 404);
+
+  const campaign = await prisma.marketingCampaign.findFirst({
+    where: { id: campaignId, businessId: business.id },
+  });
+  if (!campaign) throw new AppError('Campagne non trouvée', 404);
+  if (campaign.status === 'COMPLETED') throw new AppError('Campagne déjà envoyée', 409);
+
+  const template = await prisma.whatsAppTemplate.findFirst({
+    where: { id: templateId, businessId: business.id },
+  });
+  if (!template) throw new AppError('Template WhatsApp non trouvé', 404);
+  if (template.status !== 'APPROVED') throw new AppError('Le template doit être approuvé (APPROVED)', 400);
+
+  // Clients du business avec un téléphone
+  const clients = await prisma.businessClient.findMany({
+    where: { businessId: business.id, phone: { not: null } },
+    select: { id: true, firstName: true, lastName: true, phone: true },
+  });
+  if (clients.length === 0) throw new AppError('Aucun client avec téléphone à contacter', 400);
+
+  const interpolate = (body: string, c: { firstName: string | null; lastName: string | null; phone: string | null }) =>
+    body.replace(/\{\{(\d+)\}\}/g, (_, n: string) => {
+      const idx = parseInt(n, 10);
+      const values = [c.firstName || 'client', c.lastName || '', c.phone || '', business.name];
+      return values[idx - 1] || '';
+    });
+
+  let sent = 0;
+  for (const c of clients) {
+    if (!c.phone) continue;
+    // Session WhatsApp existante pour ce client ? sinon on la crée
+    let session = await prisma.whatsAppSession.findFirst({
+      where: { businessId: business.id, clientPhone: c.phone },
+    });
+    if (!session) {
+      session = await prisma.whatsAppSession.create({
+        data: {
+          businessId: business.id,
+          clientPhone: c.phone,
+          clientName: c.firstName ? `${c.firstName}${c.lastName ? ' ' + c.lastName : ''}` : null,
+          status: 'ACTIVE',
+        },
+      });
+    }
+    await prisma.whatsAppMessage.create({
+      data: {
+        sessionId: session.id,
+        fromBusiness: true,
+        content: interpolate(template.body, c),
+        messageType: 'text',
+        status: 'sent',
+        metadata: { source: 'campaign', campaignId, templateId: template.id },
+      },
+    });
+    // Actualise la session
+    await prisma.whatsAppSession.update({
+      where: { id: session.id },
+      data: { lastMessageAt: new Date() },
+    });
+    sent++;
+  }
+
+  // Marque la campagne envoyée
+  const updated = await prisma.marketingCampaign.update({
+    where: { id: campaign.id },
+    data: { status: 'COMPLETED', sentAt: new Date(), sentCount: { increment: sent } },
+  });
+
+  try {
+    await publishCampaignSent({
+      userId: ownerId,
+      businessId: business.id,
+      campaignId: campaign.id,
+      channel: 'WHATSAPP',
+    });
+  } catch (err) {
+    logger.warn('Campaign event publish failed', { error: (err as Error).message });
+  }
+
+  logger.info(`Campaign ${campaign.id} sent via WhatsApp to ${sent} clients`);
+  return { sent, totalClients: clients.length, campaign: updated, template: template.name };
+}
+
 // ── Campaign Stats ──
 export async function getMarketingStats(ownerId: string) {
   const business = await prisma.business.findUnique({

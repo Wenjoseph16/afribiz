@@ -72,7 +72,14 @@ export async function sendMessage(
   });
   if (!session) throw new AppError('Session non trouvée', 404);
   return prisma.whatsAppMessage.create({
-    data: { ...data, direction: 'OUTBOUND', status: 'SENT' } as any,
+    data: {
+      sessionId: data.sessionId,
+      content: data.content,
+      mediaUrl: data.mediaUrl || null,
+      messageType: data.contentType || 'text',
+      fromBusiness: true,
+      status: 'sent',
+    },
   });
 }
 
