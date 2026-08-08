@@ -105,8 +105,8 @@ const BusinessAlertQueue = dynamic(() => import('@/components/dashboard/Business
   ssr: false,
   loading: () => <div className="h-48 rounded-xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
 });
-const BusinessSatisfactionCard = dynamic(
-  () => import('@/components/dashboard/BusinessSatisfactionCard'),
+const BusinessReputationCard = dynamic(
+  () => import('@/components/dashboard/BusinessReputationCard'),
   {
     ssr: false,
     loading: () => <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
@@ -621,8 +621,8 @@ export default function BusinessDashboardPage() {
         </div>
       </div>
 
-      {/* Satisfaction client — agrégation des notes d'enquête (commandes + séjours) */}
-      <BusinessSatisfactionCard />
+      {/* Réputation client — avis publics + enquêtes de satisfaction (étoiles unifiées) */}
+      <BusinessReputationCard />
 
       {/* Modules overview chart */}
       {orders.length + bookings.length + reviews.length + conversations.length > 0 && (

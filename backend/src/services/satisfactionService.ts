@@ -189,6 +189,156 @@ export async function getBusinessSatisfactionStats(ownerId: string) {
 }
 
 /**
+ * Réputation consolidée du business : enquêtes de satisfaction + avis publics
+ * (BusinessReview) dans un seul bloc « Réputation client » avec étoiles unifiées.
+ * - overall : score unifié pondéré par le nombre de feedbacks de chaque source
+ * - sources : détail par source (enquêtes / avis publics)
+ * - distribution : notes 5→1 fusionnées
+ * - trend : moyenne + volume par jour sur 30 jours (les 2 sources)
+ * - recent : feed fusionné des derniers retours (enquêtes + avis)
+ */
+export async function getBusinessReputation(ownerId: string) {
+  const business = await prisma.business.findUnique({
+    where: { ownerId, deletedAt: null },
+    select: { id: true, name: true },
+  });
+  if (!business) throw new AppError('Business non trouvé', 404);
+
+  const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  // Enquêtes (réutilise l'agrégation existante) + avis publics en parallèle
+  const [surveyStats, reviewAgg, reviewDist, reviewRecent, review30] = await Promise.all([
+    getBusinessSatisfactionStats(ownerId),
+    prisma.businessReview.aggregate({
+      where: { businessId: business.id, isActive: true },
+      _avg: { rating: true },
+      _count: { _all: true },
+    }),
+    prisma.businessReview.groupBy({
+      by: ['rating'],
+      where: { businessId: business.id, isActive: true },
+      _count: { _all: true },
+      orderBy: { rating: 'asc' },
+    }),
+    prisma.businessReview.findMany({
+      where: { businessId: business.id, isActive: true },
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+      select: {
+        id: true,
+        rating: true,
+        title: true,
+        comment: true,
+        response: true,
+        createdAt: true,
+        userId: true,
+      },
+    }),
+    prisma.businessReview.findMany({
+      where: { businessId: business.id, isActive: true, createdAt: { gte: since30 } },
+      select: { rating: true, createdAt: true },
+    }),
+  ]);
+
+  // Noms des clients des avis publics (pas de relation sur le modèle de réponse)
+  const revUserIds = [...new Set(reviewRecent.map((r) => r.userId).filter(Boolean))];
+  const revUsers = revUserIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: revUserIds } },
+        select: { id: true, firstName: true, lastName: true },
+      })
+    : [];
+  const revUserMap = new Map(revUsers.map((u) => [u.id, u]));
+
+  // Tendance des avis (regroupée par jour)
+  const revByDay = new Map<string, { count: number; sum: number }>();
+  for (const r of review30) {
+    const day = r.createdAt.toISOString().slice(0, 10);
+    const b = revByDay.get(day) || { count: 0, sum: 0 };
+    b.count += 1;
+    b.sum += r.rating;
+    revByDay.set(day, b);
+  }
+
+  // Tendance fusionnée : surveyStats.trend est déjà une fenêtre 30j complète
+  const trend = surveyStats.trend.map((t) => {
+    const rb = revByDay.get(t.date);
+    const totalCount = t.count + (rb?.count || 0);
+    const totalSum = t.count * t.average + (rb ? rb.sum : 0);
+    return {
+      date: t.date,
+      count: totalCount,
+      average: totalCount ? Math.round((totalSum / totalCount) * 10) / 10 : 0,
+    };
+  });
+
+  // Distribution fusionnée 5→1
+  const distribution = [5, 4, 3, 2, 1].map((score) => ({
+    score,
+    count:
+      (surveyStats.distribution.find((d) => d.score === score)?.count || 0) +
+      (reviewDist.find((d) => d.rating === score)?._count._all || 0),
+  }));
+
+  // Feed récent fusionné (enquêtes + avis), trié du plus récent au plus ancien
+  const surveyRecent = surveyStats.recent.map((r) => ({
+    id: `srv-${r.id}`,
+    type: 'survey' as const,
+    score: r.score,
+    text: r.feedback || null,
+    clientName: r.clientName,
+    createdAt: r.createdAt,
+    responded: false,
+  }));
+  const reviewRecentFeed = reviewRecent.map((r) => {
+    const u = revUserMap.get(r.userId);
+    return {
+      id: `rev-${r.id}`,
+      type: 'review' as const,
+      score: r.rating,
+      text: r.comment || r.title || null,
+      clientName: u
+        ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Client'
+        : 'Client',
+      createdAt: r.createdAt,
+      responded: !!r.response,
+    };
+  });
+  const recent = [...surveyRecent, ...reviewRecentFeed]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 8);
+
+  const reviewTotal = reviewAgg._count._all || 0;
+  const surveyTotal = surveyStats.totalResponses;
+  const total = surveyTotal + reviewTotal;
+  const overallAverage =
+    total > 0
+      ? Math.round(
+          (((surveyStats.averageScore || 0) * surveyTotal +
+            (reviewAgg._avg.rating || 0) * reviewTotal) /
+            total) *
+            10
+        ) / 10
+      : null;
+
+  return {
+    businessId: business.id,
+    businessName: business.name,
+    overall: { average: overallAverage, total },
+    sources: {
+      surveys: { average: surveyStats.averageScore, total: surveyTotal },
+      reviews: {
+        average: reviewTotal ? Math.round((reviewAgg._avg.rating || 0) * 10) / 10 : null,
+        total: reviewTotal,
+      },
+    },
+    distribution,
+    trend,
+    recent,
+  };
+}
+
+/**
  * Contexte affiché sur la page d'enquête (nom du commerce, article, référence)
  * pour que le client sache ce qu'il évalue. Accès limité au client concerné.
  */

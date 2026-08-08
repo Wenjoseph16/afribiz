@@ -34,8 +34,8 @@ import {
 } from '@/features/crm/hooks';
 import dynamic from 'next/dynamic';
 
-const BusinessSatisfactionCard = dynamic(
-  () => import('@/components/dashboard/BusinessSatisfactionCard'),
+const BusinessReputationCard = dynamic(
+  () => import('@/components/dashboard/BusinessReputationCard'),
   {
     ssr: false,
     loading: () => <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
@@ -213,8 +213,8 @@ export default function CrmPage() {
         />
       </motion.div>
 
-      {/* ═══ SATISFACTION — notes d'enquête agrégées ═══ */}
-      <BusinessSatisfactionCard />
+      {/* ═══ RÉPUTATION — avis publics + enquêtes (étoiles unifiées) ═══ */}
+      <BusinessReputationCard />
 
       {/* ═══ MAIN CONTENT ═══ */}
       <div className="grid lg:grid-cols-3 gap-6">

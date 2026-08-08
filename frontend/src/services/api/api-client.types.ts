@@ -1540,4 +1540,5 @@ export interface ApiClientMethods {
   submitSatisfaction(data: any): Promise<any>;
   getSatisfactionContext(params: any): Promise<any>;
   getBusinessSatisfactionStats(): Promise<any>;
+  getBusinessReputation(): Promise<any>;
 }

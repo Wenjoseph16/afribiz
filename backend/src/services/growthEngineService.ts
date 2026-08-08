@@ -86,7 +86,40 @@ export async function generateMorningBrief(businessId: string) {
       })
     : 0;
 
-  const advice = generateAdvice({ orders, bookings, promotions, offerFlashes });
+  // Satisfaction : moyenne des enquêtes (30j) + retours négatifs récents (7j),
+  // en couvrant les DEUX sources (enquêtes ≤ 2★ et avis publics ≤ 2★).
+  const satisfaction = await (async () => {
+    try {
+      const [agg, surveyLow, reviewLow] = await Promise.all([
+        prisma.satisfactionSurveyResponse.aggregate({
+          where: { businessId, createdAt: { gte: THIRTY_DAYS_AGO() } },
+          _avg: { score: true },
+          _count: { _all: true },
+        }),
+        prisma.satisfactionSurveyResponse.count({
+          where: { businessId, createdAt: { gte: SEVEN_DAYS_AGO() }, score: { lte: 2 } },
+        }),
+        prisma.businessReview.count({
+          where: {
+            businessId,
+            isActive: true,
+            createdAt: { gte: SEVEN_DAYS_AGO() },
+            rating: { lte: 2 },
+          },
+        }),
+      ]);
+      return {
+        avg: agg._avg.score ?? null,
+        total: agg._count._all || 0,
+        recentLow: surveyLow + reviewLow,
+      };
+    } catch (e) {
+      logger.warn('growth brief satisfaction failed', { error: (e as Error).message });
+      return { avg: null, total: 0, recentLow: 0 };
+    }
+  })();
+
+  const advice = generateAdvice({ orders, bookings, promotions, offerFlashes, satisfaction });
 
   const quickActions = generateQuickActions(
     orders.length,
@@ -374,7 +407,13 @@ export async function generateAllEveningSummaries() {
 // ADVISORS & GENERATORS
 // ──────────────────────────────────────────────
 
-function generateAdvice({ orders, bookings, promotions, offerFlashes }: any): any[] {
+function generateAdvice({
+  orders,
+  bookings,
+  promotions,
+  offerFlashes,
+  satisfaction,
+}: any): any[] {
   const advice: any[] = [];
 
   if (orders.length > 5) {
@@ -442,6 +481,36 @@ function generateAdvice({ orders, bookings, promotions, offerFlashes }: any): an
       action: 'Créer une publication',
       link: '/dashboard/stories',
     });
+  }
+
+  // Réputation : conseils basés sur la satisfaction mesurée (enquêtes)
+  if (satisfaction) {
+    if (satisfaction.total === 0) {
+      advice.push({
+        type: 'satisfaction',
+        priority: 'low',
+        message:
+          "Pas encore de note de satisfaction. Les enquêtes partent automatiquement après chaque livraison et séjour terminé.",
+        action: 'Voir mes commandes',
+        link: '/dashboard/orders',
+      });
+    } else if (satisfaction.avg !== null && satisfaction.avg < 3) {
+      advice.push({
+        type: 'satisfaction',
+        priority: 'high',
+        message: `Satisfaction en baisse (${satisfaction.avg.toLocaleString('fr-FR')}/5). Analysez les retours négatifs pour corriger le tir.`,
+        action: 'Voir la réputation',
+        link: '/dashboard/crm',
+      });
+    } else if (satisfaction.recentLow > 0) {
+      advice.push({
+        type: 'satisfaction',
+        priority: 'medium',
+        message: `${satisfaction.recentLow} retour(s) négatif(s) récent(s) (avis ou enquête ≤ 2 étoiles). Répondez vite pour fidéliser.`,
+        action: 'Voir la réputation',
+        link: '/dashboard/crm',
+      });
+    }
   }
 
   return advice;

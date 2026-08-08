@@ -10,5 +10,6 @@ router.use(authMiddleware);
 router.post('/', validateBody(submitSurveySchema), satisfactionController.submitSurvey);
 router.get('/context', satisfactionController.getContext);
 router.get('/stats', satisfactionController.getBusinessStats);
+router.get('/reputation', satisfactionController.getBusinessReputation);
 
 export default router;

@@ -303,7 +303,10 @@ async function seedBusinesses() {
         isActive: true, isVerified: true, isPremium: true, isNew: false,
         isTopSeller: true, isTopProvider: true, isRecommended: true,
         onboardingCompleted: true, onboardedAt: new Date('2025-08-01'),
-        verificationStatus: 'VERIFIED', rating: d.rating, reviewCount: d.reviewCount,
+        verificationStatus: 'VERIFIED',
+        // Note et compteur recalculés depuis les VRAIS avis (seedBusinessReviews) —
+        // plus jamais de valeurs statiques fictionnelles qui trahissent la réalité.
+        rating: 0, reviewCount: 0,
         whatsapp: d.phone,
       },
     });
@@ -582,6 +585,78 @@ async function seedReviews() {
     await prisma.review.upsert({ where: { id: r.id }, update: {}, create: { id: r.id, ...r } });
   }
   console.log(`✓ ${reviews.length} avis de vrais clients`);
+}
+
+// ============================================================
+// 3b. AVIS BUSINESS (réputation publique du commerce — BusinessReview)
+// Chaque avis appartient à un vrai client ; les notes moyenne + compteur du
+// business sont RECALCULÉS depuis ces lignes (zéro statique fictionnel).
+// ============================================================
+async function seedBusinessReviews() {
+  const reviews: any[] = [
+    // ── Saveur d'Abidjan (resto) : 8 avis ──
+    { id: 'br-res-1', businessId: B.RESTO, userId: U.CLIENT_2, rating: 5, title: 'Attiéké au top', comment: "Le plat signature ne déçoit jamais. Service rapide.", createdAt: new Date('2026-07-12T12:30:00Z'), response: 'Merci beaucoup ! À très vite 🍽️', responseAt: new Date('2026-07-13T09:00:00Z') },
+    { id: 'br-res-2', businessId: B.RESTO, userId: U.CLIENT_3, rating: 4, title: 'Bon resto', comment: 'Mafé délicieux, ambiance sympa.', createdAt: new Date('2026-07-18T13:00:00Z') },
+    { id: 'br-res-3', businessId: B.RESTO, userId: U.CLIENT_4, rating: 5, title: 'Excellente cuisine', comment: 'Bissap maison incroyable.', createdAt: new Date('2026-07-25T19:15:00Z') },
+    { id: 'br-res-4', businessId: B.RESTO, userId: U.CLIENT_1, rating: 4, title: 'Très bon', comment: 'Livraison un peu longue mais la qualité compense.', createdAt: new Date('2026-08-01T20:00:00Z') },
+    { id: 'br-res-5', businessId: B.RESTO, userId: U.CLIENT_5, rating: 5, title: 'Favori du quartier', comment: 'Toujours frais, personnel accueillant.', createdAt: new Date('2026-08-04T12:45:00Z') },
+    { id: 'br-res-6', businessId: B.RESTO, userId: U.OWNER_BOUTIQUE, rating: 3, title: 'Correct', comment: 'Bon mais portions un peu petites.', createdAt: new Date('2026-08-06T18:30:00Z') },
+    { id: 'br-res-7', businessId: B.RESTO, userId: U.DEV_1, rating: 5, title: 'Je recommande', comment: 'Parfait pour les repas de famille.', createdAt: new Date('2026-07-08T14:00:00Z') },
+    { id: 'br-res-8', businessId: B.RESTO, userId: U.OWNER_HOTEL, rating: 4, title: 'Bonne adresse', comment: 'Le poulet braisé est succulent.', createdAt: new Date('2026-07-30T13:30:00Z') },
+    // ── Kenza Beauté (salon) : 5 avis ──
+    { id: 'br-sal-1', businessId: B.SALON, userId: U.CLIENT_1, rating: 5, title: 'Manucure parfaite', comment: 'Équipe professionnelle et salon propre.', createdAt: new Date('2026-07-15T16:00:00Z'), response: 'Merci Awa, au plaisir de vous revoir ✨', responseAt: new Date('2026-07-16T10:00:00Z') },
+    { id: 'br-sal-2', businessId: B.SALON, userId: U.CLIENT_3, rating: 4, title: 'Bon résultat', comment: "Coupe + brushing impeccables.", createdAt: new Date('2026-07-22T17:30:00Z') },
+    { id: 'br-sal-3', businessId: B.SALON, userId: U.CLIENT_2, rating: 5, title: 'Ambiance chaleureuse', comment: 'Je viens toutes les semaines !', createdAt: new Date('2026-08-02T15:00:00Z') },
+    { id: 'br-sal-4', businessId: B.SALON, userId: U.CLIENT_4, rating: 4, title: 'Très satisfaite', comment: "Pose d'ongles soignée.", createdAt: new Date('2026-07-28T18:00:00Z') },
+    { id: 'br-sal-5', businessId: B.SALON, userId: U.CLIENT_5, rating: 3, title: 'Bien', comment: 'Résultat correct, attente un peu longue.', createdAt: new Date('2026-08-05T14:30:00Z') },
+    // ── Hôtel Palmier (hôtel) : 6 avis ──
+    { id: 'br-hot-1', businessId: B.HOTEL, userId: U.CLIENT_3, rating: 5, title: 'Séjour excellent', comment: 'Chambre spacieuse et personnel adorable.', createdAt: new Date('2026-07-10T11:00:00Z'), response: 'Merci pour votre séjour, à bientôt !', responseAt: new Date('2026-07-11T09:00:00Z') },
+    { id: 'br-hot-2', businessId: B.HOTEL, userId: U.CLIENT_2, rating: 4, title: 'Bon séjour', comment: 'Petit déjeuner copieux.', createdAt: new Date('2026-07-20T10:30:00Z') },
+    { id: 'br-hot-3', businessId: B.HOTEL, userId: U.CLIENT_1, rating: 5, title: 'Top', comment: 'Vue magnifique sur la lagune.', createdAt: new Date('2026-07-27T09:15:00Z') },
+    { id: 'br-hot-4', businessId: B.HOTEL, userId: U.CLIENT_4, rating: 4, title: 'Bien placé', comment: 'Proche de tout, très calme.', createdAt: new Date('2026-08-03T12:00:00Z') },
+    { id: 'br-hot-5', businessId: B.HOTEL, userId: U.CLIENT_5, rating: 3, title: 'Correct', comment: 'Chambre propre mais wifi capricieux.', createdAt: new Date('2026-08-06T08:45:00Z') },
+    { id: 'br-hot-6', businessId: B.HOTEL, userId: U.DEV_2, rating: 5, title: 'Je reviendrai', comment: 'Excellent rapport qualité-prix.', createdAt: new Date('2026-07-05T14:20:00Z') },
+    // ── Boutique Yeko (boutique) : 5 avis ──
+    { id: 'br-bout-1', businessId: B.BOUTIQUE, userId: U.CLIENT_2, rating: 5, title: 'Super boutique', comment: "Téléphone reçu en 2 jours, neuf.", createdAt: new Date('2026-07-14T17:00:00Z') },
+    { id: 'br-bout-2', businessId: B.BOUTIQUE, userId: U.CLIENT_3, rating: 4, title: 'Bon casque', comment: 'Qualité au rendez-vous.', createdAt: new Date('2026-07-24T16:30:00Z') },
+    { id: 'br-bout-3', businessId: B.BOUTIQUE, userId: U.CLIENT_1, rating: 5, title: 'Rapide et fiable', comment: 'Colis bien emballé.', createdAt: new Date('2026-08-01T11:45:00Z') },
+    { id: 'br-bout-4', businessId: B.BOUTIQUE, userId: U.CLIENT_5, rating: 4, title: 'Satisfait', comment: 'Bon rapport qualité-prix.', createdAt: new Date('2026-08-05T15:20:00Z') },
+    { id: 'br-bout-5', businessId: B.BOUTIQUE, userId: U.CLIENT_4, rating: 3, title: 'Correct', comment: 'Produit conforme, livraison un peu lente.', createdAt: new Date('2026-07-19T10:00:00Z') },
+    // ── BTP Excellence (BTP) : 2 avis ──
+    { id: 'br-btp-1', businessId: B.BTP, userId: U.CLIENT_3, rating: 5, title: 'Entreprise sérieuse', comment: 'Chantier livré dans les délais.', createdAt: new Date('2026-07-16T09:00:00Z') },
+    { id: 'br-btp-2', businessId: B.BTP, userId: U.CLIENT_2, rating: 4, title: 'Bon travail', comment: 'Équipe compétente et ponctuelle.', createdAt: new Date('2026-07-29T14:00:00Z') },
+    // ── Événements Plus (events) : 4 avis ──
+    { id: 'br-evt-1', businessId: B.EVENTS, userId: U.CLIENT_3, rating: 5, title: 'Soirée mémorable', comment: 'Organisation au top, matériel de qualité.', createdAt: new Date('2026-07-13T23:00:00Z') },
+    { id: 'br-evt-2', businessId: B.EVENTS, userId: U.CLIENT_1, rating: 4, title: 'Très bonne organisation', comment: 'Son et lumière impeccables.', createdAt: new Date('2026-07-26T22:30:00Z') },
+    { id: 'br-evt-3', businessId: B.EVENTS, userId: U.CLIENT_4, rating: 5, title: 'Super événement', comment: 'Je recommande vivement.', createdAt: new Date('2026-08-02T21:00:00Z') },
+    { id: 'br-evt-4', businessId: B.EVENTS, userId: U.CLIENT_5, rating: 3, title: 'Bien', comment: 'Bel événement, léger retard au début.', createdAt: new Date('2026-08-07T20:15:00Z') },
+  ];
+
+  for (const r of reviews) {
+    await prisma.businessReview.upsert({
+      where: { id: r.id },
+      update: {
+        rating: r.rating, title: r.title, comment: r.comment,
+        response: r.response || null, responseAt: r.responseAt || null,
+        isActive: true, createdAt: r.createdAt,
+      },
+      create: { id: r.id, ...r, response: r.response || null, responseAt: r.responseAt || null, isActive: true },
+    });
+  }
+
+  // Recalcul des notes moyenne + compteur depuis les VRAIS avis (zéro statique)
+  for (const b of ALL_BIZ_IDS) {
+    const stats = await prisma.businessReview.aggregate({
+      where: { businessId: b, isActive: true },
+      _avg: { rating: true },
+      _count: true,
+    });
+    await prisma.business.update({
+      where: { id: b },
+      data: { rating: stats._avg.rating || 0, reviewCount: stats._count },
+    });
+  }
+  console.log(`✓ ${reviews.length} avis business reliés à de vrais clients + notes recalculées`);
 }
 
 // ============================================================
@@ -1488,6 +1563,7 @@ export async function seedRealistic() {
   await seedOrders();
   await seedBookings();
   await seedReviews();
+  await seedBusinessReviews();
   await seedSocial();
   await seedDevelopers();
   await seedMessages();

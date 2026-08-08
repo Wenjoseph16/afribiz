@@ -10,4 +10,7 @@ export function injectSatisfaction(api: ApiClientMethods) {
   api.getBusinessSatisfactionStats = function () {
     return this.get('/satisfaction/stats');
   };
+  api.getBusinessReputation = function () {
+    return this.get('/satisfaction/reputation');
+  };
 }

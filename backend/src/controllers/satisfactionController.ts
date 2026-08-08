@@ -37,3 +37,11 @@ export const getBusinessStats = catchAsyncErrors(
     res.json({ success: true, data });
   }
 );
+
+export const getBusinessReputation = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Authentification requise', 401);
+    const data = await satisfactionService.getBusinessReputation(req.user.id);
+    res.json({ success: true, data });
+  }
+);

@@ -11,30 +11,37 @@ import {
   Users,
   ArrowRight,
   Sparkles,
+  BadgeCheck,
 } from 'lucide-react';
 import { apiClient } from '@/services/apiClient';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 
-interface SatisfactionStats {
+interface ReputationRecent {
+  id: string;
+  type: 'survey' | 'review';
+  score: number;
+  text: string | null;
+  clientName: string;
+  createdAt: string;
+  responded: boolean;
+}
+
+interface BusinessReputation {
   businessId: string;
   businessName: string;
-  averageScore: number | null;
-  totalResponses: number;
+  overall: { average: number | null; total: number };
+  sources: {
+    surveys: { average: number | null; total: number };
+    reviews: { average: number | null; total: number };
+  };
   distribution: { score: number; count: number }[];
   trend: { date: string; count: number; average: number }[];
-  recent: {
-    id: string;
-    score: number;
-    feedback: string | null;
-    createdAt: string;
-    kind: 'order' | 'booking' | 'other';
-    clientName: string;
-  }[];
+  recent: ReputationRecent[];
 }
 
 function Stars({ score, className }: { score: number; className?: string }) {
-  const rounded = Math.round(score * 2) / 2; // 0.5 steps
+  const rounded = Math.round(score * 2) / 2;
   return (
     <div className={cn('flex items-center gap-0.5', className)}>
       {[1, 2, 3, 4, 5].map((i) =>
@@ -59,12 +66,12 @@ function scoreLabel(avg: number | null): { label: string; tone: string } {
   return { label: 'À améliorer', tone: 'text-red-500' };
 }
 
-export default function BusinessSatisfactionCard() {
+export default function BusinessReputationCard() {
   const { data, isLoading } = useQuery({
-    queryKey: ['business', 'satisfaction-stats'],
+    queryKey: ['business', 'reputation'],
     queryFn: async () => {
-      const res = await apiClient.getBusinessSatisfactionStats();
-      return res.data.data as SatisfactionStats;
+      const res = await apiClient.getBusinessReputation();
+      return res.data.data as BusinessReputation;
     },
     refetchInterval: 60_000,
   });
@@ -75,10 +82,11 @@ export default function BusinessSatisfactionCard() {
 
   if (!data) return null;
 
-  const avg = data.averageScore;
+  const avg = data.overall.average;
   const maxTrend = Math.max(1, ...data.trend.map((t) => t.count));
   const label = scoreLabel(avg);
   const recent = data.recent.slice(0, 5);
+  const { surveys, reviews } = data.sources;
 
   return (
     <Card
@@ -93,10 +101,10 @@ export default function BusinessSatisfactionCard() {
           </div>
           <div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              Satisfaction client
+              Réputation client
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Enquêtes envoyées après livraison &amp; séjour
+              Avis publics + enquêtes de satisfaction
             </p>
           </div>
         </div>
@@ -109,7 +117,7 @@ export default function BusinessSatisfactionCard() {
         </Link>
       </div>
 
-      {data.totalResponses === 0 ? (
+      {data.overall.total === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-3">
             <Sparkles className="h-7 w-7 text-violet-500" />
@@ -118,8 +126,8 @@ export default function BusinessSatisfactionCard() {
             Aucune note pour le moment
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
-            Les enquêtes sont envoyées automatiquement à chaque commande livrée et séjour
-            terminé. Vos premières notes apparaîtront ici.
+            Les enquêtes partent automatiquement après chaque livraison et séjour terminé. Les
+            avis publics de vos clients apparaîtront ici.
           </p>
           <Link
             href="/dashboard/orders"
@@ -131,7 +139,7 @@ export default function BusinessSatisfactionCard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          {/* Score global */}
+          {/* Score global + sources */}
           <div className="md:col-span-2 flex flex-col justify-center">
             <div className="flex items-end gap-2">
               <span className="text-5xl font-black tracking-tight text-gray-900 dark:text-gray-100 tabular-nums">
@@ -144,15 +152,43 @@ export default function BusinessSatisfactionCard() {
             <div className="mt-3 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
               <Users className="h-3.5 w-3.5" />
               <span className="font-semibold text-gray-800 dark:text-gray-200 tabular-nums">
-                {data.totalResponses}
+                {data.overall.total}
               </span>
-              réponse{data.totalResponses > 1 ? 's' : ''}
+              feedback{data.overall.total > 1 ? 's' : ''}
             </div>
 
-            {/* Distribution */}
+            {/* Deux sources */}
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-white/60 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-md shrink-0">
+                    Enquêtes
+                  </span>
+                  <Stars score={surveys.average ?? 0} className="scale-90" />
+                </div>
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tabular-nums shrink-0">
+                  {surveys.average !== null ? surveys.average.toLocaleString('fr-FR') : '—'}
+                  <span className="text-gray-400 font-normal"> · {surveys.total}</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-white/60 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-md shrink-0">
+                    Avis publics
+                  </span>
+                  <Stars score={reviews.average ?? 0} className="scale-90" />
+                </div>
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 tabular-nums shrink-0">
+                  {reviews.average !== null ? reviews.average.toLocaleString('fr-FR') : '—'}
+                  <span className="text-gray-400 font-normal"> · {reviews.total}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Distribution fusionnée */}
             <div className="mt-4 space-y-1.5">
               {data.distribution.map((d) => {
-                const pct = Math.round((d.count / data.totalResponses) * 100);
+                const pct = Math.round((d.count / data.overall.total) * 100);
                 return (
                   <div key={d.score} className="flex items-center gap-2">
                     <span className="w-6 text-[11px] font-medium text-gray-500 tabular-nums">
@@ -182,17 +218,17 @@ export default function BusinessSatisfactionCard() {
             </div>
           </div>
 
-          {/* Tendance 30 jours */}
+          {/* Tendance + retours */}
           <div className="md:col-span-3">
             <div className="flex items-center gap-1.5 mb-3">
               <TrendingUp className="h-3.5 w-3.5 text-violet-500" />
               <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                Tendance 30 jours
+                Tendance 30 jours (avis + enquêtes)
               </p>
             </div>
-            {data.trend.length === 0 ? (
+            {data.trend.every((t) => t.count === 0) ? (
               <div className="flex items-center justify-center h-32 rounded-xl bg-white/50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700 text-xs text-gray-400">
-                Pas de notes ces 30 derniers jours
+                Pas de note ces 30 derniers jours
               </div>
             ) : (
               <div className="flex items-end gap-1 h-32 rounded-xl bg-white/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 p-3">
@@ -200,7 +236,7 @@ export default function BusinessSatisfactionCard() {
                   <div
                     key={t.date}
                     className="flex-1 h-full flex flex-col items-center justify-end group"
-                    title={`${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR')} — ${t.count} réponse${t.count > 1 ? 's' : ''}, ${t.average}/5`}
+                    title={`${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR')} — ${t.count} feedback${t.count > 1 ? 's' : ''}, ${t.average}/5`}
                   >
                     <div className="w-full flex-1 flex flex-col justify-end">
                       <motion.div
@@ -225,7 +261,7 @@ export default function BusinessSatisfactionCard() {
               </div>
             )}
 
-            {/* Retours récents */}
+            {/* Feed récent fusionné */}
             {recent.length > 0 && (
               <div className="mt-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
@@ -244,23 +280,36 @@ export default function BusinessSatisfactionCard() {
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
                             {r.clientName}
+                            {r.responded && (
+                              <BadgeCheck className="inline h-3 w-3 text-emerald-500 ml-1 -mt-0.5" />
+                            )}
                           </p>
-                          <span className="text-[10px] text-gray-400 shrink-0">
-                            {new Date(r.createdAt).toLocaleDateString('fr-FR', {
-                              day: 'numeric',
-                              month: 'short',
-                            })}
+                          <span
+                            className={cn(
+                              'text-[10px] font-medium px-1.5 py-0.5 rounded-md shrink-0',
+                              r.type === 'survey'
+                                ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600'
+                                : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600'
+                            )}
+                          >
+                            {r.type === 'survey' ? 'Enquête' : 'Avis'}
                           </span>
                         </div>
-                        {r.feedback ? (
+                        {r.text ? (
                           <p className="text-[11px] text-gray-600 dark:text-gray-400 line-clamp-2 mt-0.5">
-                            {r.feedback}
+                            {r.text}
                           </p>
                         ) : (
                           <p className="text-[11px] text-gray-400 italic mt-0.5">
                             Sans commentaire
                           </p>
                         )}
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          {new Date(r.createdAt).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </p>
                       </div>
                     </div>
                   ))}

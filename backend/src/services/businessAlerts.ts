@@ -27,6 +27,7 @@ export type BusinessAlert = {
 export async function getBusinessAlertQueue(businessId: string) {
   const now = new Date();
   const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   // Chaque comptage est isolé : une erreur sur un modèle ne casse pas la file
@@ -51,6 +52,7 @@ export async function getBusinessAlertQueue(businessId: string) {
     activeDeliveries,
     unpaidInvoices,
     expiringPromotions,
+    satisfaction,
   ] = await Promise.all([
     safe(
       () =>
@@ -124,6 +126,32 @@ export async function getBusinessAlertQueue(businessId: string) {
         }),
       0
     ),
+    // Satisfaction : moyenne des enquêtes (30j) + retours négatifs récents (7j)
+    // Les retours négatifs couvrent les DEUX sources : enquêtes ≤ 2★ et avis
+    // publics ≤ 2★ (un avis public négatif est un signal de réputation fort).
+    safe(
+      async () => {
+        const [agg, surveyLow, reviewLow] = await Promise.all([
+          prisma.satisfactionSurveyResponse.aggregate({
+            where: { businessId, createdAt: { gte: since30d } },
+            _avg: { score: true },
+            _count: { _all: true },
+          }),
+          prisma.satisfactionSurveyResponse.count({
+            where: { businessId, createdAt: { gte: since7d }, score: { lte: 2 } },
+          }),
+          prisma.businessReview.count({
+            where: { businessId, isActive: true, createdAt: { gte: since7d }, rating: { lte: 2 } },
+          }),
+        ]);
+        return {
+          avg: agg._avg.score ?? null,
+          total: agg._count._all || 0,
+          recentLow: surveyLow + reviewLow,
+        };
+      },
+      { avg: null, total: 0, recentLow: 0 }
+    ),
   ]);
 
   const alerts: BusinessAlert[] = [];
@@ -194,6 +222,27 @@ export async function getBusinessAlertQueue(businessId: string) {
     'LOW',
     '/dashboard/promotions'
   );
+
+  // Réputation : une moyenne < 3 est un signal fort de mécontentement ; un avis
+  // récent ≤ 2 étoiles demande une réponse rapide (le client est encore chaud).
+  if (satisfaction.avg !== null && satisfaction.avg < 3) {
+    push(
+      'satisfaction-declining',
+      `Satisfaction en baisse (${satisfaction.avg.toLocaleString('fr-FR')}/5)`,
+      1,
+      'HIGH',
+      '/dashboard/crm'
+    );
+  }
+  if (satisfaction.recentLow > 0) {
+    push(
+      'satisfaction-negative',
+      'Retours récents négatifs (avis + enquêtes)',
+      satisfaction.recentLow,
+      'MEDIUM',
+      '/dashboard/crm'
+    );
+  }
 
   const urgent = alerts.filter((a) => a.severity === 'CRITICAL' || a.severity === 'HIGH').length;
   return { alerts, total: alerts.length, urgent, generatedAt: now, since7d, in7d };
