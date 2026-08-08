@@ -9,6 +9,7 @@ import {
   publishPaymentFailed,
   publishInvoiceSent,
   publishInvoicePaid,
+  publishSatisfactionSurvey,
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
@@ -394,6 +395,28 @@ export async function updateOrderStatus(
 
   // Facture automatique : créée à la validation, marquée PAID à la livraison
   await ensureInvoiceForOrder(updated, business, status);
+
+  // Enquête de satisfaction : envoyée UNE SEULE FOIS au client quand la commande
+  // est livrée. Couvre les commandes classiques ET les commandes Épargne Achat
+  // (elles passent toutes par ici pour devenir DELIVERED).
+  if (status === 'DELIVERED' && order.buyerId) {
+    try {
+      // Marquage atomique : un seul envoi même en cas de requêtes parallèles
+      const marked = await prisma.order.updateMany({
+        where: { id: order.id, satisfactionSurveySentAt: null },
+        data: { satisfactionSurveySentAt: new Date() },
+      });
+      if (marked.count > 0) {
+        publishSatisfactionSurvey({
+          userId: order.buyerId,
+          orderId: order.id,
+          businessName: business.name,
+        });
+      }
+    } catch (err) {
+      console.warn('[orders] satisfaction survey send failed:', (err as Error).message);
+    }
+  }
 
   return updated;
 }

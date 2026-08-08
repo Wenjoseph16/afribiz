@@ -70,6 +70,9 @@ model Order {
   delivery      Delivery?
   planningTasks PlanningTask[]
 
+  // Enquête de satisfaction : envoyée une seule fois (au DELIVERED ou par le cron de rattrapage)
+  satisfactionSurveySentAt DateTime?
+
   deletedAt  DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

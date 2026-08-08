@@ -1533,4 +1533,10 @@ export interface ApiClientMethods {
   getVoiceQueries(): Promise<any>;
   createVoiceQuery(data: any): Promise<any>;
   getVoiceStats(): Promise<any>;
+
+  // ============================================
+  // SATISFACTION SURVEY
+  // ============================================
+  submitSatisfaction(data: any): Promise<any>;
+  getSatisfactionContext(params: any): Promise<any>;
 }

@@ -132,10 +132,25 @@ export const publishSatisfactionSurvey = def<{
   orderId?: string;
   bookingId?: string;
   ticketId?: string;
+  businessName?: string;
 }>(
   DomainEventType.SATISFACTION_SURVEY,
-  (p) => ({ orderId: p.orderId || '', bookingId: p.bookingId || '', ticketId: p.ticketId || '' }),
-  (p) => ({ orderId: p.orderId, link: '/dashboard' })
+  (p) => ({
+    orderId: p.orderId || '',
+    bookingId: p.bookingId || '',
+    ticketId: p.ticketId || '',
+    businessName: p.businessName || '',
+  }),
+  // Lien direct vers la page d'enquête (jamais de cul-de-sac : la page existe et
+  // permet de noter + commenter, la réponse est enregistrée).
+  (p) => {
+    const link = p.orderId
+      ? `/satisfaction?orderId=${p.orderId}`
+      : p.bookingId
+      ? `/satisfaction?bookingId=${p.bookingId}`
+      : '/satisfaction';
+    return { orderId: p.orderId, businessName: p.businessName, link };
+  }
 );
 export const publishSurveyResponded = def<{
   userId: string;

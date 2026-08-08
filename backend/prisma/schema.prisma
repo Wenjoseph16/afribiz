@@ -2343,6 +2343,9 @@ model Order {
   planningTasks PlanningTask[]
   invoice       Invoice?
 
+  // Enquête de satisfaction : envoyée une seule fois (au DELIVERED ou par le cron de rattrapage)
+  satisfactionSurveySentAt DateTime?
+
   deletedAt  DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -2438,7 +2441,7 @@ model Booking {
   isNoShow           Boolean          @default(false)
   remindedAt         DateTime?
   reminderSent       Boolean          @default(false)
-
+  satisfactionSurveySentAt DateTime?
   reminders     BookingReminder[]
   payments      Payment[]
   planningTasks PlanningTask[]
@@ -8481,4 +8484,20 @@ model LayawayContribution {
   createdAt DateTime    @default(now())
 
   @@index([planId])
+}
+
+model SatisfactionSurveyResponse {
+  id         String   @id @default(uuid())
+  userId     String
+  businessId String?
+  orderId    String?
+  bookingId  String?
+  score      Int
+  feedback   String?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([score])
 }

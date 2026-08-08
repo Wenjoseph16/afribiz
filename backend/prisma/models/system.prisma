@@ -3684,3 +3684,23 @@ model LayawayContribution {
 
   @@index([planId])
 }
+
+// ============================================
+// ENQUÊTES DE SATISFACTION CLIENT
+// ============================================
+
+model SatisfactionSurveyResponse {
+  id         String   @id @default(uuid())
+  userId     String
+  businessId String?
+  orderId    String?
+  bookingId  String?
+  score      Int
+  feedback   String?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([score])
+}

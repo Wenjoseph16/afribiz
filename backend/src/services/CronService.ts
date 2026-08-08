@@ -1982,27 +1982,62 @@ export class CronService {
   }
 
   public static async sendSatisfactionSurveys(): Promise<void> {
+    // Rôle : rattrapage (le déclenchement principal se fait au DELIVERED dans
+    // updateOrderStatus). Dédupliqué via satisfactionSurveySentAt : chaque commande
+    // / séjour ne reçoit l'enquête qu'UNE seule fois (sinon spam quotidien).
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const deliveries = await prisma.delivery.findMany({
       where: { status: 'DELIVERED', deliveredAt: { lte: yesterday } },
       include: {
-        business: { select: { ownerId: true, name: true } },
-        order: { select: { buyerId: true } },
+        business: { select: { name: true } },
+        order: {
+          select: { id: true, buyerId: true, satisfactionSurveySentAt: true },
+        },
       },
     });
+    let sentOrders = 0;
     for (const d of deliveries) {
-      if (d.order?.buyerId)
-        publishSatisfactionSurvey({ userId: d.order.buyerId, orderId: d.orderId || undefined });
+      const order = d.order;
+      if (!order?.buyerId) continue;
+      if (order.satisfactionSurveySentAt) continue; // déjà envoyée
+      await prisma.order
+        .update({ where: { id: order.id }, data: { satisfactionSurveySentAt: new Date() } })
+        .catch(() => {});
+      publishSatisfactionSurvey({
+        userId: order.buyerId,
+        orderId: d.orderId || undefined,
+        businessName: d.business?.name || undefined,
+      });
+      sentOrders++;
     }
     const completedBookings = await prisma.booking.findMany({
-      where: { status: 'COMPLETED', checkedOutAt: { lte: yesterday } },
-      select: { id: true, clientId: true },
+      where: {
+        status: 'COMPLETED',
+        checkedOutAt: { lte: yesterday },
+        satisfactionSurveySentAt: null,
+      },
+      select: { id: true, clientId: true, businessId: true },
     });
-    for (const b of completedBookings)
-      publishSatisfactionSurvey({ userId: b.clientId, bookingId: b.id });
-    if (deliveries.length + completedBookings.length > 0)
+    let sentBookings = 0;
+    for (const b of completedBookings) {
+      await prisma.booking
+        .update({ where: { id: b.id }, data: { satisfactionSurveySentAt: new Date() } })
+        .catch(() => {});
+      const biz = b.businessId
+        ? await prisma.business
+            .findUnique({ where: { id: b.businessId }, select: { name: true } })
+            .catch(() => null)
+        : null;
+      publishSatisfactionSurvey({
+        userId: b.clientId,
+        bookingId: b.id,
+        businessName: biz?.name || undefined,
+      });
+      sentBookings++;
+    }
+    if (sentOrders + sentBookings > 0)
       logger.info(
-        `Cron: sent ${deliveries.length + completedBookings.length} satisfaction surveys`
+        `Cron: sent ${sentOrders + sentBookings} satisfaction surveys (${sentOrders} commandes, ${sentBookings} séjours)`
       );
   }
 

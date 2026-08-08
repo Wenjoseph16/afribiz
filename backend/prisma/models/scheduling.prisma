@@ -50,6 +50,7 @@ model Booking {
   isNoShow           Boolean          @default(false)
   remindedAt         DateTime?
   reminderSent       Boolean          @default(false)
+  satisfactionSurveySentAt DateTime?   // Enquête de satisfaction envoyée une seule fois
 
   reminders     BookingReminder[]
   payments      Payment[]

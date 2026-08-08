@@ -462,6 +462,10 @@ function buildDescription(event: DomainEvent): string {
       return `${event.payload?.memberName || 'Un membre'} a cotisé ${event.payload?.amount || 0} FCFA dans "${event.payload?.groupName || ''}".`;
     case DomainEventType.SAVINGS_LOAN_APPROVED:
       return `Prêt de ${event.payload?.amount || 0} FCFA approuvé pour ${event.payload?.memberName || 'un membre'} dans "${event.payload?.groupName || ''}".`;
+    case DomainEventType.SATISFACTION_SURVEY:
+      return `Comment s'est passée votre expérience${meta.businessName ? ` chez ${meta.businessName}` : ''} ? Donnez votre note en 1 minute — votre avis aide les commerçants à s'améliorer.`;
+    case DomainEventType.SURVEY_RESPONDED:
+      return `Votre client a noté ${event.payload?.score || 0}/5.${event.payload?.feedback ? ` — ${event.payload.feedback}` : ''}`;
     default:
       return String(event.payload?.message || '');
   }

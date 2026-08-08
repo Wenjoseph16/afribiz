@@ -53,6 +53,7 @@ import {
   commentRoutes,
   contentReportRoutes,
   reviewsRoutes,
+  satisfactionRoutes,
   marketingRoutes,
   messagesRoutes,
   businessRoutes,
@@ -334,6 +335,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/reports', contentReportRoutes);
 app.use('/api/reviews', reviewsRoutes);
+app.use('/api/satisfaction', satisfactionRoutes);
 app.use('/api/messages', messagesRoutes);
 // Comptabilité (doit être AVANT businessRoutes pour éviter que le requireRole de businessRoutes n'intercepte les requêtes qui tombent dans le routeur suivant)
 app.use('/api/business/accounting', accountingRoutes);

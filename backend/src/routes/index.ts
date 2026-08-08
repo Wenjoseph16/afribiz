@@ -87,6 +87,7 @@ export { default as referralRoutes } from './referral';
 export { default as rentalsRoutes } from './rentals';
 export { default as reviewsRoutes } from './reviews';
 export { default as roomRoutes } from './room';
+export { default as satisfactionRoutes } from './satisfaction';
 export { default as savedItemRoutes } from './savedItemRoutes';
 export { default as savingsGroupRoutes } from './savingsGroupRoutes';
 export { default as searchRoutes } from './search';
