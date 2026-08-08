@@ -19,6 +19,8 @@ import {
   Calendar,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -116,47 +118,45 @@ export default function DebtsPaymentsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Dettes & Paiements
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Suivez et gérez les dettes clients
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link href="/dashboard/debts-payments/aging">
-            <Button variant="outline" size="sm">
-              <Calendar className="h-4 w-4 mr-1.5" />
-              Échéancier
+      <PageHeader
+        title="Centre des dettes & paiements"
+        description="Suivez et récupérez vos créances clients en temps réel"
+        breadcrumbs={[{ label: 'Finance' }, { label: 'Dettes' }]}
+        actions={
+          <>
+            <LiveBadge label="Temps réel" />
+            <Link href="/dashboard/debts-payments/aging">
+              <Button variant="outline" size="sm">
+                <Calendar className="h-4 w-4 mr-1.5" />
+                Échéancier
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const res = await apiClient.post('/business/debts/escalate');
+                  const count = (res.data as any)?.count ?? 0;
+                  alert(`${count} créance(s) escaladée(s) avec succès`);
+                  refetch();
+                } catch {
+                  alert("Erreur lors de l'escalade");
+                }
+              }}
+            >
+              <Zap className="h-4 w-4 mr-1.5" />
+              Escalader les retards
             </Button>
-          </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              try {
-                const res = await apiClient.post('/business/debts/escalate');
-                const count = (res.data as any)?.count ?? 0;
-                alert(`${count} créance(s) escaladée(s) avec succès`);
-                refetch();
-              } catch {
-                alert("Erreur lors de l'escalade");
-              }
-            }}
-          >
-            <Zap className="h-4 w-4 mr-1.5" />
-            Escalader les retards
-          </Button>
-          <Link href="/dashboard/debts-payments/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nouvelle dette
-            </Button>
-          </Link>
-        </div>
-      </div>
+            <Link href="/dashboard/debts-payments/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nouvelle dette
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       <CopilotTips moduleKey="DEBTS_PAYMENTS" />
 

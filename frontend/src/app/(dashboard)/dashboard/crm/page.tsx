@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Select } from '@/components/ui/Select';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import {
   useCrmClients,
   useCrmDashboardStats,
@@ -51,10 +53,6 @@ interface Client {
 const staggerContainer = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
-};
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
 };
 
 // ─── Stat card ─────────────────────────────────────────────
@@ -162,20 +160,12 @@ export default function CrmPage() {
   return (
     <div className="space-y-6">
       {/* ═══ HEADER ═══ */}
-      <motion.div
-        {...fadeInUp}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Users className="h-7 w-7 text-brand" />
-            CRM
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos clients, suivez leurs activités et fidélisez-les
-          </p>
-        </div>
-      </motion.div>
+      <PageHeader
+        title="Centre relation client"
+        description="Gérez vos clients, suivez leurs activités et fidélisez-les"
+        breadcrumbs={[{ label: 'Clients & CRM' }, { label: 'CRM' }]}
+        actions={<LiveBadge label="Temps réel" />}
+      />
 
       {/* ═══ STATS ═══ */}
       <motion.div

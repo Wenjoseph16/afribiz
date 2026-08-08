@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Select } from '@/components/ui/Select';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { useQuotes } from '@/features/hooks/finance';
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
@@ -45,26 +47,23 @@ export default function QuotesPage() {
 
   return (
     <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <FileText className="h-6 w-6 text-brand" />
-            Devis
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Gérez vos devis clients</p>
-        </div>
-        <Link
-          href="/dashboard/quotes/new"
-          className="inline-flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Nouveau devis
-        </Link>
-      </motion.div>
+      <PageHeader
+        title="Centre des devis"
+        description="Créez, envoyez et suivez vos devis clients"
+        breadcrumbs={[{ label: 'Finance' }, { label: 'Devis' }]}
+        actions={
+          <>
+            <LiveBadge label="Temps réel" />
+            <Link
+              href="/dashboard/quotes/new"
+              className="inline-flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors active:scale-[0.98] transition-transform"
+            >
+              <Plus className="h-4 w-4" />
+              Nouveau devis
+            </Link>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
