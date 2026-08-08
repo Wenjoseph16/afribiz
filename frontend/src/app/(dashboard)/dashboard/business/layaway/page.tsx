@@ -108,6 +108,85 @@ export default function BusinessLayawayPage() {
       }
     },
   });
+  const { data: roomsData } = useQuery({
+    queryKey: ['layaway-rooms'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getMyRooms();
+        const items = res.data.data?.rooms || res.data.data?.items || [];
+        return (Array.isArray(items) ? items : []).map((r: any) => ({
+          value: r.id,
+          label: `${r.name} — ${formatPrice(r.price, r.currency)}`,
+        }));
+      } catch {
+        return [];
+      }
+    },
+  });
+  const { data: rentalsData } = useQuery({
+    queryKey: ['layaway-rentals'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getMyRentals();
+        const items = res.data.data?.rentals || res.data.data?.items || [];
+        return (Array.isArray(items) ? items : []).map((r: any) => ({
+          value: r.id,
+          label: `${r.name} — ${formatPrice(r.price, r.currency)}`,
+        }));
+      } catch {
+        return [];
+      }
+    },
+  });
+  const { data: eventsData } = useQuery({
+    queryKey: ['layaway-events'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getMyEvents();
+        const items = res.data.data?.events || res.data.data?.items || [];
+        return (Array.isArray(items) ? items : []).map((e: any) => ({
+          value: e.id,
+          label: `${e.title}${e.price ? ' — ' + formatPrice(e.price) : ''}`,
+        }));
+      } catch {
+        return [];
+      }
+    },
+  });
+  const { data: trainingsData } = useQuery({
+    queryKey: ['layaway-trainings'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.getBizTrainings();
+        const items = res.data.data?.trainings || res.data.data?.items || [];
+        return (Array.isArray(items) ? items : []).map((t: any) => ({
+          value: t.id,
+          label: `${t.title}${t.price ? ' — ' + formatPrice(t.price) : ''}`,
+        }));
+      } catch {
+        return [];
+      }
+    },
+  });
+
+  // Tous les types d'articles du catalogue éligibles à l'épargne
+  const ITEM_TYPES = [
+    { value: 'PRODUCT', label: 'Produit' },
+    { value: 'SERVICE', label: 'Service' },
+    { value: 'ROOM', label: 'Chambre' },
+    { value: 'RENTAL', label: 'Location' },
+    { value: 'EVENT', label: 'Événement (billet)' },
+    { value: 'TRAINING', label: 'Formation' },
+  ];
+  const TYPE_LABELS: Record<string, string> = Object.fromEntries(ITEM_TYPES.map((t) => [t.value, t.label]));
+  const itemOptionsMap: Record<string, any[]> = {
+    PRODUCT: productsData || [],
+    SERVICE: servicesData || [],
+    ROOM: roomsData || [],
+    RENTAL: rentalsData || [],
+    EVENT: eventsData || [],
+    TRAINING: trainingsData || [],
+  };
 
   const toggleOffer = useMutation({
     mutationFn: (o: any) => apiClient.toggleLayawayOffer(o.id, !o.isActive),
@@ -140,7 +219,7 @@ export default function BusinessLayawayPage() {
   const offers = Array.isArray(offersData) ? offersData : [];
   const plans = Array.isArray(plansData) ? plansData : [];
   const activePlans = plans.filter((p: any) => p.status !== 'COMPLETED' && p.status !== 'CANCELLED');
-  const itemOptions = itemType === 'PRODUCT' ? productsData : servicesData;
+  const itemOptions = itemOptionsMap[itemType] || [];
 
   if (statsLoading || offersLoading || plansLoading) return <Loader variant="spinner" size="md" fullScreen />;
 
@@ -178,7 +257,7 @@ export default function BusinessLayawayPage() {
           <EmptyState
             icon={<PiggyBank className="h-10 w-10" />}
             title="Aucune offre épargne"
-            description="Activez l'épargne sur un produit ou service pour permettre à vos clients d'acheter en épargnant."
+            description="Activez l'épargne sur un article de votre catalogue (produit, service, chambre, location, événement, formation) pour permettre à vos clients d'acheter en épargnant."
             action={
               <Button size="sm" onClick={() => setShowCreate(true)}>
                 <Plus className="h-4 w-4 mr-1.5" /> Activer l'épargne
@@ -192,7 +271,7 @@ export default function BusinessLayawayPage() {
                 <div>
                   <p className="text-sm font-medium">{o.item?.name || o.itemId}</p>
                   <p className="text-xs text-gray-500">
-                    {o.itemType === 'PRODUCT' ? 'Produit' : 'Service'} · {formatPrice(o.item?.price)} ·{' '}
+                    {TYPE_LABELS[o.itemType] || o.itemType} · {formatPrice(o.item?.price)} ·{' '}
                     {o.durationDays} jours · min {formatPrice(o.minInstallment)} · {o.planCount} plan(s)
                   </p>
                 </div>
@@ -222,7 +301,7 @@ export default function BusinessLayawayPage() {
       <Card title="Plans de vos clients" titleIcon={<Users className="h-4 w-4" />}>
         {activePlans.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-8">
-            Aucun plan épargne actif. Partagez vos produits avec le badge 🔒 Épargne pour attirer des clients.
+            Aucun plan épargne actif. Partagez vos articles avec le badge 🔒 Épargne pour attirer des clients.
           </p>
         ) : (
           <div className="space-y-2">
@@ -264,10 +343,7 @@ export default function BusinessLayawayPage() {
                 setItemType(e.target.value);
                 setItemId('');
               }}
-              options={[
-                { value: 'PRODUCT', label: 'Produit' },
-                { value: 'SERVICE', label: 'Service' },
-              ]}
+              options={ITEM_TYPES}
             />
           </div>
           <div>

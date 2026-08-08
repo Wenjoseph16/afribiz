@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { formatPrice } from '@/utils/helpers';
 import { cn } from '@/lib/utils';
+import { useLayawayOffers, LayawayButton, LayawayBadge } from '../useLayaway';
 
 interface RoomsProps {
   rooms: Room[];
@@ -60,6 +61,10 @@ const STATUS_STYLES: Record<string, { label: string; dot: string }> = {
 export function Rooms({ rooms }: RoomsProps) {
   if (!rooms?.length) return null;
 
+  // Badge 🔒 Épargne — offres actives sur les chambres (1 seul appel)
+  const roomIds = rooms.map((r) => r.id);
+  const { data: layawayMap } = useLayawayOffers('ROOM', roomIds);
+
   return (
     <section id="section-rooms" className="scroll-mt-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -79,7 +84,7 @@ export function Rooms({ rooms }: RoomsProps) {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} />
+            <RoomCard key={room.id} room={room} hasLayaway={!!(layawayMap || {})[room.id]} layawayOffer={(layawayMap || {})[room.id]} />
           ))}
         </div>
 
@@ -95,7 +100,7 @@ export function Rooms({ rooms }: RoomsProps) {
   );
 }
 
-function RoomCard({ room }: { room: Room }) {
+function RoomCard({ room, hasLayaway, layawayOffer }: { room: Room; hasLayaway?: boolean; layawayOffer?: { id: string } }) {
   const fmtPrice = (p: number) => formatPrice(p, room.currency);
   const typeLabel = room.type ? ROOM_TYPE_LABELS[room.type] || room.type : null;
   const statusStyle = room.status ? STATUS_STYLES[room.status] : null;
@@ -135,6 +140,7 @@ function RoomCard({ room }: { room: Room }) {
               <BadgePercent className="w-2.5 h-2.5" /> Promo
             </span>
           )}
+          <LayawayBadge active={hasLayaway} />
         </div>
 
         {/* Room number */}
@@ -276,6 +282,7 @@ function RoomCard({ room }: { room: Room }) {
             <button className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-xs font-medium rounded-lg hover:bg-brand-600 transition-colors shadow-sm">
               <Calendar className="w-3 h-3" /> Réserver
             </button>
+            <LayawayButton offer={layawayOffer} itemId={room.id} />
           </div>
         </div>
       </div>

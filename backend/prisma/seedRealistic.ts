@@ -916,6 +916,23 @@ async function seedLayaway() {
     create: { id: 'lw-off-2', businessId: B.SALON, itemType: 'SERVICE', itemId: 'sv-sal-1', durationDays: 60, minInstallment: 2000, isActive: true, planCount: 1 },
   });
 
+  // ── Catalogue complet : chambre, location, billet d'événement ──
+  await prisma.layawayOffer.upsert({
+    where: { itemType_itemId: { itemType: 'ROOM', itemId: 'rm-hot-2' } },
+    update: {},
+    create: { id: 'lw-off-3', businessId: B.HOTEL, itemType: 'ROOM', itemId: 'rm-hot-2', durationDays: 120, minInstallment: 5000, isActive: true, planCount: 0 },
+  });
+  await prisma.layawayOffer.upsert({
+    where: { itemType_itemId: { itemType: 'RENTAL', itemId: 'rn-evt-1' } },
+    update: {},
+    create: { id: 'lw-off-4', businessId: B.EVENTS, itemType: 'RENTAL', itemId: 'rn-evt-1', durationDays: 90, minInstallment: 10000, isActive: true, planCount: 0 },
+  });
+  await prisma.layawayOffer.upsert({
+    where: { itemType_itemId: { itemType: 'EVENT', itemId: 'ev-evt-1' } },
+    update: {},
+    create: { id: 'lw-off-5', businessId: B.EVENTS, itemType: 'EVENT', itemId: 'ev-evt-1', durationDays: 60, minInstallment: 2000, isActive: true, planCount: 0 },
+  });
+
   // ── Plan client1 : Smartphone TechX Pro (60 000 / 150 000 épargnés) ──
   await prisma.layawayPlan.upsert({
     where: { id: 'lw-plan-1' },
@@ -961,7 +978,7 @@ async function seedLayaway() {
     create: { id: 'lw-con-3', planId: 'lw-plan-2', amount: 2000, currency: 'FCFA', method: 'WAVE', status: 'PAID', reference: 'TRF-LW-003', createdAt: new Date('2026-08-02') },
   });
 
-  console.log('✓ Épargne Achat : 2 offres + 2 plans clients en cours (60 000 + 2 000 FCFA en escrow)');
+  console.log('✓ Épargne Achat : 5 offres (produit, service, chambre, location, événement) + 2 plans clients en cours (62 000 FCFA en escrow)');
 }
 
 async function seedWallets() {

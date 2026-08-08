@@ -526,6 +526,21 @@ export class CronService {
         lastError: null,
       },
       {
+        id: 'layaway-expiry-reminders',
+        name: 'Rappels échéance Épargne Achat',
+        description:
+          'Rappels BIENVEILLANTS (J-7 puis J-1) aux clients qui épargnent, sans pénalité ni stress',
+        category: 'client',
+        schedule: 'Chaque jour à 09:00',
+        cron: '0 9 * * *',
+        enabled: true,
+        lastRun: null,
+        nextRun: null,
+        todayCount: 0,
+        errorCount: 0,
+        lastError: null,
+      },
+      {
         id: 'overdue-debts',
         name: 'Dettes impayées',
         description: 'Détecte et notifie les dettes arrivées à échéance',
@@ -1004,6 +1019,12 @@ export class CronService {
       'Résumé quotidien admin envoyé'
     );
     scheduleIfEnabled(
+      'layaway-expiry-reminders',
+      '0 9 * * *',
+      () => CronService.checkLayawayExpiryReminders(),
+      'Rappels échéance épargne envoyés'
+    );
+    scheduleIfEnabled(
       'overdue-debts',
       '0 6 * * *',
       () => CronService.checkOverdueDebts(),
@@ -1244,6 +1265,67 @@ export class CronService {
       });
     }
     if (bookings.length > 0) logger.info(`Cron: sent ${bookings.length} booking reminders`);
+  }
+
+  /**
+   * Rappel d'échéance BIENVEILLANT pour les plans Épargne Achat.
+   * Zéro pénalité, zéro stress : on encourage doucement à compléter.
+   * - J-7 : rappel doux « il vous reste 7 jours »
+   * - J-1 : dernier rappel bienveillant
+   * Chaque plan n'est notifié qu'une fois par étape (reminderSentAt conservé).
+   */
+  public static async checkLayawayExpiryReminders(): Promise<void> {
+    const now = new Date();
+
+    const plans = await prisma.layawayPlan.findMany({
+      where: { status: 'ACTIVE', expiresAt: { not: null } },
+      take: 200,
+    });
+
+    let sent = 0;
+    for (const p of plans) {
+      if (!p.expiresAt) continue;
+      const daysLeft = Math.ceil((p.expiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+      const saved = Number(p.savedAmount);
+      const target = Number(p.targetAmount);
+      const progress = target > 0 ? Math.round((saved / target) * 100) : 0;
+
+      // Rappel J-7 : fenêtre large 6-8 jours (7.1j -> ceil 8, on veut quand même notifier).
+      // Le flag reminder7dSent garantit un envoi UNIQUE quelle que soit la fenêtre.
+      const is7dWindow = daysLeft >= 6 && daysLeft <= 8 && !p.reminder7dSent;
+      // Rappel J-1 : derniers 2 jours, envoi unique via reminder1dSent
+      const is24hWindow = daysLeft <= 2 && daysLeft > 0 && !p.reminder1dSent;
+
+      if (!is7dWindow && !is24hWindow) continue;
+
+      const stage = is7dWindow ? '7d' : '1d';
+      const data = {
+        reminder7dSent: p.reminder7dSent,
+        reminder1dSent: p.reminder1dSent,
+        [stage === '7d' ? 'reminder7dSent' : 'reminder1dSent']: true,
+        [stage === '7d' ? 'reminder7dAt' : 'reminder1dAt']: now,
+      };
+
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: p.clientId,
+            type: 'PAYMENT_REMINDER' as any,
+            title: is7dWindow ? '💛 Plus que 7 jours pour votre épargne' : '🌱 Derniers jours pour compléter (sans pression)',
+            description:
+              `${p.itemName} — vous êtes à ${progress}% (${saved.toLocaleString('fr-FR')} / ${target.toLocaleString('fr-FR')} FCFA). ` +
+              `Aucune pression : vous pouvez cotiser quand vous voulez, ou annuler et être remboursé intégralement.`,
+            link: '/dashboard/my-layaway',
+            metadata: p.businessId ? { businessId: p.businessId, source: 'layaway-reminder' } : { source: 'layaway-reminder' },
+          },
+        });
+        await prisma.layawayPlan.update({ where: { id: p.id }, data } as any);
+        sent++;
+      } catch (err) {
+        logger.warn('Cron: layaway reminder failed', { error: (err as Error).message, planId: p.id });
+      }
+    }
+    if (sent > 0) logger.info(`Cron: sent ${sent} gentle layaway reminders`);
   }
 
   public static async checkPendingOrders(): Promise<void> {

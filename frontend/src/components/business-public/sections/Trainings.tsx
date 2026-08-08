@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { BookOpen, Clock, ChevronRight, Award } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { useLayawayOffers, LayawayButton, LayawayBadge } from '../useLayaway';
 
 interface TrainingItem {
   id: string;
@@ -23,6 +24,10 @@ interface TrainingsProps {
 
 export function Trainings({ trainings, businessSlug }: TrainingsProps) {
   if (!trainings?.length) return null;
+
+  // Badge 🔒 Épargne — offres actives sur les formations (1 seul appel)
+  const trainingIds = trainings.map((t) => t.id);
+  const { data: layawayMap } = useLayawayOffers('TRAINING', trainingIds);
 
   return (
     <section id="section-trainings" className="scroll-mt-24">
@@ -49,9 +54,17 @@ export function Trainings({ trainings, businessSlug }: TrainingsProps) {
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                  <LayawayBadge active={!!(layawayMap || {})[training.id]} />
+                </div>
               </div>
             )}
             <div className="p-5 space-y-4">
+              {!training.image && (
+                <div className="flex flex-wrap gap-1.5">
+                  <LayawayBadge active={!!(layawayMap || {})[training.id]} />
+                </div>
+              )}
               {training.category && (
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-900/20 text-brand dark:text-brand-400">
                   {training.category}
@@ -89,15 +102,18 @@ export function Trainings({ trainings, businessSlug }: TrainingsProps) {
                 )}
               </div>
 
-              <Link
-                href={businessSlug ? `/business/${businessSlug}/trainings/${training.id}` : '#'}
-                className="block"
-              >
-                <Button variant="outline" className="w-full group/btn">
-                  Voir la formation
-                  <ChevronRight className="h-4 w-4 ml-1 group-hover/btn:translate-x-0.5 transition-transform" />
-                </Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={businessSlug ? `/business/${businessSlug}/trainings/${training.id}` : '#'}
+                  className="flex-1"
+                >
+                  <Button variant="outline" className="w-full group/btn">
+                    Voir la formation
+                    <ChevronRight className="h-4 w-4 ml-1 group-hover/btn:translate-x-0.5 transition-transform" />
+                  </Button>
+                </Link>
+                <LayawayButton offer={(layawayMap || {})[training.id]} itemId={training.id} />
+              </div>
             </div>
           </div>
         ))}

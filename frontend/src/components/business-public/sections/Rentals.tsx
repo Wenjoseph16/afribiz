@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Rental } from '@/types/business';
 import { Package, Calendar, Shield, FileText } from 'lucide-react';
 import { formatPrice } from '@/utils/helpers';
+import { useLayawayOffers, LayawayButton, LayawayBadge } from '../useLayaway';
 
 interface RentalsProps {
   rentals: Rental[];
@@ -11,6 +12,10 @@ interface RentalsProps {
 
 export function Rentals({ rentals }: RentalsProps) {
   if (!rentals?.length) return null;
+
+  // Badge 🔒 Épargne — offres actives sur les locations (1 seul appel)
+  const rentalIds = rentals.map((r) => r.id);
+  const { data: layawayMap } = useLayawayOffers('RENTAL', rentalIds);
 
   return (
     <section id="section-rentals" className="scroll-mt-32">
@@ -37,6 +42,9 @@ export function Rentals({ rentals }: RentalsProps) {
                     <Package className="w-12 h-12" />
                   </div>
                 )}
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                  <LayawayBadge active={!!(layawayMap || {})[rental.id]} />
+                </div>
               </div>
               <div className="p-5">
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{rental.name}</h3>
@@ -87,9 +95,12 @@ export function Rentals({ rentals }: RentalsProps) {
                     {rental.isAvailable ? 'Disponible' : 'Indisponible'}
                     {rental.quantity > 1 && ` (${rental.quantity})`}
                   </span>
-                  <button className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-xs font-medium rounded-lg hover:bg-brand-600 transition-colors">
-                    <Calendar className="w-3 h-3" /> Réserver
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-xs font-medium rounded-lg hover:bg-brand-600 transition-colors">
+                      <Calendar className="w-3 h-3" /> Réserver
+                    </button>
+                    <LayawayButton offer={(layawayMap || {})[rental.id]} itemId={rental.id} />
+                  </div>
                 </div>
               </div>
             </div>

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { BusinessEvent } from '@/types/business';
 import { CalendarRange, MapPin, Users, Ticket } from 'lucide-react';
 import { formatPrice } from '@/utils/helpers';
+import { useLayawayOffers, LayawayButton, LayawayBadge } from '../useLayaway';
 
 interface EventsProps {
   events: BusinessEvent[];
@@ -11,6 +12,10 @@ interface EventsProps {
 
 export function Events({ events }: EventsProps) {
   if (!events?.length) return null;
+
+  // Badge 🔒 Épargne — offres actives sur les événements/billets (1 seul appel)
+  const eventIds = events.map((e) => e.id);
+  const { data: layawayMap } = useLayawayOffers('EVENT', eventIds);
 
   return (
     <section id="section-events" className="scroll-mt-32 bg-gray-50 dark:bg-gray-800/50">
@@ -32,6 +37,9 @@ export function Events({ events }: EventsProps) {
                     <CalendarRange className="w-10 h-10" />
                   </div>
                 )}
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                  <LayawayBadge active={!!(layawayMap || {})[event.id]} />
+                </div>
               </div>
               <div className="p-5">
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{event.title}</h3>
@@ -72,9 +80,12 @@ export function Events({ events }: EventsProps) {
                   ) : (
                     <span className="text-sm text-green-600 dark:text-green-400">Gratuit</span>
                   )}
-                  <button className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-xs font-medium rounded-lg hover:bg-brand-600 transition-colors">
-                    <Ticket className="w-3 h-3" /> Participer
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-xs font-medium rounded-lg hover:bg-brand-600 transition-colors">
+                      <Ticket className="w-3 h-3" /> Participer
+                    </button>
+                    <LayawayButton offer={(layawayMap || {})[event.id]} itemId={event.id} />
+                  </div>
                 </div>
               </div>
             </div>

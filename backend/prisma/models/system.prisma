@@ -3656,6 +3656,10 @@ model LayawayPlan {
   expiresAt      DateTime?
   completedAt    DateTime?
   cancelledAt    DateTime?
+  reminder7dSent Boolean              @default(false)
+  reminder1dSent Boolean              @default(false)
+  reminder7dAt   DateTime?
+  reminder1dAt   DateTime?
   contributions  LayawayContribution[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt

@@ -22,8 +22,15 @@ async function getBusinessByOwner(ownerId: string) {
   return business;
 }
 
-/** Résout un item (produit ou service) et vérifie qu'il appartient au business. */
+/**
+ * Résout un item (tout le catalogue : produit, service, chambre, location,
+ * événement/billet, formation) et vérifie qu'il appartient au business.
+ */
 async function resolveItem(businessId: string, itemType: string, itemId: string) {
+  const SUPPORTED = ['PRODUCT', 'SERVICE', 'ROOM', 'RENTAL', 'EVENT', 'TRAINING'];
+  if (!SUPPORTED.includes(itemType)) {
+    throw new AppError(`Type d'article non supporté (${SUPPORTED.join(', ')})`, 400);
+  }
   if (itemType === 'PRODUCT') {
     const p = await prisma.product.findFirst({ where: { id: itemId, businessId } });
     if (!p) throw new AppError('Produit non trouvé pour ce business', 404);
@@ -44,7 +51,51 @@ async function resolveItem(businessId: string, itemType: string, itemId: string)
       currency: s.currency || 'FCFA',
     };
   }
-  throw new AppError("Type d'article non supporté (PRODUCT ou SERVICE)", 400);
+  if (itemType === 'ROOM') {
+    const r = await prisma.room.findFirst({ where: { id: itemId, businessId } });
+    if (!r) throw new AppError('Chambre non trouvée pour ce business', 404);
+    return {
+      name: r.name,
+      image: (r.images && r.images[0]) || null,
+      price: Number(r.price || 0),
+      currency: r.currency || 'FCFA',
+    };
+  }
+  if (itemType === 'RENTAL') {
+    const r = await prisma.rental.findFirst({ where: { id: itemId, businessId } });
+    if (!r) throw new AppError('Location non trouvée pour ce business', 404);
+    return {
+      name: r.name,
+      image: (r.images && r.images[0]) || null,
+      price: Number(r.price || 0),
+      currency: r.currency || 'FCFA',
+    };
+  }
+  if (itemType === 'EVENT') {
+    const e = await prisma.event.findFirst({ where: { id: itemId, businessId } });
+    if (!e) throw new AppError('Événement non trouvé pour ce business', 404);
+    // Prix cible = billet le moins cher (épargner pour un billet d'événement)
+    const tickets = await prisma.eventTicket.findMany({ where: { eventId: e.id } });
+    const price =
+      tickets.length > 0
+        ? Math.min(...tickets.map((t) => Number(t.price || 0)))
+        : Number(e.price || 0);
+    return {
+      name: e.title,
+      image: e.coverImage || null,
+      price,
+      currency: e.currency || 'FCFA',
+    };
+  }
+  // TRAINING
+  const t = await prisma.training.findFirst({ where: { id: itemId, businessId } });
+  if (!t) throw new AppError('Formation non trouvée pour ce business', 404);
+  return {
+    name: t.title,
+    image: null,
+    price: Number(t.price || 0),
+    currency: 'FCFA',
+  };
 }
 
 async function notify(
@@ -57,7 +108,16 @@ async function notify(
 ) {
   try {
     await prisma.notification.create({
-      data: { userId, businessId, type, title, description, link } as any,
+      data: {
+        userId,
+        type,
+        title,
+        description,
+        link,
+        // NB: le modèle Notification n'a pas de colonne businessId — on le garde
+        // dans metadata pour le filtrage côté business sans casser la validation.
+        metadata: businessId ? { businessId, source: 'layaway' } : { source: 'layaway' },
+      },
     });
   } catch (err) {
     logger.warn('Layaway notification failed', { error: (err as Error).message });
@@ -95,6 +155,16 @@ export async function createLayawayOffer(
 ) {
   const business = await getBusinessByOwner(ownerId);
   const item = await resolveItem(business.id, data.itemType, data.itemId);
+  // Un article sans prix ne peut pas être épargné : on refuse l'activation
+  // dès maintenant pour éviter un badge « Épargne dispo » qui échoue au clic.
+  if (!item.price || item.price <= 0) {
+    throw new AppError(
+      data.itemType === 'EVENT'
+        ? "Cet événement n'a pas de billet/prix — ajoutez un billet avant d'activer l'épargne"
+        : "Cet article n'a pas de prix — renseignez un prix avant d'activer l'épargne",
+      400
+    );
+  }
   const durationDays = Math.max(7, Math.min(365, data.durationDays || 90));
   const minInstallment = Math.max(1000, data.minInstallment || 2000);
 
@@ -599,10 +669,12 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
         notes: `Acheté via Épargne Achat (${plan.itemName})`,
       } as any,
     });
+    // Lier le bon type d'item à la ligne de commande (productId / serviceId / nom seul)
     await tx.orderItem.create({
       data: {
         orderId: order.id,
         productId: plan.itemType === 'PRODUCT' ? plan.itemId : null,
+        serviceId: plan.itemType === 'SERVICE' ? plan.itemId : null,
         name: plan.itemName,
         quantity: 1,
         unitPrice: target,
