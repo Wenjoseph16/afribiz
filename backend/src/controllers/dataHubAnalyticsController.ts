@@ -235,6 +235,16 @@ export const getEngagementAnalytics = catchAsyncErrors(
   }
 );
 
+export const getSatisfactionAnalytics = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user!.id;
+    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    if (!business) throw new AppError('Business not found', 404);
+    const satisfaction = await analyticsService.getSatisfactionAnalytics(business.id);
+    res.json({ success: true, data: satisfaction });
+  }
+);
+
 export const getDailyTips = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
   const business = await prisma.business.findUnique({ where: { ownerId: userId } });

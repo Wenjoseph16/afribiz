@@ -244,6 +244,87 @@ export async function getEngagementAnalytics(businessId: string): Promise<any> {
 }
 
 /**
+ * Satisfaction (Data Hub) — synthèse branchée sur l'AfriScore :
+ * score composant satisfaction, moyennes d'enquête, taux de réponse et
+ * tendance 30 jours (fenêtre complète remplie, jours sans réponse = 0).
+ */
+export async function getSatisfactionAnalytics(businessId: string): Promise<any> {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [score, agg, surveyLow, sentOrders, sentBookings, rows] = await Promise.all([
+    prisma.businessScore.findUnique({
+      where: { businessId },
+      select: {
+        overallScore: true,
+        satisfactionScore: true,
+        category: true,
+        avgRating: true,
+        reviewCount: true,
+      },
+    }),
+    prisma.satisfactionSurveyResponse.aggregate({
+      where: { businessId },
+      _avg: { score: true },
+      _count: { _all: true },
+    }),
+    prisma.satisfactionSurveyResponse.count({
+      where: { businessId, createdAt: { gte: thirtyDaysAgo }, score: { lte: 2 } },
+    }),
+    prisma.order.count({
+      where: { businessId, satisfactionSurveySentAt: { not: null } },
+    }),
+    prisma.booking.count({
+      where: { businessId, satisfactionSurveySentAt: { not: null } },
+    }),
+    prisma.satisfactionSurveyResponse.findMany({
+      where: { businessId, createdAt: { gte: thirtyDaysAgo } },
+      select: { score: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+      take: 5000,
+    }),
+  ]);
+
+  // Tendance 30 jours : fenêtre complète remplie, agrégation en mémoire
+  const dayMap = new Map<string, { sum: number; count: number }>();
+  for (const r of rows) {
+    const day = r.createdAt.toISOString().slice(0, 10);
+    const cur = dayMap.get(day) || { sum: 0, count: 0 };
+    cur.sum += r.score;
+    cur.count += 1;
+    dayMap.set(day, cur);
+  }
+  const trend: { day: string; average: number | null; count: number }[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+    const key = d.toISOString().slice(0, 10);
+    const bucket = dayMap.get(key);
+    trend.push({
+      day: key,
+      average: bucket ? Math.round((bucket.sum / bucket.count) * 10) / 10 : null,
+      count: bucket ? bucket.count : 0,
+    });
+  }
+
+  const totalResponses = agg._count._all || 0;
+  const surveysSent = sentOrders + sentBookings;
+  return {
+    afriScoreComponent: score?.satisfactionScore ?? null,
+    overallScore: score?.overallScore ?? null,
+    category: score?.category ?? null,
+    surveyAverage: agg._avg.score ?? null,
+    surveyResponses: totalResponses,
+    surveysSent,
+    responseRate:
+      surveysSent > 0 ? Math.round((totalResponses / surveysSent) * 1000) / 10 : null,
+    recentLow30d: surveyLow,
+    avgRating: score?.avgRating ?? null,
+    reviewCount: score?.reviewCount ?? 0,
+    trend,
+    period: '30 jours',
+  };
+}
+
+/**
  * Activité d'authentification (Data Hub) — alimentée par les AnalyticsEvent type 'auth'
  * (USER_SIGNED_UP, USER_LOGGED_IN, USER_LOGGED_OUT, PASSWORD_CHANGED, ACCOUNT_LOCKED).
  * L'Auth nourrit ainsi le Data Hub : KPIs + répartition par événement + courbe par jour.

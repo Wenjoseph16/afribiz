@@ -130,9 +130,37 @@ interface TrustBadgesProps {
     overallScore: number;
     category: string;
   } | null;
+  satisfactionScore?: number | null;
+  surveyAverage?: number | null;
   className?: string;
   variant?: 'compact' | 'full';
   onBadgeClick?: (badge: BadgeData) => void;
+}
+
+function SatisfactionBadge({ score }: { score: number }) {
+  const pct = Math.min(Math.max(score / 200, 0), 1);
+  const colors =
+    pct >= 0.75
+      ? { text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' }
+      : pct >= 0.5
+        ? { text: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' }
+        : { text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 px-3 py-1.5 rounded-lg border',
+        colors.bg,
+        colors.border
+      )}
+      title="Score de satisfaction (avis publics + enquêtes)"
+    >
+      <Star className={cn('w-4 h-4', colors.text)} />
+      <span className={cn('text-sm font-bold', colors.text)}>{score}</span>
+      <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+        satisfaction
+      </span>
+    </div>
+  );
 }
 
 function ScoreBadge({ score, category }: { score: number; category: string }) {
@@ -224,16 +252,20 @@ export function BadgeChip({ badge, onClick }: { badge: BadgeData; onClick?: () =
 export function TrustBadges({
   badges,
   afriScore,
+  satisfactionScore,
   className,
   variant = 'compact',
   onBadgeClick,
 }: TrustBadgesProps) {
-  if ((!badges || badges.length === 0) && !afriScore) return null;
+  if ((!badges || badges.length === 0) && !afriScore && !satisfactionScore) return null;
   return (
     <div className={cn('space-y-3', className)}>
       <div className="flex flex-wrap items-center gap-2">
         {afriScore && afriScore.overallScore > 0 && (
           <ScoreBadge score={afriScore.overallScore} category={afriScore.category} />
+        )}
+        {satisfactionScore && satisfactionScore > 0 && (
+          <SatisfactionBadge score={satisfactionScore} />
         )}
         {badges?.slice(0, variant === 'compact' ? 4 : badges.length).map((badge) => (
           <BadgeChip key={badge.badge} badge={badge} onClick={() => onBadgeClick?.(badge)} />

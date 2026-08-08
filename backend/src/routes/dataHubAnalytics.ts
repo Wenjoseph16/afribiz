@@ -60,6 +60,11 @@ router.get(
   analyticsController.getEngagementAnalytics
 );
 router.get(
+  '/analytics/satisfaction',
+  cacheResponse({ prefix: 'analytics-satisfaction', ttl: 300_000 }),
+  analyticsController.getSatisfactionAnalytics
+);
+router.get(
   '/copilot/daily-tips',
   copilotGuard,
   cacheResponse({ prefix: 'copilot-daily-tips', ttl: 3600_000 }),

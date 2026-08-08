@@ -235,6 +235,9 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
                   <TrustBadges
                     badges={publicScoreData.badges || []}
                     afriScore={publicScoreData.score}
+                    satisfactionScore={
+                      (publicScoreData.score as any)?.satisfactionScore ?? null
+                    }
                     variant="compact"
                   />
                 </div>

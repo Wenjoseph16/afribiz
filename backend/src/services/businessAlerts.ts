@@ -53,6 +53,7 @@ export async function getBusinessAlertQueue(businessId: string) {
     unpaidInvoices,
     expiringPromotions,
     satisfaction,
+    afriScore,
   ] = await Promise.all([
     safe(
       () =>
@@ -152,6 +153,29 @@ export async function getBusinessAlertQueue(businessId: string) {
       },
       { avg: null, total: 0, recentLow: 0 }
     ),
+    // AfriScore : chute de ≥ 50 points sur 30 jours (comparaison avec le score
+    // le plus ancien du scoreHistory sur la fenêtre, via le snapshot WEEKLY).
+    safe(
+      async () => {
+        const [current, oldest] = await Promise.all([
+          prisma.businessScore.findUnique({
+            where: { businessId },
+            select: { overallScore: true, computedAt: true },
+          }),
+          prisma.scoreHistory.findFirst({
+            where: { businessId, snapshotDate: { lte: since30d } },
+            orderBy: { snapshotDate: 'asc' },
+            select: { overallScore: true, snapshotDate: true },
+          }),
+        ]);
+        return {
+          current: current?.overallScore ?? null,
+          baseline: oldest?.overallScore ?? null,
+          baselineDate: oldest?.snapshotDate ?? null,
+        };
+      },
+      { current: null, baseline: null, baselineDate: null }
+    ),
   ]);
 
   const alerts: BusinessAlert[] = [];
@@ -242,6 +266,21 @@ export async function getBusinessAlertQueue(businessId: string) {
       'MEDIUM',
       '/dashboard/crm'
     );
+  }
+
+  // AfriScore : une chute ≥ 50 points vs le snapshot le plus ancien des 30
+  // derniers jours signale une détérioration réelle de la santé du business.
+  if (afriScore.current !== null && afriScore.baseline !== null) {
+    const drop = afriScore.current - afriScore.baseline;
+    if (drop >= 50) {
+      push(
+        'afriscore-declining',
+        `AfriScore en chute (−${drop} points en 30 jours)`,
+        1,
+        'HIGH',
+        '/dashboard/afriscore'
+      );
+    }
   }
 
   const urgent = alerts.filter((a) => a.severity === 'CRITICAL' || a.severity === 'HIGH').length;

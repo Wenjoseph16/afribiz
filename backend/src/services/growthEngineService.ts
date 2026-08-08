@@ -119,7 +119,31 @@ export async function generateMorningBrief(businessId: string) {
     }
   })();
 
-  const advice = generateAdvice({ orders, bookings, promotions, offerFlashes, satisfaction });
+  // AfriScore : comparaison score actuel vs snapshot le plus ancien des 30 jours
+  const afriScore = await (async () => {
+    try {
+      const [current, oldest] = await Promise.all([
+        prisma.businessScore.findUnique({
+          where: { businessId },
+          select: { overallScore: true },
+        }),
+        prisma.scoreHistory.findFirst({
+          where: { businessId, snapshotDate: { lte: THIRTY_DAYS_AGO() } },
+          orderBy: { snapshotDate: 'asc' },
+          select: { overallScore: true },
+        }),
+      ]);
+      return {
+        current: current?.overallScore ?? null,
+        baseline: oldest?.overallScore ?? null,
+      };
+    } catch (e) {
+      logger.warn('growth brief afriscore failed', { error: (e as Error).message });
+      return { current: null, baseline: null };
+    }
+  })();
+
+  const advice = generateAdvice({ orders, bookings, promotions, offerFlashes, satisfaction, afriScore });
 
   const quickActions = generateQuickActions(
     orders.length,
@@ -407,13 +431,13 @@ export async function generateAllEveningSummaries() {
 // ADVISORS & GENERATORS
 // ──────────────────────────────────────────────
 
-function generateAdvice({
-  orders,
-  bookings,
-  promotions,
-  offerFlashes,
-  satisfaction,
-}: any): any[] {
+function generateAdvice({    orders,
+    bookings,
+    promotions,
+    offerFlashes,
+    satisfaction,
+    afriScore,
+  }: any): any[] {
   const advice: any[] = [];
 
   if (orders.length > 5) {
@@ -509,6 +533,20 @@ function generateAdvice({
         message: `${satisfaction.recentLow} retour(s) négatif(s) récent(s) (avis ou enquête ≤ 2 étoiles). Répondez vite pour fidéliser.`,
         action: 'Voir la réputation',
         link: '/dashboard/crm',
+      });
+    }
+  }
+
+  // AfriScore : chute ≥ 50 points sur 30 jours → alerte santé du business
+  if (afriScore && afriScore.current !== null && afriScore.baseline !== null) {
+    const drop = afriScore.current - afriScore.baseline;
+    if (drop >= 50) {
+      advice.push({
+        type: 'afriscore',
+        priority: 'high',
+        message: `Votre AfriScore a chuté de ${drop} points en 30 jours (${afriScore.current} → ${afriScore.baseline}). Analysez les causes : commandes, réservations, avis.`,
+        action: 'Voir mon AfriScore',
+        link: '/dashboard/afriscore',
       });
     }
   }
