@@ -16,6 +16,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { LiveBadge } from '@/components/ui/LiveBadge';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -126,24 +128,22 @@ export default function SubscriptionsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Abonnements
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez vos plans d&apos;abonnement
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link href="/dashboard/subscriptions/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nouveau plan
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Centre des abonnements"
+        description="Gérez vos plans d&apos;abonnement et vos abonnés"
+        breadcrumbs={[{ label: 'Config' }, { label: 'Abonnements' }]}
+        actions={
+          <>
+            <LiveBadge label="Temps réel" />
+            <Link href="/dashboard/subscriptions/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nouveau plan
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       <CopilotTips moduleKey="SUBSCRIPTIONS" />
 
