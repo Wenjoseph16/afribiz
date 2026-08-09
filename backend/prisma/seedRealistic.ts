@@ -958,6 +958,116 @@ async function seedMarketing() {
   });
 
   console.log('✓ Promotions testables : auto-apply Attiéké -15% + coupons WELCOME10 (resto) / TECHX10 (boutique)');
+
+  // ── Achat Groupé — le workflow complet (seuil → REACHED → conversion en commande) ──
+  // Resto : Attiéké en groupe (5+ → 2800 FCFA au lieu de 3500) — SEUIL ATTEINT, prêt à convertir
+  await prisma.groupBuy.upsert({
+    where: { id: 'gb-res-1' },
+    update: {},
+    create: {
+      id: 'gb-res-1', businessId: B.RESTO, productId: 'prod-res-1',
+      title: 'Attiéké Poisson en Groupe',
+      description: '5 amis, un prix imbattable : l Attiéké Poisson Braisé à 2800 FCFA au lieu de 3500.',
+      price: 3500, groupPrice: 2800, currency: 'FCFA',
+      minParticipants: 5, maxParticipants: 20, currentCount: 6, discountPercent: 20, savings: 700,
+      startAt: new Date('2026-08-01'), endAt: new Date('2026-08-31'),
+      status: 'REACHED', isActive: true, whatsappGroup: 'https://chat.whatsapp.com/attieke-groupe',
+    },
+  });
+  // Boutique : Smartphone en groupe (3+ → 135 000 FCFA au lieu de 150 000) — EN COURS
+  await prisma.groupBuy.upsert({
+    where: { id: 'gb-bout-1' },
+    update: {},
+    create: {
+      id: 'gb-bout-1', businessId: B.BOUTIQUE, productId: 'prod-bout-1',
+      title: 'TechX Pro en Groupe',
+      description: '3 acheteurs = 135 000 FCFA au lieu de 150 000. Partagez le lien WhatsApp !',
+      price: 150000, groupPrice: 135000, currency: 'FCFA',
+      minParticipants: 3, maxParticipants: 10, currentCount: 2, discountPercent: 10, savings: 15000,
+      startAt: new Date('2026-08-05'), endAt: new Date('2026-08-25'),
+      status: 'ACTIVE', isActive: true, whatsappGroup: null,
+    },
+  });
+
+  // Participants réels (clients AfriBiz + invités WhatsApp)
+  const gbParticipants: any[] = [
+    { id: 'gbp-res-1', groupBuyId: 'gb-res-1', userId: U.CLIENT_1, name: 'Awa Coulibaly', phone: '+2250100000002', email: 'client1@afribiz.com', quantity: 1, amount: 2800, status: 'PAID', paidAt: new Date('2026-08-06'), paymentRef: 'GB-2026-0001' },
+    { id: 'gbp-res-2', groupBuyId: 'gb-res-1', userId: U.CLIENT_2, name: 'Ibrahim Koné', phone: '+2250100000003', email: 'client2@afribiz.com', quantity: 1, amount: 2800, status: 'PAID', paidAt: new Date('2026-08-06'), paymentRef: 'GB-2026-0002' },
+    { id: 'gbp-res-3', groupBuyId: 'gb-res-1', userId: U.CLIENT_3, name: 'Fatou Ndiaye', phone: '+221770001122', email: 'client3@afribiz.com', quantity: 1, amount: 2800, status: 'PAID', paidAt: new Date('2026-08-07'), paymentRef: 'GB-2026-0003' },
+    { id: 'gbp-res-4', groupBuyId: 'gb-res-1', userId: U.CLIENT_5, name: 'Moussa Traoré', phone: '+2250700000005', email: 'client5@afribiz.com', quantity: 1, amount: 2800, status: 'PAID', paidAt: new Date('2026-08-07'), paymentRef: 'GB-2026-0004' },
+    { id: 'gbp-res-5', groupBuyId: 'gb-res-1', userId: null, name: 'Sita Diarra', phone: '+2250555123456', email: null, quantity: 1, amount: 2800, status: 'PENDING', paidAt: null, paymentRef: null },
+    { id: 'gbp-res-6', groupBuyId: 'gb-res-1', userId: null, name: 'Yao Nguessan', phone: '+2250555987654', email: null, quantity: 1, amount: 2800, status: 'PENDING', paidAt: null, paymentRef: null },
+    { id: 'gbp-bout-1', groupBuyId: 'gb-bout-1', userId: U.CLIENT_2, name: 'Ibrahim Koné', phone: '+2250100000003', email: 'client2@afribiz.com', quantity: 1, amount: 135000, status: 'PENDING', paidAt: null, paymentRef: null },
+    { id: 'gbp-bout-2', groupBuyId: 'gb-bout-1', userId: U.CLIENT_4, name: 'Aminata Sissoko', phone: '+2237600000004', email: 'client4@afribiz.com', quantity: 1, amount: 135000, status: 'PENDING', paidAt: null, paymentRef: null },
+  ];
+  for (const p of gbParticipants) {
+    await prisma.groupBuyParticipant.upsert({
+      where: { id: p.id },
+      update: {},
+      create: { id: p.id, groupBuyId: p.groupBuyId, userId: p.userId, name: p.name, phone: p.phone, email: p.email, quantity: p.quantity, amount: p.amount, status: p.status, paidAt: p.paidAt, paymentRef: p.paymentRef },
+    });
+  }
+  console.log('✓ Achat Groupé : Attiéké (6 participants, REACHED) + TechX Pro (2 participants, ACTIVE)');
+
+  // ── Réseaux sociaux connectés (page social-accounts) ──
+  const socialAccounts: any[] = [
+    { id: 'sa-res-1', businessId: B.RESTO, platform: 'FACEBOOK', accountName: 'Saveur d\'Abidjan', accountId: 'fb-saveur-abidjan', accessToken: 'seed-token-fb-res', isActive: true, autoShare: true, lastPostedAt: new Date('2026-08-05') },
+    { id: 'sa-res-2', businessId: B.RESTO, platform: 'INSTAGRAM', accountName: '@saveur.abidjan', accountId: 'ig-saveur-abidjan', accessToken: 'seed-token-ig-res', isActive: true, autoShare: true, lastPostedAt: new Date('2026-08-06') },
+    { id: 'sa-res-3', businessId: B.RESTO, platform: 'TIKTOK', accountName: '@saveur.abidjan', accountId: 'tt-saveur-abidjan', accessToken: 'seed-token-tt-res', isActive: true, autoShare: false, lastPostedAt: null },
+    { id: 'sa-bout-1', businessId: B.BOUTIQUE, platform: 'FACEBOOK', accountName: 'TechStore Afrique', accountId: 'fb-techstore', accessToken: 'seed-token-fb-bout', isActive: true, autoShare: true, lastPostedAt: new Date('2026-08-04') },
+    { id: 'sa-bout-2', businessId: B.BOUTIQUE, platform: 'INSTAGRAM', accountName: '@techstore.afrique', accountId: 'ig-techstore', accessToken: 'seed-token-ig-bout', isActive: true, autoShare: true, lastPostedAt: new Date('2026-08-06') },
+  ];
+  for (const sa of socialAccounts) {
+    await prisma.socialAccount.upsert({
+      where: { id: sa.id },
+      update: {},
+      create: { id: sa.id, businessId: sa.businessId, platform: sa.platform, accountName: sa.accountName, accountId: sa.accountId, accessToken: sa.accessToken, isActive: sa.isActive, autoShare: sa.autoShare, lastPostedAt: sa.lastPostedAt },
+    });
+  }
+  console.log('✓ Réseaux sociaux : 5 comptes connectés (resto : FB/IG/TikTok, boutique : FB/IG)');
+
+  // ── Programme de fidélité + points réels (page loyalty) ──
+  await prisma.loyaltyProgram.upsert({
+    where: { id: 'lp-res-1' },
+    update: {},
+    create: {
+      id: 'lp-res-1', businessId: B.RESTO,
+      name: 'Fidélité Saveur d\'Abidjan',
+      description: '10 points par 1 000 FCFA dépensés — Bronze 0, Argent 500, Or 1500 points.',
+      pointsPerAmount: 10, amountForPoints: 1000, currency: 'FCFA',
+      tiers: ['BRONZE', 'SILVER', 'GOLD'],
+      birthdayBonus: 100, referralBonus: 50, isActive: true,
+    },
+  });
+  await prisma.loyaltyProgram.upsert({
+    where: { id: 'lp-bout-1' },
+    update: {},
+    create: {
+      id: 'lp-bout-1', businessId: B.BOUTIQUE,
+      name: 'TechStore Points',
+      description: '10 points par 1 000 FCFA — récompenses sur les accessoires.',
+      pointsPerAmount: 10, amountForPoints: 1000, currency: 'FCFA',
+      tiers: ['BRONZE', 'SILVER', 'GOLD'],
+      birthdayBonus: 100, referralBonus: 50, isActive: true,
+    },
+  });
+
+  const loyaltyPoints: any[] = [
+    { businessId: B.RESTO, clientId: U.CLIENT_1, tier: 'GOLD', totalPoints: 1240, lifetimePoints: 2100, txns: [{ type: 'EARNED', points: 350, description: 'Commande CMD-2026-001', reference: 'order:ord-1' }, { type: 'EARNED', points: 480, description: 'Commandes semaine 30', reference: 'order:ord-2' }, { type: 'EARNED', points: 410, description: 'Achat groupe Attiéké', reference: 'gb:gb-res-1' }] },
+    { businessId: B.RESTO, clientId: U.CLIENT_2, tier: 'SILVER', totalPoints: 640, lifetimePoints: 820, txns: [{ type: 'EARNED', points: 250, description: 'Commande CMD-2026-002', reference: 'order:ord-4' }, { type: 'EARNED', points: 390, description: 'Réservation anniversaire', reference: 'booking:bk-res-2' }] },
+    { businessId: B.RESTO, clientId: U.CLIENT_3, tier: 'BRONZE', totalPoints: 220, lifetimePoints: 220, txns: [{ type: 'EARNED', points: 220, description: 'Première commande', reference: 'order:ord-3' }] },
+  ];
+  for (const lp of loyaltyPoints) {
+    const created = await prisma.loyaltyPoints.upsert({
+      where: { businessId_clientId: { businessId: lp.businessId, clientId: lp.clientId } },
+      update: { tier: lp.tier, totalPoints: lp.totalPoints, lifetimePoints: lp.lifetimePoints },
+      create: { businessId: lp.businessId, clientId: lp.clientId, tier: lp.tier, totalPoints: lp.totalPoints, lifetimePoints: lp.lifetimePoints },
+    });
+    for (const t of lp.txns) {
+      await prisma.loyaltyTransaction.create({ data: { loyaltyId: created.id, type: t.type, points: t.points, description: t.description, reference: t.reference } });
+    }
+  }
+  console.log('✓ Fidélité : 2 programmes actifs + points réels (Awa 1240 pts GOLD, Ibrahim 640 ARGENT, Fatou 220 BRONZE)');
 }
 
 // ============================================================

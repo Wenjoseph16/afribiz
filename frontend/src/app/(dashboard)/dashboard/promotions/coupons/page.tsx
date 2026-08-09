@@ -16,6 +16,8 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { cn } from '@/lib/utils';
 import { usePromoCoupons } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -106,71 +108,50 @@ export default function CouponsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Coupons & Codes Promo
-          </h1>
-          <p className="text-sm text-gray-500">Gérez vos codes de réduction et coupons clients</p>
-        </div>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nouveau coupon
-        </Button>
-      </div>
+      <PageHeader
+        title="Coupons & Codes Promo"
+        description="Gérez vos codes de réduction et coupons clients — copiez, activez, suivez les utilisations."
+        breadcrumbs={[
+          { label: 'Marketing', href: '/dashboard/business/marketing' },
+          { label: 'Coupons' },
+        ]}
+        gradient
+        actions={
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Nouveau coupon
+          </Button>
+        }
+      />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-brand/10">
-              <Tag className="w-4 h-4 text-brand" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500">Total</p>
-              <p className="text-sm font-bold">{allCoupons.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-emerald-100">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500">Actifs</p>
-              <p className="text-sm font-bold">
-                {allCoupons.filter((c: CouponItem) => c.isActive !== false).length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-100">
-              <Percent className="w-4 h-4 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500">% réduction</p>
-              <p className="text-sm font-bold">
-                {allCoupons.filter((c: CouponItem) => c.discountType === 'PERCENTAGE').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-100">
-              <DollarSign className="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500">Montant fixe</p>
-              <p className="text-sm font-bold">
-                {allCoupons.filter((c: CouponItem) => c.discountType === 'FIXED').length}
-              </p>
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          icon={<Tag className="h-5 w-5" />}
+          label="Coupons au total"
+          value={allCoupons.length}
+        />
+        <StatsCard
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+          iconColor="text-emerald-600 dark:text-emerald-400"
+          label="Coupons actifs"
+          value={allCoupons.filter((c: CouponItem) => c.isActive !== false).length}
+        />
+        <StatsCard
+          icon={<Percent className="h-5 w-5" />}
+          iconBg="bg-amber-50 dark:bg-amber-900/30"
+          iconColor="text-amber-600 dark:text-amber-400"
+          label="Réductions %"
+          value={allCoupons.filter((c: CouponItem) => c.discountType === 'PERCENTAGE').length}
+        />
+        <StatsCard
+          icon={<DollarSign className="h-5 w-5" />}
+          iconBg="bg-blue-50 dark:bg-blue-900/30"
+          iconColor="text-blue-600 dark:text-blue-400"
+          label="Montants fixes"
+          value={allCoupons.filter((c: CouponItem) => c.discountType === 'FIXED').length}
+        />
       </div>
 
       {/* Filters */}

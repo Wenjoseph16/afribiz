@@ -22,4 +22,7 @@ export function injectGroupBuys(api: ApiClientMethods) {
   api.removeGroupBuyParticipant = function (participantId: string) {
     return this.delete('/business/group-buys/participants/' + participantId);
   };
+  api.confirmGroupBuyParticipant = function (participantId: string) {
+    return this.post('/business/group-buys/participants/' + participantId + '/confirm');
+  };
 }

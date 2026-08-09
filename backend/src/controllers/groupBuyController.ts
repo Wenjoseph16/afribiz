@@ -46,3 +46,11 @@ export const removeParticipant = catchAsyncErrors(
     res.json({ success: true, message: 'Participant retiré' });
   }
 );
+
+export const confirmParticipant = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const data = await groupBuyService.confirmParticipantOrder(req.user.id, req.params.participantId);
+    res.json({ success: true, data });
+  }
+);

@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { TrendingUp, Percent, Gift, Tag, Target, Loader, Megaphone } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { cn } from '@/lib/utils';
 import {
   usePromoStats,
@@ -106,63 +108,44 @@ export default function PromoStatsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Statistiques promotions
-        </h1>
-        <p className="text-sm text-gray-500">Analysez la performance de vos promotions et offres</p>
-      </div>
+      <PageHeader
+        title="Statistiques promotions"
+        description="Analysez la performance de vos promotions, coupons, bundles et campagnes marketing."
+        breadcrumbs={[
+          { label: 'Marketing', href: '/dashboard/business/marketing' },
+          { label: 'Stats promos' },
+        ]}
+        gradient
+      />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand/10">
-              <Percent className="w-4 h-4 text-brand" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 uppercase font-semibold">Promotions</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {stats.totalPromotions ?? promos.length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-100">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 uppercase font-semibold">Actives</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {stats.activePromotions ?? activePromos.length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-100">
-              <Tag className="w-4 h-4 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 uppercase font-semibold">Coupons</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{coupons.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-3 sm:p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-100">
-              <Gift className="w-4 h-4 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 uppercase font-semibold">Bundles</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{bundles.length}</p>
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          icon={<Percent className="h-5 w-5" />}
+          label="Promotions au total"
+          value={stats.totalPromotions ?? promos.length}
+        />
+        <StatsCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+          iconColor="text-emerald-600 dark:text-emerald-400"
+          label="Promotions actives"
+          value={stats.activePromotions ?? activePromos.length}
+        />
+        <StatsCard
+          icon={<Tag className="h-5 w-5" />}
+          iconBg="bg-amber-50 dark:bg-amber-900/30"
+          iconColor="text-amber-600 dark:text-amber-400"
+          label="Coupons générés"
+          value={coupons.length}
+        />
+        <StatsCard
+          icon={<Gift className="h-5 w-5" />}
+          iconBg="bg-purple-50 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+          label="Bundles créés"
+          value={bundles.length}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Users, BadgePercent, ArrowRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
-import Link from 'next/link';
+import { formatPrice } from '@/utils/helpers';
 
 export default function NewGroupBuyPage() {
   const router = useRouter();
@@ -13,7 +15,8 @@ export default function NewGroupBuyPage() {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    targetPrice: '0',
+    price: '',
+    groupPrice: '',
     minParticipants: '5',
     maxParticipants: '50',
     discountPercent: '10',
@@ -21,18 +24,30 @@ export default function NewGroupBuyPage() {
     whatsappGroup: '',
   });
 
+  const price = Number(form.price) || 0;
+  const groupPrice = Number(form.groupPrice) || 0;
+  const savings = price > groupPrice ? price - groupPrice : 0;
+  const pct = price > 0 ? Math.round((savings / price) * 100) : 0;
+  const valid = form.title && price > 0 && groupPrice > 0 && groupPrice < price;
+
   const handleSubmit = async () => {
-    if (!form.title || !form.targetPrice) return;
+    if (!valid) return;
     setSaving(true);
     try {
       await apiClient.createGroupBuy({
-        ...form,
-        targetPrice: Number(form.targetPrice),
+        title: form.title,
+        description: form.description || undefined,
+        productId: undefined,
+        price,
+        groupPrice,
         minParticipants: Number(form.minParticipants),
-        maxParticipants: Number(form.maxParticipants),
-        discountPercent: Number(form.discountPercent),
+        maxParticipants: Number(form.maxParticipants) || undefined,
+        discountPercent: Number(form.discountPercent) || pct,
+        endAt: form.endAt ? new Date(form.endAt).toISOString() : undefined,
+        whatsappGroup: form.whatsappGroup || undefined,
       });
       router.push('/dashboard/group-buys');
+      router.refresh();
     } catch (e: any) {
       alert(e?.message || 'Erreur lors de la création');
     } finally {
@@ -41,29 +56,19 @@ export default function NewGroupBuyPage() {
   };
 
   return (
-    <div className="space-y-6 pb-8 max-w-2xl">
-      <Link
-        href="/dashboard/group-buys"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour
-      </Link>
+    <div className="animate-fade-in space-y-6 pb-8 max-w-3xl">
+      <PageHeader
+        title="Nouvel achat groupé"
+        description="Le prix baisse quand le groupe grossit — au seuil atteint, chaque participant valide sa commande au prix groupe."
+        breadcrumbs={[
+          { label: 'Marketing', href: '/dashboard/business/marketing' },
+          { label: 'Achat Groupé', href: '/dashboard/group-buys' },
+          { label: 'Nouveau' },
+        ]}
+        gradient
+      />
 
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            Nouvel achat groupé
-          </h1>
-          <button
-            onClick={handleSubmit}
-            disabled={saving || !form.title || !form.targetPrice}
-            className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 disabled:opacity-50 transition-colors text-sm font-medium flex items-center gap-2"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Création...' : 'Créer'}
-          </button>
-        </div>
-
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -72,8 +77,8 @@ export default function NewGroupBuyPage() {
             <input
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
-              placeholder="Achat groupé de riz"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:text-gray-100"
+              placeholder="Achat groupé du riz parfumé"
             />
           </div>
           <div>
@@ -84,34 +89,56 @@ export default function NewGroupBuyPage() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
-              placeholder="Description de l'offre..."
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:text-gray-100"
+              placeholder="5 amis, un prix imbattable..."
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+
+          {/* Prix */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Prix cible (FCFA) *
+                Prix normal (FCFA) *
               </label>
               <input
-                value={form.targetPrice}
-                onChange={(e) => setForm({ ...form, targetPrice: e.target.value })}
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
                 type="number"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+                placeholder="5000"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:text-gray-100"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Remise (%) *
+                Prix groupe (FCFA) *
               </label>
               <input
-                value={form.discountPercent}
-                onChange={(e) => setForm({ ...form, discountPercent: e.target.value })}
+                value={form.groupPrice}
+                onChange={(e) => setForm({ ...form, groupPrice: e.target.value })}
                 type="number"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+                placeholder="4000"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:text-gray-100"
               />
             </div>
           </div>
+
+          {/* Live preview économie */}
+          {price > 0 && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800/30">
+              <BadgePercent className="w-5 h-5 text-emerald-600 shrink-0" />
+              <p className="text-sm text-emerald-800 dark:text-emerald-300">
+                {groupPrice > 0 && groupPrice < price ? (
+                  <>
+                    Chaque participant économise{' '}
+                    <strong>{formatPrice(savings)} ({pct}%)</strong> par rapport au prix normal.
+                  </>
+                ) : (
+                  <>Le prix groupe doit être inférieur au prix normal.</>
+                )}
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -121,7 +148,7 @@ export default function NewGroupBuyPage() {
                 value={form.minParticipants}
                 onChange={(e) => setForm({ ...form, minParticipants: e.target.value })}
                 type="number"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:text-gray-100"
               />
             </div>
             <div>
@@ -132,22 +159,71 @@ export default function NewGroupBuyPage() {
                 value={form.maxParticipants}
                 onChange={(e) => setForm({ ...form, maxParticipants: e.target.value })}
                 type="number"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:text-gray-100"
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Date de clôture
-            </label>
-            <input
-              value={form.endAt}
-              onChange={(e) => setForm({ ...form, endAt: e.target.value })}
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Date de clôture
+              </label>
+              <input
+                value={form.endAt}
+                onChange={(e) => setForm({ ...form, endAt: e.target.value })}
+                type="date"
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Lien groupe WhatsApp (optionnel)
+              </label>
+              <input
+                value={form.whatsappGroup}
+                onChange={(e) => setForm({ ...form, whatsappGroup: e.target.value })}
+                placeholder="https://chat.whatsapp.com/..."
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none dark:text-gray-100"
+              />
+            </div>
           </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/dashboard/group-buys')}
+            >
+              Annuler
+            </Button>
+            <Button size="sm" onClick={handleSubmit} disabled={saving || !valid}>
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-1.5" />
+              )}
+              {saving ? 'Création...' : 'Créer l\'achat groupé'}
+            </Button>
+          </div>
+
+          {!valid && price > 0 && groupPrice >= price && (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              Le prix groupe doit être inférieur au prix normal pour que l'offre soit valable.
+            </p>
+          )}
         </div>
+      </Card>
+
+      <Card className="p-4 bg-gradient-to-r from-brand-50 to-emerald-50 dark:from-brand-900/10 dark:to-emerald-900/10 border-brand-100 dark:border-brand-900/20">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
+          <ArrowRight className="w-4 h-4 text-brand" />
+          Comment ça marche
+        </h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+          1. Vous publiez l'offre avec un prix groupe · 2. Les clients rejoignent via la page publique ou le lien WhatsApp ·
+          3. Au seuil atteint, le prix groupe est débloqué pour tous · 4. Chaque participant confirme et sa commande est créée automatiquement.
+        </p>
       </Card>
     </div>
   );

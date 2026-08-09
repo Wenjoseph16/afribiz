@@ -12,5 +12,6 @@ router.put('/:id', ctrl.update);
 router.delete('/:id', ctrl.remove);
 router.post('/:id/participants', ctrl.addParticipant);
 router.delete('/participants/:participantId', ctrl.removeParticipant);
+router.post('/participants/:participantId/confirm', ctrl.confirmParticipant);
 
 export default router;

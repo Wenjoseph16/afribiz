@@ -5,6 +5,7 @@ import { Award, Star, Gift, Settings, Save, Loader, Users, Sparkles, Zap } from 
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useLoyaltyProgram } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -120,20 +121,21 @@ export default function BusinessLoyaltyPage() {
 
   return (
     <div className="animate-fade-in space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Programme de fidélité
-          </h1>
-          <p className="text-sm text-gray-500">
-            Configurez votre programme de fidélité et récompenses
-          </p>
-        </div>
-        <Button onClick={handleSave} disabled={saving || !form}>
-          <Save className="h-4 w-4 mr-1.5" />
-          {saving ? 'Enregistrement...' : 'Enregistrer'}
-        </Button>
-      </div>
+      <PageHeader
+        title="Programme de fidélité"
+        description="Configurez paliers, points et récompenses — vos clients fidèles reviennent et dépensent plus."
+        breadcrumbs={[
+          { label: 'Marketing', href: '/dashboard/business/marketing' },
+          { label: 'Fidélité' },
+        ]}
+        gradient
+        actions={
+          <Button onClick={handleSave} disabled={saving || !form}>
+            <Save className="h-4 w-4 mr-1.5" />
+            {saving ? 'Enregistrement...' : 'Enregistrer'}
+          </Button>
+        }
+      />
 
       {form && (
         <>

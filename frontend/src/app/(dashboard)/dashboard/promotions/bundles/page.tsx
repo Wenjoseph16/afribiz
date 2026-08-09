@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 import { cn } from '@/lib/utils';
 import { usePromoBundles } from '@/features/hooks/promotions';
 import { useMyProducts } from '@/features/hooks/products';
@@ -83,61 +85,50 @@ export default function BundlesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bundles & Packs</h1>
-          <p className="text-sm text-gray-500">Créez des offres groupées de produits</p>
-        </div>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nouveau bundle
-        </Button>
-      </div>
+      <PageHeader
+        title="Bundles & Packs"
+        description="Créez des offres groupées de produits — le client paie moins, vous vendez plus."
+        breadcrumbs={[
+          { label: 'Marketing', href: '/dashboard/business/marketing' },
+          { label: 'Bundles' },
+        ]}
+        gradient
+        actions={
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Nouveau bundle
+          </Button>
+        }
+      />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-brand/10">
-              <Package className="w-4 h-4 text-brand" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500">Total bundles</p>
-              <p className="text-sm font-bold">{allBundles.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-emerald-100">
-              <Tag className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500">Actifs</p>
-              <p className="text-sm font-bold">
-                {allBundles.filter((b: any) => b.isActive !== false).length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-100">
-              <DollarSign className="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500">Prix moyen</p>
-              <p className="text-sm font-bold">
-                {allBundles.length > 0
-                  ? formatPrice(
-                      allBundles.reduce((s: number, b: any) => s + Number(b.price || 0), 0) /
-                        allBundles.length
-                    )
-                  : '—'}
-              </p>
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatsCard
+          icon={<Package className="h-5 w-5" />}
+          label="Bundles au total"
+          value={allBundles.length}
+        />
+        <StatsCard
+          icon={<Tag className="h-5 w-5" />}
+          iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+          iconColor="text-emerald-600 dark:text-emerald-400"
+          label="Bundles actifs"
+          value={allBundles.filter((b: any) => b.isActive !== false).length}
+        />
+        <StatsCard
+          icon={<DollarSign className="h-5 w-5" />}
+          iconBg="bg-blue-50 dark:bg-blue-900/30"
+          iconColor="text-blue-600 dark:text-blue-400"
+          label="Prix moyen"
+          value={
+            allBundles.length > 0
+              ? formatPrice(
+                  allBundles.reduce((s: number, b: any) => s + Number(b.price || 0), 0) /
+                    allBundles.length
+                )
+              : '—'
+          }
+        />
       </div>
 
       {/* Search */}

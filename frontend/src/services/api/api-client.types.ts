@@ -1491,6 +1491,7 @@ export interface ApiClientMethods {
   deleteGroupBuy(id: string): Promise<any>;
   addGroupBuyParticipant(data: any): Promise<any>;
   removeGroupBuyParticipant(participantId: string): Promise<any>;
+  confirmGroupBuyParticipant(participantId: string): Promise<any>;
 
   // ============================================
   // TAXES ZLECAF (injectTaxes) — Phase 4.5
