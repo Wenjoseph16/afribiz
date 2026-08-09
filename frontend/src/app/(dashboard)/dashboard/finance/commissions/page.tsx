@@ -5,6 +5,7 @@ import { Percent, ArrowUpRight, ArrowDownLeft, TrendingUp, Wallet } from 'lucide
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import ModuleCharts from '@/components/dashboard/ModuleCharts';
 import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
@@ -42,36 +43,37 @@ export default function BusinessCommissionsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Revenus & Commissions
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Suivez vos revenus et les commissions AfriBiz prélevées
-          </p>
-        </div>
-        <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">
-          {[
-            { value: '7d', label: '7j' },
-            { value: '30d', label: '30j' },
-            { value: '90d', label: '90j' },
-            { value: '1y', label: '1 an' },
-          ].map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
-                period === p.value
-                  ? 'bg-brand text-white shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Revenus & Commissions"
+        description="Suivez vos revenus et les commissions AfriBiz prélevées — transparence totale sur chaque transaction."
+        breadcrumbs={[
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Commissions' },
+        ]}
+        gradient
+        actions={
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">
+            {[
+              { value: '7d', label: '7j' },
+              { value: '30d', label: '30j' },
+              { value: '90d', label: '90j' },
+              { value: '1y', label: '1 an' },
+            ].map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
+                  period === p.value
+                    ? 'bg-brand text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {/* Charts */}
       {(stats?.totalRevenue || 0) > 0 &&

@@ -36,6 +36,14 @@ export const registerDebtPayment = catchAsyncErrors(
   }
 );
 
+export const deleteDebtCtrl = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await debtsPaymentsService.deleteDebt(req.user.id, req.params.id);
+    res.json({ success: true, data: result, message: 'Dette supprimée' });
+  }
+);
+
 export const updateDebtPriority = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);

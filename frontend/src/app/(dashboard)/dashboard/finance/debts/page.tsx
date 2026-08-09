@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   DollarSign,
   CreditCard,
   Clock,
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 import ModuleCharts from '@/components/dashboard/ModuleCharts';
@@ -114,20 +114,15 @@ export default function FinanceDebtsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/finance"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dettes & Paiements</h1>
-          <p className="text-sm text-gray-500">
-            Gérez les dettes clients, paiements partiels et soldes
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Dettes & Paiements"
+        description="Gérez les dettes clients, paiements partiels et soldes — suivez chaque créance jusqu'au règlement."
+        breadcrumbs={[
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Dettes' },
+        ]}
+        gradient
+      />
 
       {/* Charts data */}
       {stats.total > 0 &&

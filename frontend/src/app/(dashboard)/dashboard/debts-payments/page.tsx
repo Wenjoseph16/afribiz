@@ -136,7 +136,7 @@ export default function DebtsPaymentsPage() {
               size="sm"
               onClick={async () => {
                 try {
-                  const res = await apiClient.post('/business/debts/escalate');
+                  const res = await apiClient.post('/business/finance/escalate');
                   const count = (res.data as any)?.count ?? 0;
                   alert(`${count} créance(s) escaladée(s) avec succès`);
                   refetch();
@@ -314,7 +314,7 @@ export default function DebtsPaymentsPage() {
             onClick={async () => {
               try {
                 await Promise.all(
-                  selectedDebts.map((id) => apiClient.delete(`/business/debts/${id}`))
+                  selectedDebts.map((id) => apiClient.delete(`/business/finance/debts/${id}`))
                 );
                 alert(`${selectedDebts.length} dette(s) supprimée(s)`);
                 setSelectedDebts([]);
@@ -332,7 +332,7 @@ export default function DebtsPaymentsPage() {
             size="xs"
             onClick={async () => {
               try {
-                const res = await apiClient.post('/business/debts/auto-remind', {
+                const res = await apiClient.post('/business/finance/auto-remind', {
                   debtIds: selectedDebts,
                 });
                 const count = (res.data as any)?.count ?? selectedDebts.length;

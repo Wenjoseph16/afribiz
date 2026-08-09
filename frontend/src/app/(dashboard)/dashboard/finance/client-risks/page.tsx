@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useClientRisks, useUpdateClientRisk } from '@/features/hooks';
 
@@ -61,10 +62,15 @@ export default function ClientRisksPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Risques Clients</h1>
-        <p className="text-sm text-gray-500">Évaluez et gérez les risques clients</p>
-      </div>
+      <PageHeader
+        title="Risques Clients"
+        description="Évaluez et gérez le risque client — score, statut et actions préventives avant l'impayé."
+        breadcrumbs={[
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Risques clients' },
+        ]}
+        gradient
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

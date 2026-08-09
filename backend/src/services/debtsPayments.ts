@@ -44,7 +44,7 @@ export async function listDebts(ownerId: string, filters: any) {
     dateFrom,
     dateTo,
   } = filters;
-  const where: Prisma.DebtWhereInput = { businessId: business.id };
+  const where: Prisma.DebtWhereInput = { businessId: business.id, deletedAt: null };
   if (status) where.status = status as any;
   if (priority) where.priority = priority as any;
   if (sourceType) where.sourceType = sourceType as any;
@@ -78,7 +78,7 @@ export async function listDebts(ownerId: string, filters: any) {
 export async function getDebt(ownerId: string, debtId: string) {
   const business = await getBusinessByOwner(ownerId);
   const debt = await prisma.debt.findFirst({
-    where: { id: debtId, businessId: business.id },
+    where: { id: debtId, businessId: business.id, deletedAt: null },
     include: debtInclude,
   });
   if (!debt) throw new AppError('Dette non trouvée', 404);
@@ -87,7 +87,9 @@ export async function getDebt(ownerId: string, debtId: string) {
 
 export async function updateDebt(ownerId: string, debtId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  const debt = await prisma.debt.findFirst({ where: { id: debtId, businessId: business.id } });
+  const debt = await prisma.debt.findFirst({
+    where: { id: debtId, businessId: business.id, deletedAt: null },
+  });
   if (!debt) throw new AppError('Dette non trouvée', 404);
 
   const upd: any = {};
@@ -135,13 +137,39 @@ export async function updateDebt(ownerId: string, debtId: string, data: any) {
   return updated;
 }
 
+export async function deleteDebt(ownerId: string, debtId: string) {
+  const business = await getBusinessByOwner(ownerId);
+  const debt = await prisma.debt.findFirst({
+    where: { id: debtId, businessId: business.id, deletedAt: null },
+  });
+  if (!debt) throw new AppError('Dette non trouvée', 404);
+
+  // Soft-delete : la dette est masquée des listes mais conservée pour l'historique comptable
+  await prisma.debt.update({
+    where: { id: debtId },
+    data: { deletedAt: new Date(), status: 'CANCELLED' },
+  });
+  await logFinancialAction(business.id, null, {
+    action: 'DEBT_DELETED',
+    entityType: 'DEBT',
+    entityId: debtId,
+    description: `Dette supprimée: ${debt.id}`,
+    amount: Number(debt.remainingAmount),
+    oldValue: { status: debt.status },
+    newValue: { status: 'CANCELLED', deletedAt: true },
+  });
+  return { success: true, id: debtId };
+}
+
 export async function registerDebtPayment(
   ownerId: string,
   debtId: string,
   data: { amount: number; paymentMethod?: string; notes?: string; proofUrl?: string }
 ) {
   const business = await getBusinessByOwner(ownerId);
-  const debt = await prisma.debt.findFirst({ where: { id: debtId, businessId: business.id } });
+  const debt = await prisma.debt.findFirst({
+    where: { id: debtId, businessId: business.id, deletedAt: null },
+  });
   if (!debt) throw new AppError('Dette non trouvée', 404);
   if (debt.status === 'SETTLED' || debt.status === 'CANCELLED')
     throw new AppError('Dette déjà soldée', 400);
@@ -192,7 +220,7 @@ export async function registerDebtPayment(
 
 export async function listClientDebts(userId: string, filters: any) {
   const { page = 1, limit = 20, status } = filters;
-  const where: Prisma.DebtWhereInput = { buyerId: userId };
+  const where: Prisma.DebtWhereInput = { buyerId: userId, deletedAt: null };
   if (status) where.status = status as any;
   const skip = (page - 1) * limit;
   const [debts, total] = await Promise.all([
@@ -230,7 +258,9 @@ export async function clientPayDebt(
   debtId: string,
   data: { amount: number; paymentMethod?: string; notes?: string }
 ) {
-  const debt = await prisma.debt.findFirst({ where: { id: debtId, buyerId: userId } });
+  const debt = await prisma.debt.findFirst({
+    where: { id: debtId, buyerId: userId, deletedAt: null },
+  });
   if (!debt) throw new AppError('Dette non trouvée', 404);
   if (debt.status === 'SETTLED' || debt.status === 'CANCELLED')
     throw new AppError('Dette déjà soldée', 400);
@@ -256,9 +286,13 @@ export async function clientPayDebt(
 
 export async function updateDebtPriority(ownerId: string, debtId: string, priority: string) {
   const business = await getBusinessByOwner(ownerId);
-  return prisma.debt.update({
-    where: { id: debtId, businessId: business.id },
+  const updated = await prisma.debt.updateMany({
+    where: { id: debtId, businessId: business.id, deletedAt: null },
     data: { priority: priority as any },
+  });
+  if (updated.count === 0) throw new AppError('Dette non trouvée', 404);
+  return prisma.debt.findUnique({
+    where: { id: debtId },
     include: debtInclude,
   });
 }
@@ -858,6 +892,7 @@ export async function escalateOverdueDebts(businessId?: string) {
     const where: any = {
       status: 'OVERDUE',
       dueDate: { lt: new Date() },
+      deletedAt: null,
     };
     if (businessId) where.businessId = businessId;
 
@@ -1023,6 +1058,7 @@ export async function getDebtAging(ownerId: string) {
   const allActive = await prisma.debt.findMany({
     where: {
       businessId: business.id,
+      deletedAt: null,
       status: { in: ['ACTIVE', 'PARTIALLY_PAID', 'OVERDUE', 'CRITICAL'] },
       dueDate: { not: null },
     },
@@ -1107,7 +1143,9 @@ export async function getDebtAging(ownerId: string) {
 
 export async function getPaymentStats(ownerId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const where = { businessId: business.id };
+  const debtWhere = { businessId: business.id, deletedAt: null };
+  const escrowWhere = { businessId: business.id };
+  const riskWhere = { businessId: business.id };
 
   const [
     totalDebts,
@@ -1119,25 +1157,39 @@ export async function getPaymentStats(ownerId: string) {
     criticalDebts,
     totalPaid,
   ] = await Promise.all([
-    prisma.debt.count({ where }),
-    prisma.debt.aggregate({ where, _sum: { totalAmount: true } }),
-    prisma.debt.count({ where: { ...where, status: { in: ['ACTIVE', 'PARTIALLY_PAID'] } } }),
+    prisma.debt.count({ where: debtWhere }),
+    prisma.debt.aggregate({ where: debtWhere, _sum: { totalAmount: true } }),
+    prisma.debt.count({
+      where: { ...debtWhere, status: { in: ['ACTIVE', 'PARTIALLY_PAID'] } },
+    }),
     prisma.debt.aggregate({
-      where: { ...where, status: { in: ['ACTIVE', 'PARTIALLY_PAID'] } },
+      where: { ...debtWhere, status: { in: ['ACTIVE', 'PARTIALLY_PAID'] } },
       _sum: { remainingAmount: true },
     }),
-    prisma.debt.count({ where: { ...where, status: 'OVERDUE' } }),
-    prisma.debt.count({ where: { ...where, status: 'SETTLED' } }),
+    prisma.debt.count({ where: { ...debtWhere, status: 'OVERDUE' } }),
+    prisma.debt.count({ where: { ...debtWhere, status: 'SETTLED' } }),
     prisma.debt.count({
-      where: { ...where, priority: 'CRITICAL', status: { notIn: ['SETTLED', 'CANCELLED'] } },
+      where: {
+        ...debtWhere,
+        priority: 'CRITICAL',
+        status: { notIn: ['SETTLED', 'CANCELLED'] },
+      },
     }),
-    prisma.debt.aggregate({ where: { ...where, status: 'SETTLED' }, _sum: { amountPaid: true } }),
+    prisma.debt.aggregate({
+      where: { ...debtWhere, status: 'SETTLED' },
+      _sum: { amountPaid: true },
+    }),
   ]);
 
   const [escrowHeld, escrowReleased, highRiskClients] = await Promise.all([
-    prisma.escrow.aggregate({ where: { ...where, status: 'HELD' }, _sum: { amount: true } }),
-    prisma.escrow.aggregate({ where: { ...where, status: 'RELEASED' }, _sum: { amount: true } }),
-    prisma.clientRisk.count({ where: { ...where, riskLevel: { in: ['HIGH', 'CRITICAL'] } } }),
+    prisma.escrow.aggregate({ where: { ...escrowWhere, status: 'HELD' }, _sum: { amount: true } }),
+    prisma.escrow.aggregate({
+      where: { ...escrowWhere, status: 'RELEASED' },
+      _sum: { amount: true },
+    }),
+    prisma.clientRisk.count({
+      where: { ...riskWhere, riskLevel: { in: ['HIGH', 'CRITICAL'] } },
+    }),
   ]);
 
   // Recovery rate

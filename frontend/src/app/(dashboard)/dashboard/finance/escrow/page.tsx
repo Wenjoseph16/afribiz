@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -117,12 +118,15 @@ export default function BusinessEscrowPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Escrow</h1>
-        <p className="text-sm text-gray-500">
-          Paiements sécurisés — fonds bloqués jusqu'à confirmation
-        </p>
-      </div>
+      <PageHeader
+        title="Escrow"
+        description="Paiements sécurisés — fonds bloqués jusqu'à confirmation par les deux parties."
+        breadcrumbs={[
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Escrow' },
+        ]}
+        gradient
+      />
 
       {/* Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 p-6">

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import ModuleCharts from '@/components/dashboard/ModuleCharts';
 import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
@@ -65,10 +66,15 @@ export default function FinanceHistoryPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Historique financier</h1>
-        <p className="text-sm text-gray-500">Toutes les actions financières tracées</p>
-      </div>
+      <PageHeader
+        title="Historique financier"
+        description="Toutes les actions financières tracées : dettes, paiements, escrow, rappels et risques."
+        breadcrumbs={[
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Historique' },
+        ]}
+        gradient
+      />
 
       {/* Charts */}
       {logs.length > 0 &&

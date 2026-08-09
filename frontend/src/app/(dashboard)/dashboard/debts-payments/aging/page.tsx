@@ -2,9 +2,10 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, Clock, DollarSign, Users, Calendar } from 'lucide-react';
+import { AlertTriangle, Clock, DollarSign, Users, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import { cn } from '@/lib/utils';
@@ -78,15 +79,16 @@ export default function DebtAgingPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/debts-payments" className="p-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Échéancier des créances</h1>
-          <p className="text-sm text-gray-500">Analyse par ancienneté des dettes impayées</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Échéancier des créances"
+        description="Analyse par ancienneté des dettes impayées — repérez les créances à risque avant qu'elles ne deviennent critiques."
+        breadcrumbs={[
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Dettes & Paiements', href: '/dashboard/debts-payments' },
+          { label: 'Échéancier' },
+        ]}
+        gradient
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

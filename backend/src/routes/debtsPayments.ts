@@ -5,6 +5,7 @@ import {
   listDebts,
   getDebt,
   updateDebt,
+  deleteDebtCtrl,
   registerDebtPayment,
   updateDebtPriority,
   createEscrow,
@@ -50,6 +51,7 @@ router.post('/auto-remind', businessGuard, autoSendDebtReminders);
 router.get('/debts', businessGuard, listDebts);
 router.get('/debts/:id', businessGuard, getDebt);
 router.patch('/debts/:id', businessGuard, validateBody(updateDebtSchema), updateDebt);
+router.delete('/debts/:id', businessGuard, deleteDebtCtrl);
 router.post(
   '/debts/:id/payment',
   businessGuard,

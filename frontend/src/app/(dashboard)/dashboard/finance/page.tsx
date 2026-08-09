@@ -10,6 +10,10 @@ import {
   ChevronRight,
   FileSignature,
   Loader,
+  ArrowLeftRight,
+  Percent,
+  History,
+  ShieldAlert,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -139,7 +143,7 @@ export default function FinancePage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Link href="/dashboard/finance/quotes/new">
+        <Link href="/dashboard/quotes/new">
           <Card className="p-4 hover:shadow-md transition-all group cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-brand/10">
@@ -167,7 +171,7 @@ export default function FinancePage() {
             </div>
           </Card>
         </Link>
-        <Link href="/dashboard/finance/debts">
+        <Link href="/dashboard/debts-payments">
           <Card className="p-4 hover:shadow-md transition-all group cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-red-100">
@@ -183,6 +187,66 @@ export default function FinancePage() {
         </Link>
       </div>
 
+      {/* Vues avancées */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Link href="/dashboard/finance/transactions">
+          <Card className="p-4 hover:shadow-md transition-all group cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30">
+                <ArrowLeftRight className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">Transactions</p>
+                <p className="text-[10px] text-gray-500">Historique wallet</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+            </div>
+          </Card>
+        </Link>
+        <Link href="/dashboard/finance/commissions">
+          <Card className="p-4 hover:shadow-md transition-all group cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
+                <Percent className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">Commissions</p>
+                <p className="text-[10px] text-gray-500">Revenus & frais AfriBiz</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 transition-colors" />
+            </div>
+          </Card>
+        </Link>
+        <Link href="/dashboard/finance/history">
+          <Card className="p-4 hover:shadow-md transition-all group cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/30">
+                <History className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">Historique</p>
+                <p className="text-[10px] text-gray-500">Actions financières tracées</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" />
+            </div>
+          </Card>
+        </Link>
+        <Link href="/dashboard/finance/client-risks">
+          <Card className="p-4 hover:shadow-md transition-all group cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-900/30">
+                <ShieldAlert className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">Risques clients</p>
+                <p className="text-[10px] text-gray-500">Scores & alertes</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-red-500 transition-colors" />
+            </div>
+          </Card>
+        </Link>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Quotes */}
         <Card className="p-4">
@@ -191,7 +255,7 @@ export default function FinancePage() {
               <FileText className="w-4 h-4 text-brand" />
               Derniers devis
             </h3>
-            <Link href="/dashboard/finance/quotes" className="text-xs text-brand hover:underline">
+            <Link href="/dashboard/quotes" className="text-xs text-brand hover:underline">
               Voir tout
             </Link>
           </div>
@@ -202,7 +266,7 @@ export default function FinancePage() {
               {recentQuotes.slice(0, 5).map((q: any) => (
                 <Link
                   key={q.id}
-                  href={`/dashboard/finance/quotes/${q.id}`}
+                  href={`/dashboard/quotes/${q.id}`}
                   className="flex items-center justify-between py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors"
                 >
                   <div>
@@ -232,7 +296,7 @@ export default function FinancePage() {
               <FileSignature className="w-4 h-4 text-emerald-600" />
               Dernières factures
             </h3>
-            <Link href="/dashboard/finance/invoices" className="text-xs text-brand hover:underline">
+            <Link href="/dashboard/invoices" className="text-xs text-brand hover:underline">
               Voir tout
             </Link>
           </div>
@@ -243,7 +307,7 @@ export default function FinancePage() {
               {recentInvoices.slice(0, 5).map((inv: any) => (
                 <Link
                   key={inv.id}
-                  href={`/dashboard/finance/invoices/${inv.id}`}
+                  href={`/dashboard/invoices/${inv.id}`}
                   className="flex items-center justify-between py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors"
                 >
                   <div>

@@ -37,7 +37,7 @@ export default function FinanceTransactionsPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['finance-transactions'],
     queryFn: async () => {
-      const res = await apiClient.get('/business/finance/transactions');
+      const res = await apiClient.get('/wallet/transactions', { params: { limit: 100 } });
       return res.data.data;
     },
   });
