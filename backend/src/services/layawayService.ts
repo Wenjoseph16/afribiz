@@ -732,6 +732,8 @@ export async function confirmLayawayCheckout(
         notes:
           `Acheté via Épargne Achat (${plan.itemName}) — plan ${plan.id}` +
           (coupon ? ` | Promo ${coupon.code} (-${discountAmount} FCFA)` : ''),
+        // Trace lisible par ensureInvoiceForOrder → la facture auto porte le promoCode
+        internalNotes: coupon ? `Promo : ${coupon.code} (-${discountAmount} FCFA)` : null,
       } as any,
     });
     // Lier le bon type d'item à la ligne de commande (productId / serviceId / nom seul)
@@ -912,6 +914,29 @@ export async function confirmLayawayCheckout(
           status: 'COMPLETED',
         },
       });
+
+      // 2b. Commission plateforme tracée (cohérence revenus) : la commission 1%
+      //     apparaît dans la compta du business et dans les stats plateforme.
+      if (fee > 0) {
+        await tx.financialLog.create({
+          data: {
+            businessId: plan.businessId,
+            action: 'MANUAL_ADJUSTMENT',
+            amount: -fee,
+            description: `Commission AfriBiz 1% sur Épargne Achat — ${plan.itemName} (${total} FCFA)`,
+            metadata: {
+              commissionType: 'LAYAWAY_ESCROW_FEE',
+              layawayPlanId: plan.id,
+              orderId: order.id,
+              escrowId: escrow.id,
+              gross: total,
+              discountAmount,
+              fee,
+              netAmount,
+            },
+          },
+        });
+      }
     }
 
     // 3. Lier la commande au plan (déjà réservé COMPLETED par l'étape 0)
