@@ -15,6 +15,8 @@ import {
   FileText,
   Tag,
   Network,
+  PiggyBank,
+  Lock,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/dashboard/PageHeader';
@@ -292,6 +294,83 @@ export default function Customer360Page() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )
+              )}
+
+              {/* Épargne Achat — plans du client chez ce business */}
+              {renderSection(
+                'Épargne Achat',
+                <PiggyBank className="h-4 w-4 text-brand" />,
+                !profile.savings || (profile.savings.plans || []).length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Aucun plan épargne. Le client peut épargner sur vos produits, services, chambres
+                    et événements — argent sécurisé en escrow.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20">
+                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                          Épargné en escrow
+                        </p>
+                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                          {formatPrice(profile.savings.totalSaved || 0)}
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/60">
+                        <p className="text-[10px] text-gray-500">En cours</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                          {profile.savings.activePlans || 0}
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20">
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400">Prêts</p>
+                        <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+                          {profile.savings.readyPlans || 0}
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+                        <p className="text-[10px] text-blue-600 dark:text-blue-400">Terminés</p>
+                        <p className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                          {profile.savings.completedPlans || 0}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-2.5">
+                      {(profile.savings.plans || []).map((sp: any) => (
+                        <div
+                          key={sp.id}
+                          className="p-3 rounded-xl border border-gray-100 dark:border-gray-700/60"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Lock className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {sp.itemName}
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-500 shrink-0">
+                              {formatPrice(sp.savedAmount)} / {formatPrice(sp.targetAmount)}
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-emerald-500 transition-all"
+                              style={{ width: `${sp.progress || 0}%` }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between mt-1.5 text-[11px] text-gray-400">
+                            <span>
+                              {sp.progress}% · {sp.status === 'ACTIVE' ? 'En cours' : sp.status === 'READY' ? 'Prêt à convertir' : sp.status === 'COMPLETED' ? 'Terminé' : sp.status}
+                            </span>
+                            {sp.expiresAt && (
+                              <span>Échéance {new Date(sp.expiresAt).toLocaleDateString('fr-FR')}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )
               )}

@@ -1293,32 +1293,59 @@ export class CronService {
       // Rappel J-7 : fenêtre large 6-8 jours (7.1j -> ceil 8, on veut quand même notifier).
       // Le flag reminder7dSent garantit un envoi UNIQUE quelle que soit la fenêtre.
       const is7dWindow = daysLeft >= 6 && daysLeft <= 8 && !p.reminder7dSent;
+      // Rappel J-3 : fenêtre 3-4 jours, envoi unique via reminder3dSent (bienveillant, sans pénalité)
+      const is3dWindow = daysLeft >= 3 && daysLeft <= 4 && !p.reminder3dSent;
       // Rappel J-1 : derniers 2 jours, envoi unique via reminder1dSent
       const is24hWindow = daysLeft <= 2 && daysLeft > 0 && !p.reminder1dSent;
 
-      if (!is7dWindow && !is24hWindow) continue;
+      if (!is7dWindow && !is3dWindow && !is24hWindow) continue;
 
-      const stage = is7dWindow ? '7d' : '1d';
-      const data = {
+      const stage = is7dWindow ? '7d' : is3dWindow ? '3d' : '1d';
+      const data: any = {
         reminder7dSent: p.reminder7dSent,
+        reminder3dSent: p.reminder3dSent,
         reminder1dSent: p.reminder1dSent,
-        [stage === '7d' ? 'reminder7dSent' : 'reminder1dSent']: true,
-        [stage === '7d' ? 'reminder7dAt' : 'reminder1dAt']: now,
+        [stage === '7d' ? 'reminder7dSent' : stage === '3d' ? 'reminder3dSent' : 'reminder1dSent']: true,
+        [stage === '7d' ? 'reminder7dAt' : stage === '3d' ? 'reminder3dAt' : 'reminder1dAt']: now,
       };
+
+      const title =
+        stage === '7d'
+          ? '💛 Plus que 7 jours pour votre épargne'
+          : stage === '3d'
+            ? '⏳ Plus que 3 jours — votre épargne vous attend'
+            : '🌱 Derniers jours pour compléter (sans pression)';
+      const deadline =
+        stage === '7d' ? 'encore 7 jours' : stage === '3d' ? 'encore 3 jours' : 'plus que quelques jours';
 
       try {
         await prisma.notification.create({
           data: {
             userId: p.clientId,
             type: 'PAYMENT_REMINDER' as any,
-            title: is7dWindow ? '💛 Plus que 7 jours pour votre épargne' : '🌱 Derniers jours pour compléter (sans pression)',
+            title,
             description:
-              `${p.itemName} — vous êtes à ${progress}% (${saved.toLocaleString('fr-FR')} / ${target.toLocaleString('fr-FR')} FCFA). ` +
-              `Aucune pression : vous pouvez cotiser quand vous voulez, ou annuler et être remboursé intégralement.`,
+              `${p.itemName} — vous êtes à ${progress}% (${saved.toLocaleString('fr-FR')} / ${target.toLocaleString('fr-FR')} FCFA), il vous reste ${deadline}. ` +
+              `Aucune pression : cotisez quand vous voulez, ou annulez et soyez remboursé intégralement.`,
             link: '/dashboard/my-layaway',
             metadata: p.businessId ? { businessId: p.businessId, source: 'layaway-reminder' } : { source: 'layaway-reminder' },
           },
         });
+        // Push temps réel (socket) — le client voit le rappel sans recharger
+        try {
+          getIO()
+            ?.to(`user:${p.clientId}`)
+            .emit('layaway:reminder', {
+              planId: p.id,
+              itemName: p.itemName,
+              stage,
+              progress,
+              saved,
+              target,
+            });
+        } catch {
+          /* socket non prêt : non bloquant */
+        }
         await prisma.layawayPlan.update({ where: { id: p.id }, data } as any);
         sent++;
       } catch (err) {

@@ -812,6 +812,28 @@ export async function confirmLayawayCheckout(
       });
     }
 
+    // 1d. Formation — l'épargne devient une VRAIE inscription (UserTraining) déjà payée,
+    //     visible dans « Mes formations » du client et côté business.
+    let enrollment: any = null;
+    if (plan.itemType === 'TRAINING') {
+      const existing = await tx.userTraining.findUnique({
+        where: { userId_trainingId: { userId: clientId, trainingId: plan.itemId } },
+      });
+      if (existing) throw new AppError('Vous êtes déjà inscrit à cette formation', 409);
+      enrollment = await tx.userTraining.create({
+        data: {
+          userId: clientId,
+          trainingId: plan.itemId,
+          status: 'NOT_STARTED',
+          progress: 0,
+          isPaid: true,
+          paidAt: new Date(),
+          amountPaid: target,
+          paymentRef: order.id,
+        },
+      });
+    }
+
     // 2. Libération de l'escrow → wallet du business (moins commission 1%)
     if (plan.escrowId) {
       const escrow = await tx.escrow.update({
@@ -854,7 +876,7 @@ export async function confirmLayawayCheckout(
       data: { orderId: order.id },
     });
 
-    return { order, updatedPlan, booking, participant };
+    return { order, updatedPlan, booking, participant, enrollment };
   });
 
   const owner = await prisma.business.findUnique({
@@ -933,6 +955,20 @@ export async function confirmLayawayCheckout(
         participantId: result.participant?.id,
         ticketRef: result.participant?.ticketRef,
       });
+    } else if (plan.itemType === 'TRAINING') {
+      await notify(
+        owner.ownerId,
+        plan.businessId,
+        NotificationType.ORDER_PLACED,
+        '🎓 Inscription formation épargne !',
+        `${plan.itemName} — ${netAmount} FCFA libérés sur votre wallet (client inscrit).`,
+        '/dashboard/trainings/manage'
+      ).catch(() => {});
+      emitBusiness(plan.businessId, 'layaway:enrollment-created', {
+        planId: plan.id,
+        trainingId: plan.itemId,
+        enrollmentId: result.enrollment?.id,
+      });
     } else {
       await notify(
         owner.ownerId,
@@ -989,6 +1025,20 @@ export async function confirmLayawayCheckout(
       participantId: result.participant?.id,
       ticketRef: result.participant?.ticketRef,
     });
+  } else if (plan.itemType === 'TRAINING') {
+    await notify(
+      clientId,
+      plan.businessId,
+      NotificationType.PAYMENT_RECEIVED,
+      '🎓 Inscription confirmée !',
+      `${plan.itemName} — vous êtes inscrit, la formation est débloquée (payée par votre épargne).`,
+      '/dashboard/my-trainings'
+    ).catch(() => {});
+    emitUser(clientId, 'layaway:enrollment-confirmed', {
+      planId: plan.id,
+      trainingId: plan.itemId,
+      enrollmentId: result.enrollment?.id,
+    });
   }
 
   trackAnalyticsEvent({
@@ -1006,6 +1056,7 @@ export async function confirmLayawayCheckout(
     plan: result.updatedPlan,
     booking: result.booking,
     participant: result.participant,
+    enrollment: result.enrollment,
     fee,
     netAmount,
   };

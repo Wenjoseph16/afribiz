@@ -276,7 +276,7 @@ const BIZ_DEFS: any[] = [
     shortDescription: 'Construction & rénovation', tagline: 'Construisons l\'avenir',
     email: 'contact@buildpro.ci', phone: '+2250708091011', country: 'Côte d\'Ivoire', city: 'Abidjan', region: 'Yopougon',
     address: 'Zone industrielle Yopougon', foundedYear: 2017, employeeCount: 22, rating: 4.7, reviewCount: 41,
-    modules: ['PORTFOLIO', 'QUOTES_INVOICES', 'ADVANCED_TASKS', 'PLANNING', 'EMPLOYEES', 'DOCUMENTS', 'PARTNERS', 'CRM'],
+    modules: ['PORTFOLIO', 'QUOTES_INVOICES', 'ADVANCED_TASKS', 'PLANNING', 'EMPLOYEES', 'DOCUMENTS', 'PARTNERS', 'CRM', 'TRAINING'],
   },
   {
     id: B.EVENTS, ownerId: U.OWNER_EVENTS, name: 'Événements Plus', slug: 'evenements-plus', type: BusinessType.LOCATION_SAISONNIERE,
@@ -454,6 +454,13 @@ async function seedCatalogs() {
   await prisma.portfolioItem.upsert({
     where: { id: 'pf-btp-2' }, update: {},
     create: { id: 'pf-btp-2', businessId: B.BTP, title: 'Rénovation immeuble Yopougon', description: 'Rénovation complète 12 bureaux', categoryId: 'pfc-btp-2' },
+  });
+
+  // ── FORMATION (BuildPro BTP) — épargnable : la conversion crée une inscription réelle
+  await prisma.training.upsert({
+    where: { id: 'tr-btp-1' },
+    update: { price: 25000 },
+    create: { id: 'tr-btp-1', businessId: B.BTP, title: 'Formation Rénovation Express', description: 'Techniques de rénovation en 5 leçons : enduits, peinture, carrelage, finitions.', category: 'BTP', duration: '2 semaines', lessons: 5, price: 25000 },
   });
 
   // ── ÉVÉNEMENTS : produits (billets) + locations + événement ──
@@ -1114,7 +1121,38 @@ async function seedLayaway() {
     create: { id: 'lw-con-6', planId: 'lw-plan-4', amount: 5000, currency: 'FCFA', method: 'WAVE', status: 'PAID', reference: 'TRF-LW-006', createdAt: new Date('2026-07-28') },
   });
 
-  console.log('✓ Épargne Achat : 5 offres (produit, service, chambre, location, événement) + 4 plans clients en cours (82 000 FCFA en escrow)');
+  // ── Formation : offre + plan ──
+  await prisma.layawayOffer.upsert({
+    where: { itemType_itemId: { itemType: 'TRAINING', itemId: 'tr-btp-1' } },
+    update: {},
+    create: { id: 'lw-off-6', businessId: B.BTP, itemType: 'TRAINING', itemId: 'tr-btp-1', durationDays: 90, minInstallment: 5000, isActive: true, planCount: 1 },
+  });
+
+  // ── Plan client5 : Formation Rénovation Express (10 000 / 25 000 épargnés) ──
+  // La conversion finale créera une VRAIE inscription (UserTraining) déjà payée.
+  await prisma.layawayPlan.upsert({
+    where: { id: 'lw-plan-5' },
+    update: {},
+    create: {
+      id: 'lw-plan-5', businessId: B.BTP, clientId: U.CLIENT_5, offerId: 'lw-off-6',
+      itemType: 'TRAINING', itemId: 'tr-btp-1', itemName: 'Formation Rénovation Express',
+      itemImage: null, targetAmount: 25000, savedAmount: 10000, minInstallment: 5000,
+      durationDays: 90, status: 'ACTIVE', escrowId: 'lw-esc-5',
+      startedAt: new Date('2026-07-30'), expiresAt: new Date('2026-10-28'),
+    },
+  });
+  await prisma.escrow.upsert({
+    where: { id: 'lw-esc-5' },
+    update: {},
+    create: { id: 'lw-esc-5', businessId: B.BTP, amount: 10000, currency: 'FCFA', status: 'HELD', fee: 0, feeRate: 0, notes: 'Épargne Achat — Formation Rénovation Express (client sécurisé)' },
+  });
+  const con5: any[] = [
+    { id: 'lw-con-7', planId: 'lw-plan-5', amount: 5000, currency: 'FCFA', method: 'ORANGE', status: 'PAID', reference: 'TRF-LW-007', createdAt: new Date('2026-08-01') },
+    { id: 'lw-con-8', planId: 'lw-plan-5', amount: 5000, currency: 'FCFA', method: 'WAVE', status: 'PAID', reference: 'TRF-LW-008', createdAt: new Date('2026-08-05') },
+  ];
+  for (const c of con5) await prisma.layawayContribution.upsert({ where: { id: c.id }, update: {}, create: c });
+
+  console.log('✓ Épargne Achat : 6 offres (produit, service, chambre, location, événement, formation) + 5 plans clients en cours (92 000 FCFA en escrow)');
 }
 
 async function seedWallets() {

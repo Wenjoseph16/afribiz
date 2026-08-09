@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Sparkles,
   ShieldCheck,
+  GraduationCap,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -316,7 +317,9 @@ export default function MyLayawayPage() {
                         ? `Louer ({formatPrice(plan.targetAmount)})`
                         : plan.itemType === 'EVENT'
                           ? `Obtenir mon billet ({formatPrice(plan.targetAmount)})`
-                          : `Valider mon achat ({formatPrice(plan.targetAmount)})`}
+                          : plan.itemType === 'TRAINING'
+                            ? `Valider mon inscription ({formatPrice(plan.targetAmount)})`
+                            : `Valider mon achat ({formatPrice(plan.targetAmount)})`}
                   </Button>
                 )}
                 {plan.status === 'COMPLETED' && (
@@ -328,9 +331,11 @@ export default function MyLayawayPage() {
                           ? '/dashboard/my-rentals'
                           : plan.itemType === 'EVENT'
                             ? '/dashboard/my-events'
-                            : plan.orderId
-                              ? `/dashboard/orders/${plan.orderId}`
-                              : '/dashboard/my-layaway'
+                            : plan.itemType === 'TRAINING'
+                              ? '/dashboard/my-trainings'
+                              : plan.orderId
+                                ? `/dashboard/orders/${plan.orderId}`
+                                : '/dashboard/my-layaway'
                     }
                     className="mt-4 block"
                   >
@@ -339,6 +344,8 @@ export default function MyLayawayPage() {
                         <><Calendar className="h-3.5 w-3.5 mr-1.5" /> Voir ma réservation</>
                       ) : plan.itemType === 'EVENT' ? (
                         <><CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Voir mon billet</>
+                      ) : plan.itemType === 'TRAINING' ? (
+                        <><GraduationCap className="h-3.5 w-3.5 mr-1.5" /> Accéder à ma formation</>
                       ) : (
                         <><ShoppingBag className="h-3.5 w-3.5 mr-1.5" /> Suivre ma commande</>
                       )}

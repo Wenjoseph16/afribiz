@@ -110,8 +110,8 @@ export async function getCustomer360(businessId: string, clientId: string) {
 
   if (!bc) throw new AppError('Client non trouvé', 404);
 
-  // Get Customer 360° specific data
-  const [activityTimeline, pageViews, rawProductViews, rawProductClicks] = await Promise.all([
+  // Get Customer 360° specific data (+ épargne achat : plans et progression)
+  const [activityTimeline, pageViews, rawProductViews, rawProductClicks, layawayPlans] = await Promise.all([
     prisma.clientActivityLog.findMany({
       where: { businessId, clientId: bc.id },
       orderBy: { createdAt: 'desc' },
@@ -132,6 +132,23 @@ export async function getCustomer360(businessId: string, clientId: string) {
       orderBy: { clickedAt: 'desc' },
       take: 20,
     }),
+    prisma.layawayPlan.findMany({
+      where: { businessId, clientId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        itemName: true,
+        itemType: true,
+        status: true,
+        savedAmount: true,
+        targetAmount: true,
+        minInstallment: true,
+        expiresAt: true,
+        createdAt: true,
+        completedAt: true,
+      },
+    }),
   ]);
 
   // Fetch product details for views and clicks
@@ -148,8 +165,42 @@ export async function getCustomer360(businessId: string, clientId: string) {
       : [];
   const productMap = new Map(products.map((p) => [p.id, p]));
 
+  // Épargne Achat — agrégation pour la fiche client (montant sécurisé en escrow,
+  // progression par plan, statut : en cours / prêt à convertir / terminé).
+  const savingsPlans = layawayPlans.map((lp) => {
+    const savedAmount = Number(lp.savedAmount);
+    const targetAmount = Number(lp.targetAmount);
+    return {
+      id: lp.id,
+      itemName: lp.itemName,
+      itemType: lp.itemType,
+      status: lp.status,
+      savedAmount,
+      targetAmount,
+      progress: targetAmount > 0 ? Math.min(100, Math.round((savedAmount / targetAmount) * 100)) : 0,
+      remaining: Math.max(0, targetAmount - savedAmount),
+      expiresAt: lp.expiresAt,
+      createdAt: lp.createdAt,
+      completedAt: lp.completedAt,
+    };
+  });
+  const activeSavings = savingsPlans.filter((s) => s.status === 'ACTIVE');
+  // « Épargné en escrow » = fonds encore séquestrés : ACTIVE + READY uniquement.
+  // Les plans COMPLETED ont déjà libéré l'argent vers le business (plus en escrow).
+  const escrowed = savingsPlans.filter((s) => s.status === 'ACTIVE' || s.status === 'READY');
+  const totalSaved = escrowed.reduce((sum, s) => sum + s.savedAmount, 0);
+  const totalTarget = escrowed.reduce((sum, s) => sum + s.targetAmount, 0);
+
   return {
     ...crmDetail,
+    savings: {
+      totalSaved,
+      totalTarget,
+      activePlans: activeSavings.length,
+      readyPlans: savingsPlans.filter((s) => s.status === 'READY').length,
+      completedPlans: savingsPlans.filter((s) => s.status === 'COMPLETED').length,
+      plans: savingsPlans,
+    },
     activityTimeline: activityTimeline.map((a) => ({
       id: a.id,
       type: a.type,
