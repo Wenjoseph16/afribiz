@@ -17,6 +17,7 @@ import {
   Sparkles,
   ShieldCheck,
   GraduationCap,
+  Tag,
 } from 'lucide-react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -90,6 +91,8 @@ export default function MyLayawayPage() {
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState('1');
+  // Code promo optionnel : la remise s'applique réellement à la validation
+  const [couponCode, setCouponCode] = useState('');
 
   const { data, isLoading, error: loadError, refetch } = useQuery({
     queryKey: ['my-layaway'],
@@ -166,7 +169,11 @@ export default function MyLayawayPage() {
     setConfirming(true);
     setError('');
     try {
-      await apiClient.confirmLayawayCheckout(plan.id, dates);
+      await apiClient.confirmLayawayCheckout(plan.id, {
+        ...dates,
+        couponCode: couponCode.trim() || undefined,
+      });
+      setCouponCode('');
       qc.invalidateQueries({ queryKey: ['my-layaway'] });
       return true;
     } catch (e: any) {
@@ -304,23 +311,37 @@ export default function MyLayawayPage() {
                   </div>
                 )}
                 {plan.status === 'READY' && (
-                  <Button
-                    size="sm"
-                    className="w-full mt-4"
-                    onClick={() => handleReadyClick(plan)}
-                    disabled={confirming}
-                  >
-                    {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
-                    {plan.itemType === 'ROOM'
-                      ? `Réserver ({formatPrice(plan.targetAmount)})`
-                      : plan.itemType === 'RENTAL'
-                        ? `Louer ({formatPrice(plan.targetAmount)})`
-                        : plan.itemType === 'EVENT'
-                          ? `Obtenir mon billet ({formatPrice(plan.targetAmount)})`
-                          : plan.itemType === 'TRAINING'
-                            ? `Valider mon inscription ({formatPrice(plan.targetAmount)})`
-                            : `Valider mon achat ({formatPrice(plan.targetAmount)})`}
-                  </Button>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                        <input
+                          type="text"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          placeholder="Code promo (optionnel)"
+                          className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleReadyClick(plan)}
+                      disabled={confirming}
+                    >
+                      {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
+                      {plan.itemType === 'ROOM'
+                        ? `Réserver ({formatPrice(plan.targetAmount)})`
+                        : plan.itemType === 'RENTAL'
+                          ? `Louer ({formatPrice(plan.targetAmount)})`
+                          : plan.itemType === 'EVENT'
+                            ? `Obtenir mon billet ({formatPrice(plan.targetAmount)})`
+                            : plan.itemType === 'TRAINING'
+                              ? `Valider mon inscription ({formatPrice(plan.targetAmount)})`
+                              : `Valider mon achat ({formatPrice(plan.targetAmount)})`}
+                    </Button>
+                  </div>
                 )}
                 {plan.status === 'COMPLETED' && (
                   <Link
@@ -472,6 +493,18 @@ export default function MyLayawayPage() {
               value={guests}
               onChange={(e) => setGuests(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Code promo <span className="text-gray-400 font-normal">(optionnel — remise appliquée à l&apos;achat)</span>
+            </label>
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              placeholder="Ex : WELCOME10"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
           </div>
           {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">{error}</p>}

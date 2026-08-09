@@ -214,6 +214,138 @@ export async function createCoupon(ownerId: string, data: any) {
   return coupon;
 }
 
+// ===================== DISCOUNT ENGINE (partagé checkout classique + épargne) =====================
+// C'est LA source de vérité du calcul des remises : le checkout du panier ET la
+// validation d'une épargne utilisent ces fonctions. Avant, le calcul était dupliqué
+// (et ignoré côté épargne), ce qui donnait des commandes qui ne respectaient pas les promos.
+
+export function computeCouponDiscount(
+  coupon: { discountType?: string | null; discountValue?: unknown } | null | undefined,
+  subtotal: number
+): number {
+  if (!coupon) return 0;
+  const type = (coupon.discountType || 'PERCENTAGE').toUpperCase();
+  const value = Number(coupon.discountValue || 0);
+  const raw = type === 'PERCENTAGE' ? subtotal * (value / 100) : value;
+  if (!isFinite(raw) || raw <= 0) return 0;
+  // La remise ne peut jamais dépasser le sous-total ni être négative
+  return Math.max(0, Math.min(Math.round(raw), Math.max(0, Math.round(subtotal))));
+}
+
+/**
+ * Valide un code promo pour UN commerce précis : le coupon appartient au business
+ * (fini les coupons d'un commerce appliqués au panier d'un autre), il est actif,
+ * non expiré, sous sa limite d'utilisations, réservé au bon client si ciblé,
+ * et le montant minimum est atteint.
+ */
+export async function findValidCoupon(
+  code: string,
+  businessId: string,
+  subtotal: number,
+  clientId?: string | null
+) {
+  if (!code || !code.trim()) throw new AppError('Code promo requis', 400);
+  const coupon = await prisma.coupon.findFirst({
+    where: { code: { equals: code.trim(), mode: 'insensitive' } },
+  });
+  if (!coupon) throw new AppError('Code promo invalide', 404);
+  if (coupon.businessId !== businessId) {
+    throw new AppError("Ce code promo ne s'applique pas à ce commerce", 400);
+  }
+  if (coupon.status !== 'ACTIVE') throw new AppError("Ce code promo n'est plus actif", 400);
+  if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AppError('Ce code promo a expiré', 400);
+  if (coupon.maxUses && coupon.useCount >= coupon.maxUses) {
+    throw new AppError("Ce code promo a atteint sa limite d'utilisations", 400);
+  }
+  if (coupon.clientId && clientId && coupon.clientId !== clientId) {
+    throw new AppError('Ce code promo est réservé à un autre client', 403);
+  }
+  if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount)) {
+    throw new AppError(
+      `Montant minimum de commande non atteint (${Number(coupon.minOrderAmount)} FCFA)`,
+      400
+    );
+  }
+  return coupon;
+}
+
+/** Trace l'application d'une remise (alimente la stat « totalUsage » du dashboard marketing). */
+export async function logPromotionApplied(
+  businessId: string,
+  data: {
+    promotionId?: string | null;
+    couponId?: string | null;
+    description: string;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  try {
+    await prisma.promotionLog.create({
+      data: {
+        businessId,
+        promotionId: data.promotionId || null,
+        couponId: data.couponId || null,
+        action: 'APPLIED',
+        description: data.description,
+        metadata: (data.metadata as any) || undefined,
+      },
+    });
+  } catch {
+    // Log non bloquant : la vente ne doit jamais échouer pour une trace
+  }
+}
+
+/**
+ * Promotions en « application automatique » (autoApply=true) actives maintenant :
+ * une promotion créée par le business doit réellement s'appliquer au panier.
+ * Retourne la meilleure remise (celle qui économise le plus au client).
+ */
+export async function getAutoApplyDiscount(
+  businessId: string,
+  items: Array<{ productId?: string | null; serviceId?: string | null; total?: unknown }>,
+  subtotal: number
+) {
+  const now = new Date();
+  const promos = await prisma.promotion.findMany({
+    where: {
+      businessId,
+      isActive: true,
+      autoApply: true,
+      deletedAt: null,
+      AND: [
+        { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+        { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+      ],
+    },
+    take: 10,
+  });
+  if (promos.length === 0) return null;
+
+  let best: { promotion: (typeof promos)[number]; discount: number } | null = null;
+  for (const promo of promos) {
+    let applicableSubtotal = subtotal;
+    if (promo.targetType !== 'ALL') {
+      applicableSubtotal = items
+        .filter((it) => {
+          if (promo.targetType === 'PRODUCT' && it.productId && promo.targetIds.includes(it.productId)) return true;
+          if (promo.targetType === 'SERVICE' && it.serviceId && promo.targetIds.includes(it.serviceId)) return true;
+          return false;
+        })
+        .reduce((s, it) => s + Number(it.total || 0), 0);
+    }
+    if (applicableSubtotal <= 0) continue;
+    if (promo.minOrderAmount && applicableSubtotal < Number(promo.minOrderAmount)) continue;
+    if (promo.maxUsageCount && promo.usageCount >= promo.maxUsageCount) continue;
+    const discount = computeCouponDiscount(
+      { discountType: promo.promotionType, discountValue: promo.discountValue },
+      applicableSubtotal
+    );
+    if (discount <= 0) continue;
+    if (!best || discount > best.discount) best = { promotion: promo, discount };
+  }
+  return best;
+}
+
 // ===================== BUNDLES =====================
 
 export async function listBundles(ownerId: string, filters: any) {

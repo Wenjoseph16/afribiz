@@ -919,6 +919,45 @@ async function seedMarketing() {
     });
   }
   console.log('✓ Marketing : 3 campagnes réelles (2 envoyées avec ouvertures/clics + 1 brouillon)');
+
+  // ── Promotions réelles — le calcul s'applique VRAIMENT au checkout ──
+  // (classique : coupon OU promo auto ; épargne : coupon à la validation)
+  await prisma.coupon.deleteMany({ where: { code: { in: ['WELCOME10', 'TECHX10'] } } });
+
+  // 1. Auto-apply « Attiéké -15% » : remise automatique dès que le plat est au panier
+  await prisma.promotion.upsert({
+    where: { id: 'prom-res-1' },
+    update: {},
+    create: {
+      id: 'prom-res-1', businessId: B.RESTO, title: 'Attiéké -15% (auto)',
+      description: 'Remise automatique de 15% sur l Attiéké Poisson Braisé — appliquée directement au checkout.',
+      promotionType: 'PERCENTAGE', discountValue: 15, code: 'ATTIEKE15',
+      targetType: 'PRODUCT', targetIds: ['prod-res-1'],
+      autoApply: true, isActive: true, badgeLabel: '🔥 -15%', startsAt: null, endsAt: null,
+    },
+  });
+
+  // 2. Coupon WELCOME10 (resto) — utilisable au panier ET à la validation d'une épargne
+  await prisma.coupon.upsert({
+    where: { id: 'cpn-res-welcome' },
+    update: {},
+    create: {
+      id: 'cpn-res-welcome', businessId: B.RESTO, code: 'WELCOME10',
+      discountType: 'PERCENTAGE', discountValue: 10, maxUses: 500, minOrderAmount: null, status: 'ACTIVE',
+    },
+  });
+
+  // 3. Coupon TECHX10 (boutique) — test épargne : appliqué à la conversion d'un plan READY
+  await prisma.coupon.upsert({
+    where: { id: 'cpn-bout-techx' },
+    update: {},
+    create: {
+      id: 'cpn-bout-techx', businessId: B.BOUTIQUE, code: 'TECHX10',
+      discountType: 'PERCENTAGE', discountValue: 10, maxUses: 500, minOrderAmount: null, status: 'ACTIVE',
+    },
+  });
+
+  console.log('✓ Promotions testables : auto-apply Attiéké -15% + coupons WELCOME10 (resto) / TECHX10 (boutique)');
 }
 
 // ============================================================

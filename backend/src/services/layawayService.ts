@@ -7,6 +7,7 @@ import { processMobileMoney } from './paymentProcessor';
 import { trackAnalyticsEvent } from './analyticsService';
 import { publishOrderPlaced } from '../events/publishers';
 import { ensureInvoiceForOrder } from './orders';
+import { findValidCoupon, computeCouponDiscount, logPromotionApplied } from './promotions';
 import { toDataURL } from 'qrcode';
 
 const ESCROW_COMMISSION_RATE = 0.01; // 1% sur la libération (cohérent avec monetizationConfig)
@@ -638,7 +639,7 @@ export async function cancelLayawayPlan(clientId: string, planId: string) {
 export async function confirmLayawayCheckout(
   clientId: string,
   planId: string,
-  options?: { checkIn?: string; checkOut?: string; guests?: number }
+  options?: { checkIn?: string; checkOut?: string; guests?: number; couponCode?: string }
 ) {
   const plan = await prisma.layawayPlan.findFirst({ where: { id: planId, clientId } });
   if (!plan) throw new AppError('Plan épargne non trouvé', 404);
@@ -648,8 +649,19 @@ export async function confirmLayawayCheckout(
   const saved = Number(plan.savedAmount);
   if (saved < target) throw new AppError("L'épargne n'est pas encore complète", 400);
 
-  const fee = Math.round(target * ESCROW_COMMISSION_RATE * 100) / 100;
-  const netAmount = target - fee;
+  // ── Promotion : un code promo du business s'applique RÉELLEMENT à l'épargne ──
+  // La remise est financée par le business : le client paie (target - remise), le
+  // business reçoit (target - remise - commission), la remise revient au client.
+  let coupon: any = null;
+  let discountAmount = 0;
+  if (options?.couponCode && options.couponCode.trim()) {
+    coupon = await findValidCoupon(options.couponCode, plan.businessId, target, clientId);
+    discountAmount = computeCouponDiscount(coupon, target);
+  }
+  const total = Math.max(0, target - discountAmount); // prix payé par le client
+
+  const fee = Math.round(total * ESCROW_COMMISSION_RATE * 100) / 100;
+  const netAmount = total - fee; // part business (remise + commission déduites)
   // Numéro unique garanti : orderNumber est contraint UNIQUE en base (P2002 sinon),
   // et le préfixe dérivé de l'id seul pouvait entrer en collision (ex. lw-plan-1 / lw-plan-10).
   const orderNumber = `CMD-LW-${String(plan.id).slice(0, 4).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
@@ -698,6 +710,7 @@ export async function confirmLayawayCheckout(
 
     // 1. Commande (comme un checkout normal, statut CONFIRMED + payé).
     //    Type selon l'article : PICKUP pour un billet (retiré sur place), DELIVERY sinon.
+    //    totalAmount = prix APRÈS remise ; subtotal = prix d'origine ; discountAmount tracé.
     const order = await tx.order.create({
       data: {
         businessId: plan.businessId,
@@ -706,17 +719,19 @@ export async function confirmLayawayCheckout(
         type: plan.itemType === 'EVENT' ? 'PICKUP' : 'DELIVERY',
         source: 'WEB_SITE',
         status: 'CONFIRMED',
-        totalAmount: target,
+        totalAmount: total,
         subtotal: target,
         deliveryFee: 0,
-        discountAmount: 0,
+        discountAmount,
         currency: 'FCFA',
         contactName: 'Client épargne',
         paymentMethod: 'Escrow sécurisé',
         paymentStatus: 'PAID',
         paidAt: new Date(),
         createdAt: new Date(),
-        notes: `Acheté via Épargne Achat (${plan.itemName}) — plan ${plan.id}`,
+        notes:
+          `Acheté via Épargne Achat (${plan.itemName}) — plan ${plan.id}` +
+          (coupon ? ` | Promo ${coupon.code} (-${discountAmount} FCFA)` : ''),
       } as any,
     });
     // Lier le bon type d'item à la ligne de commande (productId / serviceId / nom seul)
@@ -834,6 +849,35 @@ export async function confirmLayawayCheckout(
       });
     }
 
+    // 1e. Remise promo — l'argent revient au client (jamais au business) :
+    //     tracé par un Payment REFUNDED + usageCount du coupon + PromotionLog.
+    if (discountAmount > 0 && coupon) {
+      await tx.payment.create({
+        data: {
+          userId: clientId,
+          businessId: plan.businessId,
+          orderId: order.id,
+          amount: discountAmount,
+          currency: 'FCFA',
+          method: 'MOBILE_MONEY',
+          status: 'REFUNDED',
+          refundedAt: new Date(),
+          reference: `PROMO-${coupon.code}`,
+          description: `Remise promo ${coupon.code} — ${plan.itemName} (remboursée sur votre épargne)`,
+        },
+      });
+      await tx.coupon.update({
+        where: { id: coupon.id },
+        data: { useCount: { increment: 1 } },
+      });
+      await logPromotionApplied(plan.businessId, {
+        promotionId: coupon.promotionId,
+        couponId: coupon.id,
+        description: `Coupon ${coupon.code} appliqué sur épargne ${plan.itemName} (${discountAmount} FCFA)`,
+        metadata: { target, discountAmount, total, orderId: order.id },
+      });
+    }
+
     // 2. Libération de l'escrow → wallet du business (moins commission 1%)
     if (plan.escrowId) {
       const escrow = await tx.escrow.update({
@@ -845,7 +889,7 @@ export async function confirmLayawayCheckout(
           fee,
           feeRate: ESCROW_COMMISSION_RATE * 100,
           netAmount,
-          notes: `Libéré — ${plan.itemName}`,
+          notes: `Libéré — ${plan.itemName}${coupon ? ` (promo ${coupon.code})` : ''}`,
         },
       });
 
@@ -902,11 +946,12 @@ export async function confirmLayawayCheckout(
   //    points de fidélité (LoyaltyAutomation), tâches auto (advancedTasks) et
   //    rafraîchissement temps réel de la room business:{id} (businessRoomHandler).
   emitUser(clientId, 'layaway:checkout-confirmed', { planId: plan.id, orderId: result.order.id });
+  // Montant ANNONCÉ = prix réellement payé (remise déduite) — cohérence avec la commande.
   publishOrderPlaced({
     userId: clientId,
     orderId: result.order.id,
     businessName: plan.itemName,
-    amount: String(target),
+    amount: String(total),
     businessId: plan.businessId,
   });
 
@@ -982,6 +1027,23 @@ export async function confirmLayawayCheckout(
     emitBusiness(plan.businessId, 'layaway:completed', { planId: plan.id, orderId: result.order.id });
   }
 
+  // 3b. Notification promo — le client sait exactement ce qu'il a économisé.
+  if (discountAmount > 0 && coupon) {
+    await notify(
+      clientId,
+      plan.businessId,
+      NotificationType.PROMOTION,
+      '🎉 Promo appliquée à votre épargne !',
+      `${plan.itemName} — ${discountAmount} FCFA remboursés via le code ${coupon.code}. Total payé : ${total} FCFA.`,
+      '/dashboard/my-layaway'
+    ).catch(() => {});
+    emitUser(clientId, 'layaway:discount-applied', {
+      planId: plan.id,
+      discount: discountAmount,
+      code: coupon.code,
+    });
+  }
+
   // 4. Notification client — lien vers le vrai objet créé (réservation / billet).
   if (plan.itemType === 'ROOM') {
     await notify(
@@ -1047,10 +1109,12 @@ export async function confirmLayawayCheckout(
     type: 'layaway',
     category: 'payment',
     eventName: 'LAYAWAY_COMPLETED',
-    properties: { planId, orderId: result.order.id, amount: target, fee },
+    properties: { planId, orderId: result.order.id, amount: target, discount: discountAmount, total, fee },
   }).catch(() => {});
 
-  logger.info(`Layaway completed: plan ${plan.id} -> order ${result.order.id} (${target} FCFA, fee ${fee})`);
+  logger.info(
+    `Layaway completed: plan ${plan.id} -> order ${result.order.id} (${target} FCFA, promo ${discountAmount}, net ${netAmount})`
+  );
   return {
     order: result.order,
     plan: result.updatedPlan,
@@ -1059,5 +1123,6 @@ export async function confirmLayawayCheckout(
     enrollment: result.enrollment,
     fee,
     netAmount,
+    discountAmount,
   };
 }

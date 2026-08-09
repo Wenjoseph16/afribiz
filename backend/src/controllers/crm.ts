@@ -24,12 +24,15 @@ export const getCrmDashboardStats = catchAsyncErrors(
 
 export const listClients = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const businessId = await getBusinessId(req);
-  const { search, tagId, segmentId, isActive, sortBy, sortOrder, limit, offset } = req.query;
+  const { search, tagId, segmentId, isActive, savings, sortBy, sortOrder, limit, offset } = req.query;
   const result = await crmService.getBusinessClients(businessId, {
     search: search as string,
     tagId: tagId as string,
     segmentId: segmentId as string,
     isActive: isActive !== undefined ? isActive === 'true' : undefined,
+    savings: (['active', 'ready', 'completed', 'none'].includes(savings as string)
+      ? savings
+      : undefined) as any,
     sortBy: sortBy as string,
     sortOrder: sortOrder as 'asc' | 'desc',
     limit: Math.min(Number(limit) || 50, 100),

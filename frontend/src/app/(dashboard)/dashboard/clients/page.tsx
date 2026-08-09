@@ -16,6 +16,7 @@ import {
   TrendingUp,
   DollarSign,
   Tag,
+  PiggyBank,
   Layers,
   Plus,
   X,
@@ -84,6 +85,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<string>('');
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>('');
+  const [savings, setSavings] = useState<'' | 'active' | 'ready' | 'completed' | 'none'>('');
   const [sortBy, setSortBy] = useState('spent');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNewTag, setShowNewTag] = useState(false);
@@ -100,6 +102,7 @@ export default function ClientsPage() {
     search: search || undefined,
     tagId: selectedTagId || undefined,
     segmentId: selectedSegmentId || undefined,
+    savings: savings || undefined,
     sortBy: sortBy === 'spent' ? 'totalSpent' : sortBy === 'orders' ? 'totalOrders' : 'lastOrderAt',
     sortOrder: 'desc',
     limit: 50,
@@ -293,6 +296,18 @@ export default function ClientsPage() {
               className="min-w-[150px]"
             />
             <Select
+              value={savings}
+              onChange={(e) => setSavings(e.target.value as '' | 'active' | 'ready' | 'completed' | 'none')}
+              options={[
+                { value: '', label: 'Toute épargne' },
+                { value: 'active', label: '💚 En épargne' },
+                { value: 'ready', label: '✅ Prêts à convertir' },
+                { value: 'completed', label: '🎉 A acheté via épargne' },
+                { value: 'none', label: '— Sans épargne' },
+              ]}
+              className="min-w-[170px]"
+            />
+            <Select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               options={[
@@ -327,6 +342,7 @@ export default function ClientsPage() {
                 <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                   <th className="p-4 font-medium">Client</th>
                   <th className="p-4 font-medium">Tags</th>
+                  <th className="p-4 font-medium">Épargne</th>
                   <th className="p-4 font-medium">Dernière commande</th>
                   <th className="p-4 font-medium text-right">Commandes</th>
                   <th className="p-4 font-medium text-right">Total dépensé</th>
@@ -373,6 +389,26 @@ export default function ClientsPage() {
                           {client.tags.length > 2 && (
                             <span className="text-[10px] text-gray-400 self-center">
                               +{client.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {client.savings?.hasLayaway ? (
+                        <div className="flex flex-col items-start gap-1">
+                          {(client.savings.active + client.savings.ready > 0) && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                              <PiggyBank className="h-3 w-3" />
+                              {client.savings.active + client.savings.ready} plan(s) ·{' '}
+                              {Number(client.savings.totalSaved || 0).toLocaleString('fr-FR')} F
+                            </span>
+                          )}
+                          {client.savings.completed > 0 && client.savings.active + client.savings.ready === 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 whitespace-nowrap">
+                              🎉 Acheté via épargne
                             </span>
                           )}
                         </div>

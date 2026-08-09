@@ -13,6 +13,12 @@ import {
   processFedaPayPayment,
   saveTransaction,
 } from './paymentProcessor';
+import {
+  findValidCoupon,
+  computeCouponDiscount,
+  getAutoApplyDiscount,
+  logPromotionApplied,
+} from './promotions';
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -172,29 +178,41 @@ export async function clearCart(userId: string) {
 }
 
 export async function applyCoupon(userId: string, code: string) {
-  const coupon = await prisma.coupon.findUnique({ where: { code } });
-  if (!coupon) throw new AppError('Code promo invalide', 404);
-  if (coupon.status !== 'ACTIVE') throw new AppError("Ce code promo n'est plus actif", 400);
-  if (coupon.expiresAt && coupon.expiresAt < new Date())
-    throw new AppError('Ce code promo a expiré', 400);
-  if (coupon.maxUses && coupon.useCount >= coupon.maxUses)
-    throw new AppError("Ce code promo a atteint sa limite d'utilisations", 400);
-
   const cart = await prisma.cart.findUnique({ where: { userId } });
   if (!cart) throw new AppError('Panier non trouvé', 404);
 
-  const itemCount = await prisma.cartItem.count({ where: { cartId: cart.id } });
-  if (itemCount === 0) throw new AppError('Votre panier est vide', 400);
-
   const cartWithItems = await prisma.cartItem.findMany({ where: { cartId: cart.id } });
+  if (cartWithItems.length === 0) throw new AppError('Votre panier est vide', 400);
   const subtotal = cartWithItems.reduce((sum, item) => sum + Number(item.total), 0);
 
-  if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount)) {
-    throw new AppError(
-      `Montant minimum de commande non atteint (${Number(coupon.minOrderAmount)} ${coupon.discountType === 'PERCENTAGE' ? '%' : ''})`,
-      400
-    );
+  // Résoudre le business du panier (1er produit ou service) pour valider que le
+  // coupon appartient bien à CE commerce (un coupon d'un autre business = refus).
+  let businessId: string | undefined;
+  for (const item of cartWithItems) {
+    if (item.productId) {
+      const p = await prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { businessId: true },
+      });
+      if (p?.businessId) {
+        businessId = p.businessId;
+        break;
+      }
+    }
+    if (item.serviceId) {
+      const s = await prisma.service.findUnique({
+        where: { id: item.serviceId },
+        select: { businessId: true },
+      });
+      if (s) {
+        businessId = s.businessId;
+        break;
+      }
+    }
   }
+  if (!businessId) throw new AppError('Aucun commerce dans votre panier', 400);
+
+  const coupon = await findValidCoupon(code, businessId, subtotal, userId);
 
   await prisma.cart.update({
     where: { id: cart.id },
@@ -363,26 +381,10 @@ export async function checkout(
   if (cart.items.length === 0) throw new AppError('Votre panier est vide', 400);
 
   const subtotal = cart.items.reduce((sum: number, item: any) => sum + Number(item.total), 0);
-  let discountAmount = 0;
   const currency = 'FCFA';
 
-  if (cart.coupon) {
-    if (cart.coupon.discountType === 'PERCENTAGE') {
-      discountAmount = subtotal * (Number(cart.coupon.discountValue) / 100);
-    } else {
-      discountAmount = Number(cart.coupon.discountValue);
-    }
-
-    await prisma.coupon.update({
-      where: { id: cart.coupon.id },
-      data: { useCount: { increment: 1 } },
-    });
-  }
-
-  const total = Math.max(0, subtotal - discountAmount);
-  const orderNumber = generateOrderNumber();
-
-  // Resolve businessId from the first product or service in the cart
+  // Résoudre le business du panier AVANT le calcul : la remise dépend du commerce
+  // (le coupon doit appartenir au business, les promos auto-apply aussi).
   let businessId: string | undefined;
   for (const item of cart.items) {
     if (item.productId) {
@@ -391,7 +393,7 @@ export async function checkout(
         select: { businessId: true },
       });
       if (product?.businessId) {
-        businessId = product.businessId ?? undefined;
+        businessId = product.businessId;
         break;
       }
     }
@@ -406,6 +408,46 @@ export async function checkout(
       }
     }
   }
+
+  // ── Calcul RÉEL de la remise (coupon validé OU promo auto-appliquée) ──
+  let discountAmount = 0;
+  let promoNote = '';
+  if (cart.coupon) {
+    if (!businessId) throw new AppError('Aucun commerce dans votre panier', 400);
+    // Re-validation au moment du checkout (le coupon a pu expirer / être épuisé)
+    const coupon = await findValidCoupon(cart.coupon.code, businessId, subtotal, userId);
+    discountAmount = computeCouponDiscount(coupon, subtotal);
+    await prisma.coupon.update({
+      where: { id: coupon.id },
+      data: { useCount: { increment: 1 } },
+    });
+    await logPromotionApplied(businessId, {
+      promotionId: coupon.promotionId,
+      couponId: coupon.id,
+      description: `Coupon ${coupon.code} appliqué au checkout (${discountAmount} FCFA)`,
+      metadata: { subtotal, discountAmount },
+    });
+    promoNote = `Promo : ${coupon.code} (-${discountAmount} FCFA)`;
+  } else if (businessId) {
+    // Promotion créée par le business avec autoApply → elle s'applique réellement
+    const auto = await getAutoApplyDiscount(businessId, cart.items, subtotal);
+    if (auto) {
+      discountAmount = auto.discount;
+      await prisma.promotion.update({
+        where: { id: auto.promotion.id },
+        data: { usageCount: { increment: 1 } },
+      });
+      await logPromotionApplied(businessId, {
+        promotionId: auto.promotion.id,
+        description: `Promo auto « ${auto.promotion.title} » appliquée au checkout (${discountAmount} FCFA)`,
+        metadata: { subtotal, discountAmount },
+      });
+      promoNote = `Promo : ${auto.promotion.title} (-${discountAmount} FCFA)`;
+    }
+  }
+
+  const total = Math.max(0, subtotal - discountAmount);
+  const orderNumber = generateOrderNumber();
 
   const order = await prisma.$transaction(async (tx) => {
     // Decrement stock for products
@@ -436,6 +478,7 @@ export async function checkout(
         deliveryLat: data.deliveryLat || null,
         deliveryLng: data.deliveryLng || null,
         notes: data.notes || null,
+        internalNotes: promoNote || null,
         items: {
           create: cart.items.map((item) => ({
             productId: item.productId,

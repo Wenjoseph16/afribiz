@@ -34,6 +34,7 @@ export async function getBusinessClients(
     tagId?: string;
     segmentId?: string;
     isActive?: boolean;
+    savings?: 'active' | 'ready' | 'completed' | 'none';
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     limit?: number;
@@ -45,6 +46,7 @@ export async function getBusinessClients(
     tagId,
     segmentId,
     isActive,
+    savings,
     sortBy = 'lastOrderAt',
     sortOrder = 'desc',
     limit = 50,
@@ -66,6 +68,51 @@ export async function getBusinessClients(
       { client: { lastName: { contains: search, mode: 'insensitive' } } },
       { client: { email: { contains: search, mode: 'insensitive' } } },
     ];
+  }
+
+  // ── Filtre épargne (plans layaway du business ; LayawayPlan.clientId = id utilisateur) ──
+  if (savings) {
+    const statusesFor: Record<string, string[]> = {
+      active: ['ACTIVE'],
+      ready: ['READY'],
+      completed: ['COMPLETED'],
+    };
+    const statuses = statusesFor[savings] as any;
+    const matching = await prisma.layawayPlan.findMany({
+      where: { businessId, ...(statuses ? { status: { in: statuses } } : {}) },
+      select: { clientId: true },
+      distinct: ['clientId'],
+    });
+    const ids = matching.map((m) => m.clientId);
+    if (savings === 'none') {
+      if (ids.length > 0) where.clientId = { notIn: ids };
+    } else {
+      where.clientId = { in: ids };
+    }
+  }
+
+  // ── Résumé épargne par client (1 seul groupBy, alimente le badge du tableau) ──
+  const grouped = await prisma.layawayPlan.groupBy({
+    by: ['clientId', 'status'],
+    where: { businessId },
+    _sum: { savedAmount: true },
+    _count: true,
+  });
+  const savingsMap: Record<
+    string,
+    { active: number; ready: number; completed: number; totalSaved: number }
+  > = {};
+  for (const g of grouped) {
+    const entry =
+      savingsMap[g.clientId] ||
+      (savingsMap[g.clientId] = { active: 0, ready: 0, completed: 0, totalSaved: 0 });
+    const count = g._count;
+    if (g.status === 'ACTIVE') entry.active += count;
+    if (g.status === 'READY') entry.ready += count;
+    if (g.status === 'COMPLETED') entry.completed += count;
+    if (g.status === 'ACTIVE' || g.status === 'READY') {
+      entry.totalSaved += Number(g._sum.savedAmount || 0);
+    }
   }
 
   const orderBy: Prisma.BusinessClientOrderByWithRelationInput[] = [{ [sortBy]: sortOrder }];
@@ -96,28 +143,38 @@ export async function getBusinessClients(
   ]);
 
   return {
-    clients: clients.map((c) => ({
-      id: c.id,
-      clientId: c.clientId,
-      firstName: c.firstName || c.client.firstName,
-      lastName: c.lastName || c.client.lastName,
-      email: c.email || c.client.email,
-      phone: c.phone || c.client.phone,
-      city: c.city || c.client.city || undefined,
-      avatar: c.client.avatar,
-      totalOrders: c.totalOrders,
-      totalSpent: Number(c.totalSpent),
-      lastOrderAt: c.lastOrderAt,
-      lastVisitAt: c.lastVisitAt,
-      isActive: c.isActive,
-      tags: c.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color })),
-      segments: c.segments.map((s) => ({
-        id: s.segment.id,
-        name: s.segment.name,
-        color: s.segment.color,
-      })),
-      createdAt: c.createdAt,
-    })),
+    clients: clients.map((c) => {
+      const s = savingsMap[c.clientId] || { active: 0, ready: 0, completed: 0, totalSaved: 0 };
+      return {
+        id: c.id,
+        clientId: c.clientId,
+        firstName: c.firstName || c.client.firstName,
+        lastName: c.lastName || c.client.lastName,
+        email: c.email || c.client.email,
+        phone: c.phone || c.client.phone,
+        city: c.city || c.client.city || undefined,
+        avatar: c.client.avatar,
+        totalOrders: c.totalOrders,
+        totalSpent: Number(c.totalSpent),
+        lastOrderAt: c.lastOrderAt,
+        lastVisitAt: c.lastVisitAt,
+        isActive: c.isActive,
+        tags: c.tags.map((t) => ({ id: t.tag.id, name: t.tag.name, color: t.tag.color })),
+        segments: c.segments.map((s2) => ({
+          id: s2.segment.id,
+          name: s2.segment.name,
+          color: s2.segment.color,
+        })),
+        savings: {
+          hasLayaway: s.active + s.ready + s.completed > 0,
+          active: s.active,
+          ready: s.ready,
+          completed: s.completed,
+          totalSaved: Math.round(s.totalSaved),
+        },
+        createdAt: c.createdAt,
+      };
+    }),
     total,
     limit,
     offset,

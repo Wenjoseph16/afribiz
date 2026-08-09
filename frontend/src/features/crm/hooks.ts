@@ -24,6 +24,7 @@ export function useCrmClients(params?: {
   tagId?: string;
   segmentId?: string;
   isActive?: boolean;
+  savings?: 'active' | 'ready' | 'completed' | 'none';
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   limit?: number;
