@@ -115,6 +115,21 @@ export async function getBusinessClients(
     }
   }
 
+  // ── Résumé satisfaction par client (même logique que l'épargne : 1 groupBy) ──
+  const surveyGrouped = await prisma.satisfactionSurveyResponse.groupBy({
+    by: ['userId'],
+    where: { businessId },
+    _count: { id: true },
+    _avg: { score: true },
+  });
+  const satisfactionMap: Record<string, { count: number; average: number | null }> = {};
+  for (const g of surveyGrouped) {
+    satisfactionMap[g.userId] = {
+      count: g._count.id,
+      average: g._count.id > 0 ? Math.round((g._avg.score || 0) * 10) / 10 : null,
+    };
+  }
+
   const orderBy: Prisma.BusinessClientOrderByWithRelationInput[] = [{ [sortBy]: sortOrder }];
 
   const [clients, total] = await Promise.all([
@@ -172,6 +187,7 @@ export async function getBusinessClients(
           completed: s.completed,
           totalSaved: Math.round(s.totalSaved),
         },
+        satisfaction: satisfactionMap[c.clientId] || { count: 0, average: null },
         createdAt: c.createdAt,
       };
     }),
@@ -457,6 +473,23 @@ export async function removeClientFromSegment(
   });
 }
 
+export async function recalculateAllDynamicSegments(businessId: string) {
+  // Recalcule tous les segments dynamiques du business (appelé après une
+  // commande/réservation pour que les clients soient répartis à jour : VIP,
+  // LOYAL, ACTIVE…). Non bloquant — chaque segment est recalculé isolément.
+  const segments = await prisma.clientSegment.findMany({
+    where: { businessId, isDynamic: true },
+    select: { id: true },
+  });
+  for (const seg of segments) {
+    try {
+      await recalculateSegment(businessId, seg.id);
+    } catch {
+      // Un segment en échec ne bloque pas les autres
+    }
+  }
+}
+
 export async function recalculateSegment(businessId: string, segmentId: string) {
   const segment = await prisma.clientSegment.findFirst({
     where: { id: segmentId, businessId, isDynamic: true },
@@ -640,6 +673,31 @@ export async function syncClientVisit(businessId: string, clientId: string) {
   return prisma.businessClient.update({
     where: { id: bc.id },
     data: { lastVisitAt: new Date(), visitCount: { increment: 1 } },
+  });
+}
+
+export async function syncClientFromBooking(
+  businessId: string,
+  clientId: string,
+  bookingAmount: number
+) {
+  // Une réservation (séjour, service, chambre…) met à jour le client dans le CRM :
+  // dépense totale + dernière visite, sans toucher au compteur de COMMANDES
+  // (les réservations restent distinctes des commandes produits).
+  return prisma.businessClient.upsert({
+    where: { businessId_clientId: { businessId, clientId } },
+    create: {
+      businessId,
+      clientId,
+      totalSpent: bookingAmount,
+      lastVisitAt: new Date(),
+      visitCount: 1,
+    },
+    update: {
+      totalSpent: { increment: bookingAmount },
+      lastVisitAt: new Date(),
+      visitCount: { increment: 1 },
+    },
   });
 }
 

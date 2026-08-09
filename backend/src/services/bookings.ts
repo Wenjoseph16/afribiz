@@ -9,6 +9,8 @@ import {
 import { trackAnalyticsEvent } from './analyticsService';
 import { checkPlanLimit } from './planAccessService';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
+import { syncClientFromBooking, recalculateAllDynamicSegments } from './crm';
+import { logActivity } from './customer360';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
@@ -202,6 +204,20 @@ export async function createBooking(ownerId: string, data: any) {
     businessName: business.name,
     businessId: business.id,
   });
+
+  // CRM : client connecté qui réserve → mis à jour dans le CRM + segment dynamique
+  if (booking.clientId) {
+    try {
+      await syncClientFromBooking(business.id, booking.clientId, Number(booking.price) || 0);
+      await recalculateAllDynamicSegments(business.id).catch(() => {});
+      await logActivity(business.id, booking.clientId, 'BOOKING_MADE' as any, {
+        description: `Réservation ${booking.bookingNumber} créée`,
+        metadata: { bookingId: booking.id, amount: Number(booking.price) || 0 },
+      }).catch(() => {});
+    } catch {
+      // Le CRM ne bloque jamais la réservation
+    }
+  }
 
   // Analytics — réservation créée (fire-and-forget, non-bloquant)
   trackAnalyticsEvent({

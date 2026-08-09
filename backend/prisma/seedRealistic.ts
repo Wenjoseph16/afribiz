@@ -1248,6 +1248,173 @@ async function seedCms() {
 }
 
 // ============================================================
+// 10b. CRM (segments dynamiques, pipeline + deals, tags, notes, automation)
+// Chaque segment/deal/règle est lié à un vrai business et à de vrais clients.
+// ============================================================
+async function seedCrm() {
+  // ── TAGS ──
+  const tags: any[] = [
+    // Resto
+    { id: 'tag-res-1', businessId: B.RESTO, name: 'VIP', color: '#f59e0b' },
+    { id: 'tag-res-2', businessId: B.RESTO, name: 'Livraison fréquente', color: '#10b981' },
+    { id: 'tag-res-3', businessId: B.RESTO, name: 'Nouveau', color: '#6366f1' },
+    // Boutique
+    { id: 'tag-bout-1', businessId: B.BOUTIQUE, name: 'VIP', color: '#f59e0b' },
+    { id: 'tag-bout-2', businessId: B.BOUTIQUE, name: 'High-tech', color: '#8b5cf6' },
+    // Salon
+    { id: 'tag-sal-1', businessId: B.SALON, name: 'Fidèle', color: '#ec4899' },
+    // Hôtel
+    { id: 'tag-hot-1', businessId: B.HOTEL, name: 'Entreprise', color: '#0ea5e9' },
+    // Events
+    { id: 'tag-evt-1', businessId: B.EVENTS, name: 'Pass VIP', color: '#f97316' },
+  ];
+  for (const t of tags) {
+    await prisma.businessTag.upsert({ where: { id: t.id }, update: {}, create: t });
+  }
+
+  // ── Assignation tags → vrais clients ──
+  const tagAssignments: any[] = [
+    // Resto : Awa (VIP, livraison fréquente), Kofi (nouveau), Aminata (nouveau)
+    { clientId: 'bc-res-1', tagId: 'tag-res-1' },
+    { clientId: 'bc-res-1', tagId: 'tag-res-2' },
+    { clientId: 'bc-res-2', tagId: 'tag-res-3' },
+    { clientId: 'bc-res-3', tagId: 'tag-res-3' },
+    // Boutique : Kofi (VIP, high-tech), Fatou (high-tech)
+    { clientId: 'bc-bout-1', tagId: 'tag-bout-1' },
+    { clientId: 'bc-bout-1', tagId: 'tag-bout-2' },
+    { clientId: 'bc-bout-2', tagId: 'tag-bout-2' },
+    // Salon : Awa (fidèle)
+    { clientId: 'bc-sal-1', tagId: 'tag-sal-1' },
+    // Hôtel : Fatou (entreprise)
+    { clientId: 'bc-hot-1', tagId: 'tag-hot-1' },
+    // Events : Fatou (pass VIP)
+    { clientId: 'bc-evt-1', tagId: 'tag-evt-1' },
+  ];
+  for (const a of tagAssignments) {
+    await prisma.businessClientTag.upsert({
+      where: { clientId_tagId: { clientId: a.clientId, tagId: a.tagId } },
+      update: {},
+      create: a,
+    });
+  }
+
+  // ── NOTES CLIENTS (écrites par le business, liées à un vrai client) ──
+  const notes: any[] = [
+    { id: 'nt-res-1', businessClientId: 'bc-res-1', content: 'Préfère la livraison avant 13h. Client VIP à fidéliser.', createdBy: U.OWNER_RESTO, createdAt: new Date('2026-07-01') },
+    { id: 'nt-res-2', businessClientId: 'bc-res-2', content: 'A découvert le resto via recommandation — offrir un dessert la prochaine fois.', createdBy: U.OWNER_RESTO, createdAt: new Date('2026-07-03') },
+    { id: 'nt-bout-1', businessClientId: 'bc-bout-1', content: 'Achète les flagships dès la sortie. Sensible aux bundles.', createdBy: U.OWNER_BOUTIQUE, createdAt: new Date('2026-06-25') },
+    { id: 'nt-bout-2', businessClientId: 'bc-bout-2', content: 'Client de Dakar — vérifier les frais de livraison avant envoi.', createdBy: U.OWNER_BOUTIQUE, createdAt: new Date('2026-06-30') },
+    { id: 'nt-hot-1', businessClientId: 'bc-hot-1', content: 'Vient souvent pour séminaires — proposer le forfait entreprise.', createdBy: U.OWNER_HOTEL, createdAt: new Date('2026-08-02') },
+  ];
+  for (const n of notes) {
+    await prisma.clientNote.upsert({ where: { id: n.id }, update: {}, create: n });
+  }
+
+  // ── SEGMENTS DYNAMIQUES (recalculés par recalculateAllDynamicSegments) ──
+  const segments: any[] = [
+    // Resto
+    { id: 'seg-res-1', businessId: B.RESTO, name: 'VIP (>20k FCFA)', description: 'Clients ayant dépensé plus de 20 000 FCFA', color: '#f59e0b', isDynamic: true, conditions: { minSpent: 20000 } },
+    { id: 'seg-res-2', businessId: B.RESTO, name: 'Fidèles (2+ commandes)', description: 'Clients ayant commandé au moins 2 fois', color: '#10b981', isDynamic: true, conditions: { minOrders: 2 } },
+    { id: 'seg-res-3', businessId: B.RESTO, name: 'Actifs 30 jours', description: 'Clients ayant commandé dans les 30 derniers jours', color: '#6366f1', isDynamic: true, conditions: { lastOrderDays: 30 } },
+    // Boutique
+    { id: 'seg-bout-1', businessId: B.BOUTIQUE, name: 'Gros acheteurs (>100k)', description: 'Plus de 100 000 FCFA dépensés', color: '#8b5cf6', isDynamic: true, conditions: { minSpent: 100000 } },
+    { id: 'seg-bout-2', businessId: B.BOUTIQUE, name: 'High-tech', description: 'Achètent des accessoires tech', color: '#0ea5e9', isDynamic: false },
+    // Salon
+    { id: 'seg-sal-1', businessId: B.SALON, name: 'Fidèles', description: '2+ visites ou 1+ commande', color: '#ec4899', isDynamic: true, conditions: { minOrders: 1 } },
+  ];
+  for (const s of segments) {
+    await prisma.clientSegment.upsert({
+      where: { id: s.id },
+      update: {},
+      create: { id: s.id, businessId: s.businessId, name: s.name, description: s.description, color: s.color, isDynamic: s.isDynamic, conditions: s.conditions },
+    });
+  }
+
+  // ── Assignation segments → vrais clients (basée sur les VRAIES données seedées) ──
+  const segmentAssignments: any[] = [
+    // Resto : Awa = VIP + Fidèle ; Kofi = Fidèle ; Aminata = Actif
+    { segmentId: 'seg-res-1', clientId: 'bc-res-1' },
+    { segmentId: 'seg-res-2', clientId: 'bc-res-1' },
+    { segmentId: 'seg-res-2', clientId: 'bc-res-2' },
+    { segmentId: 'seg-res-3', clientId: 'bc-res-3' },
+    // Boutique : Kofi = Gros acheteur ; Fatou = High-tech
+    { segmentId: 'seg-bout-1', clientId: 'bc-bout-1' },
+    { segmentId: 'seg-bout-2', clientId: 'bc-bout-1' },
+    { segmentId: 'seg-bout-2', clientId: 'bc-bout-2' },
+    // Salon : Awa = Fidèle
+    { segmentId: 'seg-sal-1', clientId: 'bc-sal-1' },
+  ];
+  for (const s of segmentAssignments) {
+    await prisma.segmentClient.upsert({
+      where: { segmentId_clientId: { segmentId: s.segmentId, clientId: s.clientId } },
+      update: {},
+      create: s,
+    });
+  }
+
+  // ── PIPELINE : étapes par défaut + deals réels ──
+  const stageDefs: any[] = [
+    { name: 'Nouveau', order: 0, color: '#6366f1' },
+    { name: 'Qualifié', order: 1, color: '#8b5cf6' },
+    { name: 'Proposition', order: 2, color: '#ec4899' },
+    { name: 'Négociation', order: 3, color: '#f59e0b' },
+    { name: 'Gagné', order: 4, color: '#10b981' },
+    { name: 'Perdu', order: 5, color: '#ef4444' },
+  ];
+  for (const bizId of [B.RESTO, B.BOUTIQUE, B.HOTEL, B.BTP]) {
+    for (const [i, st] of stageDefs.entries()) {
+      const id = `pst-${bizId.slice(-2)}-${i}`;
+      await prisma.pipelineStage.upsert({
+        where: { id },
+        update: {},
+        create: { id, businessId: bizId, name: st.name, order: st.order, color: st.color },
+      });
+    }
+  }
+
+  // Deals réels : BTP (gros contrats), Resto (traiteurs), Boutique (B2B), Hôtel (séminaires)
+  const deals: any[] = [
+    // Resto : traiteur pour une entreprise
+    { id: 'dl-res-1', businessId: B.RESTO, stageId: 'pst-20-3', clientName: 'Awa Coulibaly', clientEmail: 'client1@afribiz.com', title: 'Traiteur événement famille (25 pers.)', value: 175000, source: 'REFERRAL', probability: 70, expectedCloseDate: new Date('2026-09-01'), createdAt: new Date('2026-07-15'), tags: ['traiteur'] },
+    // Boutique : B2B lot de smartphones
+    { id: 'dl-bout-1', businessId: B.BOUTIQUE, stageId: 'pst-23-2', clientName: 'Kofi Mensah', clientEmail: 'client2@afribiz.com', title: 'Lot 10 smartphones TechX Pro (entreprise)', value: 1400000, source: 'DIRECT', probability: 50, expectedCloseDate: new Date('2026-09-15'), createdAt: new Date('2026-07-20'), tags: ['B2B'] },
+    { id: 'dl-bout-2', businessId: B.BOUTIQUE, stageId: 'pst-23-4', clientName: 'Fatou Ndiaye', clientEmail: 'client3@afribiz.com', title: 'Casques Bluetooth × 20 (team building)', value: 500000, source: 'SOCIAL_MEDIA', probability: 100, expectedCloseDate: new Date('2026-08-10'), wonAt: new Date('2026-08-05'), createdAt: new Date('2026-07-10'), tags: ['B2B'] },
+    // Hôtel : séminaire entreprise
+    { id: 'dl-hot-1', businessId: B.HOTEL, stageId: 'pst-22-3', clientName: 'Fatou Ndiaye', clientEmail: 'client3@afribiz.com', title: 'Séminaire 2 jours (40 pers.)', value: 1200000, source: 'WEBSITE', probability: 60, expectedCloseDate: new Date('2026-10-01'), createdAt: new Date('2026-07-25'), tags: ['séminaire'] },
+    // BTP : gros chantier
+    { id: 'dl-btp-1', businessId: B.BTP, stageId: 'pst-24-1', clientName: 'Jean Kouadio', clientEmail: 'client4@afribiz.com', title: 'Construction villa R+2 (Bouaké)', value: 25000000, source: 'REFERRAL', probability: 35, expectedCloseDate: new Date('2026-12-01'), createdAt: new Date('2026-07-05'), tags: ['chantier'] },
+  ];
+  for (const d of deals) {
+    await prisma.deal.upsert({
+      where: { id: d.id },
+      update: {},
+      create: { id: d.id, businessId: d.businessId, stageId: d.stageId, clientName: d.clientName, clientEmail: d.clientEmail, title: d.title, value: d.value, source: d.source as any, probability: d.probability, expectedCloseDate: d.expectedCloseDate, wonAt: d.wonAt, createdAt: d.createdAt, tags: d.tags },
+    });
+  }
+
+  // ── AUTOMATION RULES (déclenchées par RuleEngineService sur événements réels) ──
+  const rules: any[] = [
+    // Resto : notifier le gérant à chaque commande + féliciter les nouveaux clients
+    { id: 'ar-res-1', businessId: B.RESTO, name: 'Alerte nouvelle commande', description: 'Notifier le gérant quand une commande est passée', trigger: 'ORDER_PLACED', conditions: [], actionType: 'SEND_NOTIFICATION', actionConfig: { title: '🛎️ Nouvelle commande', description: 'Une nouvelle commande vient d être passée', link: '/dashboard/business/orders' }, status: 'ACTIVE' },
+    { id: 'ar-res-2', businessId: B.RESTO, name: 'Bienvenue nouveau client', description: 'Notifier et tagger les nouveaux clients', trigger: 'NEW_CLIENT', conditions: [], actionType: 'ASSIGN_TAG', actionConfig: { tagName: 'Nouveau' }, status: 'ACTIVE' },
+    // Boutique : alerte stock bas + relance paiement
+    { id: 'ar-bout-1', businessId: B.BOUTIQUE, name: 'Alerte stock bas', description: 'Prévenir quand un produit passe sous le seuil', trigger: 'STOCK_LOW', conditions: [], actionType: 'SEND_NOTIFICATION', actionConfig: { title: '📦 Stock bas', description: 'Un produit passe sous son seuil de stock', link: '/dashboard/products' }, status: 'ACTIVE' },
+    { id: 'ar-bout-2', businessId: B.BOUTIQUE, name: 'Merci pour le paiement', description: 'Remercier le client à chaque paiement reçu', trigger: 'PAYMENT_RECEIVED', conditions: [], actionType: 'SEND_NOTIFICATION', actionConfig: { title: '💳 Paiement reçu', description: 'Merci pour votre confiance !', link: '/dashboard' }, status: 'ACTIVE' },
+    // Hôtel : relance après réservation
+    { id: 'ar-hot-1', businessId: B.HOTEL, name: 'Confirmation réservation', description: 'Confirmer au client quand une réservation est faite', trigger: 'BOOKING_MADE', conditions: [], actionType: 'SEND_EMAIL', actionConfig: { subject: 'Réservation confirmée', template: 'booking-confirmation' }, status: 'ACTIVE' },
+  ];
+  for (const r of rules) {
+    await prisma.automationRule.upsert({
+      where: { id: r.id },
+      update: {},
+      create: { id: r.id, businessId: r.businessId, name: r.name, description: r.description, trigger: r.trigger as any, conditions: r.conditions, actionType: r.actionType as any, actionConfig: r.actionConfig, status: 'ACTIVE' as any },
+    });
+  }
+
+  console.log('✓ CRM : tags + notes + segments dynamiques + pipeline (deals) + automation rules');
+}
+
+// ============================================================
 // 11. OPÉRATIONS MÉTIER (chaque page de la sidebar business est alimentée)
 // Employés, Planning, Livraisons, Dettes, Devis/Factures, Promotions/Coupons,
 // Billets événement, Partenaires, CRM clients, Documents.
@@ -1712,6 +1879,7 @@ export async function seedRealistic() {
   await seedWallets();
   await seedCms();
   await seedOperations();
+  await seedCrm();
   await seedFraud();
   await seedFinance();
   await seedSatisfaction();

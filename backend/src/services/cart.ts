@@ -20,6 +20,8 @@ import {
   logPromotionApplied,
 } from './promotions';
 import { getEscrowCommissionRate } from './monetizationConfig';
+import { syncClientFromOrder, recalculateAllDynamicSegments } from './crm';
+import { logActivity } from './customer360';
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -501,6 +503,23 @@ export async function checkout(
 
     return created;
   });
+
+  // ── CRM : synchroniser le client (créé ou mis à jour dans le CRM business) ──
+  // Un client connecté qui commande doit apparaître dans le CRM avec son total,
+  // ses commandes, et être réintégré dans les segments dynamiques.
+  if (businessId) {
+    try {
+      await syncClientFromOrder(businessId, userId, total);
+      // Recalcul des segments dynamiques (ex. « VIP », « 30j actif ») en arrière-plan
+      await recalculateAllDynamicSegments(businessId).catch(() => {});
+      await logActivity(businessId, userId, 'ORDER_PLACED' as any, {
+        description: `Commande ${order.orderNumber} passée (${total} FCFA)`,
+        metadata: { orderId: order.id, amount: total },
+      }).catch(() => {});
+    } catch {
+      // Le CRM ne bloque jamais la commande
+    }
+  }
 
   // Clear the cart after successful checkout
   await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });

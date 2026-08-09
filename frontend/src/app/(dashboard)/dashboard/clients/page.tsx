@@ -598,6 +598,67 @@ export default function ClientsPage() {
               </div>
             </div>
 
+            {/* Épargne Achat */}
+            {selectedClient.savings?.hasLayaway && (
+              <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-900/10 p-4 space-y-2">
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <PiggyBank className="h-3.5 w-3.5" />
+                  Épargne Achat
+                </p>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      {selectedClient.savings.active + selectedClient.savings.ready}
+                    </p>
+                    <p className="text-[10px] text-emerald-600/70">En cours</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-violet-600 dark:text-violet-400">
+                      {selectedClient.savings.completed}
+                    </p>
+                    <p className="text-[10px] text-violet-600/70">Terminés</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                      {Number(selectedClient.savings.totalSaved || 0).toLocaleString('fr-FR')} F
+                    </p>
+                    <p className="text-[10px] text-gray-500">Séquestrés</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Satisfaction client */}
+            {selectedClient.satisfaction?.count > 0 && (
+              <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-900/10 p-4 space-y-2">
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Star className="h-3.5 w-3.5" />
+                  Satisfaction
+                </p>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {selectedClient.satisfaction.average ?? '—'}
+                    <span className="text-sm text-gray-400 font-medium">/5</span>
+                  </span>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i <= Math.round(selectedClient.satisfaction.average || 0)
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-gray-300 dark:text-gray-600'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs text-amber-600/80">
+                    {selectedClient.satisfaction.count} réponse(s)
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Statistiques */}
             <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-4 space-y-3">
               <div className="flex justify-between items-center">

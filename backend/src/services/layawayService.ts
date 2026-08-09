@@ -9,6 +9,8 @@ import { publishOrderPlaced } from '../events/publishers';
 import { ensureInvoiceForOrder } from './orders';
 import { findValidCoupon, computeCouponDiscount, logPromotionApplied } from './promotions';
 import { toDataURL } from 'qrcode';
+import { syncClientFromOrder, recalculateAllDynamicSegments } from './crm';
+import { logActivity } from './customer360';
 
 const ESCROW_COMMISSION_RATE = 0.01; // 1% sur la libération (cohérent avec monetizationConfig)
 
@@ -341,6 +343,27 @@ export async function createLayawayPlan(clientId: string, offerId: string) {
     where: { id: offer.id },
     data: { planCount: { increment: 1 } },
   });
+
+  // CRM : le client qui épargne apparaît dans le CRM du business (badge épargne)
+  try {
+    await prisma.businessClient.upsert({
+      where: { businessId_clientId: { businessId: offer.businessId, clientId } },
+      create: {
+        businessId: offer.businessId,
+        clientId,
+        lastVisitAt: new Date(),
+        visitCount: 1,
+      },
+      update: { lastVisitAt: new Date() },
+    });
+    await logActivity(offer.businessId, clientId, 'PROMOTION_CLICKED' as any, {
+      description: `Plan épargne démarré sur ${item.name}`,
+      link: '/dashboard/business/layaway',
+      metadata: { planId: plan.id, itemName: item.name, targetAmount },
+    }).catch(() => {});
+  } catch {
+    // Le CRM ne bloque jamais la création du plan
+  }
 
   // Notifier le business : un client commence à épargner sur son produit
   const owner = await prisma.business.findUnique({ where: { id: offer.businessId }, select: { ownerId: true } });
@@ -952,6 +975,18 @@ export async function confirmLayawayCheckout(
     where: { id: plan.businessId },
     select: { id: true, name: true, ownerId: true },
   });
+
+  // 1a. CRM : la conversion en commande met à jour le client (total + dernière commande)
+  try {
+    await syncClientFromOrder(plan.businessId, clientId, total);
+    await recalculateAllDynamicSegments(plan.businessId).catch(() => {});
+    await logActivity(plan.businessId, clientId, 'ORDER_PLACED' as any, {
+      description: `Commande épargne ${plan.itemName} confirmée (${total} FCFA)`,
+      metadata: { orderId: result.order.id, planId: plan.id, amount: total },
+    }).catch(() => {});
+  } catch {
+    // Le CRM ne bloque jamais la vente
+  }
 
   // 1. Facture automatique — la commande épargne est déjà payée (escrow libéré) :
   //    facture créée directement PAID, liée via Invoice.orderId (non bloquant).

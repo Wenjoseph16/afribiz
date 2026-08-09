@@ -110,8 +110,15 @@ export async function getCustomer360(businessId: string, clientId: string) {
 
   if (!bc) throw new AppError('Client non trouvé', 404);
 
-  // Get Customer 360° specific data (+ épargne achat : plans et progression)
-  const [activityTimeline, pageViews, rawProductViews, rawProductClicks, layawayPlans] = await Promise.all([
+  // Get Customer 360° specific data (+ épargne achat : plans et progression + satisfaction)
+  const [
+    activityTimeline,
+    pageViews,
+    rawProductViews,
+    rawProductClicks,
+    layawayPlans,
+    surveyResponses,
+  ] = await Promise.all([
     prisma.clientActivityLog.findMany({
       where: { businessId, clientId: bc.id },
       orderBy: { createdAt: 'desc' },
@@ -149,7 +156,28 @@ export async function getCustomer360(businessId: string, clientId: string) {
         completedAt: true,
       },
     }),
+    prisma.satisfactionSurveyResponse.findMany({
+      where: { businessId, userId: clientId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        score: true,
+        feedback: true,
+        orderId: true,
+        bookingId: true,
+        createdAt: true,
+      },
+    }),
   ]);
+
+  const satisfactionCount = surveyResponses.length;
+  const satisfactionAvg =
+    satisfactionCount > 0
+      ? Math.round(
+          (surveyResponses.reduce((sum, s) => sum + s.score, 0) / satisfactionCount) * 10
+        ) / 10
+      : null;
 
   // Fetch product details for views and clicks
   const productIds = new Set([
@@ -193,6 +221,18 @@ export async function getCustomer360(businessId: string, clientId: string) {
 
   return {
     ...crmDetail,
+    satisfaction: {
+      count: satisfactionCount,
+      average: satisfactionAvg,
+      responses: surveyResponses.map((s) => ({
+        id: s.id,
+        score: s.score,
+        feedback: s.feedback,
+        orderId: s.orderId,
+        bookingId: s.bookingId,
+        createdAt: s.createdAt,
+      })),
+    },
     savings: {
       totalSaved,
       totalTarget,
