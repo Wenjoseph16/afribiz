@@ -469,6 +469,20 @@ async function seedCatalogs() {
     where: { id: 'ev-evt-1' }, update: {},
     create: { id: 'ev-evt-1', businessId: B.EVENTS, title: 'Concert Afrique Festival', shortDescription: 'Grande scène ouverte aux artistes locaux', description: 'Grande scène ouverte aux artistes locaux. Billetterie en ligne.', startDate: new Date('2026-08-15T18:00:00Z'), endDate: new Date('2026-08-15T23:00:00Z'), status: 'PUBLISHED' },
   });
+  // Billet réel pour l'événement — indispensable pour l'épargne EVENT :
+  // le plan cible le billet le moins cher et la conversion crée un vrai
+  // participant avec QR + décrément du stock (jamais une commande générique).
+  await prisma.eventTicket.upsert({
+    where: { id: 'tk-evt-1' },
+    update: { price: 10000, quantity: 500, remaining: 500, isActive: true, saleStatus: 'ACTIVE' },
+    create: { id: 'tk-evt-1', eventId: 'ev-evt-1', name: 'Pass Standard', type: 'STANDARD', price: 10000, currency: 'FCFA', quantity: 500, remaining: 500, benefits: ['Accès concert', 'Entrée 1 personne'], saleStatus: 'ACTIVE', isActive: true, sortOrder: 1 },
+  });
+  // Zéro fiction : ticketsSold reflète les VRAIS participants (aucun au seed),
+  // la conversion épargne EVENT le fera grimper avec un vrai billet + QR.
+  await prisma.event.update({
+    where: { id: 'ev-evt-1' },
+    data: { remainingSpots: 500, ticketsSold: 0, totalRevenue: 0 },
+  });
 
   console.log('✓ Catalogues (produits, services, menu, chambres, locations, portfolio)');
 }
@@ -995,7 +1009,7 @@ async function seedLayaway() {
   await prisma.layawayOffer.upsert({
     where: { itemType_itemId: { itemType: 'ROOM', itemId: 'rm-hot-2' } },
     update: {},
-    create: { id: 'lw-off-3', businessId: B.HOTEL, itemType: 'ROOM', itemId: 'rm-hot-2', durationDays: 120, minInstallment: 5000, isActive: true, planCount: 0 },
+    create: { id: 'lw-off-3', businessId: B.HOTEL, itemType: 'ROOM', itemId: 'rm-hot-2', durationDays: 120, minInstallment: 5000, isActive: true, planCount: 1 },
   });
   await prisma.layawayOffer.upsert({
     where: { itemType_itemId: { itemType: 'RENTAL', itemId: 'rn-evt-1' } },
@@ -1005,7 +1019,7 @@ async function seedLayaway() {
   await prisma.layawayOffer.upsert({
     where: { itemType_itemId: { itemType: 'EVENT', itemId: 'ev-evt-1' } },
     update: {},
-    create: { id: 'lw-off-5', businessId: B.EVENTS, itemType: 'EVENT', itemId: 'ev-evt-1', durationDays: 60, minInstallment: 2000, isActive: true, planCount: 0 },
+    create: { id: 'lw-off-5', businessId: B.EVENTS, itemType: 'EVENT', itemId: 'ev-evt-1', durationDays: 60, minInstallment: 2000, isActive: true, planCount: 1 },
   });
 
   // ── Plan client1 : Smartphone TechX Pro (60 000 / 150 000 épargnés) ──
@@ -1053,7 +1067,54 @@ async function seedLayaway() {
     create: { id: 'lw-con-3', planId: 'lw-plan-2', amount: 2000, currency: 'FCFA', method: 'WAVE', status: 'PAID', reference: 'TRF-LW-003', createdAt: new Date('2026-08-02') },
   });
 
-  console.log('✓ Épargne Achat : 5 offres (produit, service, chambre, location, événement) + 2 plans clients en cours (62 000 FCFA en escrow)');
+  // ── Plan client4 : Chambre Deluxe de l'Hôtel Palmier (15 000 / 45 000 épargnés) ──
+  // La conversion finale créera une VRAIE réservation (Booking) avec dates.
+  await prisma.layawayPlan.upsert({
+    where: { id: 'lw-plan-3' },
+    update: {},
+    create: {
+      id: 'lw-plan-3', businessId: B.HOTEL, clientId: U.CLIENT_4, offerId: 'lw-off-3',
+      itemType: 'ROOM', itemId: 'rm-hot-2', itemName: 'Chambre Deluxe',
+      itemImage: null, targetAmount: 45000, savedAmount: 15000, minInstallment: 5000,
+      durationDays: 120, status: 'ACTIVE', escrowId: 'lw-esc-3',
+      startedAt: new Date('2026-07-20'), expiresAt: new Date('2026-11-17'),
+    },
+  });
+  await prisma.escrow.upsert({
+    where: { id: 'lw-esc-3' },
+    update: {},
+    create: { id: 'lw-esc-3', businessId: B.HOTEL, amount: 15000, currency: 'FCFA', status: 'HELD', fee: 0, feeRate: 0, notes: 'Épargne Achat — Chambre Deluxe (client sécurisé)' },
+  });
+  const con3: any[] = [
+    { id: 'lw-con-4', planId: 'lw-plan-3', amount: 10000, currency: 'FCFA', method: 'ORANGE', status: 'PAID', reference: 'TRF-LW-004', createdAt: new Date('2026-07-22') },
+    { id: 'lw-con-5', planId: 'lw-plan-3', amount: 5000, currency: 'FCFA', method: 'WAVE', status: 'PAID', reference: 'TRF-LW-005', createdAt: new Date('2026-08-03') },
+  ];
+  for (const c of con3) await prisma.layawayContribution.upsert({ where: { id: c.id }, update: {}, create: c });
+
+  // ── Plan client2 : Pass Concert Afrique Festival (5 000 / 10 000 épargnés) ──
+  // La conversion finale créera un VRAI billet (EventParticipant + QR).
+  await prisma.layawayPlan.upsert({
+    where: { id: 'lw-plan-4' },
+    update: {},
+    create: {
+      id: 'lw-plan-4', businessId: B.EVENTS, clientId: U.CLIENT_2, offerId: 'lw-off-5',
+      itemType: 'EVENT', itemId: 'ev-evt-1', itemName: 'Concert Afrique Festival',
+      itemImage: null, targetAmount: 10000, savedAmount: 5000, minInstallment: 2000,
+      durationDays: 60, status: 'ACTIVE', escrowId: 'lw-esc-4',
+      startedAt: new Date('2026-07-25'), expiresAt: new Date('2026-09-23'),
+    },
+  });
+  await prisma.escrow.upsert({
+    where: { id: 'lw-esc-4' },
+    update: {},
+    create: { id: 'lw-esc-4', businessId: B.EVENTS, amount: 5000, currency: 'FCFA', status: 'HELD', fee: 0, feeRate: 0, notes: 'Épargne Achat — Concert Afrique Festival (client sécurisé)' },
+  });
+  await prisma.layawayContribution.upsert({
+    where: { id: 'lw-con-6' }, update: {},
+    create: { id: 'lw-con-6', planId: 'lw-plan-4', amount: 5000, currency: 'FCFA', method: 'WAVE', status: 'PAID', reference: 'TRF-LW-006', createdAt: new Date('2026-07-28') },
+  });
+
+  console.log('✓ Épargne Achat : 5 offres (produit, service, chambre, location, événement) + 4 plans clients en cours (82 000 FCFA en escrow)');
 }
 
 async function seedWallets() {

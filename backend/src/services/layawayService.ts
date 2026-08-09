@@ -7,6 +7,7 @@ import { processMobileMoney } from './paymentProcessor';
 import { trackAnalyticsEvent } from './analyticsService';
 import { publishOrderPlaced } from '../events/publishers';
 import { ensureInvoiceForOrder } from './orders';
+import { toDataURL } from 'qrcode';
 
 const ESCROW_COMMISSION_RATE = 0.01; // 1% sur la libération (cohérent avec monetizationConfig)
 
@@ -634,7 +635,11 @@ export async function cancelLayawayPlan(clientId: string, planId: string) {
 // VALIDATION FINALE — commande + libération escrow
 // ─────────────────────────────────────────────
 
-export async function confirmLayawayCheckout(clientId: string, planId: string) {
+export async function confirmLayawayCheckout(
+  clientId: string,
+  planId: string,
+  options?: { checkIn?: string; checkOut?: string; guests?: number }
+) {
   const plan = await prisma.layawayPlan.findFirst({ where: { id: planId, clientId } });
   if (!plan) throw new AppError('Plan épargne non trouvé', 404);
   if (plan.status !== 'READY') throw new AppError("Ce plan n'est pas complet (100% requis)", 400);
@@ -649,6 +654,37 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
   // et le préfixe dérivé de l'id seul pouvait entrer en collision (ex. lw-plan-1 / lw-plan-10).
   const orderNumber = `CMD-LW-${String(plan.id).slice(0, 4).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
+  // Dates par défaut (chambre / location) : week-end prochain si non fournies
+  const defaultCheckIn = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const checkIn = options?.checkIn ? new Date(options.checkIn) : defaultCheckIn;
+  let checkOut = options?.checkOut ? new Date(options.checkOut) : new Date(checkIn.getTime() + 24 * 60 * 60 * 1000);
+  if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+    throw new AppError('Dates de réservation invalides', 400);
+  }
+  if (checkOut <= checkIn) checkOut = new Date(checkIn.getTime() + 24 * 60 * 60 * 1000);
+  if (checkIn < new Date(new Date().setHours(0, 0, 0, 0))) {
+    throw new AppError("La date d'arrivée ne peut pas être dans le passé", 400);
+  }
+  const guests = Math.max(1, options?.guests || 1);
+
+  // Pré-générer le billet (ref + QR) HORS transaction : si le QR échoue, la vente
+  // se fait quand même (qrCode est nullable) au lieu de faire échouer toute la
+  // conversion (commande + escrow + réservation) pour un simple artefact d'affichage.
+  let ticketPrepared: { ticketRef?: string; qrData?: string; qrCode?: string } = {};
+  if (plan.itemType === 'EVENT') {
+    ticketPrepared.ticketRef = `TKT-LW-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    ticketPrepared.qrData = `EVENT:${plan.itemId}:TKT:${ticketPrepared.ticketRef}`;
+    try {
+      ticketPrepared.qrCode = await toDataURL(ticketPrepared.qrData, {
+        width: 300,
+        margin: 2,
+        color: { dark: '#000000', light: '#FFFFFF' },
+      });
+    } catch (err) {
+      logger.warn('Layaway QR generation failed', { error: (err as Error).message });
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     // 0. Réserve atomique du plan (READY → COMPLETED) : un seul confirm possible,
     //    même en cas de double clic ou de requêtes parallèles (anti-double commande/facture).
@@ -660,13 +696,14 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
       throw new AppError('Ce plan a déjà été converti en commande', 409);
     }
 
-    // 1. Commande (comme un checkout normal, statut CONFIRMED + payé)
+    // 1. Commande (comme un checkout normal, statut CONFIRMED + payé).
+    //    Type selon l'article : PICKUP pour un billet (retiré sur place), DELIVERY sinon.
     const order = await tx.order.create({
       data: {
         businessId: plan.businessId,
         buyerId: clientId,
         orderNumber,
-        type: 'DELIVERY',
+        type: plan.itemType === 'EVENT' ? 'PICKUP' : 'DELIVERY',
         source: 'WEB_SITE',
         status: 'CONFIRMED',
         totalAmount: target,
@@ -679,7 +716,7 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
         paymentStatus: 'PAID',
         paidAt: new Date(),
         createdAt: new Date(),
-        notes: `Acheté via Épargne Achat (${plan.itemName})`,
+        notes: `Acheté via Épargne Achat (${plan.itemName}) — plan ${plan.id}`,
       } as any,
     });
     // Lier le bon type d'item à la ligne de commande (productId / serviceId / nom seul)
@@ -694,6 +731,86 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
         total: target,
       } as any,
     });
+
+    // 1b. Réservation (chambre / location) — l'épargne devient une vraie réservation
+    //     visible dans le module Bookings du business.
+    let booking: any = null;
+    if (plan.itemType === 'ROOM' || plan.itemType === 'RENTAL') {
+      const bookingNumber = `RES-LW-${String(plan.id).slice(0, 4).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+      booking = await tx.booking.create({
+        data: {
+          bookingNumber,
+          businessId: plan.businessId,
+          clientId,
+          title: plan.itemName,
+          type: plan.itemType === 'ROOM' ? 'ROOM' : 'SERVICE',
+          source: 'AFRIBIZ_SITE',
+          status: 'CONFIRMED',
+          roomId: plan.itemType === 'ROOM' ? plan.itemId : null,
+          rentalId: plan.itemType === 'RENTAL' ? plan.itemId : null,
+          startDate: checkIn,
+          endDate: checkOut,
+          checkIn,
+          checkOut,
+          guests,
+          adults: guests,
+          price: target,
+          currency: 'FCFA',
+          depositAmount: target,
+          depositPaid: true,
+          customerName: 'Client épargne',
+          notes: `Acheté via Épargne Achat — plan ${plan.id} (escrow libéré)`,
+        } as any,
+      });
+    }
+
+    // 1c. Billet d'événement — l'épargne devient un vrai participant + billet (QR),
+    //     le stock du billet le moins cher est décrémenté, les stats événement mises à jour.
+    let participant: any = null;
+    if (plan.itemType === 'EVENT') {
+      const ticket = await tx.eventTicket.findFirst({
+        where: {
+          eventId: plan.itemId,
+          isActive: true,
+          saleStatus: 'ACTIVE',
+          remaining: { gt: 0 },
+        },
+        orderBy: { price: 'asc' as const },
+      });
+      if (!ticket) throw new AppError('Aucun billet disponible pour cet événement', 409);
+      const ticketRef = ticketPrepared.ticketRef!;
+      participant = await tx.eventParticipant.create({
+        data: {
+          eventId: plan.itemId,
+          ticketId: ticket.id,
+          clientId,
+          ticketRef,
+          qrData: ticketPrepared.qrData,
+          qrCode: ticketPrepared.qrCode || null,
+          ticketType: ticket.type,
+          price: target,
+          currency: 'FCFA',
+          firstName: 'Client',
+          lastName: 'Épargne',
+          isPaid: true,
+          paidAt: new Date(),
+          paymentMethod: 'Escrow sécurisé',
+          status: 'REGISTERED',
+          notes: `Acheté via Épargne Achat — plan ${plan.id} (escrow libéré)`,
+        } as any,
+      });
+      await tx.eventTicket.update({
+        where: { id: ticket.id },
+        data: { remaining: { decrement: 1 } },
+      });
+      await tx.event.update({
+        where: { id: plan.itemId },
+        data: {
+          ticketsSold: { increment: 1 },
+          totalRevenue: { increment: target },
+        },
+      });
+    }
 
     // 2. Libération de l'escrow → wallet du business (moins commission 1%)
     if (plan.escrowId) {
@@ -737,7 +854,7 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
       data: { orderId: order.id },
     });
 
-    return { order, updatedPlan };
+    return { order, updatedPlan, booking, participant };
   });
 
   const owner = await prisma.business.findUnique({
@@ -773,15 +890,105 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
 
   // 3. Notification propriétaire — message clair et actionnable (wallet + commission).
   if (owner?.ownerId) {
-    await notify(
-      owner.ownerId,
-      plan.businessId,
-      NotificationType.ORDER_PLACED,
-      '💸 Vente Épargne Achat !',
-      `${plan.itemName} vendu — ${netAmount} FCFA libérés sur votre wallet (commission 1%).`,
-      `/dashboard/orders/${result.order.id}`
-    ).catch(() => {});
+    if (plan.itemType === 'ROOM') {
+      await notify(
+        owner.ownerId,
+        plan.businessId,
+        NotificationType.ORDER_PLACED,
+        '🏨 Nouvelle réservation épargne !',
+        `${plan.itemName} réservée (${guests} pers.) — ${netAmount} FCFA libérés sur votre wallet.`,
+        '/dashboard/bookings'
+      ).catch(() => {});
+      emitBusiness(plan.businessId, 'layaway:booking-created', {
+        planId: plan.id,
+        bookingId: result.booking?.id,
+        itemName: plan.itemName,
+      });
+    } else if (plan.itemType === 'RENTAL') {
+      await notify(
+        owner.ownerId,
+        plan.businessId,
+        NotificationType.ORDER_PLACED,
+        '🏕️ Nouvelle location épargne !',
+        `${plan.itemName} louée — ${netAmount} FCFA libérés sur votre wallet.`,
+        '/dashboard/bookings'
+      ).catch(() => {});
+      emitBusiness(plan.businessId, 'layaway:booking-created', {
+        planId: plan.id,
+        bookingId: result.booking?.id,
+        itemName: plan.itemName,
+      });
+    } else if (plan.itemType === 'EVENT') {
+      await notify(
+        owner.ownerId,
+        plan.businessId,
+        NotificationType.ORDER_PLACED,
+        '🎟️ Billet épargne vendu !',
+        `${plan.itemName} — ${netAmount} FCFA libérés sur votre wallet (billet + QR généré).`,
+        `/dashboard/events/${plan.itemId}`
+      ).catch(() => {});
+      emitBusiness(plan.businessId, 'layaway:ticket-created', {
+        planId: plan.id,
+        eventId: plan.itemId,
+        participantId: result.participant?.id,
+        ticketRef: result.participant?.ticketRef,
+      });
+    } else {
+      await notify(
+        owner.ownerId,
+        plan.businessId,
+        NotificationType.ORDER_PLACED,
+        '💸 Vente Épargne Achat !',
+        `${plan.itemName} vendu — ${netAmount} FCFA libérés sur votre wallet (commission 1%).`,
+        `/dashboard/orders/${result.order.id}`
+      ).catch(() => {});
+    }
     emitBusiness(plan.businessId, 'layaway:completed', { planId: plan.id, orderId: result.order.id });
+  }
+
+  // 4. Notification client — lien vers le vrai objet créé (réservation / billet).
+  if (plan.itemType === 'ROOM') {
+    await notify(
+      clientId,
+      plan.businessId,
+      NotificationType.PAYMENT_RECEIVED,
+      '🏨 Réservation confirmée !',
+      `${plan.itemName} réservée du ${checkIn.toLocaleDateString('fr-FR')} au ${checkOut.toLocaleDateString('fr-FR')} — votre épargne a payé le séjour.`,
+      '/dashboard/bookings'
+    ).catch(() => {});
+    emitUser(clientId, 'layaway:booking-confirmed', {
+      planId: plan.id,
+      bookingId: result.booking?.id,
+      itemName: plan.itemName,
+    });
+  } else if (plan.itemType === 'RENTAL') {
+    await notify(
+      clientId,
+      plan.businessId,
+      NotificationType.PAYMENT_RECEIVED,
+      '🏕️ Location confirmée !',
+      `${plan.itemName} louée du ${checkIn.toLocaleDateString('fr-FR')} au ${checkOut.toLocaleDateString('fr-FR')} — payée par votre épargne.`,
+      '/dashboard/my-rentals'
+    ).catch(() => {});
+    emitUser(clientId, 'layaway:booking-confirmed', {
+      planId: plan.id,
+      bookingId: result.booking?.id,
+      itemName: plan.itemName,
+    });
+  } else if (plan.itemType === 'EVENT') {
+    await notify(
+      clientId,
+      plan.businessId,
+      NotificationType.PAYMENT_RECEIVED,
+      '🎟️ Billet confirmé !',
+      `${plan.itemName} — billet ${result.participant?.ticketRef} généré avec QR code (retrouvez-le dans Événements).`,
+      '/dashboard/my-events'
+    ).catch(() => {});
+    emitUser(clientId, 'layaway:ticket-confirmed', {
+      planId: plan.id,
+      participantId: result.participant?.id,
+      ticketRef: result.participant?.ticketRef,
+    });
   }
 
   trackAnalyticsEvent({
@@ -794,5 +1001,12 @@ export async function confirmLayawayCheckout(clientId: string, planId: string) {
   }).catch(() => {});
 
   logger.info(`Layaway completed: plan ${plan.id} -> order ${result.order.id} (${target} FCFA, fee ${fee})`);
-  return { order: result.order, plan: result.updatedPlan, fee, netAmount };
+  return {
+    order: result.order,
+    plan: result.updatedPlan,
+    booking: result.booking,
+    participant: result.participant,
+    fee,
+    netAmount,
+  };
 }

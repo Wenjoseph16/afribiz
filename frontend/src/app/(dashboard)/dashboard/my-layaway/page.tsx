@@ -84,6 +84,11 @@ export default function MyLayawayPage() {
   const [error, setError] = useState('');
   const [confirmCancel, setConfirmCancel] = useState<any | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // Modal dates pour chambre / location (la conversion crée une vraie réservation)
+  const [confirmDates, setConfirmDates] = useState<any | null>(null);
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [guests, setGuests] = useState('1');
 
   const { data, isLoading, error: loadError, refetch } = useQuery({
     queryKey: ['my-layaway'],
@@ -139,17 +144,65 @@ export default function MyLayawayPage() {
     }
   };
 
-  const doConfirmCheckout = async (plan: any) => {
+  const defaultCheckIn = () => {
+    const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    return d.toISOString().slice(0, 10);
+  };
+  const defaultCheckOut = () => {
+    const d = new Date(Date.now() + 8 * 24 * 60 * 60 * 1000);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const openConfirmDates = (plan: any) => {
+    setCheckIn(defaultCheckIn());
+    setCheckOut(defaultCheckOut());
+    setGuests('1');
+    setError('');
+    setConfirmDates(plan);
+  };
+
+  const doConfirmCheckout = async (plan: any, dates?: { checkIn?: string; checkOut?: string; guests?: number }): Promise<boolean> => {
     setConfirming(true);
     setError('');
     try {
-      await apiClient.confirmLayawayCheckout(plan.id);
+      await apiClient.confirmLayawayCheckout(plan.id, dates);
       qc.invalidateQueries({ queryKey: ['my-layaway'] });
+      return true;
     } catch (e: any) {
       setError(e?.response?.data?.message || e?.message || "Erreur lors de la validation");
+      return false;
     } finally {
       setConfirming(false);
     }
+  };
+
+  // Chambre / location : on demande les dates avant de convertir l'épargne en réservation
+  const handleReadyClick = (plan: any) => {
+    if (plan.itemType === 'ROOM' || plan.itemType === 'RENTAL') {
+      openConfirmDates(plan);
+    } else {
+      doConfirmCheckout(plan);
+    }
+  };
+
+  const todayIso = () => new Date().toISOString().slice(0, 10);
+
+  const doConfirmWithDates = async () => {
+    if (!confirmDates) return;
+    if (!checkIn || !checkOut) {
+      setError('Renseignez les dates d\'arrivée et de départ');
+      return;
+    }
+    if (checkOut <= checkIn) {
+      setError('La date de départ doit être après la date d\'arrivée');
+      return;
+    }
+    const ok = await doConfirmCheckout(confirmDates, {
+      checkIn: new Date(checkIn + 'T12:00:00').toISOString(),
+      checkOut: new Date(checkOut + 'T11:00:00').toISOString(),
+      guests: Math.max(1, Number(guests) || 1),
+    });
+    if (ok) setConfirmDates(null);
   };
 
   const plans = Array.isArray(data) ? data : [];
@@ -253,17 +306,42 @@ export default function MyLayawayPage() {
                   <Button
                     size="sm"
                     className="w-full mt-4"
-                    onClick={() => doConfirmCheckout(plan)}
+                    onClick={() => handleReadyClick(plan)}
                     disabled={confirming}
                   >
                     {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
-                    Valider mon achat ({formatPrice(plan.targetAmount)})
+                    {plan.itemType === 'ROOM'
+                      ? `Réserver ({formatPrice(plan.targetAmount)})`
+                      : plan.itemType === 'RENTAL'
+                        ? `Louer ({formatPrice(plan.targetAmount)})`
+                        : plan.itemType === 'EVENT'
+                          ? `Obtenir mon billet ({formatPrice(plan.targetAmount)})`
+                          : `Valider mon achat ({formatPrice(plan.targetAmount)})`}
                   </Button>
                 )}
-                {plan.status === 'COMPLETED' && plan.orderId && (
-                  <Link href={`/dashboard/orders/${plan.orderId}`} className="mt-4 block">
+                {plan.status === 'COMPLETED' && (
+                  <Link
+                    href={
+                      plan.itemType === 'ROOM'
+                        ? '/dashboard/bookings'
+                        : plan.itemType === 'RENTAL'
+                          ? '/dashboard/my-rentals'
+                          : plan.itemType === 'EVENT'
+                            ? '/dashboard/my-events'
+                            : plan.orderId
+                              ? `/dashboard/orders/${plan.orderId}`
+                              : '/dashboard/my-layaway'
+                    }
+                    className="mt-4 block"
+                  >
                     <Button size="sm" variant="secondary" className="w-full">
-                      <ShoppingBag className="h-3.5 w-3.5 mr-1.5" /> Suivre ma commande
+                      {plan.itemType === 'ROOM' || plan.itemType === 'RENTAL' ? (
+                        <><Calendar className="h-3.5 w-3.5 mr-1.5" /> Voir ma réservation</>
+                      ) : plan.itemType === 'EVENT' ? (
+                        <><CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Voir mon billet</>
+                      ) : (
+                        <><ShoppingBag className="h-3.5 w-3.5 mr-1.5" /> Suivre ma commande</>
+                      )}
                     </Button>
                   </Link>
                 )}
@@ -340,6 +418,59 @@ export default function MyLayawayPage() {
           <Button variant="primary" className="w-full" onClick={doContribute} disabled={sending || !amount}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4 mr-2" />}
             {sending ? 'Sécurisation en escrow...' : `Cotiser ${amount ? formatPrice(Number(amount)) : ''}`}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Modal dates — chambre / location */}
+      <Modal
+        open={!!confirmDates}
+        onClose={() => setConfirmDates(null)}
+        title={confirmDates?.itemType === 'RENTAL' ? 'Confirmer la location' : 'Confirmer la réservation'}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Votre épargne ({formatPrice(confirmDates?.targetAmount)}) couvre{' '}
+            <strong className="text-gray-900 dark:text-white">{confirmDates?.itemName}</strong>. Indiquez vos dates :
+            la réservation sera créée directement chez le business, déjà payée.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Arrivée</label>
+              <input
+                type="date"
+                value={checkIn}
+                min={todayIso()}
+                onChange={(e) => setCheckIn(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Départ</label>
+              <input
+                type="date"
+                value={checkOut}
+                min={checkIn || defaultCheckIn()}
+                onChange={(e) => setCheckOut(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Voyageurs</label>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={guests}
+              onChange={(e) => setGuests(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+          </div>
+          {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">{error}</p>}
+          <Button variant="primary" className="w-full" onClick={doConfirmWithDates} disabled={confirming}>
+            {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
+            {confirming ? 'Création de la réservation...' : 'Confirmer — réservation payée par mon épargne'}
           </Button>
         </div>
       </Modal>

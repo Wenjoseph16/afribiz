@@ -925,7 +925,7 @@ export interface ApiClientMethods {
   getLayawayPlan(id: string): Promise<any>;
   contributeLayaway(id: string, data: any): Promise<any>;
   cancelLayawayPlan(id: string): Promise<any>;
-  confirmLayawayCheckout(id: string): Promise<any>;
+  confirmLayawayCheckout(id: string, data?: any): Promise<any>;
   removeFavorite(id: string): Promise<any>;
 
   // ============================================

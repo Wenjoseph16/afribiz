@@ -101,6 +101,11 @@ export const cancelPlan = catchAsyncErrors(async (req: AuthenticatedRequest, res
 
 export const confirmCheckout = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) throw new Error('Non authentifié');
-  const result = await layawayService.confirmLayawayCheckout(req.user.id, req.params.id);
-  res.json(successResponse(result, 'Commande créée et escrow libéré au business'));
+  const { checkIn, checkOut, guests } = req.body;
+  const result = await layawayService.confirmLayawayCheckout(req.user.id, req.params.id, {
+    checkIn,
+    checkOut,
+    guests,
+  });
+  res.json(successResponse(result, 'Réservation/billet créé et escrow libéré au business'));
 });

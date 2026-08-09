@@ -43,7 +43,7 @@ export function injectLayaway(api: ApiClientMethods) {
   api.cancelLayawayPlan = function (id: string) {
     return this.post(`/layaway/plans/${id}/cancel`);
   };
-  api.confirmLayawayCheckout = function (id: string) {
-    return this.post(`/layaway/plans/${id}/confirm`);
+  api.confirmLayawayCheckout = function (id: string, data?: any) {
+    return this.post(`/layaway/plans/${id}/confirm`, data);
   };
 }
