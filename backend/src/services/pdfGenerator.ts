@@ -603,6 +603,17 @@ export async function generateInvoicePdf(invoice: InvoiceWithBusiness): Promise<
                 alignment: 'right',
                 color: COLORS[invoice.status] || '#6b7280',
               },
+              ...(invoice.promoCode
+                ? [
+                    {
+                      text: 'Code promo: ' + invoice.promoCode,
+                      fontSize: 9,
+                      alignment: 'right',
+                      color: '#7c3aed',
+                      margin: [0, 3, 0, 0],
+                    },
+                  ]
+                : []),
             ],
           },
         ],
@@ -729,7 +740,8 @@ export async function generateInvoicePdf(invoice: InvoiceWithBusiness): Promise<
               ? [
                   [
                     {
-                      text: 'Remise',
+                      text:
+                        'Remise' + (invoice.promoCode ? ' (' + invoice.promoCode + ')' : ''),
                       alignment: 'right',
                       fontSize: 10,
                       color: '#6b7280',

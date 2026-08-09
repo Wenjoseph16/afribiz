@@ -523,6 +523,16 @@ export default function BusinessFinancePage() {
                       </span>
                     </div>
                   ))}
+                  {Number(selected.discountAmount || 0) > 0 && (
+                    <div className="flex items-center justify-between text-sm pb-2">
+                      <span className="text-gray-600 dark:text-gray-300">
+                        Remise{selected.promoCode ? ` (${selected.promoCode})` : ''}
+                      </span>
+                      <span className="font-semibold text-red-500">
+                        -{formatCurrency(Number(selected.discountAmount))}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

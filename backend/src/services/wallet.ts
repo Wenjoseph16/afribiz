@@ -70,6 +70,74 @@ export async function withdraw(
   });
 }
 
+/**
+ * Libère un escrow vers le wallet du business (net de commission) dans une
+ * transaction atomique : escrow RELEASED + solde wallet incrémenté +
+ * WalletTransaction ESCROW_RELEASE tracée.
+ *
+ * C'est le flux unique de libération : commandes livrées (cron 48h), escrows
+ * orphelins (cron 14j) — l'argent arrive TOUJOURS au wallet du business.
+ */
+export async function releaseEscrowToWallet(
+  escrowId: string,
+  opts?: { feeRate?: number; description?: string }
+) {
+  return prisma.$transaction(async (tx) => {
+    const escrow = await tx.escrow.findUnique({ where: { id: escrowId } });
+    if (!escrow) throw new AppError('Escrow non trouvé', 404);
+    if (escrow.status === 'RELEASED') return { alreadyReleased: true as const };
+
+    const rate = opts?.feeRate ?? Number(escrow.feeRate || 0) / 100;
+    const fee = Math.round(Number(escrow.amount) * rate * 100) / 100;
+    const netAmount = Number(escrow.amount) - fee;
+
+    await tx.escrow.update({
+      where: { id: escrowId },
+      data: {
+        status: 'RELEASED',
+        releasedAt: new Date(),
+        releasedToWallet: true,
+        fee,
+        feeRate: rate * 100,
+        netAmount,
+        notes: opts?.description || escrow.notes,
+      },
+    });
+
+    // Le wallet est créé s'il manque (jamais d'argent perdu : toute libération
+    // crédite le solde, même si le business n'a pas encore de wallet).
+    let wallet = await tx.wallet.findUnique({ where: { businessId: escrow.businessId } });
+    if (!wallet) {
+      wallet = await tx.wallet.create({
+        data: { businessId: escrow.businessId, balance: 0, locked: 0, currency: 'FCFA' },
+      });
+    }
+    const balanceAfter = Number(wallet.balance) + netAmount;
+    await tx.wallet.update({ where: { id: wallet.id }, data: { balance: balanceAfter } });
+    await tx.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'ESCROW_RELEASE',
+        amount: netAmount,
+        balanceBefore: Number(wallet.balance),
+        balanceAfter,
+        reference: escrowId,
+        description: opts?.description || 'Libération escrow',
+        metadata: { escrowId, fee, grossAmount: Number(escrow.amount) },
+      },
+    });
+
+    return {
+      alreadyReleased: false as const,
+      escrowId,
+      amount: Number(escrow.amount),
+      fee,
+      netAmount,
+      walletCredited: true,
+    };
+  });
+}
+
 export async function listTransactions(
   businessId: string,
   filters: { page?: number; limit?: number; type?: string }

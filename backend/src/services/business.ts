@@ -520,12 +520,42 @@ export async function getAggregatedDashboardStats(ownerId: string) {
     })
   );
 
+  // ── Remises accordées (30 derniers jours) : total, nb commandes remisées, top promos ──
+  const since30d = new Date(now.getTime() - 30 * 86400000);
+  const [discountsAgg, discountedOrders] = await Promise.all([
+    prisma.order.aggregate({
+      where: { businessId, createdAt: { gte: since30d } },
+      _sum: { discountAmount: true },
+    }),
+    prisma.order.findMany({
+      where: { businessId, createdAt: { gte: since30d }, discountAmount: { gt: 0 } },
+      select: { discountAmount: true, internalNotes: true },
+      take: 500,
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+  const promoMap = new Map<string, { code: string; count: number; total: number }>();
+  for (const o of discountedOrders) {
+    const m = String(o.internalNotes || '').match(/Promo\s*:\s*([^\s(-]+)/i);
+    const code = m ? m[1].toUpperCase() : 'AUTRE';
+    const entry = promoMap.get(code) || { code, count: 0, total: 0 };
+    entry.count += 1;
+    entry.total += Number(o.discountAmount || 0);
+    promoMap.set(code, entry);
+  }
+  const topPromos = [...promoMap.values()].sort((a, b) => b.count - a.count).slice(0, 5);
+
   return {
     today: {
       ordersCount: todayOrdersCount,
       bookingsCount: todayBookingsCount,
       revenue: todayRevenue,
       newClients: todayNewClients,
+    },
+    discounts: {
+      total30d: Number(discountsAgg._sum.discountAmount || 0),
+      count30d: discountedOrders.length,
+      topPromos,
     },
     pending: {
       ordersCount: pendingOrdersCount,

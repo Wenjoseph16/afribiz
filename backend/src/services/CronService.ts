@@ -33,6 +33,7 @@ import { detectAllOpportunities } from './opportunityService';
 import { QueueService } from '../events/QueueService';
 import { recomputeAllScores } from './afriScoreService';
 import { generateAllCopilotNotifications } from './copilotNotificationService';
+import { releaseEscrowToWallet } from './wallet';
 import { getAdminAlertQueue, getActiveAdminIds } from './adminService';
 import { sendEmail } from '../lib/mail';
 
@@ -2076,15 +2077,18 @@ export class CronService {
     });
     for (const o of orders) {
       if (o.escrow && o.business?.ownerId) {
-        await prisma.escrow.update({
-          where: { id: o.escrow.id },
-          data: { status: 'RELEASED', releasedAt: new Date() },
-        });
-        publishEscrowReleased({
-          userId: o.business.ownerId,
-          escrowId: o.escrow.id,
-          amount: o.escrow.amount.toString(),
-        });
+        try {
+          const released = await releaseEscrowToWallet(o.escrow.id, {
+            description: 'Libération escrow (commande livrée)',
+          });
+          publishEscrowReleased({
+            userId: o.business.ownerId,
+            escrowId: o.escrow.id,
+            amount: String(released.alreadyReleased ? o.escrow.amount : released.netAmount),
+          });
+        } catch (e) {
+          logger.warn(`Cron: escrow release failed for ${o.escrow.id}: ${(e as Error).message}`);
+        }
       }
     }
     if (orders.length > 0)
@@ -2116,24 +2120,23 @@ export class CronService {
     });
     for (const escrow of escrows) {
       if (escrow.status === 'DISPUTED') continue;
-      await prisma.escrow.update({
-        where: { id: escrow.id },
-        data: {
-          status: 'RELEASED',
-          releasedAt: new Date(),
-          notes: 'Libération automatique après 14 jours',
-        },
-      });
-      const biz = await prisma.business.findUnique({
-        where: { id: escrow.businessId },
-        select: { ownerId: true },
-      });
-      if (biz)
-        publishEscrowReleased({
-          userId: biz.ownerId,
-          escrowId: escrow.id,
-          amount: String(escrow.amount),
+      try {
+        const released = await releaseEscrowToWallet(escrow.id, {
+          description: 'Libération automatique après 14 jours',
         });
+        const biz = await prisma.business.findUnique({
+          where: { id: escrow.businessId },
+          select: { ownerId: true },
+        });
+        if (biz)
+          publishEscrowReleased({
+            userId: biz.ownerId,
+            escrowId: escrow.id,
+            amount: String(released.alreadyReleased ? escrow.amount : released.netAmount),
+          });
+      } catch (e) {
+        logger.warn(`Cron: auto escrow release failed for ${escrow.id}: ${(e as Error).message}`);
+      }
     }
     if (escrows.length > 0)
       logger.info('Cron: auto-released ' + escrows.length + ' escrows after 14 days');

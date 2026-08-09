@@ -9,12 +9,13 @@ import {
   Plus,
   TrendingUp,
   TrendingDown,
-  PiggyBank,
+  Lock,
   CreditCard,
   Smartphone,
-  Send,
   Download,
   Clock,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageHeader } from '@/components/dashboard/PageHeader';
@@ -27,6 +28,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { apiClient } from '@/services/apiClient';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/ToastProvider';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -45,15 +47,19 @@ const itemVariants = {
   },
 };
 
+// Types réels des transactions wallet (backend wallet.ts)
+const INCOME_TYPES = ['DEPOSIT', 'ESCROW_RELEASE', 'REFUND', 'COMMISSION', 'CASHBACK'];
+
 const QUICK_ACTIONS = [
   {
     label: 'Approvisionner',
+    key: 'deposit' as const,
     icon: Plus,
     color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600',
   },
-  { label: 'Transférer', icon: Send, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' },
   {
     label: 'Retirer',
+    key: 'withdraw' as const,
     icon: Download,
     color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600',
   },
@@ -61,13 +67,19 @@ const QUICK_ACTIONS = [
 
 const FILTERS = [
   { key: 'all', label: 'Tout' },
-  { key: 'income', label: 'Revenus' },
-  { key: 'expense', label: 'Dépenses' },
-  { key: 'transfer', label: 'Transferts' },
+  { key: 'DEPOSIT', label: 'Dépôts' },
+  { key: 'ESCROW_RELEASE', label: 'Escrow libéré' },
+  { key: 'WITHDRAWAL', label: 'Retraits' },
+  { key: 'COMMISSION', label: 'Commissions' },
 ];
 
 export default function WalletPage() {
   const [filter, setFilter] = useState('all');
+  const [modal, setModal] = useState<'deposit' | 'withdraw' | null>(null);
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const { notify } = useToast();
 
   const {
     data: walletData,
@@ -77,15 +89,15 @@ export default function WalletPage() {
   } = useQuery({
     queryKey: ['wallet'],
     queryFn: async () => {
-      const res = await apiClient.getWallet();
+      const res = await apiClient.getBusinessWallet();
       return res.data.data;
     },
   });
 
-  const { data: txData, isLoading: txLoading } = useQuery({
+  const { data: txData, isLoading: txLoading, refetch: refetchTx } = useQuery({
     queryKey: ['wallet-transactions'],
     queryFn: async () => {
-      const res = await apiClient.getWalletTransactions();
+      const res = await apiClient.getBusinessWalletTransactions();
       return res.data.data;
     },
     retry: 1,
@@ -103,14 +115,47 @@ export default function WalletPage() {
 
   const stats = useMemo(() => {
     const totalIncome = transactions
-      .filter((t: any) => t.type === 'income')
+      .filter((t: any) => INCOME_TYPES.includes(t.type))
       .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
     const totalExpense = transactions
-      .filter((t: any) => t.type === 'expense')
-      .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+      .filter((t: any) => !INCOME_TYPES.includes(t.type))
+      .reduce((s: number, t: any) => s + Math.abs(Number(t.amount || 0)), 0);
     const pendingCount = transactions.filter((t: any) => t.status === 'pending').length;
     return { totalIncome, totalExpense, pendingCount };
   }, [transactions]);
+
+  const handleQuickAction = async () => {
+    const value = Number(amount);
+    if (!value || value <= 0) {
+      notify({ title: 'Montant invalide', variant: 'error' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await apiClient.post(
+        modal === 'deposit' ? '/wallet/deposit' : '/wallet/withdraw',
+        { amount: value, description: description.trim() || undefined }
+      );
+      notify({
+        title: modal === 'deposit' ? 'Dépôt effectué' : 'Retrait effectué',
+        description: res.data?.message || 'Opération réussie',
+        variant: 'success',
+      });
+      setModal(null);
+      setAmount('');
+      setDescription('');
+      refetch();
+      refetchTx();
+    } catch (err: any) {
+      notify({
+        title: 'Erreur',
+        description: err?.response?.data?.message || 'Impossible de finaliser l\u2019opération',
+        variant: 'error',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (walletError) return <ErrorState message={(walletError as any).message} onRetry={refetch} />;
 
@@ -173,19 +218,19 @@ export default function WalletPage() {
                 </motion.p>
               </div>
 
-              {/* Cashback */}
+              {/* Disponible pour retrait (balance - locked) */}
               <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
                 <div className="flex items-center gap-1.5 text-sm text-emerald-200">
-                  <PiggyBank className="h-4 w-4" />
-                  Cashback reçu
+                  <Lock className="h-4 w-4" />
+                  Disponible pour retrait
                 </div>
                 <p className="text-lg sm:text-xl font-bold text-white mt-0.5">
-                  +{Number(walletData?.cashback ?? 0).toLocaleString()} FCFA
+                  {Number(walletData?.available ?? 0).toLocaleString()} FCFA
                 </p>
               </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions — boutons réellement câblés (dépôt / retrait) */}
             <div className="flex flex-wrap items-center gap-2 mt-6">
               {QUICK_ACTIONS.map((action) => {
                 const Icon = action.icon;
@@ -193,6 +238,11 @@ export default function WalletPage() {
                   <button
                     key={action.label}
                     type="button"
+                    onClick={() => {
+                      setAmount('');
+                      setDescription('');
+                      setModal(action.key);
+                    }}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-xs font-medium border border-white/10 transition-all duration-200 hover:shadow-lg active:scale-[0.97]"
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -337,7 +387,7 @@ export default function WalletPage() {
               >
                 <AnimatePresence mode="popLayout">
                   {filtered.map((tx: any, idx: number) => {
-                    const isIncome = tx.type === 'income';
+                    const isIncome = INCOME_TYPES.includes(tx.type) || Number(tx.amount || 0) >= 0;
                     const amount = Number(tx.amount || 0);
                     return (
                       <motion.div
@@ -430,8 +480,83 @@ export default function WalletPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Modal Dépôt / Retrait */}
+      {modal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => !submitting && setModal(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {modal === 'deposit' ? 'Approvisionner le portefeuille' : 'Retirer des fonds'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setModal(null)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {modal === 'deposit'
+                ? 'Ajoutez des fonds à votre portefeuille AfriBiz.'
+                : `Solde disponible : ${Number(walletData?.balance ?? 0).toLocaleString()} FCFA`}
+            </p>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Montant (FCFA)
+            </label>
+            <input
+              type="number"
+              min={0}
+              max={modal === 'withdraw' ? Number(walletData?.balance ?? 0) : undefined}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Ex : 25000"
+              className="w-full p-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-xl mb-3 bg-transparent dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/30"
+            />
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Description (optionnel)
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ex : Virement mobile money"
+              className="w-full p-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-xl mb-4 bg-transparent dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/30"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setModal(null)}
+                disabled={submitting}
+                className="flex-1 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleQuickAction}
+                disabled={submitting}
+                className="flex-1 py-2.5 bg-brand text-white rounded-xl text-sm font-semibold hover:bg-brand/90 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {submitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : modal === 'deposit' ? (
+                  'Déposer'
+                ) : (
+                  'Retirer'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
-
-// Need to import Clock for the skeleton

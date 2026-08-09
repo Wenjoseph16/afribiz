@@ -174,11 +174,12 @@ export function injectMisc(api: ApiClientMethods) {
   api.disconnectSocialAccount = function (id: string) {
     return this.delete(`/social/${id}`);
   };
-  // Wallet
-  api.getWallet = function () {
+  // Business wallet (propriétaire d'un business) — le wallet CLIENT reste
+  // GET /payments/wallet (défini dans api/payments.ts, non écrasé ici).
+  api.getBusinessWallet = function () {
     return this.get('/wallet');
   };
-  api.getWalletTransactions = function (params?: any) {
+  api.getBusinessWalletTransactions = function (params?: any) {
     return this.get('/wallet/transactions', { params });
   };
 }

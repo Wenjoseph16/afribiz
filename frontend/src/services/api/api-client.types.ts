@@ -1051,6 +1051,8 @@ export interface ApiClientMethods {
   connectSocialAccount(data: any): Promise<any>;
   disconnectSocialAccount(id: string): Promise<any>;
   getWalletTransactions(params?: any): Promise<any>;
+  getBusinessWallet(): Promise<any>;
+  getBusinessWalletTransactions(params?: any): Promise<any>;
 
   // ============================================
   // ANALYTICS EXTENDED (injectAnalyticsExtended)

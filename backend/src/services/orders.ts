@@ -260,6 +260,16 @@ export async function ensureInvoiceForOrder(order: any, business: any, status: s
         unitPrice: Number(i.unitPrice) || 0,
         total: Number(i.total) || 0,
       }));
+
+      // Code promo visible sur la facture : extrait de la trace laissée au checkout
+      // (internalNotes = `Promo : CODE (-X FCFA)` ou `Promo : <titre promo> (-X FCFA)`).
+      // La remise n'est PAS ajoutée comme ligne négative dans invoiceItems : elle est
+      // portée par discountAmount + promoCode et affichée dans la ligne dédiée « Remise »
+      // (évite un doublon visuel dans le PDF et les vues frontend).
+      const promoMatch = String(order.internalNotes || '').match(/Promo\s*:\s*([^\s(-]+)/i);
+      const promoCode = promoMatch ? promoMatch[1].toUpperCase() : null;
+      const discount = Number(order.discountAmount || 0);
+
       const invoice = await prisma.invoice.create({
         data: {
           invoiceNumber,
@@ -270,9 +280,10 @@ export async function ensureInvoiceForOrder(order: any, business: any, status: s
           clientPhone: order.contactPhone || null,
           title: `Commande ${order.orderNumber || ''}`,
           items: items as any,
-          subtotal: Number(order.subtotal || order.totalAmount || 0),
+          subtotal: Number(order.subtotal || Number(order.totalAmount || 0) + discount || 0),
           taxAmount: Number(order.taxAmount || 0) || undefined,
-          discountAmount: Number(order.discountAmount || 0) || undefined,
+          discountAmount: discount || undefined,
+          promoCode,
           totalAmount: Number(order.totalAmount || 0),
           amountPaid: finalized ? Number(order.totalAmount || 0) : 0,
           currency: order.currency || 'FCFA',

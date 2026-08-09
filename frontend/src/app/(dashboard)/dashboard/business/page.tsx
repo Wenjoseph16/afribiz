@@ -112,6 +112,10 @@ const BusinessReputationCard = dynamic(
     loading: () => <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
   }
 );
+const BusinessDiscountsCard = dynamic(() => import('@/components/dashboard/BusinessDiscountsCard'), {
+  ssr: false,
+  loading: () => <div className="h-56 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+});
 
 // ─── Mapping module BusinessModule -> vraie page du dashboard ───
 // Les codes enum (QUOTES_INVOICES, DEBTS_PAYMENTS…) ne correspondent pas
@@ -692,8 +696,13 @@ export default function BusinessDashboardPage() {
         </div>
       </div>
 
-      {/* Charts section */}
-      <DashboardCharts stats={aggStats} orders={orders} />
+      {/* Charts section + Remises accordées (cockpit finance) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <DashboardCharts stats={aggStats} orders={orders} />
+        </div>
+        <BusinessDiscountsCard stats={aggStats?.discounts} />
+      </div>
 
       {/* Quick Actions & Modules */}
       <div>

@@ -411,14 +411,27 @@ describe('adminService', () => {
       expect(r.escrows).toHaveLength(1);
     });
     test('releaseAdminEscrow releases', async () => {
+      // findUnique est appelé 3x : check initial (HELD), check interne à la
+      // transaction (HELD), refetch final après libération (RELEASED).
       jest
         .spyOn(mockPrisma.escrow, 'findUnique')
-        .mockResolvedValue({ id: 'e1', status: 'HELD' } as any);
+        .mockResolvedValueOnce({ id: 'e1', status: 'HELD', amount: 1000 } as any)
+        .mockResolvedValueOnce({ id: 'e1', status: 'HELD', amount: 1000 } as any)
+        .mockResolvedValue({ id: 'e1', status: 'RELEASED', releasedToWallet: true } as any);
+      // Le flux passe par releaseEscrowToWallet (transaction) : on exécute le callback
+      // et on simule wallet + transaction pour vérifier que l'argent arrive au wallet.
+      (mockPrisma as any).$transaction = jest.fn(async (cb: any) => cb(mockPrisma));
+      jest
+        .spyOn(mockPrisma.wallet, 'findUnique')
+        .mockResolvedValue({ id: 'w1', businessId: 'b1', balance: 0 } as any);
+      jest.spyOn(mockPrisma.wallet, 'update').mockResolvedValue({} as any);
+      jest.spyOn(mockPrisma.walletTransaction, 'create').mockResolvedValue({} as any);
       jest
         .spyOn(mockPrisma.escrow, 'update')
-        .mockResolvedValue({ id: 'e1', status: 'RELEASED' } as any);
+        .mockResolvedValue({ id: 'e1', status: 'RELEASED', releasedToWallet: true } as any);
       const r = await releaseAdminEscrow('e1');
-      expect(r.status).toBe('RELEASED');
+      expect(r?.status).toBe('RELEASED');
+      expect(mockPrisma.walletTransaction.create).toHaveBeenCalled();
     });
     test('refundAdminEscrow refunds', async () => {
       jest

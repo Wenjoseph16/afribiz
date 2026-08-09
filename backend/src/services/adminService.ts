@@ -19,6 +19,7 @@ import {
 } from './adminEvents';
 import * as adminFeaturesService from './adminFeaturesService';
 import { invalidatePlanCache } from './planAccessService';
+import { releaseEscrowToWallet } from './wallet';
 
 export const getDashboardStats = async () => {
   const now = new Date();
@@ -1323,16 +1324,22 @@ export const releaseAdminEscrow = async (id: string, adminUserId?: string) => {
   if (escrow.status !== 'HELD' && escrow.status !== 'DISPUTED')
     throw new AppError('Cet escrow ne peut pas être libéré', 400);
 
-  const updated = await prisma.escrow.update({
-    where: { id },
-    data: { status: 'RELEASED', releasedAt: new Date() },
+  // Même flux de libération que le cron : l'argent arrive TOUJOURS au wallet du
+  // business (net de commission), avec transaction ESCROW_RELEASE tracée.
+  const released = await releaseEscrowToWallet(id, {
+    description: 'Libération manuelle par l\u2019admin',
   });
   if (adminUserId) {
     await logAdminAction({
       adminUserId,
       action: 'ADMIN_ACTION',
       reason: `Escrow libéré (${escrow.amount} ${escrow.currency})`,
-      metadata: { action: 'release', escrowId: id, amount: Number(escrow.amount) },
+      metadata: {
+        action: 'release',
+        escrowId: id,
+        amount: Number(escrow.amount),
+        netAmount: released.alreadyReleased ? null : released.netAmount,
+      },
     });
     await trackAdminAction({
       adminUserId,
@@ -1341,6 +1348,7 @@ export const releaseAdminEscrow = async (id: string, adminUserId?: string) => {
     });
   }
   await notifyEscrowReleased(id);
+  const updated = await prisma.escrow.findUnique({ where: { id } });
   return updated;
 };
 

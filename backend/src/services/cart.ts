@@ -19,6 +19,7 @@ import {
   getAutoApplyDiscount,
   logPromotionApplied,
 } from './promotions';
+import { getEscrowCommissionRate } from './monetizationConfig';
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -519,6 +520,8 @@ export async function checkout(
     try {
       let paymentResult;
       if (data.paymentMethod === 'ESCROW') {
+        // Commission escrow plateforme appliquée à la libération (net au wallet)
+        const escrowRate = await getEscrowCommissionRate();
         await prisma.escrow.create({
           data: {
             businessId,
@@ -526,7 +529,7 @@ export async function checkout(
             amount: total,
             currency,
             status: 'HELD',
-            feeRate: 0,
+            feeRate: escrowRate * 100,
             fee: 0,
             notes: `Escrow créé lors du checkout (commande ${orderNumber})`,
           },

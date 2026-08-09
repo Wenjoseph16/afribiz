@@ -110,6 +110,11 @@ export default function InvoiceDetailPage() {
             <Badge variant={isOverdue ? 'danger' : s.variant} size="sm">
               {isOverdue ? 'En retard' : s.label}
             </Badge>
+            {invoice.promoCode && (
+              <Badge variant="info" size="sm" className="font-mono">
+                Promo {invoice.promoCode}
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-gray-500">
             Créée le{' '}
@@ -247,7 +252,9 @@ export default function InvoiceDetailPage() {
                 )}
                 {Number(invoice.discountAmount || 0) > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Remise</span>
+                    <span className="text-gray-500">
+                      Remise{invoice.promoCode ? ` (${invoice.promoCode})` : ''}
+                    </span>
                     <span className="text-red-500">
                       -{formatPrice(Number(invoice.discountAmount))}
                     </span>
