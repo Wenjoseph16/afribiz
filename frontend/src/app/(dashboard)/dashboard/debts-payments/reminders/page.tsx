@@ -18,6 +18,7 @@ import {
   Smartphone,
   Search,
   RefreshCw,
+  Settings2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -435,22 +436,31 @@ export default function DebtsPaymentsRemindersPage() {
           { label: 'Relances' },
         ]}
         actions={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={async () => {
-              try {
-                const res = await apiClient.post('/business/debts/auto-remind');
-                const count = (res.data as any)?.count ?? 0;
-                alert(`${count} relance(s) automatique(s) envoyée(s)`);
-              } catch {
-                alert("Erreur lors de l'envoi des relances automatiques");
-              }
-            }}
-          >
-            <Send className="h-4 w-4 mr-1.5" />
-            Relance automatique
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const res = await apiClient.runAutoReminders();
+                  const count = (res.data as any)?.data?.sent ?? 0;
+                  alert(`${count} relance(s) automatique(s) envoyée(s)`);
+                } catch {
+                  alert("Erreur lors de l'envoi des relances automatiques");
+                }
+              }}
+            >
+              <Send className="h-4 w-4 mr-1.5" />
+              Relance auto
+            </Button>
+            <Link
+              href="/dashboard/debts-payments/settings"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium bg-brand text-white hover:bg-brand/90 transition-colors shadow-md shadow-brand/20"
+            >
+              <Settings2 className="h-4 w-4" />
+              Configurer les rappels
+            </Link>
+          </div>
         }
       />
 

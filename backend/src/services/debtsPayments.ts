@@ -364,6 +364,12 @@ export async function attachDebtToOrder(
     });
     if (!order) throw new AppError('Commande non trouvée', 404);
     if (order.debts.length > 0) throw new AppError('Cette commande a déjà une dette', 400);
+    // Garde-fou : on ne colle une dette que sur une commande réellement impayée
+    if (
+      order.paymentStatus === 'COMPLETED' ||
+      Number(order.amountPaid || 0) >= Number(order.totalAmount || 0)
+    )
+      throw new AppError('Cette commande est déjà payée', 400);
     buyerId = buyerId || order.buyerId || null;
     totalAmount = totalAmount || Number(order.totalAmount || 0);
   }
@@ -1068,7 +1074,12 @@ export async function sendDebtReminder(
   let delivered = true;
   // Envoi réel sur WhatsApp/SMS/Email via les canaux (dev: loggé, prod: Twilio/…)
   if (debt.buyer?.phone && (channel === 'WHATSAPP' || channel === 'SMS')) {
-    delivered = await processDelivery(channel, debt.buyer.phone, content || message, business.name);
+    try {
+      delivered = await processDelivery(channel, debt.buyer.phone, content || message, business.name);
+    } catch (e) {
+      logger.warn(`Reminder ${channel} delivery failed:`, e);
+      delivered = false;
+    }
   } else if (debt.buyer?.email && channel === 'EMAIL') {
     // Email envoyé via le pipeline notification existant
     try {
@@ -1285,8 +1296,10 @@ export async function autoSendDebtReminders(businessId?: string) {
       const cfg = await getReminderConfig(debt.businessId);
       if (!cfg.enabled) continue;
 
-      // Nombre de rappels déjà envoyés sur cette dette
-      const sentCount = debt.reminders.filter((r) => r.status === 'SENT').length;
+      // Nombre de rappels déjà envoyés sur cette dette (les « merci » ne comptent pas)
+      const sentCount = debt.reminders.filter(
+        (r) => r.status === 'SENT' && r.type !== 'PAYMENT_CONFIRMATION'
+      ).length;
       if (sentCount >= cfg.maxRemindersPerDebt) continue;
 
       const daysOverdue = Math.max(
@@ -1352,7 +1365,12 @@ export async function autoSendDebtReminders(businessId?: string) {
       for (const channel of channels) {
         let delivered = false;
         if ((channel === 'WHATSAPP' || channel === 'SMS') && debt.buyer?.phone) {
-          delivered = await processDelivery(channel, debt.buyer.phone, message, businessName);
+          try {
+            delivered = await processDelivery(channel, debt.buyer.phone, message, businessName);
+          } catch (e) {
+            logger.warn(`Auto reminder ${channel} delivery failed:`, e);
+            delivered = false;
+          }
         } else if (channel === 'EMAIL' && debt.buyer?.email) {
           try {
             const { handleEmailEvent } = await import('./NotificationService');

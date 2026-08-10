@@ -501,6 +501,10 @@ export interface ApiClientMethods {
   getPaymentStats(): Promise<any>;
   getFinancialLogs(params?: any): Promise<any>;
   sendDebtReminder(debtId: string): Promise<any>;
+  runAutoReminders(): Promise<any>;
+  getReminderConfig(): Promise<any>;
+  updateReminderConfig(data: any): Promise<any>;
+  attachDebtToOrder(data: any): Promise<any>;
 
   // ============================================
   // REVIEWS (injectReviews)

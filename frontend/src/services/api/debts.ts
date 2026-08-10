@@ -52,6 +52,18 @@ export function injectDebts(api: ApiClientMethods) {
   api.sendDebtReminder = function (debtId: string) {
     return this.post(`/business/finance/debts/${debtId}/reminder`);
   };
+  api.runAutoReminders = function () {
+    return this.post('/business/finance/auto-remind');
+  };
+  api.getReminderConfig = function () {
+    return this.get('/business/finance/reminders/config');
+  };
+  api.updateReminderConfig = function (data: any) {
+    return this.put('/business/finance/reminders/config', data);
+  };
+  api.attachDebtToOrder = function (data: any) {
+    return this.post('/business/finance/debts/attach', data);
+  };
 
   // Extended
   api.createDebt = function (data: any) {

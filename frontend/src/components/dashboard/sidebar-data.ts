@@ -545,6 +545,7 @@ export const MODULE_SUB_ITEMS: Record<string, { label: string; href: string; ico
     { label: 'Aging', href: '/dashboard/debts-payments/aging', icon: 'Clock' },
     { label: 'Rappels', href: '/dashboard/debts-payments/reminders', icon: 'Bell' },
     { label: 'Risques', href: '/dashboard/debts-payments/risks', icon: 'AlertTriangle' },
+    { label: 'Rappels auto', href: '/dashboard/debts-payments/settings', icon: 'Settings' },
   ],
   Abonnements: [
     { label: 'Mon abonnement', href: '/dashboard/business/subscription', icon: 'CreditCard' },

@@ -64,12 +64,12 @@ export const sendReminderSchema = z.object({
 });
 
 export const attachDebtSchema = z.object({
-  orderId: z.string().uuid().optional(),
-  invoiceId: z.string().uuid().optional(),
+  orderId: z.string().min(1).optional(),
+  invoiceId: z.string().min(1).optional(),
   amount: z.number().positive().optional(),
   dueDate: z.string().optional(),
   notes: z.string().optional(),
-  buyerId: z.string().uuid().optional(),
+  buyerId: z.string().min(1).optional(),
 }).refine((d) => d.orderId || d.invoiceId, {
   message: 'orderId ou invoiceId requis',
 });

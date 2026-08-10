@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
@@ -22,12 +22,15 @@ import {
   ChevronUp,
   MessageSquare,
   Share2,
+  HandCoins,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 import { useMyBusinessOrder, useMyBusiness } from '@/features/hooks';
+import { apiClient } from '@/services/apiClient';
 import { formatPrice } from '@/utils/helpers';
 import OrderActionModal from '@/components/orders/OrderActionModal';
 import WhatsAppShare from '@/components/orders/WhatsAppShare';
@@ -229,15 +232,40 @@ export default function BusinessOrderDetailPage() {
 
   const { data: order, isLoading, error, refetch } = useMyBusinessOrder(orderId);
   const { data: business } = useMyBusiness();
+  const router = useRouter();
   const [showActionModal, setShowActionModal] = useState(false);
   const [showItems, setShowItems] = useState(true);
   const [showPayment, setShowPayment] = useState(true);
   const [showNotes, setShowNotes] = useState(false);
   const [origin, setOrigin] = useState('');
+  const [attaching, setAttaching] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
+
+  // « Coller la dette » : transforme cette commande impayée en dette pour le client
+  const attachDebt = async () => {
+    if (!order) return;
+    if (
+      !window.confirm(
+        `Coller une dette de ${formatPrice(Number(order.totalAmount || 0))} au client pour cette commande ? Le client sera relancé automatiquement selon votre configuration.`
+      )
+    )
+      return;
+    try {
+      setAttaching(true);
+      const res = await apiClient.attachDebtToOrder({ orderId: order.id });
+      const debtId = res.data?.data?.id;
+      alert('Dette collée au client. Le recouvrement automatique est en place.');
+      refetch();
+      if (debtId) router.push(`/dashboard/debts-payments/${debtId}`);
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Impossible de coller la dette (dette peut-être déjà existante)");
+    } finally {
+      setAttaching(false);
+    }
+  };
 
   const s = STATUS_CONFIG[order?.status] || STATUS_CONFIG.PENDING;
   const itemCount = order?.items?.length || 0;
@@ -339,6 +367,23 @@ export default function BusinessOrderDetailPage() {
                 params={whatsAppData}
                 variant="icon"
               />
+            )}
+            {/* Coller la dette : commande impayée → recouvrement automatique */}
+            {!['CANCELLED', 'REFUNDED'].includes(order.status) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={attachDebt}
+                disabled={attaching}
+                className="text-rose-600 border-rose-200 dark:border-rose-900 hover:bg-rose-50 dark:hover:bg-rose-950"
+              >
+                {attaching ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <HandCoins className="h-4 w-4 mr-1.5" />
+                )}
+                Coller la dette
+              </Button>
             )}
             {/* Action button for PENDING orders */}
             {order.status === 'PENDING' && (
