@@ -18,6 +18,8 @@ import {
   suspendAdCampaignSchema as suspendAdSchema,
 } from '../validators/admin';
 import { recalculateBusinessRating } from '../services/business';
+import { getSlots as getAdSlots, createSlot, updateSlot, deleteSlot } from '../controllers/ads';
+import { createSlotSchema, updateSlotSchema } from '../validators/ads';
 import {
   getDashboardStats,
   getUsers,
@@ -308,6 +310,12 @@ router.post(
   validateBody(suspendAdSchema),
   suspendAdminAdCampaign
 );
+
+// Emplacements publicitaires + tarifs (configurables par l'admin)
+router.get('/admin/ads/slots', getAdSlots);
+router.post('/admin/ads/slots', validateBody(createSlotSchema), createSlot);
+router.patch('/admin/ads/slots/:id', validateBody(updateSlotSchema), updateSlot);
+router.delete('/admin/ads/slots/:id', deleteSlot);
 
 // ============================================
 // AFRI SCORE ADMIN

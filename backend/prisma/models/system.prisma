@@ -3611,20 +3611,23 @@ model VoiceCommand {
 
 // ============================================
 // ANALYTICS & REPORTS (TOME-24/25)
-// ============================================
-
-
-model AdSlot {
-  id        String       @id @default(uuid())
-  page      String
-  position  String
-  label     String
-  width     Int          @default(0)
-  height    Int          @default(0)
-  isActive  Boolean      @default(true)
-  campaigns AdCampaign[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+// ============================================model AdSlot {
+  id          String      @id @default(uuid())
+  page        String
+  position    String
+  label       String
+  description String?
+  width       Int         @default(0)
+  height      Int         @default(0)
+  // Prix configurables par l'admin (FCFA) — l'annonceur choisit emplacement + durée
+  price1Day   Decimal     @default(0) @db.Decimal(12, 2)
+  price7Days  Decimal     @default(0) @db.Decimal(12, 2)
+  price30Days Decimal     @default(0) @db.Decimal(12, 2)
+  maxPerSlot  Int         @default(10)
+  isActive    Boolean     @default(true)
+  campaigns   AdCampaign[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   @@unique([page, position])
   @@index([page, position, isActive])

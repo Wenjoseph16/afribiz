@@ -37,15 +37,33 @@ export async function createAdCampaign(userId: string, data: any): Promise<any> 
     throw new AppError("Type d'annonceur invalide", 400);
   }
 
-  // Vérifier que la durée ne dépasse pas 48h
+  // Durée : 1 à 30 jours (les prix des emplacements sont configurables par l'admin)
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
   const diffHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
   if (diffHours <= 0) {
     throw new AppError('La date de fin doit être après la date de début', 400);
   }
-  if (diffHours > 48) {
-    throw new AppError("La durée d'une campagne ne peut pas dépasser 48 heures", 400);
+  if (diffHours > 30 * 24) {
+    throw new AppError("La durée d'une campagne ne peut pas dépasser 30 jours", 400);
+  }
+
+  // Si l'annonceur choisit un emplacement (slot), le budget est calculé automatiquement
+  // à partir des prix de l'emplacement (configurables par l'admin) × la durée choisie.
+  const durationDays = Math.max(1, Math.ceil(diffHours / 24));
+  if (data.slotId) {
+    const slot = await prisma.adSlot.findUnique({ where: { id: data.slotId } });
+    if (!slot) throw new AppError('Emplacement publicitaire non trouvé', 404);
+    if (!slot.isActive) throw new AppError('Cet emplacement est désactivé', 400);
+    const price = computeCampaignPrice(slot, durationDays);
+    if (price > 0) campaignData.budget = price;
+    campaignData.slotId = slot.id;
+    campaignData.targetPages = campaignData.targetPages?.length
+      ? campaignData.targetPages
+      : [slot.page];
+    campaignData.targetPositions = campaignData.targetPositions?.length
+      ? campaignData.targetPositions
+      : [slot.position];
   }
 
   const campaign = await prisma.adCampaign.create({
@@ -250,24 +268,24 @@ export async function suspendAdCampaign(campaignId: string, reason: string): Pro
 export async function getActiveAdCreatives(
   page?: string,
   position?: string,
-  country?: string
+  country?: string,
+  city?: string,
+  limit?: number
 ): Promise<any[]> {
+  const now = new Date();
   const where: any = {
     isActive: true,
     campaign: {
       status: 'ACTIVE',
+      startDate: { lte: now },
+      endDate: { gte: now },
     },
   };
 
-  if (page) {
-    where.placementPage = page;
-  }
-  if (position) {
-    where.placementPosition = position;
-  }
-  if (country) {
-    where.targetCountries = { has: country };
-  }
+  if (page) where.placementPage = page;
+  if (position) where.placementPosition = position;
+  if (country) where.targetCountries = { has: country };
+  if (city) where.targetCities = { has: city };
 
   const creatives = await prisma.adCreative.findMany({
     where,
@@ -288,12 +306,12 @@ export async function getActiveAdCreatives(
     },
   });
 
+  // Rotation équitable : shuffle + limite de pubs par emplacement (maxPerSlot)
   for (let i = creatives.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [creatives[i], creatives[j]] = [creatives[j], creatives[i]];
   }
-
-  return creatives;
+  return creatives.slice(0, Math.max(1, limit || 10));
 }
 
 export async function trackImpression(campaignId: string, data: any): Promise<void> {
@@ -316,6 +334,15 @@ export async function trackImpression(campaignId: string, data: any): Promise<vo
       cost: data.cost || 0,
     },
   });
+
+  if (data.creativeId) {
+    await prisma.adCreative
+      .update({
+        where: { id: data.creativeId },
+        data: { impressions: { increment: 1 } },
+      })
+      .catch(() => null);
+  }
 }
 
 export async function trackClick(campaignId: string, data: any): Promise<void> {
@@ -624,6 +651,85 @@ export async function autoActivateCampaigns(): Promise<number> {
   });
 
   return result.count;
+}
+
+// ===================== EMPLACEMENTS (SLOTS) — prix configurables par l'admin =====================
+
+/**
+ * Calcule le prix d'une campagne pour un emplacement et une durée (jours).
+ * Interpolation linéaire entre les paliers 1j / 7j / 30j définis par l'admin.
+ */
+export function computeCampaignPrice(slot: { price1Day: any; price7Days: any; price30Days: any }, days: number): number {
+  const p1 = Number(slot.price1Day || 0);
+  const p7 = Number(slot.price7Days || 0);
+  const p30 = Number(slot.price30Days || 0);
+  if (p1 <= 0 && p7 <= 0 && p30 <= 0) return 0;
+  const d = Math.min(30, Math.max(1, days));
+  if (d <= 7) {
+    // Interpolation 1j → 7j
+    if (d === 1) return p1;
+    return Math.round(p1 + ((p7 - p1) * (d - 1)) / 6);
+  }
+  if (d === 7) return p7;
+  if (d >= 30) return p30;
+  // Interpolation 7j → 30j
+  return Math.round(p7 + ((p30 - p7) * (d - 7)) / 23);
+}
+
+export async function getAdSlots(activeOnly = false): Promise<any[]> {
+  const slots = await prisma.adSlot.findMany({
+    where: activeOnly ? { isActive: true } : undefined,
+    orderBy: [{ page: 'asc' }, { position: 'asc' }],
+    include: { _count: { select: { campaigns: true } } },
+  });
+  return slots.map((s: any) => ({
+    ...s,
+    price1Day: Number(s.price1Day || 0),
+    price7Days: Number(s.price7Days || 0),
+    price30Days: Number(s.price30Days || 0),
+  }));
+}
+
+export async function createAdSlot(data: any): Promise<any> {
+  const existing = await prisma.adSlot.findUnique({
+    where: { page_position: { page: data.page, position: data.position } },
+  });
+  if (existing) throw new AppError('Un emplacement existe déjà pour cette page/position', 400);
+  return prisma.adSlot.create({
+    data: {
+      page: data.page,
+      position: data.position,
+      label: data.label,
+      description: data.description || null,
+      width: data.width || 0,
+      height: data.height || 0,
+      price1Day: data.price1Day || 0,
+      price7Days: data.price7Days || 0,
+      price30Days: data.price30Days || 0,
+      maxPerSlot: data.maxPerSlot || 10,
+      isActive: data.isActive !== false,
+    },
+  });
+}
+
+export async function updateAdSlot(id: string, data: any): Promise<any> {
+  const slot = await prisma.adSlot.findUnique({ where: { id } });
+  if (!slot) throw new AppError('Emplacement non trouvé', 404);
+  const upd: any = {};
+  if (data.label !== undefined) upd.label = data.label;
+  if (data.description !== undefined) upd.description = data.description;
+  if (data.width !== undefined) upd.width = Number(data.width);
+  if (data.height !== undefined) upd.height = Number(data.height);
+  if (data.price1Day !== undefined) upd.price1Day = Number(data.price1Day);
+  if (data.price7Days !== undefined) upd.price7Days = Number(data.price7Days);
+  if (data.price30Days !== undefined) upd.price30Days = Number(data.price30Days);
+  if (data.maxPerSlot !== undefined) upd.maxPerSlot = Number(data.maxPerSlot);
+  if (data.isActive !== undefined) upd.isActive = !!data.isActive;
+  return prisma.adSlot.update({ where: { id }, data: upd });
+}
+
+export async function deleteAdSlot(id: string): Promise<void> {
+  await prisma.adSlot.delete({ where: { id } });
 }
 
 export async function getAdPackages(): Promise<any[]> {

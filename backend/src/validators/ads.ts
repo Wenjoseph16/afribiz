@@ -160,3 +160,19 @@ export const createPackageSchema = z.object({
 });
 
 export const updatePackageSchema = createPackageSchema.partial();
+
+export const createSlotSchema = z.object({
+  page: z.string().min(1, 'Page requise'),
+  position: z.string().min(1, 'Position requise'),
+  label: z.string().min(1, 'Libellé requis'),
+  description: z.string().optional(),
+  width: z.number().int().min(0).optional(),
+  height: z.number().int().min(0).optional(),
+  price1Day: z.number().min(0).optional(),
+  price7Days: z.number().min(0).optional(),
+  price30Days: z.number().min(0).optional(),
+  maxPerSlot: z.number().int().min(1).max(50).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const updateSlotSchema = createSlotSchema.partial();

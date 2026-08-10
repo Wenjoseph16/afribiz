@@ -15,6 +15,7 @@ import {
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import AdSlot from '@/components/ads/AdSlot';
 import { getApiUrl } from '@/lib/config';
 
 const fadeInUp = {
@@ -505,6 +506,10 @@ export default function PricingPage() {
         </motion.div>
       </section>
 
+      {/* Pub - Bandeau bas */}
+      <div className="max-w-7xl mx-auto px-4 pb-8">
+        <AdSlot page="PRICING" position="BOTTOM_BANNER" />
+      </div>
       <Footer />
     </main>
   );

@@ -16,8 +16,18 @@ export type AdPlacementPage =
   | 'DASHBOARD_DEVELOPER'
   | 'MODULE_PAGE'
   | 'EVENT_PAGE'
+  | 'PRODUCT_PAGE'
   | 'NOTIFICATION_CENTER'
-  | 'BUSINESS_PUBLIC_PAGE';
+  | 'BUSINESS_PUBLIC_PAGE'
+  | 'ABOUT'
+  | 'PRICING'
+  | 'CONTACT'
+  | 'DEVELOPERS'
+  | 'BLOG'
+  | 'MEDIA'
+  | 'BLOG_ARTICLE'
+  | 'LEGAL'
+  | 'FEED';
 export type AdPlacementPosition =
   | 'HERO_BANNER'
   | 'TOP_BANNER'

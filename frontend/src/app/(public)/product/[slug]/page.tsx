@@ -25,6 +25,7 @@ import { useAddToCart } from '@/features/hooks';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import StarRating from '@/components/marketplace/cards/StarRating';
+import AdSlot from '@/components/ads/AdSlot';
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -401,6 +402,10 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </main>
+      {/* Produits sponsorisés */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <AdSlot page="PRODUCT_PAGE" position="BOTTOM_BANNER" />
+      </div>
       <Footer />
     </div>
   );

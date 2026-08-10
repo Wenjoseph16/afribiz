@@ -133,12 +133,20 @@ export default function AdminAdsPage() {
         description="Gérez toutes les campagnes publicitaires de la plateforme"
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard/admin' }, { label: 'Publicités' }]}
         actions={
-          <Link href="/dashboard/admin/ads/packages">
-            <Button variant="secondary" size="sm">
-              <DollarSign className="h-4 w-4 mr-1.5" />
-              Packages
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/dashboard/admin/ads/slots">
+              <Button variant="secondary" size="sm">
+                <DollarSign className="h-4 w-4 mr-1.5" />
+                Emplacements
+              </Button>
+            </Link>
+            <Link href="/dashboard/admin/ads/packages">
+              <Button variant="secondary" size="sm">
+                <DollarSign className="h-4 w-4 mr-1.5" />
+                Packages
+              </Button>
+            </Link>
+          </div>
         }
       />
 

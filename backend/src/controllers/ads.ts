@@ -173,3 +173,26 @@ export const reportAd = catchAsyncErrors(async (req: AuthenticatedRequest, res: 
   await adsService.reportAd(campaignId, { reason, reporterEmail, details });
   res.json({ success: true, message: 'Signalement envoyé avec succès' });
 });
+
+// ===================== EMPLACEMENTS (SLOTS) =====================
+
+export const getSlots = catchAsyncErrors(async (req: Request, res: Response) => {
+  const activeOnly = req.query.active === '1' || req.query.active === 'true';
+  const slots = await adsService.getAdSlots(activeOnly);
+  res.json({ success: true, data: slots });
+});
+
+export const createSlot = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const slot = await adsService.createAdSlot(req.body);
+  res.status(201).json({ success: true, data: slot });
+});
+
+export const updateSlot = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const slot = await adsService.updateAdSlot(req.params.id, req.body);
+  res.json({ success: true, data: slot });
+});
+
+export const deleteSlot = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  await adsService.deleteAdSlot(req.params.id);
+  res.json({ success: true, message: 'Emplacement supprimé' });
+});

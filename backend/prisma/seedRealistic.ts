@@ -2070,6 +2070,14 @@ async function cleanupExisting() {
   await prisma.wallet.deleteMany({ where: { businessId: { in: ALL_BIZ_IDS } } });
   await prisma.business.deleteMany({ where: { id: { in: ALL_BIZ_IDS } } });
   await prisma.userRoleAssignment.deleteMany({ where: { userId: { in: ALL_USER_IDS } } });
+  await prisma.adConversion.deleteMany({ where: { campaign: { businessId: { in: ALL_BIZ_IDS } } } });
+  await prisma.adClick.deleteMany({ where: { campaign: { businessId: { in: ALL_BIZ_IDS } } } });
+  await prisma.adImpression.deleteMany({ where: { campaign: { businessId: { in: ALL_BIZ_IDS } } } });
+  await prisma.adCreative.deleteMany({ where: { campaign: { businessId: { in: ALL_BIZ_IDS } } } });
+  await prisma.adInvoice.deleteMany({ where: { campaign: { businessId: { in: ALL_BIZ_IDS } } } });
+  await prisma.adCampaign.deleteMany({ where: { businessId: { in: ALL_BIZ_IDS } } });
+  await prisma.adSlot.deleteMany({});
+  await prisma.adPackage.deleteMany({});
   await prisma.user.deleteMany({ where: { id: { in: ALL_USER_IDS } } });
   console.log('--- Nettoyage terminé ---');
 }
@@ -2104,7 +2112,98 @@ export async function seedRealistic() {
   await seedFraud();
   await seedFinance();
   await seedSatisfaction();
+  await seedAdSlots();
+  await seedAdCampaigns();
   console.log('\n✅ Seed réaliste terminé. Mdp unique : ' + PASSWORD);
+}
+
+// ============================================================
+// PUBLICITÉ (emplacements + campagnes de démo)
+// ============================================================
+
+async function seedAdSlots() {
+  const slots = [
+    { page: 'HOMEPAGE', position: 'HERO_BANNER', label: 'Hero sponsorisé', description: 'Bannière large en haut de la page d\'accueil', width: 1200, height: 140, price1Day: 50000, price7Days: 250000, price30Days: 750000, maxPerSlot: 10 },
+    { page: 'HOMEPAGE', position: 'FEATURED_BLOCK', label: 'Mis en avant', description: 'Carte sponsorisée dans les carrousels de la page d\'accueil', width: 280, height: 320, price1Day: 20000, price7Days: 100000, price30Days: 300000, maxPerSlot: 10 },
+    { page: 'HOMEPAGE', position: 'TOP_BANNER', label: 'Bandeau inter-sections', description: 'Bannière au milieu de la page d\'accueil', width: 728, height: 90, price1Day: 15000, price7Days: 75000, price30Days: 225000, maxPerSlot: 10 },
+    { page: 'HOMEPAGE', position: 'BOTTOM_BANNER', label: 'Bandeau bas', description: 'Bannière pied de page d\'accueil', width: 728, height: 90, price1Day: 8000, price7Days: 40000, price30Days: 120000, maxPerSlot: 10 },
+    { page: 'MARKETPLACE', position: 'SPONSORED_RESULT', label: 'Résultat sponsorisé', description: 'Premier résultat de la liste marketplace', width: 300, height: 160, price1Day: 30000, price7Days: 150000, price30Days: 450000, maxPerSlot: 10 },
+    { page: 'MARKETPLACE', position: 'TOP_BANNER', label: 'Bandeau marketplace', description: 'Bannière sous les filtres du marketplace', width: 728, height: 90, price1Day: 10000, price7Days: 50000, price30Days: 150000, maxPerSlot: 10 },
+    { page: 'PRODUCT_PAGE', position: 'BOTTOM_BANNER', label: 'Produits sponsorisés', description: 'Bandeau bas de la fiche produit', width: 728, height: 90, price1Day: 8000, price7Days: 40000, price30Days: 120000, maxPerSlot: 10 },
+    { page: 'EVENT_PAGE', position: 'SIDEBAR', label: 'Sponsors événement', description: 'Encart sidebar des pages événements', width: 300, height: 250, price1Day: 10000, price7Days: 50000, price30Days: 150000, maxPerSlot: 5 },
+    { page: 'ABOUT', position: 'BOTTOM_BANNER', label: 'Bandeau pages vitrine', description: 'Bannière bas de page (about, pricing, contact, legal, media)', width: 728, height: 90, price1Day: 5000, price7Days: 25000, price30Days: 75000, maxPerSlot: 5 },
+    { page: 'PRICING', position: 'BOTTOM_BANNER', label: 'Bandeau tarifs', description: 'Bannière bas de la page tarifs', width: 728, height: 90, price1Day: 5000, price7Days: 25000, price30Days: 75000, maxPerSlot: 5 },
+    { page: 'CONTACT', position: 'BOTTOM_BANNER', label: 'Bandeau contact', description: 'Bannière bas de la page contact', width: 728, height: 90, price1Day: 5000, price7Days: 25000, price30Days: 75000, maxPerSlot: 5 },
+    { page: 'LEGAL', position: 'BOTTOM_BANNER', label: 'Bandeau légal', description: 'Bannière bas des pages légales', width: 728, height: 90, price1Day: 5000, price7Days: 25000, price30Days: 75000, maxPerSlot: 5 },
+    { page: 'MEDIA', position: 'BOTTOM_BANNER', label: 'Bandeau média', description: 'Bannière bas de la page média', width: 728, height: 90, price1Day: 5000, price7Days: 25000, price30Days: 75000, maxPerSlot: 5 },
+  ];
+  for (const s of slots) {
+    await prisma.adSlot.upsert({
+      where: { page_position: { page: s.page, position: s.position } },
+      update: {},
+      create: { ...s, isActive: true },
+    });
+  }
+  console.log('✓ Publicité : ' + slots.length + ' emplacements créés avec tarifs configurables');
+}
+
+async function seedAdCampaigns() {
+  const now = new Date();
+  const heroSlot = await prisma.adSlot.findFirst({ where: { page: 'HOMEPAGE', position: 'HERO_BANNER' } });
+  const sponsorSlot = await prisma.adSlot.findFirst({ where: { page: 'MARKETPLACE', position: 'SPONSORED_RESULT' } });
+  const eventSlot = await prisma.adSlot.findFirst({ where: { page: 'EVENT_PAGE', position: 'SIDEBAR' } });
+
+  const campaigns = [
+    {
+      id: 'ad-camp-1', slotId: heroSlot?.id, advertiserType: 'BUSINESS', businessId: B.RESTO,
+      name: 'Saveur d\'Abidjan — Hero', objective: 'BRAND_AWARENESS',
+      startDate: now, endDate: new Date(now.getTime() + 7 * 24 * 3600 * 1000),
+      budget: 250000, status: 'ACTIVE',
+      creatives: [{
+        placementPage: 'HOMEPAGE', placementPosition: 'HERO_BANNER', format: 'BANNER_HORIZONTAL',
+        adText: 'Découvrez la cuisine ivoirienne authentique à Abidjan. Plats traditionnels, ambiance chaleureuse, livraison gratuite.',
+        destinationUrl: '/business/saveur-dabidjan', cta: 'Découvrir', ctaColor: '#EAB308',
+        targetCountries: ['Côte d\'Ivoire'], targetCities: ['Abidjan'], isActive: true,
+      }],
+    },
+    {
+      id: 'ad-camp-2', slotId: sponsorSlot?.id, advertiserType: 'BUSINESS', businessId: B.SALON,
+      name: 'Kenza Beauté — Sponsor', objective: 'PROMOTION',
+      startDate: now, endDate: new Date(now.getTime() + 3 * 24 * 3600 * 1000),
+      budget: 30000, status: 'ACTIVE',
+      creatives: [{
+        placementPage: 'MARKETPLACE', placementPosition: 'SPONSORED_RESULT', format: 'SPONSORED_CARD',
+        adText: '✨ Offre spéciale première visite : -30% sur tous les soins visage. Prenez rendez-vous en ligne.',
+        destinationUrl: '/business/kenza-beaute', cta: 'Je réserve', ctaColor: '#EC4899',
+        targetCountries: ['Côte d\'Ivoire'], targetCities: ['Abidjan'], isActive: true,
+      }],
+    },
+    {
+      id: 'ad-camp-3', slotId: eventSlot?.id, advertiserType: 'BUSINESS', businessId: B.EVENTS,
+      name: 'Événements Konnect — Sidebar', objective: 'EVENT_PROMOTION',
+      startDate: now, endDate: new Date(now.getTime() + 14 * 24 * 3600 * 1000),
+      budget: 50000, status: 'ACTIVE',
+      creatives: [{
+        placementPage: 'EVENT_PAGE', placementPosition: 'SIDEBAR', format: 'BANNER_VERTICAL',
+        adText: '🎤 Concerts & Festivals à Abidjan — Toute l\'actu des événements près de chez vous.',
+        destinationUrl: '/events/concerts', cta: 'Voir le programme', ctaColor: '#8B5CF6',
+        targetCountries: ['Côte d\'Ivoire'], targetCities: ['Abidjan'], isActive: true,
+      }],
+    },
+  ];
+
+  for (const c of campaigns) {
+    const { creatives, ...campaignData } = c;
+    await prisma.adCampaign.upsert({
+      where: { id: c.id },
+      update: {},
+      create: {
+        ...campaignData,
+        creatives: { create: creatives.map((cr: any) => ({ ...cr })) },
+      },
+    });
+  }
+  console.log('✓ Publicité : ' + campaigns.length + ' campagnes de démonstration actives');
 }
 
 // ============================================================

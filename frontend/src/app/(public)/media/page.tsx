@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MediaPageClient } from './MediaPageClient';
+import AdSlot from '@/components/ads/AdSlot';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://afribiz.com';
 
@@ -45,6 +46,9 @@ export default function MediaPage() {
       <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-16">
         <MediaPageClient />
       </main>
+      <div className="max-w-7xl mx-auto px-4 pb-8">
+        <AdSlot page="MEDIA" position="BOTTOM_BANNER" />
+      </div>
       <Footer />
     </>
   );

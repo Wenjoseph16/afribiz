@@ -5,6 +5,7 @@ import { Mail, Phone, MapPin, MessageSquare, Send, CheckCircle } from 'lucide-re
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import AdSlot from '@/components/ads/AdSlot';
 import { apiClient } from '@/services/apiClient';
 
 export default function ContactPage() {
@@ -192,6 +193,10 @@ export default function ContactPage() {
         </div>
       </section>
 
+      {/* Pub - Bandeau bas */}
+      <div className="max-w-7xl mx-auto px-4 pb-8">
+        <AdSlot page="CONTACT" position="BOTTOM_BANNER" />
+      </div>
       <Footer />
     </main>
   );

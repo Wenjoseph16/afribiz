@@ -857,6 +857,7 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
                         </div>
                       </div>
                     )}
+                    <AdSlot page="MARKETPLACE" position="SPONSORED_RESULT" />
                     <ResultsGrid
                       items={displayItems}
                       view={view}

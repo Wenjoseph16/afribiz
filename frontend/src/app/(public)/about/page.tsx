@@ -16,6 +16,7 @@ import {
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import AdSlot from '@/components/ads/AdSlot';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
@@ -253,6 +254,10 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Pub - Bandeau bas */}
+      <div className="max-w-7xl mx-auto px-4 pb-8">
+        <AdSlot page="ABOUT" position="BOTTOM_BANNER" />
+      </div>
       <Footer />
     </main>
   );

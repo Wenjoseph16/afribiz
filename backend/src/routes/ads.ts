@@ -8,6 +8,7 @@ const router = Router();
 
 // Routes publiques
 router.get('/active', adsController.getActiveAds);
+router.get('/slots', adsController.getSlots);
 router.post(
   '/track/impression',
   validateBody(validators.trackImpressionSchema),

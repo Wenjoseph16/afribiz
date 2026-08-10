@@ -63,8 +63,18 @@ export const AD_PLACEMENT_PAGE_LABELS: Record<AdPlacementPage, string> = {
   DASHBOARD_DEVELOPER: 'Dashboard développeur',
   MODULE_PAGE: 'Page module',
   EVENT_PAGE: 'Page événement',
+  PRODUCT_PAGE: 'Page produit',
   NOTIFICATION_CENTER: 'Centre notifications',
   BUSINESS_PUBLIC_PAGE: 'Page publique business',
+  ABOUT: 'À propos',
+  PRICING: 'Tarifs',
+  CONTACT: 'Contact',
+  DEVELOPERS: 'Développeurs',
+  BLOG: 'Blog',
+  MEDIA: 'Média',
+  BLOG_ARTICLE: 'Article blog',
+  LEGAL: 'Mentions légales',
+  FEED: 'Fil d\'actualités',
 };
 
 export const AD_FORMAT_LABELS: Record<AdFormat, string> = {

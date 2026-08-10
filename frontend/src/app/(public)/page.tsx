@@ -29,6 +29,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import AdSlot from '@/components/ads/AdSlot';
 
 // ─── Animations ────────────────────────────────────────────
 const fadeInUp = {
@@ -475,6 +476,11 @@ export default function HomePage() {
         </motion.div>
       </section>
 
+      {/* PUB - Hero sponsorisé */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <AdSlot page="HOMEPAGE" position="HERO_BANNER" />
+      </div>
+
       {/* ════════════════════════════════════════════════════════
           STATS SECTION
       ════════════════════════════════════════════════════════ */}
@@ -560,6 +566,11 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+
+      {/* PUB - Bloc mis en avant */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <AdSlot page="HOMEPAGE" position="FEATURED_BLOCK" />
+      </div>
 
       {/* ════════════════════════════════════════════════════════
           HOW IT WORKS
@@ -716,6 +727,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* PUB - Bandeau bas */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <AdSlot page="HOMEPAGE" position="BOTTOM_BANNER" />
+      </div>
 
       {/* ════════════════════════════════════════════════════════
           CTA FINAL
