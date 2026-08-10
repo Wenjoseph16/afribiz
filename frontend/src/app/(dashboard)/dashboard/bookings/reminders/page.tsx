@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   Bell,
   BellRing,
   Phone,
@@ -17,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useMyBusinessBookings } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -119,20 +118,15 @@ export default function BookingRemindersPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/bookings"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rappels automatiques</h1>
-          <p className="text-sm text-gray-500">
-            Envoyez des rappels à vos clients avant leur réservation
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Rappels automatiques"
+        description="Envoyez des rappels à vos clients avant leur réservation"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Réservations', href: '/dashboard/bookings' },
+          { label: 'Rappels' },
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

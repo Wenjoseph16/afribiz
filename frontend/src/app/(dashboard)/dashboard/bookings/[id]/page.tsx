@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   Calendar,
   Clock,
   Store,
@@ -19,6 +17,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useBooking } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -106,36 +105,33 @@ export default function BookingDetailPage() {
   return (
     <div className="animate-fade-in space-y-6 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/bookings"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {b.bookingNumber || `#${b.id.slice(0, 8)}`}
-            </h1>
-            <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', status.color)}>
-              {status.label}
-            </span>
-          </div>
-          <p className="text-sm text-gray-500">{b.title}</p>
-        </div>
-        {canCancel && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setCancelModalOpen(true)}
-            className="text-red-500 hover:text-red-600"
-          >
-            <XCircle className="w-4 h-4 mr-1.5" />
-            Annuler
-          </Button>
-        )}
-      </div>
+        <PageHeader
+          title={b.bookingNumber || `#${b.id.slice(0, 8)}`}
+          description={b.title}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Réservations', href: '/dashboard/bookings' },
+            { label: b.bookingNumber || 'Détail' },
+          ]}
+          actions={
+            <div className="flex items-center gap-2">
+              <span className={cn('text-xs font-medium px-2 py-1 rounded-full', status.color)}>
+                {status.label}
+              </span>
+              {canCancel && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setCancelModalOpen(true)}
+                  className="text-red-500 hover:text-red-600"
+                >
+                    <XCircle className="w-4 h-4 mr-1.5" />
+                    Annuler
+                  </Button>
+              )}
+            </div>
+          }
+        />
 
       {/* KPI */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

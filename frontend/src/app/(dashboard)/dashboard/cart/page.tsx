@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, Store, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { useCartStore } from '@/stores/cartStore';
 import { formatPrice } from '@/utils/helpers';
 
@@ -36,25 +37,25 @@ export default function CartPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Mon panier
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {itemCount} article{itemCount > 1 ? 's' : ''} dans votre panier
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={clearCart}
-          className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          <Trash2 className="h-4 w-4 mr-1.5" />
-          Vider le panier
-        </Button>
-      </div>
+      <PageHeader
+        title="Mon panier"
+        description={`${itemCount} article${itemCount > 1 ? 's' : ''} dans votre panier`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Panier' },
+        ]}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearCart}
+            className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Vider le panier
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">

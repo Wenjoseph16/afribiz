@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   ShoppingBag,
   Store,
   Loader,
@@ -22,6 +21,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useOrder } from '@/features/hooks';
 import { useOrderTimeline } from '@/features/hooks/orders';
@@ -115,34 +115,22 @@ export default function OrderDetailPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/orders"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {order.orderNumber || `#${id.slice(0, 8)}`}
-            </h1>
-            <Badge variant={s.variant} size="sm">
-              {s.label}
-            </Badge>
-          </div>
-          <p className="text-sm text-gray-500">
-            Créée le{' '}
-            {new Date(order.createdAt || order.date).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={order.orderNumber || `#${id.slice(0, 8)}`}
+        description={`Créée le ${new Date(order.createdAt || order.date).toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })}`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Commandes', href: '/dashboard/orders' },
+          { label: order.orderNumber || 'Détail' },
+        ]}
+        actions={<Badge variant={s.variant}>{s.label}</Badge>}
+      />
 
       {/* Actions pour le business */}
       {isBusiness && order.status === 'PENDING' && !showCancel && (

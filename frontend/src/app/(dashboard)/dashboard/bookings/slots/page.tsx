@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Plus, Edit2, Trash2, Clock, Sun, Loader, Save } from 'lucide-react';
+import { Plus, Edit2, Trash2, Clock, Sun, Loader, Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useBookingSlots, useBookingResources } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -123,24 +123,21 @@ export default function SlotsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/bookings"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Créneaux horaires</h1>
-            <p className="text-sm text-gray-500">Définissez vos plages de réservation</p>
-          </div>
-        </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1.5" />
-          Ajouter un créneau
-        </Button>
-      </div>
+      <PageHeader
+        title="Créneaux horaires"
+        description="Définissez vos plages de réservation"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Réservations', href: '/dashboard/bookings' },
+          { label: 'Créneaux' },
+        ]}
+        actions={
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            Ajouter un créneau
+          </Button>
+        }
+      />
 
       <div className="flex gap-1 overflow-x-auto pb-1">
         {DAYS.map((day, i) => (

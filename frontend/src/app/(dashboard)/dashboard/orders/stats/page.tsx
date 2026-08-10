@@ -1,9 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   ShoppingBag,
   DollarSign,
   TrendingUp,
@@ -16,6 +14,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useOrders } from '@/features/hooks';
 import { formatPrice } from '@/utils/helpers';
@@ -156,18 +155,15 @@ export default function OrderStatsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/orders"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Statistiques</h1>
-          <p className="text-sm text-gray-500">Analyse de vos commandes</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Statistiques commandes"
+        description="Analyse de vos commandes"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Commandes', href: '/dashboard/orders' },
+          { label: 'Statistiques' },
+        ]}
+      />
 
       {/* KPI */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

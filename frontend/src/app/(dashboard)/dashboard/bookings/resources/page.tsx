@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   Plus,
   Edit2,
   Trash2,
@@ -18,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useBookingResources } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -128,26 +127,21 @@ export default function ResourcesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/bookings"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Ressources réservables
-            </h1>
-            <p className="text-sm text-gray-500">Salles, employés, équipements...</p>
-          </div>
-        </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1.5" />
-          Nouvelle ressource
-        </Button>
-      </div>
+      <PageHeader
+        title="Ressources réservables"
+        description="Salles, employés, équipements..."
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Réservations', href: '/dashboard/bookings' },
+          { label: 'Ressources' },
+        ]}
+        actions={
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            Nouvelle ressource
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[

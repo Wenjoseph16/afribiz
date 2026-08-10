@@ -1,9 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   Calendar,
   DollarSign,
   TrendingUp,
@@ -16,6 +14,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useMyBusinessBookings } from '@/features/hooks';
 import { formatPrice } from '@/utils/helpers';
@@ -183,18 +182,15 @@ export default function BookingStatsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/bookings"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Statistiques</h1>
-          <p className="text-sm text-gray-500">Analyse complète de vos réservations</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Statistiques réservations"
+        description="Analyse complète de vos réservations"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Réservations', href: '/dashboard/bookings' },
+          { label: 'Statistiques' },
+        ]}
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">

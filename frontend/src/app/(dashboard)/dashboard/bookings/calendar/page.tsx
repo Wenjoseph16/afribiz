@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronLeft, ChevronRight, User, Clock, Loader } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Clock, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useMyBusinessBookings } from '@/features/hooks';
 
@@ -63,18 +64,15 @@ export default function CalendarPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/bookings"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Calendrier</h1>
-          <p className="text-sm text-gray-500">Visualisez et gérez vos réservations</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Calendrier"
+        description="Visualisez et gérez vos réservations"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Réservations', href: '/dashboard/bookings' },
+          { label: 'Calendrier' },
+        ]}
+      />
 
       {/* Navigation */}
       <Card className="p-4">

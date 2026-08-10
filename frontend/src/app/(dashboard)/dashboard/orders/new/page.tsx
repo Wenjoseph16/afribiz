@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, Loader, Search } from 'lucide-react';
+import { Plus, Trash2, Loader, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/services/apiClient';
 import { useQuery } from '@tanstack/react-query';
@@ -106,15 +106,15 @@ export default function NewOrderPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/orders" className="p-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Nouvelle commande</h1>
-          <p className="text-sm text-gray-500">Créez une commande pour un client</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Nouvelle commande"
+        description="Créez une commande pour un client"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Commandes', href: '/dashboard/orders' },
+          { label: 'Nouvelle' },
+        ]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
