@@ -1678,6 +1678,7 @@ model Business {
   adCampaigns           AdCampaign[]
   orders                Order[]
   debts                 Debt[]
+  debtReminderConfig    DebtReminderConfig?
   escrows               Escrow[]
   clientRisks           ClientRisk[]
   financialLogs         FinancialLog[]
@@ -3637,6 +3638,7 @@ model DebtReminder {
   channel      DebtReminderChannel
   status       DebtReminderStatus  @default(PENDING)
   content      String?
+  metadataDay  Int?                @default(0)
   sentAt       DateTime?
   errorMessage String?
   createdAt    DateTime            @default(now())
@@ -3644,6 +3646,28 @@ model DebtReminder {
   @@index([debtId])
   @@index([status])
   @@index([type])
+}
+
+model DebtReminderConfig {
+  id         String   @id @default(uuid())
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Pilotage global
+  enabled            Boolean  @default(true)
+  channels           String[] @default(["WHATSAPP", "EMAIL"])
+  // Échéancier doux en jours après échéance (J+3, J+7, J+15, J+30)
+  scheduleDays       Int[]    @default([3, 7, 15, 30])
+  maxRemindersPerDebt Int     @default(4)
+
+  // Messages personnalisables (variables : {client}, {business}, {montant}, {reference}, {lien})
+  dueDateMessage   String @default("Bonjour {client} 👋, un petit rappel amical : il reste {montant} à régler chez {business} ({reference}). Vous pouvez payer en un clic ici : {lien}")
+  overdueMessage   String @default("Bonjour {client}, votre règlement de {montant} chez {business} ({reference}) est arrivé à échéance. Un paiement rapide protège votre confiance : {lien}")
+  criticalMessage  String @default("Bonjour {client}, votre dette de {montant} chez {business} ({reference}) devient urgente. Contactez-nous ou payez ici pour éviter toute gêne : {lien}")
+  paymentThanks    String @default("Merci {client} 🙏 ! Votre règlement de {montant} chez {business} a bien été reçu. À très vite !")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model FinancialLog {

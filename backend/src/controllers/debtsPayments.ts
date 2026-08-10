@@ -24,6 +24,12 @@ export const updateDebt = catchAsyncErrors(async (req: AuthenticatedRequest, res
   res.json({ success: true, data: debt, message: 'Dette mise à jour' });
 });
 
+export const attachDebt = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new AppError('Non authentifié', 401);
+  const debt = await debtsPaymentsService.attachDebtToOrder(req.user.id, req.body);
+  res.json({ success: true, data: debt, message: 'Dette collée au client' });
+});
+
 export const registerDebtPayment = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
@@ -182,6 +188,22 @@ export const listReminders = catchAsyncErrors(async (req: AuthenticatedRequest, 
   const result = await debtsPaymentsService.listReminders(req.user.id, req.query);
   res.json({ success: true, data: result });
 });
+
+export const getReminderConfig = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const config = await debtsPaymentsService.getDebtReminderConfig(req.user.id);
+    res.json({ success: true, data: config });
+  }
+);
+
+export const updateReminderConfig = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const config = await debtsPaymentsService.updateDebtReminderConfig(req.user.id, req.body);
+    res.json({ success: true, data: config, message: 'Configuration rappels mise à jour' });
+  }
+);
 
 // ===================== FINANCIAL LOG =====================
 

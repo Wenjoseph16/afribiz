@@ -110,6 +110,7 @@ model Business {
   adCampaigns           AdCampaign[]
   orders                Order[]
   debts                 Debt[]
+  debtReminderConfig    DebtReminderConfig?
   escrows               Escrow[]
   clientRisks           ClientRisk[]
   financialLogs         FinancialLog[]

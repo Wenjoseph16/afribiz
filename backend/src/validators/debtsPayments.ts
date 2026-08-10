@@ -62,3 +62,25 @@ export const sendReminderSchema = z.object({
   channel: z.enum(reminderChannels),
   content: z.string().optional(),
 });
+
+export const attachDebtSchema = z.object({
+  orderId: z.string().uuid().optional(),
+  invoiceId: z.string().uuid().optional(),
+  amount: z.number().positive().optional(),
+  dueDate: z.string().optional(),
+  notes: z.string().optional(),
+  buyerId: z.string().uuid().optional(),
+}).refine((d) => d.orderId || d.invoiceId, {
+  message: 'orderId ou invoiceId requis',
+});
+
+export const updateReminderConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  channels: z.array(z.enum(reminderChannels)).optional(),
+  scheduleDays: z.array(z.number().int().min(1).max(365)).optional(),
+  maxRemindersPerDebt: z.number().int().min(1).max(10).optional(),
+  dueDateMessage: z.string().min(1).max(1000).optional(),
+  overdueMessage: z.string().min(1).max(1000).optional(),
+  criticalMessage: z.string().min(1).max(1000).optional(),
+  paymentThanks: z.string().min(1).max(1000).optional(),
+});

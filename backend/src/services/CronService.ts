@@ -1434,6 +1434,16 @@ export class CronService {
   }
 
   public static async checkOverdueDebts(): Promise<void> {
+    // 1. Escalade douce des statuts (ACTIVE → OVERDUE → CRITICAL selon les jours de retard)
+    // 2. Rappels automatiques progressifs (J+3 / J+7 / J+15 / J+30) selon la config du business
+    const { escalateOverdueDebts, autoSendDebtReminders } = await import('./debtsPayments');
+    const [escalated, reminders] = await Promise.all([
+      escalateOverdueDebts(),
+      autoSendDebtReminders(),
+    ]);
+    if (escalated > 0) logger.info(`Cron: ${escalated} dettes escaladées`);
+    if (reminders > 0) logger.info(`Cron: ${reminders} rappels de dette envoyés`);
+
     const overdue = await prisma.debt.findMany({
       where: { status: 'ACTIVE', dueDate: { lt: new Date() }, remainingAmount: { gt: 0 } },
     });

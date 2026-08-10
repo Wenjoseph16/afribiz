@@ -12,6 +12,121 @@ import {
 } from '../events/publishers';
 import { getOrCreateWallet } from './wallet';
 import { calculateCommission } from './monetizationConfig';
+import { config } from '../config/env';
+import { processDelivery } from './NotificationChannels';
+
+// ===================== REMINDER CONFIG =====================
+
+const DEFAULT_REMINDER_CONFIG = {
+  enabled: true,
+  channels: ['WHATSAPP', 'EMAIL'],
+  scheduleDays: [3, 7, 15, 30],
+  maxRemindersPerDebt: 4,
+};
+
+function renderTemplate(template: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce(
+    (acc, [key, value]) => acc.split(`{${key}}`).join(value || ''),
+    template
+  );
+}
+
+function getDebtReference(debt: any): string {
+  return debt.order?.orderNumber || debt.invoice?.invoiceNumber || `#${debt.id.slice(0, 8)}`;
+}
+
+async function getReminderConfig(businessId: string) {
+  let cfg = await prisma.debtReminderConfig.findUnique({ where: { businessId } });
+  if (!cfg) {
+    cfg = await prisma.debtReminderConfig.create({
+      data: {
+        businessId,
+        ...DEFAULT_REMINDER_CONFIG,
+        scheduleDays: [...DEFAULT_REMINDER_CONFIG.scheduleDays],
+        channels: [...DEFAULT_REMINDER_CONFIG.channels],
+      },
+    });
+  }
+  return cfg;
+}
+
+/**
+ * Merci automatique quand une dette est soldée : envoie le template `paymentThanks`
+ * au client (WhatsApp/SMS/Email selon la config) + notification in-app.
+ */
+export async function sendPaymentThanks(debt: any, business: any) {
+  try {
+    if (!debt?.buyer) return null;
+    const cfg = await getReminderConfig(debt.businessId);
+    const reference = getDebtReference(debt);
+    const amount = `${Number(debt.totalAmount).toLocaleString('fr-FR')} FCFA`;
+    const clientName =
+      [debt.buyer.firstName, debt.buyer.lastName].filter(Boolean).join(' ') || 'Client';
+    const message = renderTemplate(cfg.paymentThanks, {
+      client: clientName,
+      business: business?.name || 'votre commerce',
+      montant: amount,
+      reference,
+      lien: `${config.FRONTEND_URL}/debts-payments/${debt.id}`,
+    });
+
+    // Envoi sur le premier canal configuré disponible (préférence WhatsApp > SMS > Email)
+    const channels = (cfg.channels || []).filter(
+      (c: string) => c === 'WHATSAPP' || c === 'SMS' || c === 'EMAIL'
+    );
+    let delivered = false;
+    for (const channel of channels) {
+      if ((channel === 'WHATSAPP' || channel === 'SMS') && debt.buyer.phone) {
+        delivered = await processDelivery(channel, debt.buyer.phone, message, business?.name);
+      } else if (channel === 'EMAIL' && debt.buyer.email) {
+        try {
+          const { handleEmailEvent } = await import('./NotificationService');
+          await handleEmailEvent({
+            type: 'PAYMENT_CONFIRMATION',
+            userId: debt.buyer.id,
+            metadata: { amount, businessName: business?.name },
+          } as any);
+          delivered = true;
+        } catch {
+          delivered = false;
+        }
+      }
+      if (delivered) break;
+    }
+
+    await prisma.debtReminder.create({
+      data: {
+        debtId: debt.id,
+        type: 'PAYMENT_CONFIRMATION',
+        channel: channels[0] || 'EMAIL',
+        status: delivered ? 'SENT' : 'PENDING',
+        sentAt: delivered ? new Date() : null,
+        content: message,
+        errorMessage: delivered ? null : 'Aucun canal configuré',
+      },
+    });
+
+    // Notification in-app au client
+    await prisma.notification
+      .create({
+        data: {
+          userId: debt.buyer.id,
+          type: 'PAYMENT_REMINDER',
+          title: `Merci pour votre paiement ${business?.name || ''}`.trim(),
+          description: message,
+          link: `/debts-payments/${debt.id}`,
+        },
+      })
+      .catch(() => null);
+
+    return message;
+  } catch (err) {
+    logger.warn('sendPaymentThanks failed:', err);
+    return null;
+  }
+}
+
+// ===================== DEBTS =====================
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
@@ -126,6 +241,7 @@ export async function updateDebt(ownerId: string, debtId: string, data: any) {
   });
 
   if (updated.status === 'SETTLED') {
+    sendPaymentThanks(updated, business).catch(() => null);
     publishDebtSettled({
       userId: ownerId,
       debtId,
@@ -207,6 +323,7 @@ export async function registerDebtPayment(
   });
 
   if (updated.status === 'SETTLED') {
+    sendPaymentThanks(updated, business).catch(() => null);
     publishDebtSettled({
       userId: ownerId,
       debtId,
@@ -216,6 +333,83 @@ export async function registerDebtPayment(
   }
 
   return updated;
+}
+
+/**
+ * « Coller la dette » : transforme une commande (ou facture) en dette pour un client.
+ * Utilisé quand le client achète en cash et ne règle pas / ne paie que partiellement.
+ */
+export async function attachDebtToOrder(
+  ownerId: string,
+  data: {
+    orderId?: string;
+    invoiceId?: string;
+    amount?: number;
+    dueDate?: string;
+    notes?: string;
+    buyerId?: string;
+  }
+) {
+  const business = await getBusinessByOwner(ownerId);
+
+  let order: any = null;
+  let invoice: any = null;
+  let buyerId = data.buyerId;
+  let totalAmount = data.amount;
+
+  if (data.orderId) {
+    order = await prisma.order.findFirst({
+      where: { id: data.orderId, businessId: business.id },
+      include: { buyer: { select: { id: true } }, debts: true },
+    });
+    if (!order) throw new AppError('Commande non trouvée', 404);
+    if (order.debts.length > 0) throw new AppError('Cette commande a déjà une dette', 400);
+    buyerId = buyerId || order.buyerId || null;
+    totalAmount = totalAmount || Number(order.totalAmount || 0);
+  }
+
+  if (data.invoiceId) {
+    invoice = await prisma.invoice.findFirst({
+      where: { id: data.invoiceId, businessId: business.id },
+    });
+    if (!invoice) throw new AppError('Facture non trouvée', 404);
+    buyerId = buyerId || invoice.clientId || null;
+    totalAmount = totalAmount || Number(invoice.totalAmount || 0);
+  }
+
+  if (!totalAmount || Number(totalAmount) <= 0)
+    throw new AppError('Montant de la dette requis', 400);
+
+  const remaining = Number(totalAmount);
+  const dueDate = data.dueDate
+    ? new Date(data.dueDate)
+    : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  const debt = await prisma.debt.create({
+    data: {
+      businessId: business.id,
+      buyerId: buyerId || null,
+      orderId: data.orderId || null,
+      invoiceId: data.invoiceId || null,
+      totalAmount: remaining,
+      remainingAmount: remaining,
+      dueDate,
+      status: 'ACTIVE',
+      sourceType: data.orderId ? 'ORDER' : data.invoiceId ? 'INVOICE' : 'MANUAL',
+      notes: data.notes || null,
+    },
+    include: debtInclude,
+  });
+
+  await logFinancialAction(business.id, buyerId || null, {
+    action: 'DEBT_CREATED',
+    entityType: 'DEBT',
+    entityId: debt.id,
+    description: `Dette collée (${remaining} FCFA) sur commande/facture pour client`,
+    amount: remaining,
+  });
+
+  return debt;
 }
 
 export async function listClientDebts(userId: string, filters: any) {
@@ -272,6 +466,31 @@ export async function clientPayDebt(
   else upd.status = 'PARTIALLY_PAID';
 
   const updated = await prisma.debt.update({ where: { id: debtId }, data: upd });
+
+  if (updated.status === 'SETTLED') {
+    // Merci automatique au client + notifier le business que la dette est soldée
+    try {
+      const business = await prisma.business.findUnique({
+        where: { id: debt.businessId },
+        select: { id: true, name: true, ownerId: true },
+      });
+      const fullDebt = await prisma.debt.findUnique({
+        where: { id: debtId },
+        include: debtInclude,
+      });
+      if (fullDebt) sendPaymentThanks(fullDebt, business).catch(() => null);
+      if (business?.ownerId) {
+        publishDebtSettled({
+          userId: business.ownerId,
+          debtId,
+          businessId: debt.businessId,
+          amount: String(debt.totalAmount),
+        });
+      }
+    } catch (e) {
+      logger.warn('clientPayDebt settled notification failed:', e);
+    }
+  }
 
   await logFinancialAction(debt.businessId, userId, {
     action: 'PAYMENT_RECEIVED',
@@ -764,7 +983,33 @@ export async function listClientRisks(ownerId: string, filters: any) {
   return { risks, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-// ===================== REMINDERS =====================
+// ===================== REMINDERS & CONFIG =====================
+
+export async function getDebtReminderConfig(ownerId: string) {
+  const business = await getBusinessByOwner(ownerId);
+  return getReminderConfig(business.id);
+}
+
+export async function updateDebtReminderConfig(ownerId: string, data: any) {
+  const business = await getBusinessByOwner(ownerId);
+  const cfg = await getReminderConfig(business.id);
+  const upd: any = {};
+  if (data.enabled !== undefined) upd.enabled = data.enabled;
+  if (Array.isArray(data.channels)) upd.channels = data.channels;
+  if (Array.isArray(data.scheduleDays)) upd.scheduleDays = data.scheduleDays.map(Number).filter(Boolean);
+  if (data.maxRemindersPerDebt !== undefined)
+    upd.maxRemindersPerDebt = Number(data.maxRemindersPerDebt);
+  if (typeof data.dueDateMessage === 'string' && data.dueDateMessage.trim())
+    upd.dueDateMessage = data.dueDateMessage;
+  if (typeof data.overdueMessage === 'string' && data.overdueMessage.trim())
+    upd.overdueMessage = data.overdueMessage;
+  if (typeof data.criticalMessage === 'string' && data.criticalMessage.trim())
+    upd.criticalMessage = data.criticalMessage;
+  if (typeof data.paymentThanks === 'string' && data.paymentThanks.trim())
+    upd.paymentThanks = data.paymentThanks;
+
+  return prisma.debtReminderConfig.update({ where: { id: cfg.id }, data: upd });
+}
 
 export async function sendDebtReminder(
   ownerId: string,
@@ -773,38 +1018,103 @@ export async function sendDebtReminder(
   content?: string
 ) {
   const business = await getBusinessByOwner(ownerId);
-  const debt = await prisma.debt.findFirst({ where: { id: debtId, businessId: business.id } });
+  const debt = await prisma.debt.findFirst({
+    where: { id: debtId, businessId: business.id, deletedAt: null },
+    include: {
+      order: { select: { orderNumber: true } },
+      invoice: { select: { invoiceNumber: true } },
+      buyer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+    },
+  });
   if (!debt) throw new AppError('Dette non trouvée', 404);
+
+  const cfg = await getReminderConfig(business.id);
+  const reference = getDebtReference(debt);
+  const amount = `${Number(debt.remainingAmount).toLocaleString('fr-FR')} FCFA`;
+  const clientName =
+    [debt.buyer?.firstName, debt.buyer?.lastName].filter(Boolean).join(' ') || 'Client';
+  const paymentUrl = `${config.FRONTEND_URL}/debts-payments/${debtId}`;
+
+  const type =
+    debt.status === 'CRITICAL'
+      ? 'CRITICAL_DEBT'
+      : debt.status === 'OVERDUE'
+        ? 'OVERDUE'
+        : 'DUE_DATE';
+  const template =
+    type === 'CRITICAL_DEBT'
+      ? cfg.criticalMessage
+      : type === 'OVERDUE'
+        ? cfg.overdueMessage
+        : cfg.dueDateMessage;
+  const message = renderTemplate(template, {
+    client: clientName,
+    business: business.name,
+    montant: amount,
+    reference,
+    lien: paymentUrl,
+  });
 
   const reminder = await prisma.debtReminder.create({
     data: {
       debtId,
-      type: debt.status === 'OVERDUE' ? 'OVERDUE' : 'DUE_DATE',
+      type: type as any,
       channel: channel as any,
       status: 'PENDING',
-      content: content || `Rappel: ${debt.remainingAmount} FCFA restants sur votre dette`,
+      content: content || message,
     },
   });
 
-  // Simulate sending (in production: integrate WhatsApp/SMS/Email)
+  let delivered = true;
+  // Envoi réel sur WhatsApp/SMS/Email via les canaux (dev: loggé, prod: Twilio/…)
+  if (debt.buyer?.phone && (channel === 'WHATSAPP' || channel === 'SMS')) {
+    delivered = await processDelivery(channel, debt.buyer.phone, content || message, business.name);
+  } else if (debt.buyer?.email && channel === 'EMAIL') {
+    // Email envoyé via le pipeline notification existant
+    try {
+      const { handleEmailEvent } = await import('./NotificationService');
+      await handleEmailEvent({
+        type: 'DEBT_OVERDUE',
+        userId: debt.buyer.id,
+        metadata: { amount, businessName: business.name },
+      } as any);
+      delivered = true;
+    } catch {
+      delivered = false;
+    }
+  }
+
+  // Notification in-app au client (liée à sa dette)
+  if (debt.buyer) {
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: debt.buyer.id,
+          type: 'PAYMENT_REMINDER',
+          title: `Rappel de paiement ${business.name}`,
+          description: content || message,
+          link: `/debts-payments/${debtId}`,
+        },
+      });
+    } catch (e) {
+      logger.warn('Reminder in-app notification failed:', e);
+    }
+  }
+
   await prisma.debtReminder.update({
     where: { id: reminder.id },
-    data: { status: 'SENT', sentAt: new Date() },
-  });
-
-  await prisma.debt.update({
-    where: { id: debtId },
-    data: {},
+    data: { status: delivered ? 'SENT' : 'FAILED', sentAt: delivered ? new Date() : null, errorMessage: delivered ? null : 'Channel delivery failed' },
   });
 
   await logFinancialAction(business.id, null, {
     action: 'REMINDER_SENT',
     entityType: 'DEBT',
     entityId: debtId,
-    description: `Rappel ${channel} envoyé pour dette #${debt.id.substring(0, 8)}`,
+    description: `Rappel ${channel} envoyé pour dette ${reference}`,
+    amount: Number(debt.remainingAmount),
   });
 
-  return reminder;
+  return prisma.debtReminder.findUnique({ where: { id: reminder.id } });
 }
 
 export async function listReminders(ownerId: string, filters: any) {
@@ -820,7 +1130,17 @@ export async function listReminders(ownerId: string, filters: any) {
       take: limit,
       orderBy: { createdAt: 'desc' },
       include: {
-        debt: { select: { id: true, totalAmount: true, remainingAmount: true, status: true } },
+        debt: {
+          select: {
+            id: true,
+            totalAmount: true,
+            remainingAmount: true,
+            status: true,
+            buyer: { select: { firstName: true, lastName: true, phone: true } },
+            order: { select: { orderNumber: true } },
+            invoice: { select: { invoiceNumber: true } },
+          },
+        },
       },
     }),
     prisma.debtReminder.count({ where }),
@@ -828,7 +1148,7 @@ export async function listReminders(ownerId: string, filters: any) {
   return { reminders, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-// ===================== AUTO-SCORING & ESCALATION =====================
+// ===================== AUTO-SCORING, ESCALADE & RAPPELS AUTO =====================
 
 export async function autoScoreClientRisk(businessId: string, clientId: string) {
   try {
@@ -890,7 +1210,7 @@ export async function autoScoreClientRisk(businessId: string, clientId: string) 
 export async function escalateOverdueDebts(businessId?: string) {
   try {
     const where: any = {
-      status: 'OVERDUE',
+      status: { in: ['ACTIVE', 'OVERDUE', 'PARTIALLY_PAID'] },
       dueDate: { lt: new Date() },
       deletedAt: null,
     };
@@ -900,45 +1220,36 @@ export async function escalateOverdueDebts(businessId?: string) {
     let escalated = 0;
 
     for (const debt of overdueDebts) {
-      const daysOverdue = Math.floor(
-        (Date.now() - new Date(debt.dueDate!).getTime()) / (1000 * 60 * 60 * 24)
+      const daysOverdue = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(debt.dueDate!).getTime()) / (1000 * 60 * 60 * 24))
       );
 
-      if (daysOverdue > 90 && debt.priority !== 'CRITICAL') {
+      const nextPriority =
+        daysOverdue > 90
+          ? 'CRITICAL'
+          : daysOverdue > 60
+            ? 'HIGH'
+            : daysOverdue > 30
+              ? 'MEDIUM'
+              : 'LOW';
+      const nextStatus = daysOverdue > 15 ? 'CRITICAL' : daysOverdue > 3 ? 'OVERDUE' : 'ACTIVE';
+
+      if (debt.priority !== nextPriority || debt.status !== nextStatus) {
         await prisma.debt.update({
           where: { id: debt.id },
-          data: { priority: 'CRITICAL' },
+          data: { priority: nextPriority as any, status: nextStatus as any },
         });
         await logFinancialAction(businessId || debt.businessId, null, {
           action: 'ESCALATED_CRITICAL' as any,
           entityType: 'DEBT',
           entityId: debt.id,
-          description: `Dette escaladée au niveau CRITICAL (${daysOverdue} jours de retard)`,
+          description: `Dette escaladée (${daysOverdue} jours de retard) → ${nextPriority}/${nextStatus}`,
           amount: Number(debt.remainingAmount),
-          oldValue: { priority: debt.priority },
-          newValue: { priority: 'CRITICAL' },
+          oldValue: { priority: debt.priority, status: debt.status },
+          newValue: { priority: nextPriority, status: nextStatus },
         });
         escalated++;
-      } else if (daysOverdue > 60 && debt.priority === 'LOW') {
-        await prisma.debt.update({
-          where: { id: debt.id },
-          data: { priority: 'MEDIUM' },
-        });
-        escalated++;
-      } else if (daysOverdue > 30 && debt.priority === 'LOW') {
-        const clientRisk = await prisma.clientRisk.findFirst({
-          where: { businessId: businessId || debt.businessId, clientId: debt.buyerId! },
-        });
-        if (
-          clientRisk &&
-          (clientRisk.riskLevel === 'HIGH' || clientRisk.riskLevel === 'CRITICAL')
-        ) {
-          await prisma.debt.update({
-            where: { id: debt.id },
-            data: { priority: 'MEDIUM' },
-          });
-          escalated++;
-        }
       }
     }
 
@@ -953,43 +1264,150 @@ export async function autoSendDebtReminders(businessId?: string) {
   try {
     const where: any = {
       status: { in: ['ACTIVE', 'OVERDUE', 'PARTIALLY_PAID'] },
-      dueDate: { lt: new Date() },
+      remainingAmount: { gt: 0 },
     };
     if (businessId) where.businessId = businessId;
 
     const overdueDebts = await prisma.debt.findMany({
       where,
-      include: { reminders: true },
+      include: {
+        reminders: true,
+        order: { select: { orderNumber: true } },
+        invoice: { select: { invoiceNumber: true } },
+        buyer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+      },
     });
 
     let sent = 0;
+    const businessCache = new Map<string, any>();
 
     for (const debt of overdueDebts) {
-      const recentReminder = debt.reminders.find(
-        (r) => new Date(r.createdAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
-      );
-      if (recentReminder) continue;
+      const cfg = await getReminderConfig(debt.businessId);
+      if (!cfg.enabled) continue;
 
-      await prisma.debtReminder.create({
-        data: {
-          debtId: debt.id,
-          type: 'DUE_DATE',
-          channel: 'EMAIL',
-          status: 'SENT',
-          sentAt: new Date(),
-          content: `Rappel automatique: ${debt.remainingAmount} FCFA restants sur votre dette (échéance dépassée)`,
-        },
+      // Nombre de rappels déjà envoyés sur cette dette
+      const sentCount = debt.reminders.filter((r) => r.status === 'SENT').length;
+      if (sentCount >= cfg.maxRemindersPerDebt) continue;
+
+      const daysOverdue = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(debt.dueDate!).getTime()) / (1000 * 60 * 60 * 24))
+      );
+      const schedule = (cfg.scheduleDays || []).map(Number).filter((d: number) => d > 0);
+      if (schedule.length === 0) continue;
+
+      // Trouver le prochain palier (J+X) atteint mais pas encore envoyé
+      const reached = schedule.filter((d: number) => daysOverdue >= d);
+      if (reached.length === 0) continue;
+      const targetDay = reached[reached.length - 1];
+      const alreadyAtTarget = debt.reminders.some(
+        (r) => r.status === 'SENT' && r.metadataDay === targetDay
+      );
+      if (alreadyAtTarget) continue;
+
+      // Résoudre le nom du business (avec cache)
+      let businessName = 'votre commerce';
+      if (businessCache.has(debt.businessId)) {
+        businessName = businessCache.get(debt.businessId);
+      } else {
+        const b = await prisma.business.findUnique({
+          where: { id: debt.businessId },
+          select: { name: true },
+        });
+        businessName = b?.name || 'votre commerce';
+        businessCache.set(debt.businessId, businessName);
+      }
+
+      const reference = getDebtReference(debt);
+      const amount = `${Number(debt.remainingAmount).toLocaleString('fr-FR')} FCFA`;
+      const clientName =
+        [debt.buyer?.firstName, debt.buyer?.lastName].filter(Boolean).join(' ') || 'Client';
+      const paymentUrl = `${config.FRONTEND_URL}/debts-payments/${debt.id}`;
+
+      const type =
+        targetDay >= 15
+          ? 'CRITICAL_DEBT'
+          : targetDay >= 7
+            ? 'OVERDUE'
+            : 'DUE_DATE';
+      const template =
+        type === 'CRITICAL_DEBT'
+          ? cfg.criticalMessage
+          : type === 'OVERDUE'
+            ? cfg.overdueMessage
+            : cfg.dueDateMessage;
+      const message = renderTemplate(template, {
+        client: clientName,
+        business: businessName,
+        montant: amount,
+        reference,
+        lien: paymentUrl,
       });
 
-      await logFinancialAction(businessId || debt.businessId, null, {
+      // Envoi sur chaque canal configuré
+      const channels = (cfg.channels || []).filter(
+        (c: string) => c === 'WHATSAPP' || c === 'SMS' || c === 'EMAIL'
+      );
+      let anyDelivered = false;
+      for (const channel of channels) {
+        let delivered = false;
+        if ((channel === 'WHATSAPP' || channel === 'SMS') && debt.buyer?.phone) {
+          delivered = await processDelivery(channel, debt.buyer.phone, message, businessName);
+        } else if (channel === 'EMAIL' && debt.buyer?.email) {
+          try {
+            const { handleEmailEvent } = await import('./NotificationService');
+            await handleEmailEvent({
+              type: 'DEBT_OVERDUE',
+              userId: debt.buyer.id,
+              metadata: { amount, businessName },
+            } as any);
+            delivered = true;
+          } catch {
+            delivered = false;
+          }
+        }
+        anyDelivered = anyDelivered || delivered;
+        await prisma.debtReminder.create({
+          data: {
+            debtId: debt.id,
+            type: type as any,
+            channel: channel as any,
+            status: delivered ? 'SENT' : 'FAILED',
+            sentAt: delivered ? new Date() : null,
+            content: message,
+            errorMessage: delivered ? null : 'Channel delivery failed',
+            metadataDay: targetDay,
+          } as any,
+        });
+      }
+
+      // Notification in-app au client
+      if (debt.buyer) {
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: debt.buyer.id,
+              type: 'PAYMENT_REMINDER',
+              title: `Rappel de paiement ${businessName}`,
+              description: message,
+              link: `/debts-payments/${debt.id}`,
+            },
+          });
+        } catch (e) {
+          logger.warn('Auto reminder in-app failed:', e);
+        }
+      }
+
+      await logFinancialAction(debt.businessId, null, {
         action: 'AUTO_REMINDER_SENT' as any,
         entityType: 'DEBT',
         entityId: debt.id,
-        description: `Rappel automatique envoyé pour dette #${debt.id.substring(0, 8)}`,
+        description: `Rappel auto (J+${targetDay}) envoyé pour dette ${reference}`,
         amount: Number(debt.remainingAmount),
+        metadata: { day: targetDay, channels },
       });
 
-      sent++;
+      if (anyDelivered) sent++;
     }
 
     return sent;
@@ -1010,6 +1428,7 @@ async function logFinancialAction(
     amount?: number;
     oldValue?: any;
     newValue?: any;
+    metadata?: any;
   }
 ) {
   try {
@@ -1025,6 +1444,7 @@ async function logFinancialAction(
           entityId: data.entityId || null,
           oldValue: data.oldValue || null,
           newValue: data.newValue || null,
+          ...(data.metadata || {}),
         },
       },
     });
