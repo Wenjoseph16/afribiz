@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useMyEmployees } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -63,7 +64,7 @@ export default function EmployeeActivitiesPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiClient.get('/business/employees/activities', {
+        const res = await apiClient.get('/business/employees/activities/logs', {
           params: { limit: 200, order: 'desc' },
         });
         const data = Array.isArray(res.data.data)
@@ -104,10 +105,15 @@ export default function EmployeeActivitiesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Activités employés</h1>
-        <p className="text-sm text-gray-500">Historique des actions et activités de votre équipe</p>
-      </div>
+      <PageHeader
+        title="Activités employés"
+        description="Historique des actions et activités de votre équipe"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Employés', href: '/dashboard/employees' },
+          { label: 'Activités' },
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

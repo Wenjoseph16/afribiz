@@ -84,7 +84,7 @@ export default function EmployeePerformancePage() {
       // Backend attend : employeeId, periodStart, periodEnd, punctuality, rating, overallScore, reviewNotes
       const monthAgo = new Date();
       monthAgo.setMonth(monthAgo.getMonth() - 1);
-      await apiClient.post('/employees/performances', {
+      await apiClient.post('/business/employees/performances', {
         employeeId: form.employeeId,
         periodStart: monthAgo.toISOString().split('T')[0],
         periodEnd: form.date,

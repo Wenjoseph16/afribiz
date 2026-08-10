@@ -17,6 +17,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { usePlanningSchedules } from '@/features/hooks';
 import PlanningCalendar from '@/components/planning/PlanningCalendar';
@@ -128,11 +129,15 @@ export default function SchedulesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Horaires & Schedules</h1>
-          <p className="text-sm text-gray-500">Gérez les horaires de vos employés et ressources</p>
-        </div>
+      <PageHeader
+        title="Horaires & Schedules"
+        description="Gérez les horaires de vos employés et ressources"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Planning', href: '/dashboard/planning' },
+          { label: 'Horaires' },
+        ]}
+        actions={
         <div className="flex items-center gap-2">
           {/* View toggle */}
           <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 mr-1">
@@ -179,7 +184,8 @@ export default function SchedulesPage() {
             Nouvel horaire
           </Button>
         </div>
-      </div>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

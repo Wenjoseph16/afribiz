@@ -56,7 +56,7 @@ export default function EmployeePortalPage() {
 
   const handleClockIn = async () => {
     try {
-      await apiClient.post('/business/employees/clock-in', { employeeName });
+      await apiClient.post('/business/employees/attendance/clock-in', { employeeName });
       setClockedIn(true);
       setClockTime(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
     } catch (err) {

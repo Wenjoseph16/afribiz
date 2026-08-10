@@ -5,6 +5,7 @@ import { Shield, Plus, Pencil, Trash2, Save, X, Loader, Users, Lock, Key } from 
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useEmployeeRoles } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -91,23 +92,28 @@ export default function EmployeeRolesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rôles & Permissions</h1>
-          <p className="text-sm text-gray-500">Gérez les rôles et droits d'accès de vos employés</p>
-        </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditingId(null);
-            setForm({ name: '', permissions: [] });
-            setShowCreate(true);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nouveau rôle
-        </Button>
-      </div>
+      <PageHeader
+        title="Rôles & Permissions"
+        description="Gérez les rôles et droits d'accès de vos employés"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Employés', href: '/dashboard/employees' },
+          { label: 'Rôles' },
+        ]}
+        actions={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingId(null);
+              setForm({ name: '', permissions: [] });
+              setShowCreate(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            Nouveau rôle
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

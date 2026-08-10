@@ -41,7 +41,7 @@ export default function PayrollPage() {
   } = useQuery({
     queryKey: ['employee-payroll', statusFilter],
     queryFn: async () => {
-      const res = await apiClient.get('/employees/payroll', {
+      const res = await apiClient.get('/business/employees/payroll', {
         params: { status: statusFilter !== 'ALL' ? statusFilter : undefined, limit: 100 },
       });
       return res.data.data;
@@ -55,7 +55,7 @@ export default function PayrollPage() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiClient.patch('/employees/payroll/' + id + '/status', { status }),
+      apiClient.patch('/business/employees/payroll/' + id + '/status', { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['employee-payroll'] }),
   });
 
@@ -73,7 +73,10 @@ export default function PayrollPage() {
     total: payrolls.length,
     draft: payrolls.filter((p: any) => p.status === 'DRAFT').length,
     paid: payrolls.filter((p: any) => p.status === 'PAID').length,
-    totalAmount: payrolls.reduce((s: number, p: any) => s + Number(p.netSalary || 0), 0),
+    totalAmount: payrolls.reduce(
+      (s: number, p: any) => s + Number(p.netAmount ?? p.netSalary ?? 0),
+      0
+    ),
   };
 
   const statusBadge = (s: string) => {
@@ -185,7 +188,7 @@ export default function PayrollPage() {
                       </p>
                       <div className="flex items-center gap-3 mt-1">
                         <span className="text-sm font-semibold">
-                          {Number(pay.netSalary || 0).toLocaleString()} FCFA
+                          {Number(pay.netAmount ?? pay.netSalary ?? 0).toLocaleString()} FCFA
                         </span>
                         <span className="text-xs text-gray-400">
                           {pay.periodStart

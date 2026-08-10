@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { usePlanningStats, usePlanningTasks, usePlanningSchedules } from '@/features/hooks';
 
@@ -70,12 +71,15 @@ export default function PlanningStatsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Statistiques planning</h1>
-        <p className="text-sm text-gray-500">
-          Analysez la performance de votre planning et de vos équipes
-        </p>
-      </div>
+      <PageHeader
+        title="Statistiques planning"
+        description="Analysez la performance de votre planning et de vos équipes"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Planning', href: '/dashboard/planning' },
+          { label: 'Statistiques' },
+        ]}
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

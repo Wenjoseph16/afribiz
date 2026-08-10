@@ -12,7 +12,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useEmployeeAttendances } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -102,7 +104,7 @@ export default function EmployeeAttendancesPage() {
     if (!clockForm.employeeId && !clockForm.employeeName) return;
     setClocking(true);
     try {
-      await apiClient.post('/business/employees/clock-in', clockForm);
+      await apiClient.post('/business/employees/attendance/clock-in', clockForm);
       setShowClockIn(false);
       setClockForm({ employeeId: '', employeeName: '' });
       refetch();
@@ -121,19 +123,21 @@ export default function EmployeeAttendancesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pointage & Présences</h1>
-          <p className="text-sm text-gray-500">Suivez les présences et pointages de vos employés</p>
-        </div>
-        <button
-          onClick={() => setShowClockIn(true)}
-          className="px-4 py-2 bg-brand text-white rounded-xl text-sm font-medium hover:bg-brand/90 transition-colors flex items-center gap-2"
-        >
-          <Clock className="h-4 w-4" />
-          Pointer
-        </button>
-      </div>
+      <PageHeader
+        title="Pointage & Présences"
+        description="Suivez les présences et pointages de vos employés"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Employés', href: '/dashboard/employees' },
+          { label: 'Pointage' },
+        ]}
+        actions={
+          <Button size="sm" onClick={() => setShowClockIn(true)}>
+            <Clock className="h-4 w-4 mr-1.5" />
+            Pointer
+          </Button>
+        }
+      />
 
       {/* Aujourd'hui stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">

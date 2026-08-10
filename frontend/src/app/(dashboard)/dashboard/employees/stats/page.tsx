@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/services/apiClient';
 import { formatPrice } from '@/utils/helpers';
@@ -188,12 +189,15 @@ export default function EmployeeStatsPage() {
         </div>
       )}
 
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Statistiques RH</h1>
-        <p className="text-sm text-gray-500">
-          Analysez la performance et la gestion de vos ressources humaines
-        </p>
-      </div>
+      <PageHeader
+        title="Statistiques RH"
+        description="Analysez la performance et la gestion de vos ressources humaines"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Employés', href: '/dashboard/employees' },
+          { label: 'Statistiques' },
+        ]}
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

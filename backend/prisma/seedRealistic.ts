@@ -1581,6 +1581,47 @@ async function seedOperations() {
     await prisma.planningTask.upsert({ where: { id: t.id }, update: {}, create: { id: t.id, ...t } });
   }
 
+  // ── 2b. CONGÉS & PAIES (module Employés : Leave + Payroll) ──
+  const leaves: any[] = [
+    { id: 'lv-res-1', businessId: B.RESTO, employeeId: 'emp-res-2', type: 'VACATION', startDate: new Date('2026-07-01T00:00:00Z'), endDate: new Date('2026-07-07T00:00:00Z'), reason: 'Vacances familiales', status: 'APPROVED', approvedAt: new Date('2026-06-20T10:00:00Z') },
+    { id: 'lv-res-2', businessId: B.RESTO, employeeId: 'emp-res-1', type: 'SICK', startDate: new Date('2026-07-15T00:00:00Z'), endDate: new Date('2026-07-16T00:00:00Z'), reason: 'Repos médical', status: 'APPROVED', approvedAt: new Date('2026-07-14T09:00:00Z') },
+    { id: 'lv-res-3', businessId: B.RESTO, employeeId: 'emp-res-3', type: 'PERSONAL', startDate: new Date('2026-08-10T00:00:00Z'), endDate: new Date('2026-08-12T00:00:00Z'), reason: 'Démarches administratives', status: 'PENDING' },
+    { id: 'lv-sal-1', businessId: B.SALON, employeeId: 'emp-sal-1', type: 'VACATION', startDate: new Date('2026-08-01T00:00:00Z'), endDate: new Date('2026-08-05T00:00:00Z'), reason: 'Congés annuels', status: 'APPROVED', approvedAt: new Date('2026-07-25T11:00:00Z') },
+    { id: 'lv-btp-1', businessId: B.BTP, employeeId: 'emp-btp-1', type: 'VACATION', startDate: new Date('2026-08-15T00:00:00Z'), endDate: new Date('2026-08-22T00:00:00Z'), reason: 'Congés payés', status: 'PENDING' },
+  ];
+  for (const lv of leaves) {
+    await prisma.leave.upsert({ where: { id: lv.id }, update: {}, create: lv });
+  }
+
+  const payrolls: any[] = [
+    // RESTO : paie de juillet 2026
+    { id: 'pr-res-1', businessId: B.RESTO, employeeId: 'emp-res-1', periodStart: new Date('2026-07-01T00:00:00Z'), periodEnd: new Date('2026-07-31T00:00:00Z'), baseSalary: 150000, bonuses: 15000, deductions: 5000, netAmount: 160000, status: 'PAID', paidAt: new Date('2026-07-31T12:00:00Z') },
+    { id: 'pr-res-2', businessId: B.RESTO, employeeId: 'emp-res-2', periodStart: new Date('2026-07-01T00:00:00Z'), periodEnd: new Date('2026-07-31T00:00:00Z'), baseSalary: 90000, bonuses: 8000, deductions: 3000, netAmount: 95000, status: 'PAID', paidAt: new Date('2026-07-31T12:00:00Z') },
+    { id: 'pr-res-3', businessId: B.RESTO, employeeId: 'emp-res-3', periodStart: new Date('2026-07-01T00:00:00Z'), periodEnd: new Date('2026-07-31T00:00:00Z'), baseSalary: 85000, bonuses: 5000, deductions: 2000, netAmount: 88000, status: 'DRAFT' },
+    // SALON : paie de juillet
+    { id: 'pr-sal-1', businessId: B.SALON, employeeId: 'emp-sal-1', periodStart: new Date('2026-07-01T00:00:00Z'), periodEnd: new Date('2026-07-31T00:00:00Z'), baseSalary: 120000, bonuses: 20000, deductions: 4000, netAmount: 136000, status: 'PAID', paidAt: new Date('2026-07-31T12:00:00Z') },
+    // BOUTIQUE : paie de juillet
+    { id: 'pr-bout-1', businessId: B.BOUTIQUE, employeeId: 'emp-bout-1', periodStart: new Date('2026-07-01T00:00:00Z'), periodEnd: new Date('2026-07-31T00:00:00Z'), baseSalary: 95000, bonuses: 10000, deductions: 2500, netAmount: 102500, status: 'PAID', paidAt: new Date('2026-07-31T12:00:00Z') },
+  ];
+  for (const p of payrolls) {
+    await prisma.payroll.upsert({ where: { id: p.id }, update: {}, create: p });
+  }
+
+  // ── 2c. ACTIVITÉS EMPLOYÉS (page Activités : journal des actions) ──
+  const activities: any[] = [
+    { id: 'act-1', businessId: B.RESTO, employeeId: 'emp-res-1', action: 'CREATE', module: 'Commandes', description: 'Préparer commande CMD-2026-002 (préparation)', createdAt: new Date('2026-08-06T09:12:00Z') },
+    { id: 'act-2', businessId: B.RESTO, employeeId: 'emp-res-2', action: 'CLOCK_IN', module: 'Pointage', description: 'Arrivée 08:02', createdAt: new Date('2026-08-06T08:02:00Z') },
+    { id: 'act-3', businessId: B.RESTO, employeeId: 'emp-res-3', action: 'CLOCK_IN', module: 'Pointage', description: 'Départ livraison Cocody', createdAt: new Date('2026-08-06T10:15:00Z') },
+    { id: 'act-4', businessId: B.RESTO, employeeId: 'emp-res-1', action: 'UPDATE', module: 'Menu', description: 'Mise à jour prix Attiéké', createdAt: new Date('2026-08-05T16:40:00Z') },
+    { id: 'act-5', businessId: B.RESTO, employeeId: 'emp-res-2', action: 'CLOCK_OUT', module: 'Pointage', description: 'Départ 15:00', createdAt: new Date('2026-08-05T15:00:00Z') },
+    { id: 'act-6', businessId: B.SALON, employeeId: 'emp-sal-1', action: 'CREATE', module: 'Réservations', description: 'Confirmation rendez-vous RSV-2026-001', createdAt: new Date('2026-07-19T11:30:00Z') },
+    { id: 'act-7', businessId: B.BTP, employeeId: 'emp-btp-1', action: 'UPDATE', module: 'Tâches', description: 'Coulage dalle villa R+1 : avancement 60%', createdAt: new Date('2026-08-06T07:45:00Z') },
+    { id: 'act-8', businessId: B.EVENTS, employeeId: 'emp-evt-1', action: 'CREATE', module: 'Événements', description: 'Plan de sécurité Concert Afrique', createdAt: new Date('2026-08-05T14:20:00Z') },
+  ];
+  for (const a of activities) {
+    await prisma.employeeActivity.create({ data: a });
+  }
+
   // ── 3. LIVRAISONS (module Livraisons : zones + livreurs + livraisons) ──
   const zones: any[] = [
     { id: 'dz-res-1', businessId: B.RESTO, name: 'Cocody', fee: 1000, minOrder: 2000, estimatedTime: 30, isActive: true },

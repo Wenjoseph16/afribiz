@@ -5,6 +5,7 @@ import { File, Plus, Search, Loader, User, Download, Trash2, CalendarDays, X } f
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useMyEmployees } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
@@ -92,14 +93,15 @@ export default function EmployeeDocumentsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Documents employés</h1>
-          <p className="text-sm text-gray-500">
-            Gérez les documents administratifs de votre équipe
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Documents employés"
+        description="Gérez les documents administratifs de votre équipe"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Employés', href: '/dashboard/employees' },
+          { label: 'Documents' },
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

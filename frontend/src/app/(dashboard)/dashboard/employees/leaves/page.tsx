@@ -51,7 +51,7 @@ export default function LeavesPage() {
   } = useQuery({
     queryKey: ['employee-leaves', statusFilter],
     queryFn: async () => {
-      const res = await apiClient.get('/employees/leaves', {
+      const res = await apiClient.get('/business/employees/leaves', {
         params: { status: statusFilter !== 'ALL' ? statusFilter : undefined, limit: 100 },
       });
       return res.data.data;
@@ -65,7 +65,7 @@ export default function LeavesPage() {
   }, [leavesData]);
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiClient.post('/employees/leaves', data),
+    mutationFn: (data: any) => apiClient.post('/business/employees/leaves', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['employee-leaves'] });
       setShowCreate(false);
@@ -74,7 +74,7 @@ export default function LeavesPage() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status, notes }: { id: string; status: string; notes?: string }) =>
-      apiClient.patch('/employees/leaves/' + id + '/status', { status, notes }),
+      apiClient.patch('/business/employees/leaves/' + id + '/status', { status, notes }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['employee-leaves'] }),
   });
 

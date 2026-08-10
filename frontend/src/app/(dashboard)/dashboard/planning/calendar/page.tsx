@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { usePlanningTasks } from '@/features/hooks';
 
@@ -120,12 +121,16 @@ export default function CalendarViewPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Calendrier</h1>
-          <p className="text-sm text-gray-500">Vue globale des tâches et planning</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Calendrier"
+        description="Vue globale des tâches et planning"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Planning', href: '/dashboard/planning' },
+          { label: 'Calendrier' },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
           <div className="flex border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
             <button
               onClick={() => setView('month')}
@@ -157,7 +162,8 @@ export default function CalendarViewPage() {
             Aujourd'hui
           </button>
         </div>
-      </div>
+        }
+      />
 
       {/* Navigation */}
       <div className="flex items-center justify-between">
