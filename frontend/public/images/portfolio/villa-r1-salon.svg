@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#g)"/>
+  <rect x="60" y="80" width="520" height="220" rx="10" fill="#f8fafc"/>
+  <rect x="120" y="140" width="180" height="90" rx="6" fill="#d97706"/>
+  <rect x="340" y="140" width="160" height="50" rx="6" fill="#cbd5e1"/>
+  <rect x="340" y="210" width="160" height="20" rx="6" fill="#cbd5e1"/>
+  <rect x="150" y="250" width="340" height="10" rx="5" fill="#92400e"/>
+  <text x="320" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fff">Villa R+1 — Salon</text>
+</svg>

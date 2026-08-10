@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Image, Plus, Search, Loader, Trash2, X, Film, Grid3X3, LayoutGrid } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -109,24 +110,29 @@ export default function PortfolioMediaPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Média & Galerie</h1>
-          <p className="text-sm text-gray-500">Gérez les images et vidéos de vos projets</p>
-        </div>
-        {selectedItem && (
-          <Button
-            size="sm"
-            onClick={() => {
-              setForm((f) => ({ ...f, itemId: selectedItem }));
-              setShowUpload(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-1.5" />
-            Ajouter média
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Média & Galerie"
+        description="Gérez les images et vidéos de vos projets"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Portfolio', href: '/dashboard/portfolio' },
+          { label: 'Média & Galerie' },
+        ]}
+        actions={
+          selectedItem ? (
+            <Button
+              size="sm"
+              onClick={() => {
+                setForm((f) => ({ ...f, itemId: selectedItem }));
+                setShowUpload(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Ajouter média
+            </Button>
+          ) : undefined
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">

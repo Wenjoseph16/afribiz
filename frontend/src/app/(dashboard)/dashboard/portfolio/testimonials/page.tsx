@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { MessageSquare, Plus, Search, Loader, User, Star, Trash2, Heart } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -81,16 +82,21 @@ export default function PortfolioTestimonialsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Témoignages</h1>
-          <p className="text-sm text-gray-500">Avis et retours clients mis en avant</p>
-        </div>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Ajouter
-        </Button>
-      </div>
+      <PageHeader
+        title="Témoignages"
+        description="Avis et retours clients mis en avant"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Portfolio', href: '/dashboard/portfolio' },
+          { label: 'Témoignages' },
+        ]}
+        actions={
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Ajouter
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">

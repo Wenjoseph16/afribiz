@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Plus,
   Edit2,
   Trash2,
@@ -179,24 +178,21 @@ export default function MenuCategoriesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/menu"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Catégories</h1>
-            <p className="text-sm text-gray-500">Organisez vos plats</p>
-          </div>
-        </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1.5" />
-          Nouvelle catégorie
-        </Button>
-      </div>
+      <PageHeader
+        title="Catégories"
+        description="Organisez vos plats"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Menu / Carte', href: '/dashboard/menu' },
+          { label: 'Catégories' },
+        ]}
+        actions={
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            Nouvelle catégorie
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-3 text-center">

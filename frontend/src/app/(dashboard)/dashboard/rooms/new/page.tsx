@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Upload, BedDouble, Users, Clock, DollarSign, Bath } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Save, Upload, BedDouble, Users, Clock, DollarSign, Bath } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -137,33 +138,26 @@ export default function NewRoomPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/rooms"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Nouvelle chambre
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              Ajoutez un logement à votre établissement
-            </p>
+      <PageHeader
+        title="Nouvelle chambre"
+        description="Ajoutez un logement à votre établissement"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Chambres', href: '/dashboard/rooms' },
+          { label: 'Nouvelle chambre' },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/rooms">
+              <Button variant="outline">Annuler</Button>
+            </Link>
+            <Button type="submit" isLoading={createRoom.isPending}>
+              <Save className="h-4 w-4 mr-1.5" />
+              Enregistrer
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/rooms">
-            <Button variant="outline">Annuler</Button>
-          </Link>
-          <Button type="submit" isLoading={createRoom.isPending}>
-            <Save className="h-4 w-4 mr-1.5" />
-            Enregistrer
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Smartphone, Copy, Check, Share2, Download, ExternalLink } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Smartphone, Copy, Check, Share2, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
@@ -19,20 +19,15 @@ export default function QrMenuPage() {
 
   return (
     <div className="animate-fade-in space-y-6 max-w-2xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/menu"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">QR Menu digital</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Partagez votre menu avec vos clients
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="QR Menu digital"
+        description="Partagez votre menu avec vos clients"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Menu / Carte', href: '/dashboard/menu' },
+          { label: 'QR Menu' },
+        ]}
+      />
 
       {/* QR Code */}
       <Card className="p-8 text-center">

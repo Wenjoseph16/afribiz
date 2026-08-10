@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Save,
   Upload,
   Plus,
@@ -152,29 +152,22 @@ export default function NewServicePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/services"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
+      <PageHeader
+        title="Nouveau service"
+        description="Ajoutez une prestation à votre catalogue"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Services', href: '/dashboard/services' },
+          { label: 'Nouveau service' },
+        ]}
+        actions={
+          <Link href="/dashboard/services">
+            <Button variant="outline" type="button">
+              Annuler
+            </Button>
           </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Nouveau service
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              Ajoutez une prestation à votre catalogue
-            </p>
-          </div>
-        </div>
-        <Link href="/dashboard/services">
-          <Button variant="outline" type="button">
-            Annuler
-          </Button>
-        </Link>
-      </div>
+        }
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* === INFORMATIONS PRINCIPALES === */}

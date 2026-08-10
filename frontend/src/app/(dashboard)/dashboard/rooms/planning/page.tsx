@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   ChevronLeft,
   ChevronRight,
@@ -256,22 +257,23 @@ export default function PlanningPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Planning disponibilités
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Calendrier mensuel des chambres et logements
-          </p>
-        </div>
-        <Link href="/dashboard/rooms">
-          <Button variant="outline" size="sm">
-            <BedDouble className="h-4 w-4 mr-1.5" />
-            Retour aux chambres
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Planning disponibilités"
+        description="Calendrier mensuel des chambres et logements"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Chambres', href: '/dashboard/rooms' },
+          { label: 'Planning' },
+        ]}
+        actions={
+          <Link href="/dashboard/rooms">
+            <Button variant="outline" size="sm">
+              <BedDouble className="h-4 w-4 mr-1.5" />
+              Retour aux chambres
+            </Button>
+          </Link>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
         <Card className="p-3 text-center">

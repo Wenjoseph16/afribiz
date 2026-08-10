@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Plus, Edit2, Trash2, QrCode, Users, Loader, Save, X } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Plus, Edit2, Trash2, QrCode, Users, Loader, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -131,24 +131,21 @@ export default function TablesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/menu"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tables</h1>
-            <p className="text-sm text-gray-500">Gérez vos tables</p>
-          </div>
-        </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1.5" />
-          Ajouter
-        </Button>
-      </div>
+      <PageHeader
+        title="Tables"
+        description="Gérez vos tables"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Menu', href: '/dashboard/menu' },
+          { label: 'Tables' },
+        ]}
+        actions={
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            Ajouter
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-4 gap-3">
         {[

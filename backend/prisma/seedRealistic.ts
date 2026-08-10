@@ -365,26 +365,26 @@ async function seedCatalogs() {
   // Produits Restaurant (commandables en ligne)
   await prisma.product.upsert({
     where: { id: 'prod-res-1' }, update: {},
-    create: { id: 'prod-res-1', businessId: B.RESTO, sellerId: U.OWNER_RESTO, categoryId: 'cat-res-1', name: 'Attiéké Poisson Braisé', slug: 'attieke-poisson-braise', description: 'Attiéké fin, poisson braisé, sauce graine', shortDescription: 'Notre plat signature', price: 3500, currency: 'FCFA', images: ['/images/products/attieke.jpg'], tags: ['attieke', 'poisson'], stock: 100, lowStockThreshold: 10, unit: 'plat', isActive: true, isVisibleOnPublicPage: true, isVisibleOnMarketplace: true, isPhysical: false, featured: true, rating: 4.8, reviewCount: 45, orderCount: 230 },
+    create: { id: 'prod-res-1', businessId: B.RESTO, sellerId: U.OWNER_RESTO, categoryId: 'cat-res-1', name: 'Attiéké Poisson Braisé', slug: 'attieke-poisson-braise', description: 'Attiéké fin, poisson braisé, sauce graine', shortDescription: 'Notre plat signature', price: 3500, currency: 'FCFA', images: ['/images/products/attieke.svg'], tags: ['attieke', 'poisson'], stock: 100, lowStockThreshold: 10, unit: 'plat', isActive: true, isVisibleOnPublicPage: true, isVisibleOnMarketplace: true, isPhysical: false, featured: true, rating: 4.8, reviewCount: 45, orderCount: 230 },
   });
   await prisma.product.upsert({
     where: { id: 'prod-res-2' }, update: {},
-    create: { id: 'prod-res-2', businessId: B.RESTO, sellerId: U.OWNER_RESTO, categoryId: 'cat-res-1', name: 'Mafé Poulet', slug: 'mafe-poulet', description: 'Poulet mijoté sauce cacahuète, riz blanc', price: 4500, currency: 'FCFA', images: ['/images/products/mafe.jpg'], tags: ['mafe', 'poulet'], stock: 80, lowStockThreshold: 10, unit: 'plat', isActive: true, isVisibleOnPublicPage: true, isVisibleOnMarketplace: true, isPhysical: false, featured: true, rating: 4.6, reviewCount: 32, orderCount: 180, isPromotional: true, promotionalPrice: 3800, discountPercent: 15, promotionEndsAt: new Date('2026-12-31') },
+    create: { id: 'prod-res-2', businessId: B.RESTO, sellerId: U.OWNER_RESTO, categoryId: 'cat-res-1', name: 'Mafé Poulet', slug: 'mafe-poulet', description: 'Poulet mijoté sauce cacahuète, riz blanc', price: 4500, currency: 'FCFA', images: ['/images/products/mafe.svg'], tags: ['mafe', 'poulet'], stock: 80, lowStockThreshold: 10, unit: 'plat', isActive: true, isVisibleOnPublicPage: true, isVisibleOnMarketplace: true, isPhysical: false, featured: true, rating: 4.6, reviewCount: 32, orderCount: 180, isPromotional: true, promotionalPrice: 3800, discountPercent: 15, promotionEndsAt: new Date('2026-12-31') },
   });
   await prisma.product.upsert({
     where: { id: 'prod-res-3' }, update: {},
-    create: { id: 'prod-res-3', businessId: B.RESTO, sellerId: U.OWNER_RESTO, categoryId: 'cat-res-2', name: 'Jus de Bissap', slug: 'jus-de-bissap', description: 'Jus naturel d hibiscus', price: 1500, currency: 'FCFA', images: ['/images/products/bissap.jpg'], tags: ['bissap'], stock: 200, lowStockThreshold: 20, unit: 'verre', isActive: true, isVisibleOnPublicPage: true, isVisibleOnMarketplace: true, isPhysical: false, featured: false, rating: 4.3, reviewCount: 18, orderCount: 95 },
+    create: { id: 'prod-res-3', businessId: B.RESTO, sellerId: U.OWNER_RESTO, categoryId: 'cat-res-2', name: 'Jus de Bissap', slug: 'jus-de-bissap', description: 'Jus naturel d hibiscus', price: 1500, currency: 'FCFA', images: ['/images/products/bissap.svg'], tags: ['bissap'], stock: 200, lowStockThreshold: 20, unit: 'verre', isActive: true, isVisibleOnPublicPage: true, isVisibleOnMarketplace: true, isPhysical: false, featured: false, rating: 4.3, reviewCount: 18, orderCount: 95 },
   });
 
   // Menu du restaurant (mêmes plats en page menu)
   await prisma.menuCategory.upsert({ where: { id: 'mc-res-1' }, update: {}, create: { id: 'mc-res-1', businessId: B.RESTO, name: 'Plats principaux', description: 'Nos plats signatures' } });
   await prisma.menuItem.upsert({
     where: { id: 'mi-res-1' }, update: {},
-    create: { id: 'mi-res-1', businessId: B.RESTO, categoryId: 'mc-res-1', name: 'Attiéké Poisson Braisé', description: 'Attiéké fin, poisson braisé, sauce graine', price: 3500, currency: 'FCFA', images: ['/images/products/attieke.jpg'], isPopular: true, featured: true, rating: 4.8, reviewCount: 45, orderCount: 230 },
+    create: { id: 'mi-res-1', businessId: B.RESTO, categoryId: 'mc-res-1', name: 'Attiéké Poisson Braisé', description: 'Attiéké fin, poisson braisé, sauce graine', price: 3500, currency: 'FCFA', images: ['/images/products/attieke.svg'], isPopular: true, featured: true, rating: 4.8, reviewCount: 45, orderCount: 230 },
   });
   await prisma.menuItem.upsert({
     where: { id: 'mi-res-2' }, update: {},
-    create: { id: 'mi-res-2', businessId: B.RESTO, categoryId: 'mc-res-1', name: 'Mafé Poulet', description: 'Poulet mijoté sauce cacahuète', price: 4500, currency: 'FCFA', images: ['/images/products/mafe.jpg'], isPopular: true, rating: 4.6, reviewCount: 32, orderCount: 180 },
+    create: { id: 'mi-res-2', businessId: B.RESTO, categoryId: 'mc-res-1', name: 'Mafé Poulet', description: 'Poulet mijoté sauce cacahuète', price: 4500, currency: 'FCFA', images: ['/images/products/mafe.svg'], isPopular: true, rating: 4.6, reviewCount: 32, orderCount: 180 },
   });
   await prisma.menuItem.upsert({
     where: { id: 'mi-res-3' }, update: {},
@@ -492,6 +492,69 @@ async function seedCatalogs() {
   });
 
   console.log('✓ Catalogues (produits, services, menu, chambres, locations, portfolio)');
+}
+
+// ============================================================
+// 3b. MENU OPS (ingrédients, tables, commandes en salle) + TÉMOIGNAGES PORTFOLIO
+// Alimente les pages Ingrédients / Tables / Commandes (menu) / Témoignages (portfolio)
+// ============================================================
+async function seedMenuOps() {
+  // ── Ingrédients (resto) — module MENU ──
+  const ingredients: any[] = [
+    { id: 'ing-res-1', businessId: B.RESTO, name: 'Attiéké', unit: 'kg', stock: 25, minStock: 5 },
+    { id: 'ing-res-2', businessId: B.RESTO, name: 'Poisson frais', unit: 'kg', stock: 12, minStock: 3 },
+    { id: 'ing-res-3', businessId: B.RESTO, name: 'Poulet', unit: 'kg', stock: 30, minStock: 8 },
+    { id: 'ing-res-4', businessId: B.RESTO, name: 'Cacahuètes', unit: 'kg', stock: 4, minStock: 5 },
+    { id: 'ing-res-5', businessId: B.RESTO, name: 'Hibiscus (bissap)', unit: 'kg', stock: 9, minStock: 2 },
+  ];
+  for (const i of ingredients) {
+    await prisma.ingredient.upsert({ where: { id: i.id }, update: {}, create: i });
+  }
+
+  // ── Tables (resto) — module MENU ──
+  const tables: any[] = [
+    { id: 'tbl-res-1', businessId: B.RESTO, number: 1, capacity: 2, location: 'Salle principale', isAvailable: true, isActive: true },
+    { id: 'tbl-res-2', businessId: B.RESTO, number: 2, capacity: 4, location: 'Salle principale', isAvailable: true, isActive: true },
+    { id: 'tbl-res-3', businessId: B.RESTO, number: 3, capacity: 4, location: 'Terrasse', isAvailable: false, isActive: true },
+    { id: 'tbl-res-4', businessId: B.RESTO, number: 4, capacity: 6, location: 'Salle privée', isAvailable: true, isActive: true },
+    { id: 'tbl-res-5', businessId: B.RESTO, number: 5, capacity: 2, location: 'Terrasse', isAvailable: true, isActive: true },
+  ];
+  for (const t of tables) {
+    await prisma.restaurantTable.upsert({ where: { id: t.id }, update: {}, create: t });
+  }
+
+  // ── Commandes menu (resto) — vraies commandes en salle liées aux tables ──
+  const menuOrders: any[] = [
+    { id: 'mo-res-1', businessId: B.RESTO, tableId: 'tbl-res-2', status: 'COMPLETED', items: [{ name: 'Attiéké Poisson Braisé', qty: 2, price: 3500 }, { name: 'Jus de Bissap', qty: 2, price: 1500 }], total: 10000, notes: 'Table 2 — service rapide' },
+    { id: 'mo-res-2', businessId: B.RESTO, tableId: 'tbl-res-3', status: 'PREPARING', items: [{ name: 'Mafé Poulet', qty: 1, price: 4500 }], total: 4500, notes: 'Terrasse' },
+    { id: 'mo-res-3', businessId: B.RESTO, tableId: 'tbl-res-1', status: 'PENDING', items: [{ name: 'Garba', qty: 1, price: 2000 }, { name: 'Jus de Bissap', qty: 1, price: 1500 }], total: 3500, notes: null },
+  ];
+  for (const mo of menuOrders) {
+    await prisma.menuOrder.upsert({ where: { id: mo.id }, update: {}, create: mo });
+  }
+
+  // ── Témoignages portfolio (BTP) — de vrais clients ──
+  const pTestimonials: any[] = [
+    { id: 'pt-btp-1', businessId: B.BTP, portfolioItemId: 'pf-btp-1', clientName: 'Jean Kouadio', clientCompany: 'Particulier', text: 'Maison livrée dans les délais, finitions impeccables. Je recommande BuildPro.', rating: 5, projectDate: new Date('2026-03-15'), isPinned: true, sortOrder: 1 },
+    { id: 'pt-btp-2', businessId: B.BTP, portfolioItemId: 'pf-btp-2', clientName: 'Awa Coulibaly', clientCompany: 'Kouassi Immobilier', text: 'Rénovation de nos bureaux : chantier propre, équipe sérieuse.', rating: 5, projectDate: new Date('2026-05-20'), sortOrder: 2 },
+    { id: 'pt-btp-3', businessId: B.BTP, portfolioItemId: 'pf-btp-1', clientName: 'Kofi Mensah', clientCompany: 'Accra Invest', text: 'Bonne communication du début à la fin. Coût respecté.', rating: 4, projectDate: new Date('2026-04-02'), sortOrder: 3 },
+  ];
+  for (const pt of pTestimonials) {
+    await prisma.portfolioTestimonial.upsert({ where: { id: pt.id }, update: {}, create: pt });
+  }
+
+  // ── Médias portfolio (BTP + salon) — la galerie alimentée ──
+  const pMedia: any[] = [
+    { id: 'pm-btp-1', portfolioItemId: 'pf-btp-1', businessId: B.BTP, type: 'IMAGE', url: '/images/portfolio/villa-r1.svg', title: 'Villa R+1 — extérieur', description: 'Façade principale livrée clé en main', sortOrder: 1 },
+    { id: 'pm-btp-2', portfolioItemId: 'pf-btp-1', businessId: B.BTP, type: 'IMAGE', url: '/images/portfolio/villa-r1-salon.svg', title: 'Villa R+1 — salon', description: 'Séjour avec finitions premium', sortOrder: 2 },
+    { id: 'pm-btp-3', portfolioItemId: 'pf-btp-2', businessId: B.BTP, type: 'IMAGE', url: '/images/portfolio/immeuble-yopougon.svg', title: 'Rénovation — bureaux', description: '12 bureaux rénovés en 6 semaines', sortOrder: 1 },
+    { id: 'pm-sal-1', portfolioItemId: 'pf-sal-1', businessId: B.SALON, type: 'IMAGE', url: '/images/portfolio/mariage-awa.svg', title: 'Mariage de Awa', description: 'Coiffure & maquillage — 12 personnes', sortOrder: 1 },
+  ];
+  for (const pm of pMedia) {
+    await prisma.portfolioMedia.upsert({ where: { id: pm.id }, update: {}, create: pm });
+  }
+
+  console.log('✓ Menu ops (5 ingrédients, 5 tables, 3 commandes) + 3 témoignages + 4 médias portfolio');
 }
 
 // ============================================================
@@ -1921,6 +1984,12 @@ async function cleanupExisting() {
   await prisma.delivery.deleteMany({ where: bizWhere });
   await prisma.driver.deleteMany({ where: bizWhere });
   await prisma.deliveryZone.deleteMany({ where: bizWhere });
+  // ── Menu ops (module MENU) + témoignages portfolio ──
+  await prisma.menuOrder.deleteMany({ where: bizWhere });
+  await prisma.restaurantTable.deleteMany({ where: bizWhere });
+  await prisma.ingredient.deleteMany({ where: bizWhere });
+  await prisma.portfolioMedia.deleteMany({ where: bizWhere });
+  await prisma.portfolioTestimonial.deleteMany({ where: bizWhere });
   await prisma.partnerContract.deleteMany({ where: { partner: { businessId: { in: ALL_BIZ_IDS } } } });
   await prisma.partnerTransaction.deleteMany({ where: { partner: { businessId: { in: ALL_BIZ_IDS } } } });
   await prisma.partnerAssignment.deleteMany({ where: { partner: { businessId: { in: ALL_BIZ_IDS } } } });
@@ -2016,6 +2085,7 @@ export async function seedRealistic() {
   await seedPlatformPlans();
   await seedBusinesses();
   await seedCatalogs();
+  await seedMenuOps();
   await seedOrders();
   await seedBookings();
   await seedReviews();

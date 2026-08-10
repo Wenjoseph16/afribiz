@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   BarChart3,
   Image,
@@ -50,12 +51,15 @@ export default function PortfolioStatsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Statistiques portfolio</h1>
-        <p className="text-sm text-gray-500">
-          Analysez la performance de vos projets et réalisations
-        </p>
-      </div>
+      <PageHeader
+        title="Statistiques portfolio"
+        description="Analysez la performance de vos projets et réalisations"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Portfolio', href: '/dashboard/portfolio' },
+          { label: 'Statistiques' },
+        ]}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3 sm:p-4">

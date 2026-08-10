@@ -2,8 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Upload,
   Download,
   FileSpreadsheet,
@@ -281,34 +281,27 @@ export default function ImportProductsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/products"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-              Import / Export
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Importez ou exportez vos produits en masse
-            </p>
+      <PageHeader
+        title="Import / Export"
+        description="Importez ou exportez vos produits en masse"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Produits', href: '/dashboard/products' },
+          { label: 'Import / Export' },
+        ]}
+        actions={
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={downloadTemplate}>
+              <FileText className="h-4 w-4 mr-1.5" />
+              Template CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportProducts}>
+              <Download className="h-4 w-4 mr-1.5" />
+              Exporter
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={downloadTemplate}>
-            <FileText className="h-4 w-4 mr-1.5" />
-            Template CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportProducts}>
-            <Download className="h-4 w-4 mr-1.5" />
-            Exporter
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Tabs */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-1 flex">

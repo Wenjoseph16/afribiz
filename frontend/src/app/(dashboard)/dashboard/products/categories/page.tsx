@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Plus,
   Pencil,
   Trash2,
@@ -161,28 +160,21 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/products"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-              Catégories
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Organisez vos produits par catégories
-            </p>
-          </div>
-        </div>
-        <Button onClick={() => openCreateModal(null)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nouvelle catégorie
-        </Button>
-      </div>
+      <PageHeader
+        title="Catégories"
+        description="Organisez vos produits par catégories"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Produits', href: '/dashboard/products' },
+          { label: 'Catégories' },
+        ]}
+        actions={
+          <Button onClick={() => openCreateModal(null)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Nouvelle catégorie
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card padding="sm" className="text-center">

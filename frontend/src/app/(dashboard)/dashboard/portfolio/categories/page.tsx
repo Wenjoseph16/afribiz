@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Folder, Plus, Pencil, Trash2, Loader, Image, Palette } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -65,23 +66,28 @@ export default function PortfolioCategoriesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Catégories portfolio</h1>
-          <p className="text-sm text-gray-500">Organisez vos projets par catégorie</p>
-        </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditingId(null);
-            setForm({ name: '', icon: 'Folder', color: '#10b981' });
-            setShowCreate(true);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nouvelle catégorie
-        </Button>
-      </div>
+      <PageHeader
+        title="Catégories portfolio"
+        description="Organisez vos projets par catégorie"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Portfolio', href: '/dashboard/portfolio' },
+          { label: 'Catégories' },
+        ]}
+        actions={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingId(null);
+              setForm({ name: '', icon: 'Folder', color: '#10b981' });
+              setShowCreate(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            Nouvelle catégorie
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Card className="p-3">

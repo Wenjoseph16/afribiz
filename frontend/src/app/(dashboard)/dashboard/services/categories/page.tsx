@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Plus,
   Pencil,
   Trash2,
@@ -146,22 +145,15 @@ export default function ServiceCategoriesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/services"
-          className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Catégories services
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Organisez vos services par catégories
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Catégories services"
+        description="Organisez vos services par catégories"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Services', href: '/dashboard/services' },
+          { label: 'Catégories' },
+        ]}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card padding="sm" className="text-center">

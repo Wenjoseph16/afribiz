@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   AlertTriangle,
   Package,
   Loader,
@@ -38,28 +38,21 @@ export default function StockAlertsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/products"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-              Alertes Stock
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Surveillez vos niveaux de stock
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-1.5" />
-          Actualiser
-        </Button>
-      </div>
+      <PageHeader
+        title="Alertes Stock"
+        description="Surveillez vos niveaux de stock"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Produits', href: '/dashboard/products' },
+          { label: 'Alertes Stock' },
+        ]}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-1.5" />
+            Actualiser
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

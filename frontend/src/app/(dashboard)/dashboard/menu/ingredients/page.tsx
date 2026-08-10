@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Plus,
   Search,
   AlertTriangle,
@@ -181,21 +180,21 @@ export default function IngredientsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/menu" className="p-2 rounded-lg hover:bg-gray-100">
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Stock cuisine</h1>
-            <p className="text-sm text-gray-500">Gérez vos ingrédients</p>
-          </div>
-        </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1.5" />
-          Ajouter
-        </Button>
-      </div>
+      <PageHeader
+        title="Stock cuisine"
+        description="Gérez vos ingrédients"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Menu', href: '/dashboard/menu' },
+          { label: 'Stock cuisine' },
+        ]}
+        actions={
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            Ajouter
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-4 gap-3">
         {[

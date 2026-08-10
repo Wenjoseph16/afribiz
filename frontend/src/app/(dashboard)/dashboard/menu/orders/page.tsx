@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Search,
   Clock,
   CheckCircle,
@@ -154,22 +153,15 @@ export default function MenuOrdersPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/menu"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Commandes restaurant
-            </h1>
-            <p className="text-sm text-gray-500">Gérez les commandes</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Commandes restaurant"
+        description="Gérez les commandes"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Menu', href: '/dashboard/menu' },
+          { label: 'Commandes' },
+        ]}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
