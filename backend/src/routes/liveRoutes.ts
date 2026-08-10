@@ -12,6 +12,10 @@ import {
   updateLiveProduct,
   removeLiveProduct,
   getLiveChats,
+  sendLiveChat,
+  joinLiveRoom,
+  leaveLiveRoom,
+  sendLiveReaction,
   getLiveStats,
 } from '../controllers/liveController';
 
@@ -21,6 +25,12 @@ const router = Router();
 router.get('/lives', getActiveLives);
 router.get('/lives/:id', optionalAuth, getLiveById);
 router.get('/lives/:id/chats', getLiveChats);
+
+// Routes spectateur (auth optionnelle — chat, join, leave, réactions)
+router.post('/lives/:id/chat', optionalAuth, sendLiveChat);
+router.post('/lives/:id/join', optionalAuth, joinLiveRoom);
+router.post('/lives/:id/leave', optionalAuth, leaveLiveRoom);
+router.post('/lives/:id/reactions', optionalAuth, sendLiveReaction);
 
 // Routes authentifiées (BUSINESS, DEVELOPER ou ADMIN)
 router.post('/lives', authMiddleware, requireRole(['BUSINESS', 'DEVELOPER', 'ADMIN']), createLive);

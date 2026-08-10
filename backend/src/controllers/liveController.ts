@@ -163,6 +163,41 @@ export const getLiveChats = catchAsyncErrors(async (req: AuthenticatedRequest, r
   res.json(successResponse(data));
 });
 
+export const sendLiveChat = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const message = await liveService.sendChat(
+    req.params.id,
+    req.user?.id,
+    req.body.userName,
+    req.body.message
+  );
+  res.status(201).json(successResponse(message, 'Message envoyé'));
+});
+
+export const joinLiveRoom = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const participant = await liveService.joinLive(
+    req.params.id,
+    req.user?.id,
+    req.body.userName
+  );
+  res.json(successResponse(participant, 'Rejoint le live'));
+});
+
+export const leaveLiveRoom = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  const result = await liveService.leaveLive(req.params.id, req.user?.id);
+  res.json(successResponse(result, 'Live quitté'));
+});
+
+export const sendLiveReaction = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    const reaction = await liveService.sendReaction(
+      req.params.id,
+      req.user?.id,
+      req.body.emoji || '❤️'
+    );
+    res.status(201).json(successResponse(reaction, 'Réaction envoyée'));
+  }
+);
+
 export const getLiveStats = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) throw new AppError('Non authentifié', 401);
   const access = await resolveBusinessAccess({

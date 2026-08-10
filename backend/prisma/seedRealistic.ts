@@ -2078,6 +2078,21 @@ async function cleanupExisting() {
   await prisma.adCampaign.deleteMany({ where: { businessId: { in: ALL_BIZ_IDS } } });
   await prisma.adSlot.deleteMany({});
   await prisma.adPackage.deleteMany({});
+  // ── Média social commerce (shorts, stories, lives, offres flash) ──
+  await prisma.liveProduct.deleteMany({ where: { liveId: { in: ['live-1', 'live-2'] } } });
+  await prisma.liveReaction.deleteMany({ where: { liveId: { in: ['live-1', 'live-2'] } } });
+  await prisma.liveChat.deleteMany({ where: { liveId: { in: ['live-1', 'live-2'] } } });
+  await prisma.liveParticipant.deleteMany({ where: { liveId: { in: ['live-1', 'live-2'] } } });
+  await prisma.live.deleteMany({ where: { id: { in: ['live-1', 'live-2'] } } });
+  await prisma.claimedOffer.deleteMany({ where: { offerId: { in: ['offer-1', 'offer-2', 'offer-3'] } } });
+  await prisma.offerFlash.deleteMany({ where: { id: { in: ['offer-1', 'offer-2', 'offer-3'] } } });
+  await prisma.shortLike.deleteMany({ where: { shortId: { in: ['short-1', 'short-2', 'short-3', 'short-4', 'short-5'] } } });
+  await prisma.shortComment.deleteMany({ where: { shortId: { in: ['short-1', 'short-2', 'short-3', 'short-4', 'short-5'] } } });
+  await prisma.shortView.deleteMany({ where: { shortId: { in: ['short-1', 'short-2', 'short-3', 'short-4', 'short-5'] } } });
+  await prisma.shortSave.deleteMany({ where: { shortId: { in: ['short-1', 'short-2', 'short-3', 'short-4', 'short-5'] } } });
+  await prisma.short.deleteMany({ where: { id: { in: ['short-1', 'short-2', 'short-3', 'short-4', 'short-5'] } } });
+  await prisma.storyView.deleteMany({ where: { storyId: { in: ['story-1', 'story-2', 'story-3', 'story-4'] } } });
+  await prisma.story.deleteMany({ where: { id: { in: ['story-1', 'story-2', 'story-3', 'story-4'] } } });
   await prisma.user.deleteMany({ where: { id: { in: ALL_USER_IDS } } });
   console.log('--- Nettoyage terminé ---');
 }
@@ -2114,12 +2129,342 @@ export async function seedRealistic() {
   await seedSatisfaction();
   await seedAdSlots();
   await seedAdCampaigns();
+  await seedMediaCommerce();
   console.log('\n✅ Seed réaliste terminé. Mdp unique : ' + PASSWORD);
 }
 
 // ============================================================
 // PUBLICITÉ (emplacements + campagnes de démo)
 // ============================================================
+
+// ============================================================
+// 24. MÉDIA SOCIAL COMMERCE (Shorts shoppables, Stories stickers, Lives, Offres Flash)
+// ============================================================
+
+// Vidéos de démonstration (échantillons publics courts — à remplacer par l'hébergement vidéo réel)
+const SAMPLE_VIDEOS = [
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+];
+
+async function seedMediaCommerce() {
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 86400000);
+
+  // ── Shorts shoppables (chaque vidéo = une boutique) ──
+  const shorts: any[] = [
+    {
+      id: 'short-1',
+      businessId: B.RESTO,
+      title: 'Le vrai Attiéké Poisson Braisé 🐟',
+      description: "Notre plat signature préparé à la commande. Commandez en 1 tap depuis la vidéo !",
+      videoUrl: SAMPLE_VIDEOS[0],
+      thumbnailUrl: '/images/products/attieke.svg',
+      duration: 15,
+      linkTargetType: 'PRODUCT',
+      linkTargetId: 'prod-res-1',
+      likesCount: 128,
+      viewsCount: 1240,
+      sharesCount: 34,
+      commentsCount: 12,
+    },
+    {
+      id: 'short-2',
+      businessId: B.RESTO,
+      title: 'Mafé Poulet onctueux 🥜',
+      description: "La recette traditionnelle de la maison. -15% aujourd'hui !",
+      videoUrl: SAMPLE_VIDEOS[1],
+      thumbnailUrl: '/images/products/mafe.svg',
+      duration: 15,
+      linkTargetType: 'PRODUCT',
+      linkTargetId: 'prod-res-2',
+      likesCount: 96,
+      viewsCount: 890,
+      sharesCount: 21,
+      commentsCount: 8,
+    },
+    {
+      id: 'short-3',
+      businessId: B.RESTO,
+      title: 'Bissap glacé maison 🧃',
+      description: 'Rafraîchissant, naturel, sans colorant. 1 500 FCFA.',
+      videoUrl: SAMPLE_VIDEOS[2],
+      thumbnailUrl: '/images/products/bissap.svg',
+      duration: 15,
+      linkTargetType: 'PRODUCT',
+      linkTargetId: 'prod-res-3',
+      likesCount: 210,
+      viewsCount: 2450,
+      sharesCount: 67,
+      commentsCount: 19,
+    },
+    {
+      id: 'short-4',
+      businessId: B.SALON,
+      title: 'Relooking 2027 ✨',
+      description: 'Venez découvrir la nouvelle expérience de notre salon.',
+      videoUrl: SAMPLE_VIDEOS[3],
+      thumbnailUrl: '/images/portfolio/villa-r1-salon.svg',
+      duration: 15,
+      linkTargetType: 'BUSINESS_PAGE',
+      linkTargetId: B.SALON,
+      likesCount: 64,
+      viewsCount: 540,
+      sharesCount: 9,
+      commentsCount: 5,
+    },
+    {
+      id: 'short-5',
+      businessId: B.EVENTS,
+      title: 'Vos événements, notre passion 🎉',
+      description: 'Organisation complète : traiteur, déco, animation.',
+      videoUrl: SAMPLE_VIDEOS[4],
+      thumbnailUrl: '/images/portfolio/mariage-awa.svg',
+      duration: 15,
+      linkTargetType: 'BUSINESS_PAGE',
+      linkTargetId: B.EVENTS,
+      likesCount: 41,
+      viewsCount: 380,
+      sharesCount: 6,
+      commentsCount: 3,
+    },
+  ];
+  for (const s of shorts) {
+    await prisma.short.upsert({ where: { id: s.id }, update: {}, create: s });
+  }
+  console.log(`✓ ${shorts.length} shorts shoppables`);
+
+  // ── Stories 24h avec stickers produits ──
+  const stories: any[] = [
+    {
+      id: 'story-1',
+      businessId: B.RESTO,
+      mediaType: 'IMAGE',
+      mediaUrl: '/images/products/attieke.svg',
+      caption: '🔥 Plat du jour : Attiéké Poisson Braisé',
+      linkTargetType: 'PRODUCT',
+      linkTargetId: 'prod-res-1',
+      stickers: [
+        {
+          id: 'stk-1',
+          type: 'PRODUCT',
+          value: 'prod-res-1',
+          label: 'Attiéké Poisson',
+          positionX: 62,
+          positionY: 26,
+          style: { rotation: -6 },
+        },
+      ],
+      expiresAt: tomorrow,
+    },
+    {
+      id: 'story-2',
+      businessId: B.RESTO,
+      mediaType: 'IMAGE',
+      mediaUrl: '/images/products/mafe.svg',
+      caption: '🥜 Mafé Poulet -15% aujourd\'hui',
+      linkTargetType: 'PROMOTION',
+      linkTargetId: 'promo-1',
+      stickers: [
+        {
+          id: 'stk-2',
+          type: 'PROMO',
+          value: '15',
+          label: '-15%',
+          positionX: 30,
+          positionY: 32,
+          style: { rotation: 8 },
+        },
+      ],
+      expiresAt: tomorrow,
+    },
+    {
+      id: 'story-3',
+      businessId: B.RESTO,
+      mediaType: 'IMAGE',
+      mediaUrl: '/images/products/bissap.svg',
+      caption: 'Bissap glacé maison 🧃 1 500 F',
+      linkTargetType: 'PRODUCT',
+      linkTargetId: 'prod-res-3',
+      stickers: [
+        {
+          id: 'stk-3',
+          type: 'PRODUCT',
+          value: 'prod-res-3',
+          label: 'Bissap',
+          positionX: 38,
+          positionY: 66,
+          style: { rotation: 4 },
+        },
+      ],
+      expiresAt: tomorrow,
+    },
+    {
+      id: 'story-4',
+      businessId: B.SALON,
+      mediaType: 'IMAGE',
+      mediaUrl: '/images/portfolio/villa-r1-salon.svg',
+      caption: 'Résultats relooking ✨ Prenez rendez-vous',
+      linkTargetType: 'BUSINESS_PAGE',
+      linkTargetId: B.SALON,
+      stickers: [
+        {
+          id: 'stk-4',
+          type: 'HASHTAG',
+          value: '#Relooking2027',
+          label: '#Relooking2027',
+          positionX: 50,
+          positionY: 78,
+          style: { rotation: 0 },
+        },
+      ],
+      expiresAt: tomorrow,
+    },
+  ];
+  for (const s of stories) {
+    await prisma.story.upsert({ where: { id: s.id }, update: {}, create: s });
+  }
+  console.log(`✓ ${stories.length} stories avec stickers`);
+
+  // ── Lives (1 en direct + 1 programmé) ──
+  const live1 = await prisma.live.upsert({
+    where: { id: 'live-1' },
+    update: {},
+    create: {
+      id: 'live-1',
+      businessId: B.RESTO,
+      title: 'LIVE Cuisine : spécial Attiéké ! 🍳',
+      description: "On vous montre comment on prépare nos plats. Commandez pendant le direct !",
+      coverImage: '/images/products/attieke.svg',
+      streamUrl: SAMPLE_VIDEOS[2],
+      status: 'LIVE',
+      hasEscrow: true,
+      viewerCount: 47,
+      viewerCountPeak: 120,
+      startedAt: new Date(now.getTime() - 30 * 60000),
+    },
+  });
+  await prisma.live.upsert({
+    where: { id: 'live-2' },
+    update: {},
+    create: {
+      id: 'live-2',
+      businessId: B.SALON,
+      title: 'Live Relooking : conseils beauté ✨',
+      description: 'Astuces coiffure et soins par nos expertes.',
+      coverImage: '/images/portfolio/villa-r1-salon.svg',
+      status: 'SCHEDULED',
+      hasEscrow: true,
+      scheduledAt: tomorrow,
+    },
+  });
+
+  // Produits du live (LiveProduct) — live shopping
+  const liveProducts = [
+    {
+      liveId: live1.id,
+      productId: 'prod-res-1',
+      name: 'Attiéké Poisson Braisé',
+      description: 'Plat signature servi avec alloco.',
+      price: 3500,
+      currency: 'FCFA',
+      image: '/images/products/attieke.svg',
+      stock: 20,
+      remainingStock: 14,
+      sortOrder: 1,
+    },
+    {
+      liveId: live1.id,
+      productId: 'prod-res-2',
+      name: 'Mafé Poulet',
+      description: 'Sauce arachide onctueuse, riz blanc.',
+      price: 4500,
+      currency: 'FCFA',
+      image: '/images/products/mafe.svg',
+      stock: 15,
+      remainingStock: 9,
+      sortOrder: 2,
+    },
+    {
+      liveId: live1.id,
+      productId: 'prod-res-3',
+      name: 'Jus de Bissap',
+      description: 'Fait maison, 1L.',
+      price: 1500,
+      currency: 'FCFA',
+      image: '/images/products/bissap.svg',
+      stock: 40,
+      remainingStock: 25,
+      sortOrder: 3,
+    },
+  ];
+  for (const lp of liveProducts) {
+    await prisma.liveProduct.create({ data: lp as any });
+  }
+  console.log(`✓ ${liveProducts.length} produits dans le live + 1 live programmé`);
+
+  // ── Offres Flash ──
+  const offers: any[] = [
+    {
+      id: 'offer-1',
+      businessId: B.RESTO,
+      title: 'Attiéké Poisson Braisé -20%',
+      description: 'Offre flash du jour sur notre plat signature.',
+      image: '/images/products/attieke.svg',
+      discountPercent: 20,
+      originalPrice: 3500,
+      flashPrice: 2800,
+      quantity: 50,
+      soldCount: 18,
+      maxPerCustomer: 2,
+      startAt: new Date(now.getTime() - 3600000),
+      endAt: new Date(now.getTime() + 20 * 3600000),
+      isActive: true,
+      isFeatured: true,
+    },
+    {
+      id: 'offer-2',
+      businessId: B.RESTO,
+      title: 'Mafé Poulet -15%',
+      description: 'La recette traditionnelle à prix réduit.',
+      image: '/images/products/mafe.svg',
+      discountPercent: 15,
+      originalPrice: 4500,
+      flashPrice: 3825,
+      quantity: 30,
+      soldCount: 7,
+      maxPerCustomer: 2,
+      startAt: new Date(now.getTime() - 3600000),
+      endAt: new Date(now.getTime() + 14 * 3600000),
+      isActive: true,
+      isFeatured: false,
+    },
+    {
+      id: 'offer-3',
+      businessId: B.RESTO,
+      title: 'Bissap 1L -33%',
+      description: 'Jus de bissap maison, naturel et rafraîchissant.',
+      image: '/images/products/bissap.svg',
+      discountPercent: 33,
+      originalPrice: 1500,
+      flashPrice: 1000,
+      quantity: 100,
+      soldCount: 42,
+      maxPerCustomer: 3,
+      startAt: new Date(now.getTime() - 3600000),
+      endAt: new Date(now.getTime() + 28 * 3600000),
+      isActive: true,
+      isFeatured: false,
+    },
+  ];
+  for (const o of offers) {
+    await prisma.offerFlash.upsert({ where: { id: o.id }, update: {}, create: o });
+  }
+  console.log(`✓ ${offers.length} offres flash actives`);
+}
 
 async function seedAdSlots() {
   const slots = [
@@ -2180,7 +2525,7 @@ async function seedAdCampaigns() {
     },
     {
       id: 'ad-camp-3', slotId: eventSlot?.id, advertiserType: 'BUSINESS', businessId: B.EVENTS,
-      name: 'Événements Konnect — Sidebar', objective: 'EVENT_PROMOTION',
+      name: 'Événements Konnect — Sidebar', objective: 'PROMOTION',
       startDate: now, endDate: new Date(now.getTime() + 14 * 24 * 3600 * 1000),
       budget: 50000, status: 'ACTIVE',
       creatives: [{

@@ -1,5 +1,6 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
+import { publishOrderPlaced, publishNewClient } from '../events/publishers';
 
 export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId: string) {
   let media: any;
@@ -223,32 +224,88 @@ export async function addToCartFromMedia(userId: string, productId: string, quan
   });
 }
 
-export async function createOrderFromMedia(userId: string, productId: string, businessId: string) {
+export async function createOrderFromMedia(
+  userId: string,
+  productId: string,
+  businessId: string,
+  quantity = 1,
+  paymentMethod?: string
+) {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) throw new AppError('Produit introuvable', 404);
 
+  if (product.stock !== null && product.stock < quantity) {
+    throw new AppError('Stock insuffisant', 409);
+  }
+
+  const unitPrice = Number(product.price);
+  const total = unitPrice * quantity;
   const orderCount = await prisma.order.count();
   const orderNumber = `ORDER-${Date.now()}-${orderCount + 1}`;
 
-  return prisma.order.create({
-    data: {
-      buyerId: userId,
-      businessId,
-      orderNumber,
-      status: 'PENDING',
-      totalAmount: product.price,
-      subtotal: product.price,
-      items: {
-        create: {
-          productId,
-          name: product.name,
-          quantity: 1,
-          unitPrice: product.price,
-          total: product.price,
+  let order: any;
+  await prisma.$transaction(async (tx) => {
+    order = await tx.order.create({
+      data: {
+        buyerId: userId,
+        businessId,
+        orderNumber,
+        status: 'PENDING',
+        totalAmount: total,
+        subtotal: total,
+        paymentMethod: paymentMethod || null,
+        items: {
+          create: {
+            productId,
+            name: product.name,
+            quantity,
+            unitPrice: product.price,
+            total,
+          },
         },
       },
-    },
+    });
+    if (product.stock !== null) {
+      await tx.product.update({
+        where: { id: productId },
+        data: { stock: product.stock - quantity },
+      });
+    }
+    return order;
   });
+
+  if (order) {
+    // Notifier le business : nouvelle commande depuis une vidéo (temps réel + notification propriétaire)
+    try {
+      const biz = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { id: true, name: true, ownerId: true },
+      });
+      if (biz) {
+        publishOrderPlaced({
+          userId: biz.ownerId,
+          orderId: order.id,
+          businessName: biz.name,
+          amount: total.toString(),
+          businessId: biz.id,
+        });
+        const client = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { firstName: true, lastName: true },
+        });
+        publishNewClient({
+          userId: biz.ownerId,
+          businessId: biz.id,
+          clientId: userId,
+          clientName: [client?.firstName, client?.lastName].filter(Boolean).join(' ') || 'Client',
+        });
+      }
+    } catch {
+      // Notification non bloquante : la commande reste créée même si la notif échoue
+    }
+  }
+
+  return order;
 }
 
 export async function createBookingFromMedia(

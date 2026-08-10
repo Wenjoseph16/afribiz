@@ -78,8 +78,14 @@ router.post(
       res.status(401).json({ success: false, error: 'Non authentifié' });
       return;
     }
-    const { productId, businessId } = req.body;
-    const order = await mediaActions.createOrderFromMedia(req.user.id, productId, businessId);
+    const { productId, businessId, quantity, paymentMethod } = req.body;
+    const order = await mediaActions.createOrderFromMedia(
+      req.user.id,
+      productId,
+      businessId,
+      quantity || 1,
+      paymentMethod
+    );
     res.status(201).json(successResponse(order, 'Commande créée'));
   })
 );

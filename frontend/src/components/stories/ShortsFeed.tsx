@@ -36,19 +36,19 @@ import {
 } from '@/hooks/features/useShorts';
 import {
   useMediaCommerceData,
-  useMediaAddToCart,
-  useMediaCreateOrder,
-  useMediaBook,
   COMMERCE_ACTIONS,
 } from '@/hooks/features/useMediaCommerce';
+import { VideoCheckoutOverlay } from '@/components/media/VideoCheckoutOverlay';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/services/apiClient';
 
 export interface ShortsFeedProps {
   businessId?: string;
+  /** Sauter directement à ce short à l'ouverture (page /shorts/[id]) */
+  initialShortId?: string;
 }
 
-export function ShortsFeed({ businessId }: ShortsFeedProps) {
+export function ShortsFeed({ businessId, initialShortId }: ShortsFeedProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [commentInput, setCommentInput] = useState('');
@@ -62,9 +62,6 @@ export function ShortsFeed({ businessId }: ShortsFeedProps) {
   const viewShort = useViewShort();
   const shareShort = useShareShort();
   const saveShort = useSaveShort();
-  const addToCart = useMediaAddToCart();
-  const createOrder = useMediaCreateOrder();
-  const bookService = useMediaBook();
   const { user } = useAuthStore();
 
   const shorts = shortsData?.items || [];
@@ -84,6 +81,14 @@ export function ShortsFeed({ businessId }: ShortsFeedProps) {
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportSent, setReportSent] = useState(false);
+  const [checkoutCommerce, setCheckoutCommerce] = useState<any>(null);
+
+  // Sauter au short initial (page /shorts/[id])
+  useEffect(() => {
+    if (!initialShortId || !shorts.length) return;
+    const idx = shorts.findIndex((s: any) => s.id === initialShortId);
+    if (idx >= 0) setCurrentIndex(idx);
+  }, [initialShortId, shorts.length]);
 
   const handleReport = async () => {
     if (!reportReason.trim() || !currentShort?.id) return;
@@ -106,6 +111,16 @@ export function ShortsFeed({ businessId }: ShortsFeedProps) {
 
   const handleCommerceAction = async (action: string, d: any) => {
     if (!currentShort?.id) return;
+    // Acheter / réserver directement sur la vidéo (mini-checkout overlay)
+    if (action === 'add_to_cart' || action === 'order' || action === 'book') {
+      if (!user) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+      setIsPaused(true);
+      setCheckoutCommerce(d);
+      return;
+    }
     if (!user) {
       window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
       return;
@@ -115,15 +130,6 @@ export function ShortsFeed({ businessId }: ShortsFeedProps) {
     try {
       const { data } = d;
       switch (action) {
-        case 'add_to_cart':
-          await addToCart.mutateAsync({ productId: data.id, quantity: 1 });
-          break;
-        case 'order':
-          await createOrder.mutateAsync({ productId: data.id, businessId: data.businessId });
-          break;
-        case 'book':
-          await bookService.mutateAsync({ serviceId: data.id, businessId: data.businessId });
-          break;
         case 'purchase':
           window.location.href = '/events/' + data.slug + '/' + data.id;
           return;
@@ -517,6 +523,16 @@ export function ShortsFeed({ businessId }: ShortsFeedProps) {
           />
         ))}
       </div>
+
+      {/* Mini-checkout overlay — acheter sur la vidéo */}
+      <VideoCheckoutOverlay
+        open={!!checkoutCommerce}
+        onClose={() => {
+          setCheckoutCommerce(null);
+          setIsPaused(false);
+        }}
+        commerce={checkoutCommerce}
+      />
 
       {/* Comments panel — glass morphism */}
       {showComments === currentShort?.id && (

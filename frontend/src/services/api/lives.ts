@@ -25,6 +25,18 @@ export function injectLives(api: ApiClientMethods) {
   api.getLiveChats = function (liveId: string) {
     return this.get('/lives/' + liveId + '/chats');
   };
+  api.sendLiveChat = function (liveId: string, message: string) {
+    return this.post('/lives/' + liveId + '/chat', { message });
+  };
+  api.joinLiveRoom = function (liveId: string) {
+    return this.post('/lives/' + liveId + '/join', {});
+  };
+  api.leaveLiveRoom = function (liveId: string) {
+    return this.post('/lives/' + liveId + '/leave', {});
+  };
+  api.sendLiveReaction = function (liveId: string, emoji: string) {
+    return this.post('/lives/' + liveId + '/reactions', { emoji });
+  };
   api.getLiveStats = function () {
     return this.get('/lives/stats');
   };

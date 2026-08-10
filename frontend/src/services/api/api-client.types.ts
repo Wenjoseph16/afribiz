@@ -1201,6 +1201,10 @@ export interface ApiClientMethods {
   deleteLive(id: string): Promise<any>;
   addLiveProduct(liveId: string, data: any): Promise<any>;
   getLiveChats(liveId: string): Promise<any>;
+  sendLiveChat(liveId: string, message: string): Promise<any>;
+  joinLiveRoom(liveId: string): Promise<any>;
+  leaveLiveRoom(liveId: string): Promise<any>;
+  sendLiveReaction(liveId: string, emoji: string): Promise<any>;
   getLiveStats(): Promise<any>;
 
   // ============================================
