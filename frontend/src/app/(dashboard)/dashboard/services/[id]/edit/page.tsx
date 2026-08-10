@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Save,
   Plus,
   X,
@@ -193,27 +193,16 @@ export default function EditServicePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href={`/dashboard/services/${id}`}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Modifier le service
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{s?.name}</p>
-          </div>
-        </div>
-        <Link href={`/dashboard/services/${id}`}>
-          <Button variant="outline" type="button">
-            Annuler
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Modifier le service"
+        description={s?.name}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Services', href: '/dashboard/services' },
+          { label: s?.name || 'Service', href: `/dashboard/services/${id}` },
+          { label: 'Modifier' },
+        ]}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* === INFORMATIONS PRINCIPALES === */}

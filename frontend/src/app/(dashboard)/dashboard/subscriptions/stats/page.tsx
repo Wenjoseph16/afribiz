@@ -14,6 +14,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useSubscriptionStats, useSubscribers, useSubscriptionPlans } from '@/features/hooks';
 
@@ -55,12 +56,15 @@ export default function SubscriptionStatsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Statistiques abonnements
-        </h1>
-        <p className="text-sm text-gray-500">Analysez la performance de vos revenus récurrents</p>
-      </div>
+      <PageHeader
+        title="Statistiques abonnements"
+        description="Analysez la performance de vos revenus récurrents"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Abonnements', href: '/dashboard/subscriptions' },
+          { label: 'Statistiques' },
+        ]}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3 sm:p-4">

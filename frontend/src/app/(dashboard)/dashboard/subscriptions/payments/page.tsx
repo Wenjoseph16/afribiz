@@ -16,6 +16,7 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/services/apiClient';
 
@@ -83,18 +84,21 @@ export default function SubscriptionPaymentsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Paiements abonnements
-          </h1>
-          <p className="text-sm text-gray-500">Historique des paiements récurrents</p>
-        </div>
-        <Button size="sm" onClick={() => setShowRecord(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Enregistrer paiement
-        </Button>
-      </div>
+      <PageHeader
+        title="Paiements abonnements"
+        description="Historique des paiements récurrents"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Abonnements', href: '/dashboard/subscriptions' },
+          { label: 'Paiements' },
+        ]}
+        actions={
+          <Button size="sm" onClick={() => setShowRecord(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Enregistrer paiement
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">

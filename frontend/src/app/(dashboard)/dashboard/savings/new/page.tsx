@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Wallet, Info, Shield } from 'lucide-react';
+import { Loader2, Wallet, Info, Shield } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { apiClient } from '@/services/apiClient';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 export default function NewSavingsGroupPage() {
   const router = useRouter();
@@ -59,22 +60,15 @@ export default function NewSavingsGroupPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-8">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            Nouveau groupe d&apos;épargne
-          </h1>
-          <p className="text-sm text-gray-500">
-            Créez une tontine ou un groupe d&apos;épargne collective
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Nouveau groupe d'épargne"
+        description="Créez une tontine ou un groupe d'épargne collective"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Épargne', href: '/dashboard/savings' },
+          { label: 'Nouveau groupe' },
+        ]}
+      />
 
       <Card className="p-4 bg-gradient-to-r from-brand-50 to-blue-50 dark:from-brand-900/10 dark:to-blue-900/10 border-brand-200 dark:border-brand-800">
         <div className="flex items-start gap-3">

@@ -3,23 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Users,
   Phone,
   Mail,
-  MapPin,
   DollarSign,
   Loader2,
   AlertCircle,
-  ArrowLeft,
   TrendingUp,
   Wallet,
-  BadgeCheck,
   FileText,
   Activity,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
 
 export default function AgentDetailPage() {
@@ -68,48 +64,23 @@ export default function AgentDetailPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <Link
-        href="/dashboard/agents"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour aux agents
-      </Link>
+      <PageHeader
+        title={agent.name || 'Agent'}
+        description={`${agent.phone || '—'}${agent.email ? ` · ${agent.email}` : ''}${agent.address ? ` · ${agent.address}` : ''}`}
+        badge={
+          agent.status === 'ACTIVE'
+            ? { label: agent.status || 'ACTIF', className: 'bg-green-500/10 text-green-600' }
+            : { label: agent.status || 'ACTIF', className: 'bg-gray-500/10 text-gray-500' }
+        }
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Agents', href: '/dashboard/agents' },
+          { label: agent.name || 'Agent' },
+        ]}
+      />
 
       <Card className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-2xl font-bold text-brand-600">
-              {agent.name?.charAt(0)?.toUpperCase() || '?'}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {agent.name}
-                </h1>
-                <Badge variant={agent.status === 'ACTIVE' ? 'success' : 'default'}>
-                  {agent.status || 'ACTIF'}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                <span className="flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5" /> {agent.phone || '—'}
-                </span>
-                {agent.email && (
-                  <span className="flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5" /> {agent.email}
-                  </span>
-                )}
-                {agent.address && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" /> {agent.address}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="grid grid-cols-3 gap-4">
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
             <Wallet className="w-5 h-5 mx-auto text-brand-500 mb-1" />
             <p className="text-xl font-bold text-gray-900 dark:text-gray-100">

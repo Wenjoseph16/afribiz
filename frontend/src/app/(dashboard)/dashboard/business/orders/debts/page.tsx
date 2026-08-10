@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, DollarSign, AlertTriangle, CheckCircle2, Clock, Loader } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { DollarSign, AlertTriangle, CheckCircle2, Clock, Loader } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -54,18 +55,15 @@ export default function BusinessOrderDebtsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/business/orders"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dettes</h1>
-          <p className="text-sm text-gray-500">Consultez le solde de vos commandes business</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Dettes"
+        description="Consultez le solde de vos commandes business"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Commandes', href: '/dashboard/business/orders' },
+          { label: 'Dettes' },
+        ]}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <Card className="p-4">

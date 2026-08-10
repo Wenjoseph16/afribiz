@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { apiClient } from '@/services/apiClient';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 export default function NewTaxCountryPage() {
   const router = useRouter();
@@ -33,18 +33,15 @@ export default function NewTaxCountryPage() {
 
   return (
     <div className="space-y-6 pb-8 max-w-2xl">
-      <Link
-        href="/dashboard/taxes"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour
-      </Link>
-
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            Ajouter un pays (ZLECAF)
-          </h1>
+      <PageHeader
+        title="Ajouter un pays (ZLECAF)"
+        description="Renseignez les taxes d'un pays de la zone ZLECAF"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Taxes', href: '/dashboard/taxes' },
+          { label: 'Nouveau pays' },
+        ]}
+        actions={
           <button
             onClick={handleSubmit}
             disabled={saving || !form.countryCode || !form.countryName}
@@ -53,8 +50,10 @@ export default function NewTaxCountryPage() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Création...' : 'Ajouter'}
           </button>
-        </div>
+        }
+      />
 
+      <Card className="p-6">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import { useMyBusiness } from '@/features/hooks/business';
@@ -295,12 +296,14 @@ export default function NotificationTemplatesPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Notifications client</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Personnalisez les messages que vos clients reçoivent de votre part.
-        </p>
-      </div>
+      <PageHeader
+        title="Notifications client"
+        description="Personnalisez les messages que vos clients reçoivent de votre part."
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Notifications client' },
+        ]}
+      />
 
       <Card
         padding="md"

@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
-import Link from 'next/link';
 
 export default function NewAgentPage() {
   const router = useRouter();
@@ -38,16 +38,18 @@ export default function NewAgentPage() {
 
   return (
     <div className="space-y-6 pb-8 max-w-2xl">
-      <Link
-        href="/dashboard/agents"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour
-      </Link>
+      <PageHeader
+        title="Nouvel agent"
+        description="Ajoutez un agent de livraison pour vos commandes"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Agents', href: '/dashboard/agents' },
+          { label: 'Nouvel agent' },
+        ]}
+      />
 
       <Card className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Nouvel agent</h1>
           <button
             onClick={handleSubmit}
             disabled={saving || !form.name || !form.phone}

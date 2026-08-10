@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   FileSignature,
   Search,
@@ -134,26 +135,23 @@ export default function InvoicesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/finance"
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <ChevronRight className="w-4 h-4 text-gray-400 rotate-180" />
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Factures</h1>
-          </div>
-          <p className="text-sm text-gray-500 mt-1">Gérez vos factures et suivez les paiements</p>
-        </div>
-        <Link href="/dashboard/finance/invoices/new">
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-1.5" />
-            Nouvelle facture
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Factures"
+        description="Gérez vos factures et suivez les paiements"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Factures' },
+        ]}
+        actions={
+          <Link href="/dashboard/finance/invoices/new">
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1.5" />
+              Nouvelle facture
+            </Button>
+          </Link>
+        }
+      />
 
       <CopilotTips moduleKey="INVOICES" />
 

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, FileText, User, Phone, Loader } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
+import { Plus, Trash2, FileText, User, Phone, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
@@ -80,18 +81,16 @@ export default function NewQuotePage() {
 
   return (
     <div className="animate-fade-in space-y-6 max-w-3xl">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/finance/quotes"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nouveau devis</h1>
-          <p className="text-sm text-gray-500">Créez un devis professionnel</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Nouveau devis"
+        description="Créez un devis professionnel"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Devis', href: '/dashboard/finance/quotes' },
+          { label: 'Nouveau devis' },
+        ]}
+      />
 
       <Card className="p-4 sm:p-6 space-y-6">
         {/* Client */}

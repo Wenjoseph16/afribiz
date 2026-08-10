@@ -1,9 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   Megaphone,
   BarChart3,
   Eye,
@@ -16,6 +14,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import {
   useAdCampaign,
@@ -38,38 +37,43 @@ export default function AdDetailPage() {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/ads"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold">{campaign?.name || 'Campagne'}</h1>
-          <span
-            className={cn(
-              'text-xs font-medium px-2 py-0.5 rounded-full',
-              AD_STATUS_STYLES[campaign?.status as keyof typeof AD_STATUS_STYLES] || ''
+      <PageHeader
+        title={campaign?.name || 'Campagne'}
+        description={
+          AD_STATUS_LABELS[campaign?.status as keyof typeof AD_STATUS_LABELS] ||
+          campaign?.status
+        }
+        badge={
+          campaign?.status
+            ? {
+                label:
+                  AD_STATUS_LABELS[campaign?.status as keyof typeof AD_STATUS_LABELS] ||
+                  campaign?.status,
+                className:
+                  AD_STATUS_STYLES[campaign?.status as keyof typeof AD_STATUS_STYLES] || '',
+              }
+            : undefined
+        }
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Publicité', href: '/dashboard/ads' },
+          { label: campaign?.name || 'Campagne' },
+        ]}
+        actions={
+          <div className="flex gap-2">
+            {campaign?.status === 'ACTIVE' && (
+              <Button variant="secondary" size="sm" onClick={() => pauseCampaign.mutate(id)}>
+                Mettre en pause
+              </Button>
             )}
-          >
-            {AD_STATUS_LABELS[campaign?.status as keyof typeof AD_STATUS_LABELS] ||
-              campaign?.status}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          {campaign?.status === 'ACTIVE' && (
-            <Button variant="secondary" size="sm" onClick={() => pauseCampaign.mutate(id)}>
-              Mettre en pause
-            </Button>
-          )}
-          {campaign?.status === 'PAUSED' && (
-            <Button variant="secondary" size="sm" onClick={() => resumeCampaign.mutate(id)}>
-              Reprendre
-            </Button>
-          )}
-        </div>
-      </div>
+            {campaign?.status === 'PAUSED' && (
+              <Button variant="secondary" size="sm" onClick={() => resumeCampaign.mutate(id)}>
+                Reprendre
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[

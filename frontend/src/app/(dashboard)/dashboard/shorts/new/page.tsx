@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   Film,
   Plus,
@@ -10,7 +11,6 @@ import {
   Upload,
   Save,
   Play,
-  ArrowLeft,
   Type,
   Link as LinkIcon,
   ShoppingBag,
@@ -86,24 +86,15 @@ export default function NewShortPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/shorts"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Publier un Short
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Partagez une vidéo courte de votre activité
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Publier un Short"
+        description="Partagez une vidéo courte de votre activité"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Shorts', href: '/dashboard/shorts' },
+          { label: 'Publier' },
+        ]}
+      />
 
       <form onSubmit={handleSubmit} className="grid md:grid-cols-5 gap-6">
         {/* Preview & Upload Area */}

@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   DollarSign,
   User,
   Phone,
@@ -104,32 +104,25 @@ export default function DebtDetailPage() {
 
   return (
     <div className="animate-fade-in space-y-6 max-w-4xl">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/finance/debts"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Dette #{id.slice(0, 8)}
-            </h1>
-            <Badge variant={isOverdue ? 'danger' : s.variant} size="sm">
-              {isOverdue ? 'En retard' : s.label}
-            </Badge>
-          </div>
-          <p className="text-sm text-gray-500">
-            Créée le{' '}
-            {new Date(debt.createdAt).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={`Dette #${id.slice(0, 8)}`}
+        description={`Créée le ${new Date(debt.createdAt).toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })}`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Dettes', href: '/dashboard/finance/debts' },
+          { label: `#${id.slice(0, 8)}` },
+        ]}
+        actions={
+          <Badge variant={isOverdue ? 'danger' : s.variant} size="sm">
+            {isOverdue ? 'En retard' : s.label}
+          </Badge>
+        }
+      />
 
       {/* Actions */}
       {debt.status !== 'SETTLED' && debt.status !== 'CANCELLED' && (

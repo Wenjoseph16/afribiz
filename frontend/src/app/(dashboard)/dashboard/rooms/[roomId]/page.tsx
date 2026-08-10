@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Pencil,
   BedDouble,
   Loader,
@@ -115,105 +115,94 @@ export default function RoomDetailPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/rooms"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {r.name}
-              </h1>
-              {r.roomNumber && (
-                <span className="text-sm text-gray-400 font-mono">N° {r.roomNumber}</span>
+      <PageHeader
+        title={r.name}
+        description={`${ROOM_TYPES[r.type] || r.type} · ${r.capacity} pers. · ${r.beds} lit(s) · ${
+          r.bathroom === 'PRIVATE'
+            ? 'SDB privée'
+            : r.bathroom === 'SHARED'
+              ? 'SDB partagée'
+              : 'SDB commune'
+        }${r.roomNumber ? ` · N° ${r.roomNumber}` : ''}`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Chambres', href: '/dashboard/rooms' },
+          { label: r.name },
+        ]}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={cn(
+                'px-2 py-0.5 text-xs font-semibold rounded-full',
+                r.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
               )}
-              <span
-                className={cn(
-                  'px-2 py-0.5 text-xs font-semibold rounded-full',
-                  r.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                )}
-              >
-                {r.isActive ? 'Actif' : 'Inactif'}
+            >
+              {r.isActive ? 'Actif' : 'Inactif'}
+            </span>
+            {r.isPromotional && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-red-100 text-red-600 rounded-full">
+                PROMO
               </span>
-              {r.isPromotional && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-red-100 text-red-600 rounded-full">
-                  PROMO
-                </span>
-              )}
-              {r.featured && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-600 rounded-full">
-                  VEDETTE
-                </span>
-              )}
-              {isPopularRoom(r) && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-full">
-                  🔥 Populaire
-                </span>
-              )}
-              {isHighDemandRoom(r) && !isPopularRoom(r) && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-full">
-                  📈 Haute demande
-                </span>
-              )}
-              {isNewRoom(r) && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-purple-100 text-purple-700 rounded-full">
-                  🆕 Nouveau
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {ROOM_TYPES[r.type] || r.type} · {r.capacity} pers. · {r.beds} lit(s) ·{' '}
-              {r.bathroom === 'PRIVATE'
-                ? 'SDB privée'
-                : r.bathroom === 'SHARED'
-                  ? 'SDB partagée'
-                  : 'SDB commune'}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleToggle}
-            isLoading={toggleActive.isPending}
-          >
-            {r.isActive ? (
-              <EyeOff className="h-4 w-4 mr-1.5" />
-            ) : (
-              <Eye className="h-4 w-4 mr-1.5" />
             )}
-            {r.isActive ? 'Désactiver' : 'Activer'}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleDuplicate}
-            isLoading={duplicate.isPending}
-          >
-            <Copy className="h-4 w-4 mr-1.5" />
-            Dupliquer
-          </Button>
-          <Link href={`/dashboard/rooms/${roomId}/edit`}>
-            <Button size="sm">
-              <Pencil className="h-4 w-4 mr-1.5" />
-              Modifier
+            {r.featured && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-600 rounded-full">
+                VEDETTE
+              </span>
+            )}
+            {isPopularRoom(r) && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-full">
+                🔥 Populaire
+              </span>
+            )}
+            {isHighDemandRoom(r) && !isPopularRoom(r) && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-full">
+                📈 Haute demande
+              </span>
+            )}
+            {isNewRoom(r) && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-purple-100 text-purple-700 rounded-full">
+                🆕 Nouveau
+              </span>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleToggle}
+              isLoading={toggleActive.isPending}
+            >
+              {r.isActive ? (
+                <EyeOff className="h-4 w-4 mr-1.5" />
+              ) : (
+                <Eye className="h-4 w-4 mr-1.5" />
+              )}
+              {r.isActive ? 'Désactiver' : 'Activer'}
             </Button>
-          </Link>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="text-red-500 hover:text-red-600 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDuplicate}
+              isLoading={duplicate.isPending}
+            >
+              <Copy className="h-4 w-4 mr-1.5" />
+              Dupliquer
+            </Button>
+            <Link href={`/dashboard/rooms/${roomId}/edit`}>
+              <Button size="sm">
+                <Pencil className="h-4 w-4 mr-1.5" />
+                Modifier
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

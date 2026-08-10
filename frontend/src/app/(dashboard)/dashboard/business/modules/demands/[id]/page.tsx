@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   ArrowLeft,
   Star,
@@ -98,25 +99,23 @@ export default function BusinessDemandDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/dashboard/business/modules/demands" className="hover:text-gray-700">
-          Mes demandes
-        </Link>
-        <span>/</span>
-        <span className="text-gray-900">{demand.title}</span>
-      </div>
+      <PageHeader
+        title={demand.title}
+        badge={
+          demand.isUrgent
+            ? { label: 'Urgent', className: 'bg-red-500/10 text-red-600' }
+            : undefined
+        }
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Mes demandes', href: '/dashboard/business/modules/demands' },
+          { label: demand.title },
+        ]}
+      />
 
       <Card className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold">{demand.title}</h1>
-              {demand.isUrgent && (
-                <Badge variant="danger" size="sm">
-                  Urgent
-                </Badge>
-              )}
-            </div>
             <div className="flex items-center gap-3 text-sm text-gray-500">
               <Badge variant="info" size="sm">
                 {demand.moduleType}

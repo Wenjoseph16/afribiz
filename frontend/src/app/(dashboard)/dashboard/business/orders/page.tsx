@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import Link from 'next/link';
 import {
   ShoppingBag,
@@ -221,31 +222,31 @@ export default function BusinessOrdersPage() {
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Commandes reçues
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gérez les commandes de vos clients en temps réel
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => refetch()}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            title="Actualiser"
-          >
-            <RefreshCw className="h-4 w-4 text-gray-500" />
-          </button>
-          <Link href="/dashboard/orders">
-            <Button variant="outline" size="sm">
-              <ShoppingBag className="h-4 w-4 mr-1.5" />
-              Mes achats
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Commandes reçues"
+        description="Gérez les commandes de vos clients en temps réel"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Commandes' },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => refetch()}
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title="Actualiser"
+            >
+              <RefreshCw className="h-4 w-4 text-gray-500" />
+            </button>
+            <Link href="/dashboard/orders">
+              <Button variant="outline" size="sm">
+                <ShoppingBag className="h-4 w-4 mr-1.5" />
+                Mes achats
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
       <CopilotTips moduleKey="ORDERS" />
 

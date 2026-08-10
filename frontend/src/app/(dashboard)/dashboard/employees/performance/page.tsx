@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   TrendingUp,
   Star,
@@ -117,18 +118,21 @@ export default function EmployeePerformancePage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Performance employés</h1>
-          <p className="text-sm text-gray-500">
-            Analysez la performance et la ponctualité de votre équipe
-          </p>
-        </div>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Ajouter évaluation
-        </Button>
-      </div>
+      <PageHeader
+        title="Performance employés"
+        description="Analysez la performance et la ponctualité de votre équipe"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Équipe', href: '/dashboard/employees' },
+          { label: 'Performance' },
+        ]}
+        actions={
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Ajouter évaluation
+          </Button>
+        }
+      />
 
       {/* Global stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

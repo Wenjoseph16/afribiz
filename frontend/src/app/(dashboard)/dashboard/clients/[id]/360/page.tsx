@@ -1,8 +1,8 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Activity,
   Eye,
   MousePointerClick,
@@ -103,18 +103,16 @@ export default function Customer360Page() {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => router.push(`/dashboard/clients/${clientId}`)}
-          className="p-2 rounded-xl hover:bg-muted transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{clientName}</h1>
-          <p className="text-sm text-muted-foreground">Vue 360° du client</p>
-        </div>
-      </div>
+      <PageHeader
+        title={clientName}
+        description="Vue 360° du client"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Clients', href: '/dashboard/clients' },
+          { label: clientName, href: `/dashboard/clients/${clientId}` },
+          { label: 'Vue 360°' },
+        ]}
+      />
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

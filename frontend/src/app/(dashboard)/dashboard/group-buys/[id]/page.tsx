@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   ShoppingCart,
   Users,
@@ -9,7 +10,6 @@ import {
   Calendar,
   Loader2,
   AlertCircle,
-  ArrowLeft,
   Trash2,
   Plus,
   Clock,
@@ -134,32 +134,30 @@ export default function GroupBuyDetailPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <Link
-        href="/dashboard/group-buys"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour
-      </Link>
+      <PageHeader
+        title={group.title}
+        description={group.description || 'Achat groupé'}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Achats groupés', href: '/dashboard/group-buys' },
+          { label: group.title },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge variant={isActive ? 'success' : 'default'}>
+              {isActive ? 'Actif' : 'Terminé'}
+            </Badge>
+            <button
+              onClick={handleDelete}
+              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        }
+      />
 
       <Card className="p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{group.title}</h1>
-              <Badge variant={isActive ? 'success' : 'default'}>
-                {isActive ? 'Actif' : 'Terminé'}
-              </Badge>
-            </div>
-            {group.description && <p className="text-sm text-gray-500 mt-1">{group.description}</p>}
-          </div>
-          <button
-            onClick={handleDelete}
-            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-
         <div className="mt-6">
           <div className="flex justify-between text-sm text-gray-500 mb-1">
             <span>

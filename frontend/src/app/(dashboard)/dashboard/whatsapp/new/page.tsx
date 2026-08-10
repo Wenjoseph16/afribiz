@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { apiClient } from '@/services/apiClient';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 export default function NewWhatsAppTemplatePage() {
   const router = useRouter();
@@ -34,18 +34,15 @@ export default function NewWhatsAppTemplatePage() {
 
   return (
     <div className="space-y-6 pb-8 max-w-2xl">
-      <Link
-        href="/dashboard/whatsapp"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour
-      </Link>
-
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            Nouveau template WhatsApp
-          </h1>
+      <PageHeader
+        title="Nouveau template WhatsApp"
+        description="Créez un modèle de message pour vos clients"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'WhatsApp', href: '/dashboard/whatsapp' },
+          { label: 'Nouveau template' },
+        ]}
+        actions={
           <button
             onClick={handleSubmit}
             disabled={saving || !form.name || !form.body}
@@ -54,8 +51,10 @@ export default function NewWhatsAppTemplatePage() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Création...' : 'Créer'}
           </button>
-        </div>
+        }
+      />
 
+      <Card className="p-6">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   FileText,
   Search,
@@ -139,26 +140,23 @@ export default function QuotesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/finance"
-              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <ChevronRight className="w-4 h-4 text-gray-400 rotate-180" />
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Devis</h1>
-          </div>
-          <p className="text-sm text-gray-500 mt-1">Créez et gérez vos devis clients</p>
-        </div>
-        <Link href="/dashboard/finance/quotes/new">
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-1.5" />
-            Nouveau devis
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Devis"
+        description="Créez et gérez vos devis clients"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Devis' },
+        ]}
+        actions={
+          <Link href="/dashboard/finance/quotes/new">
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1.5" />
+              Nouveau devis
+            </Button>
+          </Link>
+        }
+      />
 
       <CopilotTips moduleKey="QUOTES" />
 

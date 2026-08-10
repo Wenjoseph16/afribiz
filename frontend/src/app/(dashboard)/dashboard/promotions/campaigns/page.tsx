@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   Megaphone,
   Plus,
@@ -110,16 +111,21 @@ export default function CampaignsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Campagnes marketing</h1>
-          <p className="text-sm text-gray-500">Créez et gérez vos campagnes promotionnelles</p>
-        </div>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nouvelle campagne
-        </Button>
-      </div>
+      <PageHeader
+        title="Campagnes marketing"
+        description="Créez et gérez vos campagnes promotionnelles"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Promotions', href: '/dashboard/promotions' },
+          { label: 'Campagnes' },
+        ]}
+        actions={
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Nouvelle campagne
+          </Button>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

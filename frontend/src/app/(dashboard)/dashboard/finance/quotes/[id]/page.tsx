@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   FileText,
   User,
   Phone,
@@ -93,32 +93,25 @@ export default function QuoteDetailPage() {
 
   return (
     <div className="animate-fade-in space-y-6 max-w-4xl">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/finance/quotes"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {quote.quoteNumber || `#${id.slice(0, 8)}`}
-            </h1>
-            <Badge variant={isExpired ? 'warning' : s.variant} size="sm">
-              {isExpired ? 'Expiré' : s.label}
-            </Badge>
-          </div>
-          <p className="text-sm text-gray-500">
-            Créé le{' '}
-            {new Date(quote.createdAt).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={quote.quoteNumber || `#${id.slice(0, 8)}`}
+        description={`Créé le ${new Date(quote.createdAt).toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })}`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Devis', href: '/dashboard/finance/quotes' },
+          { label: quote.quoteNumber || 'Devis' },
+        ]}
+        actions={
+          <Badge variant={isExpired ? 'warning' : s.variant} size="sm">
+            {isExpired ? 'Expiré' : s.label}
+          </Badge>
+        }
+      />
 
       {/* Actions */}
       <Card className="p-4">

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/services/apiClient';
 
@@ -74,10 +75,15 @@ export default function SubscriptionLogsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Activités abonnements</h1>
-        <p className="text-sm text-gray-500">Historique complet des actions sur les abonnements</p>
-      </div>
+      <PageHeader
+        title="Activités abonnements"
+        description="Historique complet des actions sur les abonnements"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Abonnements', href: '/dashboard/subscriptions' },
+          { label: 'Activités' },
+        ]}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-3">

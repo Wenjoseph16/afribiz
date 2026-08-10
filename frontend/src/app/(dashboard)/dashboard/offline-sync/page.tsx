@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   Download,
   Upload,
@@ -98,25 +99,27 @@ export default function OfflineSyncPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Mode Hors-ligne</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Service Worker, cache local, synchronisation automatique
-          </p>
-        </div>
-        <button
-          onClick={handleSyncAll}
-          disabled={syncing || pendingCount === 0}
-          className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 disabled:opacity-50 transition-colors flex items-center gap-2 text-sm font-medium"
-        >
-          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-          {syncing ? 'Synchro...' : `Sync (${pendingCount})`}
-          {syncErrors > 0 && !syncing && (
-            <span className="ml-2 text-xs text-red-500">{syncErrors} échec(s)</span>
-          )}
-        </button>
-      </div>
+      <PageHeader
+        title="Mode Hors-ligne"
+        description="Service Worker, cache local, synchronisation automatique"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Mode hors-ligne' },
+        ]}
+        actions={
+          <button
+            onClick={handleSyncAll}
+            disabled={syncing || pendingCount === 0}
+            className="px-4 py-2 bg-brand-500 text-white rounded-xl hover:bg-brand-600 disabled:opacity-50 transition-colors flex items-center gap-2 text-sm font-medium"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Synchro...' : `Sync (${pendingCount})`}
+            {syncErrors > 0 && !syncing && (
+              <span className="ml-2 text-xs text-red-500">{syncErrors} échec(s)</span>
+            )}
+          </button>
+        }
+      />
 
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2 text-sm">

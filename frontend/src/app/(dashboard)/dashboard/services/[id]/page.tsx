@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Pencil,
   Star,
   Clock,
@@ -95,106 +95,97 @@ export default function ServiceDetailPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/services"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {s.name}
-              </h1>
-              <span
-                className={cn(
-                  'px-2 py-0.5 text-xs font-semibold rounded-full',
-                  s.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                )}
-              >
-                {s.isActive ? 'Actif' : 'Inactif'}
+      <PageHeader
+        title={s.name}
+        description={`${s.category?.name || 'Sans catégorie'} · ${
+          s.locationType === 'ONLINE'
+            ? 'En ligne'
+            : s.locationType === 'AT_HOME'
+              ? 'À domicile'
+              : s.locationType === 'HYBRID'
+                ? 'Hybride'
+                : 'Sur place'
+        }${s.priceType === 'VARIABLE' || s.priceType === 'FROM' ? ' · Prix variable' : ''}`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Services', href: '/dashboard/services' },
+          { label: s.name },
+        ]}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={cn(
+                'px-2 py-0.5 text-xs font-semibold rounded-full',
+                s.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+              )}
+            >
+              {s.isActive ? 'Actif' : 'Inactif'}
+            </span>
+            {s.isPromotional && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-red-100 text-red-600 rounded-full">
+                PROMO
               </span>
-              {s.isPromotional && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-red-100 text-red-600 rounded-full">
-                  PROMO
-                </span>
-              )}
-              {isPopular && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-700 rounded-full">
-                  🔥 Populaire
-                </span>
-              )}
-              {isRecommended && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-700 rounded-full">
-                  ⭐ Recommandé
-                </span>
-              )}
-              {isNewService && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 rounded-full">
-                  🆕 Nouveau
-                </span>
-              )}
-              {s.featured && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-600 rounded-full">
-                  À la une
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {s.category?.name || 'Sans catégorie'} ·{' '}
-              {s.locationType === 'ONLINE'
-                ? 'En ligne'
-                : s.locationType === 'AT_HOME'
-                  ? 'À domicile'
-                  : s.locationType === 'HYBRID'
-                    ? 'Hybride'
-                    : 'Sur place'}
-              {(s.priceType === 'VARIABLE' || s.priceType === 'FROM') && ' · Prix variable'}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleToggle}
-            isLoading={toggleActive.isPending}
-          >
-            {s.isActive ? (
-              <EyeOff className="h-4 w-4 mr-1.5" />
-            ) : (
-              <Eye className="h-4 w-4 mr-1.5" />
             )}
-            {s.isActive ? 'Désactiver' : 'Activer'}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleDuplicate}
-            isLoading={duplicate.isPending}
-          >
-            <Copy className="h-4 w-4 mr-1.5" />
-            Dupliquer
-          </Button>
-          <Link href={`/dashboard/services/${id}/edit`}>
-            <Button size="sm">
-              <Pencil className="h-4 w-4 mr-1.5" />
-              Modifier
+            {isPopular && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-700 rounded-full">
+                🔥 Populaire
+              </span>
+            )}
+            {isRecommended && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-700 rounded-full">
+                ⭐ Recommandé
+              </span>
+            )}
+            {isNewService && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 rounded-full">
+                🆕 Nouveau
+              </span>
+            )}
+            {s.featured && (
+              <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-600 rounded-full">
+                À la une
+              </span>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleToggle}
+              isLoading={toggleActive.isPending}
+            >
+              {s.isActive ? (
+                <EyeOff className="h-4 w-4 mr-1.5" />
+              ) : (
+                <Eye className="h-4 w-4 mr-1.5" />
+              )}
+              {s.isActive ? 'Désactiver' : 'Activer'}
             </Button>
-          </Link>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowDeleteConfirm(true)}
-            isLoading={deleteService.isPending}
-            className="text-red-500 hover:text-red-600 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDuplicate}
+              isLoading={duplicate.isPending}
+            >
+              <Copy className="h-4 w-4 mr-1.5" />
+              Dupliquer
+            </Button>
+            <Link href={`/dashboard/services/${id}/edit`}>
+              <Button size="sm">
+                <Pencil className="h-4 w-4 mr-1.5" />
+                Modifier
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(true)}
+              isLoading={deleteService.isPending}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

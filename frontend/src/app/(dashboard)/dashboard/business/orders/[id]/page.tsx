@@ -3,8 +3,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   ShoppingBag,
   Clock,
   Package,
@@ -278,17 +278,14 @@ export default function BusinessOrderDetailPage() {
   if (error || !order) {
     return (
       <div className="animate-fade-in space-y-6">
-        <div className="flex items-center gap-4 mb-4">
-          <Link
-            href="/dashboard/business/orders"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Commande introuvable
-          </h1>
-        </div>
+        <PageHeader
+          title="Commande introuvable"
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Commandes', href: '/dashboard/business/orders' },
+            { label: 'Introuvable' },
+          ]}
+        />
         <Card className="p-12 text-center">
           <AlertTriangle className="h-12 w-12 text-red-300 mx-auto mb-3" />
           <p className="text-gray-500">
@@ -307,78 +304,69 @@ export default function BusinessOrderDetailPage() {
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/business/orders"
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {order.orderNumber || `#${order.id.slice(0, 8)}`}
-              </h1>
-              <Badge variant={s.variant} size="sm">
-                {s.label}
-              </Badge>
-            </div>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {order.createdAt
-                ? new Date(order.createdAt).toLocaleDateString('fr-FR', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : ''}
-            </p>
+      <PageHeader
+        title={order.orderNumber || `#${order.id.slice(0, 8)}`}
+        description={
+          order.createdAt
+            ? new Date(order.createdAt).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : ''
+        }
+        badge={s.label}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Commandes', href: '/dashboard/business/orders' },
+          { label: order.orderNumber || order.id.slice(0, 8) },
+        ]}
+        actions={
+          <div className="flex items-center gap-2 shrink-0">
+            {/* WhatsApp share button */}
+            {whatsAppData && (
+              <WhatsAppShare
+                phone={whatsAppData.phone}
+                messageType={
+                  order.status === 'ACCEPTED' || order.status === 'CONFIRMED'
+                    ? 'ORDER_CONFIRMED'
+                    : order.status === 'REFUSED'
+                      ? 'ORDER_REFUSED'
+                      : 'ORDER_CONFIRMED'
+                }
+                params={whatsAppData}
+                variant="icon"
+              />
+            )}
+            {/* Action button for PENDING orders */}
+            {order.status === 'PENDING' && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowActionModal(true)}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                Traiter la commande
+              </Button>
+            )}
+            {order.status === 'ACCEPTED' && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  window.open(`https://wa.me/${buyerPhone?.replace(/[+\s\-()]/g, '')}`, '_blank')
+                }
+              >
+                <MessageSquare className="h-4 w-4 mr-1.5" />
+                Contacter le client
+              </Button>
+            )}
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {/* WhatsApp share button */}
-          {whatsAppData && (
-            <WhatsAppShare
-              phone={whatsAppData.phone}
-              messageType={
-                order.status === 'ACCEPTED' || order.status === 'CONFIRMED'
-                  ? 'ORDER_CONFIRMED'
-                  : order.status === 'REFUSED'
-                    ? 'ORDER_REFUSED'
-                    : 'ORDER_CONFIRMED'
-              }
-              params={whatsAppData}
-              variant="icon"
-            />
-          )}
-          {/* Action button for PENDING orders */}
-          {order.status === 'PENDING' && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setShowActionModal(true)}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1.5" />
-              Traiter la commande
-            </Button>
-          )}
-          {order.status === 'ACCEPTED' && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() =>
-                window.open(`https://wa.me/${buyerPhone?.replace(/[+\s\-()]/g, '')}`, '_blank')
-              }
-            >
-              <MessageSquare className="h-4 w-4 mr-1.5" />
-              Contacter le client
-            </Button>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column: Order details */}

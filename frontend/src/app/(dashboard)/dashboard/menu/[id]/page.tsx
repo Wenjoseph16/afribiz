@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Edit2,
   Utensils,
   Clock,
@@ -72,16 +72,16 @@ export default function MenuItemDetailPage() {
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/menu"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div className="flex-1">
+      <PageHeader
+        title={item.name}
+        description={item.shortDescription}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Menu', href: '/dashboard/menu' },
+          { label: item.name },
+        ]}
+        actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{item.name}</h1>
             <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', statusStyle)}>
               {statusLabels[item.status] || item.status}
             </span>
@@ -110,18 +110,15 @@ export default function MenuItemDetailPage() {
                 À la une
               </span>
             )}
+            <Link href={`/dashboard/menu/${item.id}/edit`}>
+              <Button variant="secondary" size="sm">
+                <Edit2 className="w-4 h-4 mr-1.5" />
+                Modifier
+              </Button>
+            </Link>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{item.shortDescription}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/dashboard/menu/${item.id}/edit`}>
-            <Button variant="secondary" size="sm">
-              <Edit2 className="w-4 h-4 mr-1.5" />
-              Modifier
-            </Button>
-          </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

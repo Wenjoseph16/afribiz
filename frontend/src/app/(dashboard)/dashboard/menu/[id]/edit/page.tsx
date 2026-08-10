@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Save,
   Upload,
   Utensils,
@@ -152,23 +152,21 @@ export default function EditMenuItemPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href={`/dashboard/menu/${id}`}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
+      <PageHeader
+        title="Modifier le plat"
+        description={item?.name}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Menu', href: '/dashboard/menu' },
+          { label: item?.name || 'Plat', href: `/dashboard/menu/${id}` },
+          { label: 'Modifier' },
+        ]}
+        actions={
+          <Link href={`/dashboard/menu/${id}`}>
+            <Button variant="outline">Annuler</Button>
           </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Modifier le plat</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{item?.name}</p>
-          </div>
-        </div>
-        <Link href={`/dashboard/menu/${id}`}>
-          <Button variant="outline">Annuler</Button>
-        </Link>
-      </div>
+        }
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Infos principales */}

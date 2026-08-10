@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { apiClient } from '@/services/apiClient';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 export default function NewUnitPage() {
   const router = useRouter();
@@ -36,18 +36,15 @@ export default function NewUnitPage() {
 
   return (
     <div className="space-y-6 pb-8 max-w-2xl">
-      <Link
-        href="/dashboard/units"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour
-      </Link>
-
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            Nouvelle unité de mesure
-          </h1>
+      <PageHeader
+        title="Nouvelle unité de mesure"
+        description="Définissez une unité et sa conversion"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Unités', href: '/dashboard/units' },
+          { label: 'Nouvelle unité' },
+        ]}
+        actions={
           <button
             onClick={handleSubmit}
             disabled={saving || !form.name || !form.standardUnit || !form.conversionRate}
@@ -56,8 +53,10 @@ export default function NewUnitPage() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Création...' : 'Ajouter'}
           </button>
-        </div>
+        }
+      />
 
+      <Card className="p-6">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>

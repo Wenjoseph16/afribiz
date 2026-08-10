@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   Wallet,
   Users,
@@ -297,38 +298,32 @@ export default function SavingsGroupDetailPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Back + Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push('/dashboard/savings')}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-500" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{group.name}</h1>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge(group.status)}`}
-              >
-                {group.status}
-              </span>
-            </div>
-            <p className="text-sm text-gray-500">
-              {typeLabel(group.type)} ·{' '}
-              {group.frequency === 'weekly' ? 'Hebdomadaire' : 'Mensuelle'} · {group.currency}
-            </p>
+      <PageHeader
+        title={group.name}
+        description={`${typeLabel(group.type)} · ${
+          group.frequency === 'weekly' ? 'Hebdomadaire' : 'Mensuelle'
+        } · ${group.currency}`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Épargne', href: '/dashboard/savings' },
+          { label: group.name },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge(group.status)}`}
+            >
+              {group.status}
+            </span>
+            <button
+              onClick={fetchGroup}
+              className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={fetchGroup}
-            className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

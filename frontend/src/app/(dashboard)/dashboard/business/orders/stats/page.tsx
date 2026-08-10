@@ -2,9 +2,8 @@
 
 import { useMemo } from 'react';
 import { useBusinessOrderStats } from '@/features/hooks';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   ShoppingBag,
   DollarSign,
   TrendingUp,
@@ -78,20 +77,15 @@ export default function BusinessOrderStatsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/business/orders"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Statistiques commandes
-          </h1>
-          <p className="text-sm text-gray-500">Analyse de vos commandes business</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Statistiques commandes"
+        description="Analyse de vos commandes business"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Commandes', href: '/dashboard/business/orders' },
+          { label: 'Statistiques' },
+        ]}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Card className="p-3">

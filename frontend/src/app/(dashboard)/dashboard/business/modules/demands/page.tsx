@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import Link from 'next/link';
 import { FileText, Plus, Clock, AlertTriangle, CheckCircle2, X, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -81,18 +82,21 @@ export default function BusinessDemandsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Mes demandes de modules</h1>
-          <p className="text-gray-500 mt-1">
-            Exprimez vos besoins et recevez des propositions de développeurs
-          </p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nouvelle demande
-        </Button>
-      </div>
+      <PageHeader
+        title="Mes demandes de modules"
+        description="Exprimez vos besoins et recevez des propositions de développeurs"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Modules', href: '/dashboard/business/modules' },
+          { label: 'Demandes' },
+        ]}
+        actions={
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nouvelle demande
+          </Button>
+        }
+      />
 
       {showForm && (
         <Card className="p-6">

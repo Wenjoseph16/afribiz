@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Plus,
   Trash2,
   FileSignature,
@@ -87,18 +87,16 @@ export default function NewInvoicePage() {
 
   return (
     <div className="animate-fade-in space-y-6 max-w-3xl">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/finance/invoices"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nouvelle facture</h1>
-          <p className="text-sm text-gray-500">Créez une facture pour un client</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Nouvelle facture"
+        description="Créez une facture pour un client"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Finance', href: '/dashboard/finance' },
+          { label: 'Factures', href: '/dashboard/finance/invoices' },
+          { label: 'Nouvelle facture' },
+        ]}
+      />
 
       <Card className="p-4 sm:p-6 space-y-6">
         {/* Client */}

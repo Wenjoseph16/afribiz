@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   Play,
   Calendar,
@@ -60,21 +60,23 @@ export default function LivesPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Lives Commerciaux</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Diffusez en direct et vendez vos produits en temps réel
-          </p>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 text-white text-sm font-medium hover:from-brand-600 hover:to-brand-700 active:scale-[0.97] transition-all shadow-lg shadow-brand-500/25"
-        >
-          <Plus className="w-4 h-4" />
-          Planifier un live
-        </button>
-      </div>
+      <PageHeader
+        title="Lives Commerciaux"
+        description="Diffusez en direct et vendez vos produits en temps réel"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Lives' },
+        ]}
+        actions={
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 text-white text-sm font-medium hover:from-brand-600 hover:to-brand-700 active:scale-[0.97] transition-all shadow-lg shadow-brand-500/25"
+          >
+            <Plus className="w-4 h-4" />
+            Planifier un live
+          </button>
+        }
+      />
 
       {/* Create Live Modal */}
       {showCreateModal && (

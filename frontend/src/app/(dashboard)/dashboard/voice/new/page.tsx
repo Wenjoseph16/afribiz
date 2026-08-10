@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { apiClient } from '@/services/apiClient';
-import Link from 'next/link';
 
 export default function NewVoiceCommandPage() {
   const router = useRouter();
@@ -27,18 +27,15 @@ export default function NewVoiceCommandPage() {
 
   return (
     <div className="space-y-6 pb-8 max-w-2xl">
-      <Link
-        href="/dashboard/voice"
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour
-      </Link>
-
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-            Nouvelle commande vocale
-          </h1>
+      <PageHeader
+        title="Nouvelle commande vocale"
+        description="Ajoutez une commande vocale pour votre business"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Voix', href: '/dashboard/voice' },
+          { label: 'Nouvelle commande' },
+        ]}
+        actions={
           <button
             onClick={handleSubmit}
             disabled={saving || !form.command}
@@ -47,7 +44,10 @@ export default function NewVoiceCommandPage() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Création...' : 'Ajouter'}
           </button>
-        </div>
+        }
+      />
+
+      <Card className="p-6">
 
         <div className="space-y-4">
           <div>

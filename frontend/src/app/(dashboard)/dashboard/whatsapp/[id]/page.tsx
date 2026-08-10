@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { MessageCircle, Loader2, AlertCircle, ArrowLeft, Save, Eye } from 'lucide-react';
+import { MessageCircle, Loader2, AlertCircle, Save, Eye } from 'lucide-react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { apiClient } from '@/services/apiClient';
@@ -79,30 +80,29 @@ export default function TemplateDetailPage() {
 
   return (
     <div className="space-y-6 pb-8 max-w-2xl">
-      <button
-        onClick={() => router.push('/dashboard/whatsapp')}
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Retour
-      </button>
+      <PageHeader
+        title={template?.name || 'Modifier le template'}
+        description={template?.status ? `Statut : ${template.status}` : 'Modification du template WhatsApp'}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'WhatsApp', href: '/dashboard/whatsapp' },
+          { label: template?.name || 'Template' },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge>{template?.status || 'DRAFT'}</Badge>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 disabled:opacity-50 transition-colors text-sm font-medium flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" /> {saving ? 'Sauvegarde...' : 'Enregistrer'}
+            </button>
+          </div>
+        }
+      />
 
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-              {template?.name || 'Modifier le template'}
-            </h1>
-            <Badge className="mt-1">{template?.status || 'DRAFT'}</Badge>
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 disabled:opacity-50 transition-colors text-sm font-medium flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" /> {saving ? 'Sauvegarde...' : 'Enregistrer'}
-          </button>
-        </div>
-
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

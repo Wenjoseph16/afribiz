@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   ArrowLeft,
   DollarSign,
@@ -83,35 +84,28 @@ export default function PaymentDetailPage() {
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/payments"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Paiement {formatPrice(Number(payment.amount || 0))}
-            </h1>
-            <Badge variant={s.variant} size="sm">
-              {s.label}
-            </Badge>
-          </div>
-          <p className="text-sm text-gray-500">
-            {payment.reference ? `Réf: ${payment.reference}` : `ID: ${id.slice(0, 8)}...`} &middot;
-            Créé le{' '}
-            {new Date(payment.createdAt || payment.date).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={`Paiement ${formatPrice(Number(payment.amount || 0))}`}
+        description={`${payment.reference ? `Réf: ${payment.reference}` : `ID: ${id.slice(0, 8)}...`} · Créé le ${new Date(
+          payment.createdAt || payment.date
+        ).toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })}`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Paiements', href: '/dashboard/payments' },
+          { label: payment.reference || `#${id.slice(0, 8)}` },
+        ]}
+        actions={
+          <Badge variant={s.variant} size="sm">
+            {s.label}
+          </Badge>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main info */}

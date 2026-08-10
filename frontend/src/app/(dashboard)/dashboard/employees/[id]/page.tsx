@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Pencil,
   Trash2,
   Loader,
@@ -137,70 +137,57 @@ export default function EmployeeDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/dashboard/employees"
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" /> Retour
-        </Link>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setShowPayslipModal(true)}>
-            <Download className="h-4 w-4 mr-1.5" />
-            Télécharger fiche de paie
-          </Button>
-          <Link href={`/dashboard/employees/${id}/edit`}>
-            <Button size="sm" variant="outline">
-              <Pencil className="h-4 w-4 mr-1.5" />
-              Modifier
-            </Button>
-          </Link>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-red-600 border-red-200 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4 mr-1.5" />
-            {deleting ? 'Suppression...' : 'Supprimer'}
-          </Button>
-        </div>
-      </div>
-
-      <Card padding="lg">
-        <div className="flex flex-col sm:flex-row items-start gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-50 to-emerald-50 dark:from-brand-900/30 dark:to-emerald-900/20 flex items-center justify-center shrink-0 text-xl font-bold text-brand dark:text-brand-400">
-            {getInitials(e.firstName, e.lastName)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {e.firstName} {e.lastName}
-              </h1>
-              <span className={cn('text-xs font-medium px-2.5 py-0.5 rounded-full', status.class)}>
-                {status.label}
+      <PageHeader
+        title={`${e.firstName} ${e.lastName}`}
+        description={e.role?.name || 'Employé'}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Équipe', href: '/dashboard/employees' },
+          { label: `${e.firstName} ${e.lastName}` },
+        ]}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={cn('text-xs font-medium px-2.5 py-0.5 rounded-full', status.class)}>
+              {status.label}
+            </span>
+            {isNewEmployee(e.hireDate) && (
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-300">
+                🆕 Nouveau
               </span>
-              {isNewEmployee(e.hireDate) && (
-                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-300">
-                  🆕 Nouveau
-                </span>
-              )}
-              {isSeniorEmployee(e.hireDate) && (
-                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-300">
-                  ⭐ Ancien
-                </span>
-              )}
-              {isManager(e.position) && (
-                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-300">
-                  👔 Manager
-                </span>
-              )}
-            </div>
-            {e.role && <p className="text-sm text-gray-500 mt-0.5">{e.role.name}</p>}
+            )}
+            {isSeniorEmployee(e.hireDate) && (
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-300">
+                ⭐ Ancien
+              </span>
+            )}
+            {isManager(e.position) && (
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-300">
+                👔 Manager
+              </span>
+            )}
+            <Button size="sm" variant="outline" onClick={() => setShowPayslipModal(true)}>
+              <Download className="h-4 w-4 mr-1.5" />
+              Fiche de paie
+            </Button>
+            <Link href={`/dashboard/employees/${id}/edit`}>
+              <Button size="sm" variant="outline">
+                <Pencil className="h-4 w-4 mr-1.5" />
+                Modifier
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              {deleting ? 'Suppression...' : 'Supprimer'}
+            </Button>
           </div>
-        </div>
-      </Card>
+        }
+      />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-1">

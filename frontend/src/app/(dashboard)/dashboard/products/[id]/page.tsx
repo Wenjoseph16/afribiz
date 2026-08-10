@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Pencil,
   Trash2,
   Copy,
@@ -105,57 +105,18 @@ export default function ProductDetailPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/products"
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {product.name}
-              </h1>
-              <span
-                className={cn(
-                  'px-2 py-0.5 text-xs font-semibold rounded-full',
-                  product.isActive
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                )}
-              >
-                {product.isActive ? 'Actif' : 'Inactif'}
-              </span>
-              {product.isPromotional && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full">
-                  PROMO
-                </span>
-              )}
-              {isTopSelling && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full">
-                  🏆 Top vente
-                </span>
-              )}
-              {isPopular && !isTopSelling && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-full">
-                  🔥 Populaire
-                </span>
-              )}
-              {isNewProduct && (
-                <span className="px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-full">
-                  🆕 Nouveau
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              SKU: {product.sku || '-'} · Catégorie: {product.category?.name || '-'} · Créé le{' '}
-              {new Date(product.createdAt).toLocaleDateString('fr-FR')}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+      <PageHeader
+        title={product.name}
+        description={`SKU: ${product.sku || '-'} · Catégorie: ${product.category?.name || '-'} · Créé le ${new Date(
+          product.createdAt
+        ).toLocaleDateString('fr-FR')}`}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Produits', href: '/dashboard/products' },
+          { label: product.name },
+        ]}
+        actions={
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <Link href={`/dashboard/products/${id}/edit`}>
             <Button size="sm" variant="secondary">
               <Pencil className="h-4 w-4 mr-1.5" />
@@ -189,8 +150,9 @@ export default function ProductDetailPage() {
             <Trash2 className="h-4 w-4 mr-1.5" />
             Supprimer
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Delete confirmation */}
       {showDeleteConfirm && (

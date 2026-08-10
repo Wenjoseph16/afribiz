@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Save,
   Upload,
   Plus,
@@ -254,27 +254,23 @@ export default function EditProductPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href={`/dashboard/products/${id}`}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
+      <PageHeader
+        title="Modifier le produit"
+        description={product?.name}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Produits', href: '/dashboard/products' },
+          { label: product?.name || 'Produit', href: `/dashboard/products/${id}` },
+          { label: 'Modifier' },
+        ]}
+        actions={
+          <Link href={`/dashboard/products/${id}`}>
+            <Button variant="outline" type="button">
+              Annuler
+            </Button>
           </Link>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Modifier le produit
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{product?.name}</p>
-          </div>
-        </div>
-        <Link href={`/dashboard/products/${id}`}>
-          <Button variant="outline" type="button">
-            Annuler
-          </Button>
-        </Link>
-      </div>
+        }
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* A — Informations principales */}

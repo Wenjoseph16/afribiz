@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Shield, Eye, EyeOff, CheckCircle, XCircle, Plus, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -140,20 +141,20 @@ export default function ConsentsPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-            Consentements
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Contrôlez les données partagées avec les partenaires
-          </p>
-        </div>
-        <Button onClick={() => setShowCreateForm(true)} size="sm">
-          <Plus className="h-4 w-4" />
-          Nouveau consentement
-        </Button>
-      </div>
+      <PageHeader
+        title="Consentements"
+        description="Contrôlez les données partagées avec les partenaires"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Consentements' },
+        ]}
+        actions={
+          <Button onClick={() => setShowCreateForm(true)} size="sm">
+            <Plus className="h-4 w-4" />
+            Nouveau consentement
+          </Button>
+        }
+      />
 
       {/* Create form */}
       {showCreateForm && (

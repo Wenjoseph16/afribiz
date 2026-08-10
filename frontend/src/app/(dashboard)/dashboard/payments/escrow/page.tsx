@@ -1,9 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
-  ArrowLeft,
   Shield,
   DollarSign,
   Clock,
@@ -65,18 +64,15 @@ export default function EscrowPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/payments"
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-500" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Escrow</h1>
-          <p className="text-sm text-gray-500">Transactions sécurisées sous séquestre</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Escrow"
+        description="Transactions sécurisées sous séquestre"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Paiements', href: '/dashboard/payments' },
+          { label: 'Escrow' },
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

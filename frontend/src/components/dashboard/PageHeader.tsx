@@ -13,6 +13,7 @@ interface Breadcrumb {
 interface PageHeaderProps {
   title: string;
   description?: string;
+  badge?: string | { label: string; className?: string };
   breadcrumbs?: Breadcrumb[];
   actions?: ReactNode;
   className?: string;
@@ -22,6 +23,7 @@ interface PageHeaderProps {
 export function PageHeader({
   title,
   description,
+  badge,
   breadcrumbs,
   actions,
   className,
@@ -58,13 +60,30 @@ export function PageHeader({
       )}
       <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
         <div className="max-w-xl">
-          {gradient ? (
-            <h1 className="text-2xl sm:text-3xl font-bold gradient-text">{title}</h1>
-          ) : (
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-              {title}
-            </h1>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {gradient ? (
+              <h1 className="text-2xl sm:text-3xl font-bold gradient-text">{title}</h1>
+            ) : (
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+                {title}
+              </h1>
+            )}
+            {badge &&
+              (typeof badge === 'string' ? (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand/10 text-brand">
+                  {badge}
+                </span>
+              ) : (
+                <span
+                  className={cn(
+                    'text-xs font-medium px-2 py-0.5 rounded-full',
+                    badge.className || 'bg-brand/10 text-brand'
+                  )}
+                >
+                  {badge.label}
+                </span>
+              ))}
+          </div>
           {description && (
             <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
               {description}
