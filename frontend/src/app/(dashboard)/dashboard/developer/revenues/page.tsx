@@ -374,6 +374,9 @@ export default function DeveloperRevenuesPage() {
                     Module
                   </th>
                   <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
+                    Business
+                  </th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
                     Type
                   </th>
                   <th className="text-right py-3 px-2 font-medium text-gray-500 dark:text-gray-400">
@@ -404,6 +407,11 @@ export default function DeveloperRevenuesPage() {
                     </td>
                     <td className="py-3 px-2 text-gray-900 dark:text-gray-100">
                       {rev.module?.name || '—'}
+                    </td>
+                    <td className="py-3 px-2 text-gray-700 dark:text-gray-300">
+                      {rev.business?.name || (
+                        <span className="text-gray-400 dark:text-gray-500">—</span>
+                      )}
                     </td>
                     <td className="py-3 px-2">
                       <span

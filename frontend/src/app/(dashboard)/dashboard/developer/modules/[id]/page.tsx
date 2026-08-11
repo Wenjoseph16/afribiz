@@ -33,7 +33,11 @@ import {
   useUploadModuleImage,
   useUpdateDeveloperModule,
 } from '@/features/developerHooks';
-import { useModulePermissions, useModuleActivity } from '@/features/developerModulesHooks';
+import {
+  useModulePermissions,
+  useModuleActivity,
+  useSubmitForValidation,
+} from '@/features/developerModulesHooks';
 import type {
   DeveloperModule,
   DeveloperModuleVersion,
@@ -66,6 +70,7 @@ export default function ModuleDetailPage() {
   const { data: recentActivity } = useModuleActivity(moduleId, 5);
   const uploadImages = useUploadModuleImage();
   const updateModule = useUpdateDeveloperModule();
+  const submitValidation = useSubmitForValidation();
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const screenshotsInputRef = useRef<HTMLInputElement>(null);
@@ -160,12 +165,27 @@ export default function ModuleDetailPage() {
           { label: mod.name || 'Module' },
         ]}
         actions={
-          <Link href={`/dashboard/developer/modules/publish?id=${mod.id}`}>
-            <Button variant="secondary" size="sm">
-              <Edit3 className="w-4 h-4 mr-2" />
-              Modifier
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {(mod.status === 'DRAFT' || mod.status === 'REJECTED') && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  submitValidation.mutateAsync(moduleId).then(() => refetch())
+                }
+                isLoading={submitValidation.isPending}
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Soumettre à validation
+              </Button>
+            )}
+            <Link href={`/dashboard/developer/modules/publish?id=${mod.id}`}>
+              <Button variant="secondary" size="sm">
+                <Edit3 className="w-4 h-4 mr-2" />
+                Modifier
+              </Button>
+            </Link>
+          </div>
         }
       />
 

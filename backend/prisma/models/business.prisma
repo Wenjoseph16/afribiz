@@ -106,6 +106,7 @@ model Business {
   products              Product[]
   productCategories     ProductCategory[]
   moduleInstallations   DeveloperModuleInstallation[]
+  developerRevenues     DeveloperRevenue[]
   supportTickets        DeveloperSupportTicket[]
   adCampaigns           AdCampaign[]
   orders                Order[]

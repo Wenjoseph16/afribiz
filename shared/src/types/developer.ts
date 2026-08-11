@@ -240,6 +240,8 @@ export interface DeveloperRevenue {
   developerId: string;
   moduleId: string | null;
   module?: DeveloperModule;
+  businessId?: string | null;
+  business?: { id: string; name: string; slug: string } | null;
   type: RevenueType;
   amount: number;
   currency: string;

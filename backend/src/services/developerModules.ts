@@ -217,6 +217,10 @@ export async function updateModule(moduleId: string, userId: string, data: any) 
 
 /**
  * Publish a module
+ *
+ * 🔒 SÉCURITÉ : un module ne peut être publié (visible en marketplace) qu'après
+ * validation par l'admin (status PUBLISHED posé via /admin/modules/:id/status).
+ * Le développeur doit d'abord soumettre son module via submitForValidation.
  */
 export async function publishModule(moduleId: string, userId: string) {
   const developerId = await getDeveloperIdByUserId(userId);
@@ -227,6 +231,13 @@ export async function publishModule(moduleId: string, userId: string) {
 
   if ((module as any).isPublished) {
     throw new AppError('Module déjà publié', 409);
+  }
+
+  if (module.status !== 'PUBLISHED') {
+    throw new AppError(
+      "Votre module doit être approuvé par l'équipe AfriBiz avant d'être publié. Soumettez-le à la validation depuis sa page.",
+      403
+    );
   }
 
   return prisma.developerModule.update({
@@ -556,12 +567,15 @@ export async function completeModulePurchase(
       data: {
         developerId: module.developerId,
         moduleId,
+        businessId,
         type: 'MODULE_SALE' as any,
         amount,
         commissionAmount,
         netAmount,
         commissionRate,
         status: 'COMPLETED',
+        sourceId: installation.id,
+        sourceType: 'MODULE_INSTALLATION',
       },
     });
   } catch {
@@ -584,6 +598,36 @@ export async function completeModulePurchase(
     });
   } catch {
     // Non-blocking
+  }
+
+  // Facture d'installation pour le business (visible dans son espace Factures)
+  // Seulement si le module est payant — pas de facture à 0 FCFA pour les modules gratuits
+  if (amount > 0) {
+    try {
+      const invNumber = `FAC-MOD-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 6)
+        .toUpperCase()}`;
+      await prisma.invoice.create({
+        data: {
+          invoiceNumber: invNumber,
+          businessId,
+          title: `Installation du module ${module.name}`,
+          description: `Achat et installation du module ${module.name} (${module.currency || 'FCFA'})`,
+          items: [{ name: module.name, quantity: 1, unitPrice: amount }],
+          subtotal: amount,
+          taxAmount: 0,
+          discountAmount: 0,
+          totalAmount: amount,
+          amountPaid: amount,
+          currency: module.currency || 'FCFA',
+          status: 'PAID',
+          paidAt: new Date(),
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
   }
 
   // Notify the business owner
@@ -1503,6 +1547,7 @@ export async function getRevenueHistory(userId: string) {
     where: { developerId: developerProfile.id },
     include: {
       module: { select: { id: true, name: true, slug: true } },
+      business: { select: { id: true, name: true, slug: true } },
     },
     orderBy: { createdAt: 'desc' },
   });

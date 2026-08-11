@@ -1027,7 +1027,8 @@ export const updateModuleStatus = async (
       data = { status: 'REJECTED', rejectionReason: "Module rejeté par l'administrateur" };
       break;
     case 'publish':
-      data = { status: 'PUBLISHED', publishedAt: new Date() };
+      // 🔒 La visibilité marketplace (isPublished) n'est accordée que par l'admin
+      data = { status: 'PUBLISHED', publishedAt: new Date(), isPublished: true };
       break;
     case 'archive':
       data = { status: 'ARCHIVED', archivedAt: new Date() };

@@ -85,6 +85,8 @@ export default function BusinessDemandDetailPage() {
   }
 
   const matchesList = Array.isArray(matches) ? matches : [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const approvedMatch: any = matchesList.find((m: any) => m.status === 'ACCEPTED');
   const isOpen = demand.status === 'OPEN';
   const isInProgress = demand.status === 'IN_PROGRESS';
 
@@ -152,7 +154,15 @@ export default function BusinessDemandDetailPage() {
             <div className="flex items-center gap-2 text-yellow-800">
               <CheckCircle2 className="w-5 h-5 text-yellow-600" />
               <span className="font-medium">Développeur approuvé :</span>
-              <span>{(demand as any).approvedDeveloperId}</span>
+              <span>
+                {approvedMatch?.developer?.companyName ||
+                  [
+                    approvedMatch?.developer?.user?.firstName,
+                    approvedMatch?.developer?.user?.lastName,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || (demand as any).approvedDeveloperId}
+              </span>
             </div>
             <p className="text-sm text-yellow-700 mt-1">
               Le développeur est en train de travailler sur votre module.

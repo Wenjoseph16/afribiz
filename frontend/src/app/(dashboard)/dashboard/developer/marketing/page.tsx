@@ -16,6 +16,9 @@ import {
   Send,
   MessageCircle,
   Zap,
+  Plus,
+  ExternalLink,
+  Calendar,
 } from 'lucide-react';
 import {
   BarChart,
@@ -36,7 +39,39 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { cn } from '@/lib/utils';
 import { useDeveloperDashboard, useDeveloperModules } from '@/features/developerHooks';
+import { useMyAdCampaigns, useCreateAdCampaign } from '@/features/adsHooks';
 import type { DeveloperModule } from '@/types/developer';
+
+const CAMPAIGN_STATUS: Record<string, { label: string; className: string }> = {
+  PENDING: {
+    label: 'En attente de validation',
+    className: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+  SCHEDULED: {
+    label: 'Planifiée',
+    className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+  ACTIVE: {
+    label: 'Active',
+    className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  PAUSED: {
+    label: 'En pause',
+    className: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  },
+  COMPLETED: {
+    label: 'Terminée',
+    className: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  },
+  REJECTED: {
+    label: 'Rejetée',
+    className: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
+  SUSPENDED: {
+    label: 'Suspendue',
+    className: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
+};
 
 const PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ef4444'];
 
@@ -101,6 +136,19 @@ export default function MarketingPage() {
   const { data: dashboard, isLoading: dashLoading, error: dashError } = useDeveloperDashboard();
   const { data: modules, isLoading: modsLoading } = useDeveloperModules();
   const [sortBy, setSortBy] = useState<'installs' | 'rating' | 'revenue'>('installs');
+  const { data: campaigns } = useMyAdCampaigns();
+  const createCampaign = useCreateAdCampaign();
+  const [showAdForm, setShowAdForm] = useState(false);
+  const [adForm, setAdForm] = useState({
+    name: '',
+    objective: 'BRAND_AWARENESS',
+    startDate: '',
+    endDate: '',
+    budget: '',
+    adText: '',
+    destinationUrl: '',
+  });
+  const [adError, setAdError] = useState('');
 
   const moduleList = useMemo(() => {
     if (!modules) return [];
@@ -146,6 +194,55 @@ export default function MarketingPage() {
     });
     return counts.map((c, i) => ({ stars: `${i + 1}★`, count: c }));
   }, [moduleList]);
+
+  const campaignList = useMemo(() => {
+    if (!campaigns) return [];
+    return Array.isArray(campaigns) ? campaigns : campaigns.campaigns || campaigns.data || [];
+  }, [campaigns]);
+
+  const devId = (dashboard as any)?.profile?.id;
+
+  const handleAdSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdError('');
+    if (!devId) {
+      setAdError('Profil développeur introuvable.');
+      return;
+    }
+    try {
+      await createCampaign.mutateAsync({
+        advertiserType: 'DEVELOPER',
+        developerId: devId,
+        name: adForm.name,
+        objective: adForm.objective,
+        budget: parseFloat(adForm.budget) || 0,
+        startDate: new Date(adForm.startDate).toISOString(),
+        endDate: new Date(adForm.endDate).toISOString(),
+        creatives: [
+          {
+            placementPage: 'HOMEPAGE',
+            placementPosition: 'TOP',
+            format: 'BANNER_HORIZONTAL',
+            adText: adForm.adText || adForm.name,
+            destinationUrl: adForm.destinationUrl || '/dashboard/developer/modules',
+            isActive: true,
+          },
+        ],
+      });
+      setShowAdForm(false);
+      setAdForm({
+        name: '',
+        objective: 'BRAND_AWARENESS',
+        startDate: '',
+        endDate: '',
+        budget: '',
+        adText: '',
+        destinationUrl: '',
+      });
+    } catch (err: any) {
+      setAdError(err?.response?.data?.error || err?.message || 'Erreur lors de la création');
+    }
+  };
 
   if (dashError) {
     return (
@@ -231,6 +328,190 @@ export default function MarketingPage() {
           );
         })}
       </div>
+
+      {/* Publicité payante — campagnes réelles (validées par l'admin) */}
+      <Card padding="lg">
+        <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand">
+              <Megaphone className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                Campagnes publicitaires
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Promouvez vos modules sur AfriBiz — chaque campagne est validée par l'équipe avant
+                publication.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/ads">
+              <Button variant="ghost" size="sm">
+                <ExternalLink className="w-4 h-4 mr-1.5" />
+                Gérer mes campagnes
+              </Button>
+            </Link>
+            <Button size="sm" onClick={() => setShowAdForm(!showAdForm)}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              Nouvelle campagne
+            </Button>
+          </div>
+        </div>
+
+        {showAdForm && (
+          <form
+            onSubmit={handleAdSubmit}
+            className="mb-6 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-4"
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Nom de la campagne *
+                </label>
+                <input
+                  value={adForm.name}
+                  onChange={(e) => setAdForm({ ...adForm, name: e.target.value })}
+                  required
+                  placeholder="Ex : Lancement Stock Pro"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:ring-2 focus:ring-brand/20 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Objectif
+                </label>
+                <select
+                  value={adForm.objective}
+                  onChange={(e) => setAdForm({ ...adForm, objective: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:ring-2 focus:ring-brand/20 outline-none"
+                >
+                  <option value="BRAND_AWARENESS">Notoriété</option>
+                  <option value="TRAFFIC">Trafic</option>
+                  <option value="LEADS">Leads</option>
+                  <option value="SALES">Ventes</option>
+                  <option value="PROMOTION">Promotion</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Budget (FCFA)
+                </label>
+                <input
+                  type="number"
+                  value={adForm.budget}
+                  onChange={(e) => setAdForm({ ...adForm, budget: e.target.value })}
+                  placeholder="Ex : 25000"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:ring-2 focus:ring-brand/20 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Date début *
+                </label>
+                <input
+                  type="date"
+                  value={adForm.startDate}
+                  onChange={(e) => setAdForm({ ...adForm, startDate: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:ring-2 focus:ring-brand/20 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Date fin *
+                </label>
+                <input
+                  type="date"
+                  value={adForm.endDate}
+                  onChange={(e) => setAdForm({ ...adForm, endDate: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:ring-2 focus:ring-brand/20 outline-none"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Texte de l'annonce
+                </label>
+                <input
+                  value={adForm.adText}
+                  onChange={(e) => setAdForm({ ...adForm, adText: e.target.value })}
+                  placeholder="Ex : Gérez votre stock en temps réel avec Stock Pro"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:ring-2 focus:ring-brand/20 outline-none"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                  Lien de destination
+                </label>
+                <input
+                  value={adForm.destinationUrl}
+                  onChange={(e) => setAdForm({ ...adForm, destinationUrl: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:ring-2 focus:ring-brand/20 outline-none"
+                />
+              </div>
+            </div>
+            {adError && <p className="text-red-500 text-sm">{adError}</p>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setShowAdForm(false)}>
+                Annuler
+              </Button>
+              <Button type="submit" size="sm" disabled={createCampaign.isPending}>
+                {createCampaign.isPending ? 'Création...' : 'Créer la campagne'}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {campaignList.length === 0 && !showAdForm ? (
+          <EmptyState
+            icon={<Megaphone className="h-8 w-8" />}
+            title="Aucune campagne"
+            description="Créez votre première campagne pour mettre vos modules en avant sur AfriBiz."
+          />
+        ) : campaignList.length > 0 ? (
+          <div className="space-y-2">
+            {campaignList.map((c: any) => {
+              const st = CAMPAIGN_STATUS[c.status] || {
+                label: c.status,
+                className: 'bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+              };
+              return (
+                <div
+                  key={c.id}
+                  className="flex items-center gap-4 p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {c.name}
+                    </p>
+                    <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-0.5">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(c.startDate).toLocaleDateString('fr-FR')} →{' '}
+                      {new Date(c.endDate).toLocaleDateString('fr-FR')} ·{' '}
+                      {(Number(c.budget) || 0).toLocaleString()} FCFA
+                    </p>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-4 text-xs text-gray-400">
+                    <span>{c._count?.impressions || 0} vues</span>
+                    <span>{c._count?.clicks || 0} clics</span>
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap',
+                      st.className
+                    )}
+                  >
+                    {st.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </Card>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Module Ranking */}
