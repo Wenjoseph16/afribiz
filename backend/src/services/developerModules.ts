@@ -12,6 +12,7 @@ import { DeveloperRepository } from '../repositories/developerRepository';
 import { searchIdsByText } from '../lib/fulltext';
 import { getMonetizationSettings } from './monetizationConfig';
 import { createLicense } from './developerLicenses';
+import { getIO } from './socket';
 import { logger } from '../lib/logger';
 
 function slugify(text: string): string {
@@ -841,6 +842,12 @@ export async function installModule(moduleId: string, userId: string) {
     throw new AppError("Ce module n'est pas disponible", 400);
   }
 
+  // Sécurité : l'URL du dashboard d'un module doit être https (validée à l'install)
+  const dashboardUrl = (module as any).dashboardUrl as string | null;
+  if (dashboardUrl && !/^https:\/\//.test(dashboardUrl)) {
+    throw new AppError("L'URL du module doit être sécurisée (https)", 400);
+  }
+
   const businessId = await getBusinessIdByOwnerId(userId);
 
   const existing = await prisma.developerModuleInstallation.findFirst({
@@ -957,6 +964,30 @@ export async function installModule(moduleId: string, userId: string) {
 
   // Ensure MODULE_MARKETPLACE is active in Business.modules
   await ensureModuleMarketplaceActive(businessId);
+
+  // Temps réel (socket) : le business et le dev voient l'installation sans recharger
+  try {
+    const io = getIO();
+    if (io && business) {
+      io.to(`business:${businessId}`).emit('module:installed', {
+        installationId: installation.id,
+        moduleId,
+        moduleName: module.name,
+        slug: module.slug,
+      });
+      if (module.developer?.userId) {
+        io.to(`user:${module.developer.userId}`).emit('module:installed-by-business', {
+          installationId: installation.id,
+          moduleId,
+          moduleName: module.name,
+          businessId,
+          businessName: business.name,
+        });
+      }
+    }
+  } catch (err) {
+    logger.warn('Socket module:installed échoué:', err);
+  }
 
   return installation;
 }

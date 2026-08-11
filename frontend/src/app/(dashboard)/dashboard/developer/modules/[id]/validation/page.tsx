@@ -21,6 +21,7 @@ import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
 import { useDeveloperModule } from '@/features/developerHooks';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   useModuleValidation,
   useValidationHistory,
@@ -118,27 +119,28 @@ export default function ModuleValidationPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Validation du module
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Soumettez votre module pour validation avant publication
-          </p>
-        </div>
-        {canSubmit && (
-          <Button
-            variant="gradient"
-            size="sm"
-            onClick={handleSubmit}
-            isLoading={submitForValidation.isPending}
-          >
-            <Send className="h-4 w-4" />
-            Soumettre pour validation
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Validation du module"
+        description="Soumettez votre module pour validation avant publication"
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Modules', href: '/dashboard/developer/modules' },
+          { label: 'Validation' },
+        ]}
+        actions={
+          canSubmit ? (
+            <Button
+              variant="gradient"
+              size="sm"
+              onClick={handleSubmit}
+              isLoading={submitForValidation.isPending}
+            >
+              <Send className="h-4 w-4 mr-1.5" />
+              Soumettre pour validation
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Current validation status */}
       {!validation ? (

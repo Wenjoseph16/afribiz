@@ -304,7 +304,7 @@ export function useConfirmModuleUpdate() {
   return useMutation({
     mutationFn: (installationId: string) => apiClient.confirmModuleUpdate(installationId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['business-modules', 'installed'] });
+      qc.invalidateQueries({ queryKey: ['business-installed-modules'] });
     },
   });
 }
@@ -314,7 +314,7 @@ export function useReinstallModule() {
   return useMutation({
     mutationFn: (moduleId: string) => apiClient.reinstallModule(moduleId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['business-modules', 'installed'] });
+      qc.invalidateQueries({ queryKey: ['business-installed-modules'] });
     },
   });
 }

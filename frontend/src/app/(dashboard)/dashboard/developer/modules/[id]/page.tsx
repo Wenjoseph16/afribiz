@@ -43,6 +43,7 @@ import type {
 } from '@/types/developer';
 import { MODULE_STATUS_LABELS, PRICING_LABELS } from '@/types/developer';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 const STATUS_VARIANT: Record<
   string,
@@ -150,6 +151,24 @@ export default function ModuleDetailPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title={mod.name || 'Module'}
+        badge={MODULE_STATUS_LABELS[mod.status as ModuleStatus] || mod.status}
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Modules', href: '/dashboard/developer/modules' },
+          { label: mod.name || 'Module' },
+        ]}
+        actions={
+          <Link href={`/dashboard/developer/modules/publish?id=${mod.id}`}>
+            <Button variant="secondary" size="sm">
+              <Edit3 className="w-4 h-4 mr-2" />
+              Modifier
+            </Button>
+          </Link>
+        }
+      />
+
       {/* Header info */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="p-4">

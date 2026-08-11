@@ -796,13 +796,17 @@ async function seedDevelopers() {
   });
 
   const modules: any[] = [
-    { id: 'devmod-1', developerId: 'devprof-1', name: 'Stock Pro', slug: 'stock-pro', description: 'Gestion avancée du stock multi-dépôts', price: 15000, currency: 'FCFA', isFree: false, isActive: true, isPublished: true, status: 'PUBLISHED', isVerified: true, isFeatured: true, category: 'Gestion', tags: ['stock', 'inventaire'] },
-    { id: 'devmod-2', developerId: 'devprof-2', name: 'Loyalty Plus', slug: 'loyalty-plus', description: 'Points de fidélité et parrainage automatiques', price: 10000, currency: 'FCFA', isFree: false, isActive: true, isPublished: true, status: 'PUBLISHED', isVerified: true, isFeatured: true, category: 'Marketing', tags: ['fidélité', 'parrainage'] },
-    { id: 'devmod-3', developerId: 'devprof-3', name: 'Chat Widget', slug: 'chat-widget', description: 'Widget de chat temps réel pour votre site', price: 8000, currency: 'FCFA', isFree: false, isActive: true, isPublished: true, status: 'PUBLISHED', isVerified: true, isFeatured: false, category: 'Communication', tags: ['chat', 'support'] },
-    { id: 'devmod-4', developerId: 'devprof-4', name: 'Analytics Pro', slug: 'analytics-pro', description: 'Rapports avancés et KPI temps réel', price: 12000, currency: 'FCFA', isFree: false, isActive: true, isPublished: true, status: 'PUBLISHED', isVerified: true, isFeatured: true, category: 'Analytics', tags: ['kpi', 'rapports'] },
+    { id: 'devmod-1', developerId: 'devprof-1', name: 'Stock Pro', slug: 'stock-pro', description: 'Gestion avancée du stock multi-dépôts', price: 15000, currency: 'FCFA', isFree: false, isActive: true, isPublished: true, status: 'PUBLISHED', isVerified: true, isFeatured: true, category: 'Gestion', tags: ['stock', 'inventaire'], dashboardUrl: 'https://stock-pro.app.afribiz.com/dashboard', sidebarLabel: 'Stock Pro', sidebarIcon: 'Boxes' },
+    { id: 'devmod-2', developerId: 'devprof-2', name: 'Loyalty Plus', slug: 'loyalty-plus', description: 'Points de fidélité et parrainage automatiques', price: 10000, currency: 'FCFA', isFree: false, isActive: true, isPublished: true, status: 'PUBLISHED', isVerified: true, isFeatured: true, category: 'Marketing', tags: ['fidélité', 'parrainage'], dashboardUrl: 'https://loyalty-plus.app.afribiz.com/dashboard', sidebarLabel: 'Loyalty Plus', sidebarIcon: 'Gift' },
+    { id: 'devmod-3', developerId: 'devprof-3', name: 'Chat Widget', slug: 'chat-widget', description: 'Widget de chat temps réel pour votre site', price: 8000, currency: 'FCFA', isFree: false, isActive: true, isPublished: true, status: 'PUBLISHED', isVerified: true, isFeatured: false, category: 'Communication', tags: ['chat', 'support'], dashboardUrl: 'https://chat-widget.app.afribiz.com/dashboard', sidebarLabel: 'Chat Widget', sidebarIcon: 'MessageSquare' },
+    { id: 'devmod-4', developerId: 'devprof-4', name: 'Analytics Pro', slug: 'analytics-pro', description: 'Rapports avancés et KPI temps réel', price: 12000, currency: 'FCFA', isFree: false, isActive: true, isPublished: true, status: 'PUBLISHED', isVerified: true, isFeatured: true, category: 'Analytics', tags: ['kpi', 'rapports'], dashboardUrl: 'https://analytics-pro.app.afribiz.com/dashboard', sidebarLabel: 'Analytics Pro', sidebarIcon: 'BarChart3' },
   ];
   for (const m of modules) {
-    await prisma.developerModule.upsert({ where: { id: m.id }, update: {}, create: { id: m.id, ...m } });
+    await prisma.developerModule.upsert({
+      where: { id: m.id },
+      update: { dashboardUrl: m.dashboardUrl, sidebarLabel: m.sidebarLabel, sidebarIcon: m.sidebarIcon },
+      create: { id: m.id, ...m },
+    });
   }
 
   // Installations par les business (revenus dev + preuve de vie)
@@ -816,7 +820,37 @@ async function seedDevelopers() {
   for (const i of installs) {
     await prisma.developerModuleInstallation.upsert({ where: { id: i.id }, update: {}, create: { id: i.id, ...i } });
   }
+
+  // ── Demandes de modules des business + matches dev (écosystème vivant) ──
+  const demands: any[] = [
+    { id: 'moddem-1', businessId: B.RESTO, moduleType: 'PRODUCTS', title: 'Module inventaire + rupture de stock automatique', description: 'Nous avons 120 références. On veut des alertes de rupture par dépôt et des commandes fournisseurs automatiques.', budget: 25000, currency: 'FCFA', deadline: new Date('2026-10-01'), status: 'MATCHED', isUrgent: true },
+    { id: 'moddem-2', businessId: B.SALON, moduleType: 'CRM', title: 'Rappels SMS automatiques pour rendez-vous', description: 'Réduire les no-shows : rappel J-1 et J-2 par SMS + liste d\'attente si annulation.', budget: 15000, currency: 'FCFA', deadline: new Date('2026-09-15'), status: 'OPEN', isUrgent: false },
+    { id: 'moddem-3', businessId: B.HOTEL, moduleType: 'MARKETING', title: 'Moteur de prix dynamique chambres', description: 'Ajuster le prix des chambres selon le taux d\'occupation et les périodes de pointe.', budget: 40000, currency: 'FCFA', deadline: new Date('2026-11-01'), status: 'OPEN', isUrgent: false },
+  ];
+  for (const d of demands) {
+    await prisma.moduleDemand.upsert({ where: { id: d.id }, update: {}, create: { id: d.id, ...d } });
+  }
+
+  const matches: any[] = [
+    { id: 'modmatch-1', demandId: 'moddem-1', developerId: 'devprof-1', moduleId: 'devmod-1', score: 92, matchReasons: ['Module stock existant', 'Catégorie identique', 'Dev vérifié'], status: 'ACCEPTED', notes: 'Solution adaptée : Stock Pro couvre le multi-dépôt et les alertes de rupture.', contactedAt: new Date('2026-08-01') },
+    { id: 'modmatch-2', demandId: 'moddem-2', developerId: 'devprof-3', moduleId: 'devmod-3', score: 78, matchReasons: ['Chat/notifications', 'Communication'], status: 'PENDING', contactedAt: null },
+    { id: 'modmatch-3', demandId: 'moddem-3', developerId: 'devprof-4', moduleId: 'devmod-4', score: 85, matchReasons: ['Analytics/prix', 'Dev expérimenté'], status: 'PENDING', contactedAt: null },
+  ];
+  for (const mt of matches) {
+    await prisma.moduleMatch.upsert({ where: { id: mt.id }, update: {}, create: { id: mt.id, ...mt } });
+  }
+
+  // ── Tickets support dev (preuve de vie) ──
+  const tickets: any[] = [
+    { id: 'devtkt-1', developerId: 'devprof-1', businessId: B.BOUTIQUE, moduleId: 'devmod-1', category: 'Bug', subject: 'Erreur de synchronisation multi-dépôt', description: 'Le stock du dépôt 2 ne se met pas à jour après une vente. Reproduction : vente sur le dépôt 2 puis vérification du dashboard.', priority: 'HIGH', status: 'OPEN' },
+    { id: 'devtkt-2', developerId: 'devprof-2', businessId: B.SALON, moduleId: 'devmod-2', category: 'Question', subject: 'Comment configurer les paliers de fidélité ?', description: 'Nous voulons 5 niveaux de fidélité avec des avantages différents. Où configurer cela ?', priority: 'LOW', status: 'OPEN' },
+  ];
+  for (const t of tickets) {
+    await prisma.developerSupportTicket.upsert({ where: { id: t.id }, update: {}, create: { id: t.id, ...t } });
+  }
+
   console.log(`✓ ${modules.length} modules développeurs + ${installs.length} installations business`);
+  console.log(`✓ ${demands.length} demandes de modules + ${matches.length} matches dev + ${tickets.length} tickets support`);
 }
 
 // ============================================================

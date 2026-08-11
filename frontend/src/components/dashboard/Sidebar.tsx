@@ -25,6 +25,7 @@ import { useSidebarUnreadCount } from '@/hooks/useSidebarUnreadCount';
 import { APP_NAME, NAV_GROUPS } from '@/constants/index';
 import { iconMap, MODULE_SUB_ITEMS } from './sidebar-data';
 import { DEVELOPER_NAV_GROUPS, BUSINESS_CORE_NAV } from './sidebar-data';
+import { InstalledModulesSection } from './InstalledModulesSection';
 
 // La navigation business (10 pôles) et les sous-nav de modules viennent de ./sidebar-data
 
@@ -447,6 +448,9 @@ export function Sidebar() {
                 {renderNavItems(group.items, sidebarCollapsed)}
               </div>
             ))}
+
+        {/* Modules installés (écosystème dev) — section dynamique espace business */}
+        {inBusinessSpace && <InstalledModulesSection collapsed={sidebarCollapsed} />}
 
         {/* Developer section */}
         {inDeveloperSpace &&

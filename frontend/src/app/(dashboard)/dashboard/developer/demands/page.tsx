@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { useOpenDemands } from '@/hooks/useDemands';
 import { applyToDemand } from '@/services/api/demands';
 import { useDeveloperModules } from '@/features/developerHooks';
@@ -86,20 +87,22 @@ export default function DeveloperDemandsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Demandes de modules</h1>
-          <p className="text-gray-500 mt-1">
-            Parcourez les besoins des entreprises et proposez vos modules
-          </p>
-        </div>
-        <Link href="/dashboard/developer/demands/my">
-          <Button variant="secondary">
-            <ListChecks className="w-4 h-4 mr-2" />
-            Mes propositions
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Demandes de modules"
+        description="Parcourez les besoins des entreprises et proposez vos modules"
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Demandes' },
+        ]}
+        actions={
+          <Link href="/dashboard/developer/demands/my">
+            <Button variant="secondary">
+              <ListChecks className="w-4 h-4 mr-2" />
+              Mes propositions
+            </Button>
+          </Link>
+        }
+      />
 
       <div className="flex gap-3">
         <Input

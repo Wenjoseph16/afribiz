@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 const updates = [
   {
@@ -76,7 +77,7 @@ const updates = [
 const quickLinks = [
   { icon: BookOpen, label: 'Documentation API', href: '/api/docs' },
   { icon: Code, label: 'Console développeur', href: '/dashboard/developer' },
-  { icon: MessageCircle, label: 'Forum technique', href: '/dashboard/community' },
+  { icon: MessageCircle, label: 'Forum technique', href: '/dashboard/developer/community' },
 ];
 
 export default function DeveloperUpdatesPage() {
@@ -86,15 +87,14 @@ export default function DeveloperUpdatesPage() {
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Code className="h-6 w-6 text-brand" />
-          Mises à jour développeur
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Restez informé des dernières nouveautés et améliorations
-        </p>
-      </motion.div>
+      <PageHeader
+        title="Mises à jour développeur"
+        description="Restez informé des dernières nouveautés et améliorations de la plateforme"
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Mises à jour' },
+        ]}
+      />
 
       {/* Quick links */}
       <div className="grid sm:grid-cols-3 gap-3">

@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { useDemandMatches } from '@/hooks/useDemands';
 import { getDeveloperDemandById } from '@/services/api/demands';
 import { useAsync } from '@/hooks/useAsync';
@@ -77,25 +78,27 @@ export default function DeveloperDemandDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/dashboard/developer/demands" className="hover:text-gray-700">
-          Demandes
-        </Link>
-        <span>/</span>
-        <span className="text-gray-900">{d.title}</span>
-      </div>
+      <PageHeader
+        title={d.title}
+        badge={d.isUrgent ? { label: 'Urgent', className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' } : undefined}
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Demandes', href: '/dashboard/developer/demands' },
+          { label: d.title },
+        ]}
+        actions={
+          <Link href="/dashboard/developer/demands">
+            <Button variant="secondary">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour aux demandes
+            </Button>
+          </Link>
+        }
+      />
 
       <Card className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold">{d.title}</h1>
-              {d.isUrgent && (
-                <Badge variant="danger" size="sm">
-                  Urgent
-                </Badge>
-              )}
-            </div>
             <div className="flex items-center gap-3 text-sm text-gray-500">
               <Badge variant="info" size="sm">
                 {d.moduleType}

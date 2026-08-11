@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { getMyMatchedDemands } from '@/services/api/demands';
 import { useAsync } from '@/hooks/useAsync';
 import type { MatchStatus, ProposalType } from '@afribiz/shared';
@@ -51,27 +52,23 @@ export default function MyProposalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Link href="/dashboard/developer/demands" className="hover:text-gray-700">
-              Demandes
-            </Link>
-            <span>/</span>
-            <span className="text-gray-900">Mes propositions</span>
-          </div>
-          <h1 className="text-2xl font-bold">Mes propositions</h1>
-          <p className="text-gray-500 mt-1">
-            Suivez le statut de vos propositions aux demandes de modules
-          </p>
-        </div>
-        <Link href="/dashboard/developer/demands">
-          <Button variant="secondary">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voir les demandes ouvertes
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Mes propositions"
+        description="Suivez le statut de vos propositions aux demandes de modules"
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Demandes', href: '/dashboard/developer/demands' },
+          { label: 'Mes propositions' },
+        ]}
+        actions={
+          <Link href="/dashboard/developer/demands">
+            <Button variant="secondary">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voir les demandes ouvertes
+            </Button>
+          </Link>
+        }
+      />
 
       {list.length === 0 ? (
         <EmptyState

@@ -5061,6 +5061,9 @@ model DeveloperModule {
   publishedAt                 DateTime?
   archivedAt                  DateTime?
   pricingType                 ModulePricingType?
+  dashboardUrl                String?
+  sidebarLabel                String?
+  sidebarIcon                 String?  @default("Puzzle")
   installations               DeveloperModuleInstallation[]
   reviews                     DeveloperModuleReview[]
   revenues                    DeveloperRevenue[]

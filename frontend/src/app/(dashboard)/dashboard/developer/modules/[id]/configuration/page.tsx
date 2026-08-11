@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { useModuleConfigurations } from '@/features/developerModulesHooks';
 import type { ModuleConfiguration } from '@/types/developer';
 import Link from 'next/link';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 
 export default function ModuleConfigurationPage() {
   const params = useParams();
@@ -54,16 +55,15 @@ export default function ModuleConfigurationPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Configuration du module
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Gérez les configurations de ce module pour chaque business
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Configuration du module"
+        description="Gérez les configurations de ce module pour chaque business"
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Modules', href: '/dashboard/developer/modules' },
+          { label: 'Configuration' },
+        ]}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

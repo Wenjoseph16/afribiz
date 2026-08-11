@@ -75,6 +75,8 @@ import {
   Monitor,
   Ruler,
   Mic,
+  Boxes,
+  Gift,
 } from 'lucide-react';
 
 export const iconMap: Record<string, React.ComponentType<any>> = {
@@ -151,6 +153,8 @@ export const iconMap: Record<string, React.ComponentType<any>> = {
   Monitor,
   Ruler,
   Mic,
+  Boxes,
+  Gift,
 };
 
 export const MODULE_ICON_MAP: Record<string, string> = {

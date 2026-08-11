@@ -267,6 +267,9 @@ export const getBusinessInstalledModules = catchAsyncErrors(
             version: true,
             rating: true,
             reviewCount: true,
+            dashboardUrl: true,
+            sidebarLabel: true,
+            sidebarIcon: true,
             developer: {
               select: {
                 companyName: true,

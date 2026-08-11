@@ -13,6 +13,7 @@ import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   useModulePermissions,
   useAddModulePermission,
@@ -141,20 +142,21 @@ export default function ModulePermissionsPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Permissions du module
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Gérez les ressources auxquelles ce module peut accéder
-          </p>
-        </div>
-        <Button variant="gradient" size="sm" onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4" />
-          {showForm ? 'Annuler' : 'Ajouter'}
-        </Button>
-      </div>
+      <PageHeader
+        title="Permissions du module"
+        description="Gérez les ressources auxquelles ce module peut accéder"
+        breadcrumbs={[
+          { label: 'Développeur', href: '/dashboard/developer' },
+          { label: 'Modules', href: '/dashboard/developer/modules' },
+          { label: 'Permissions' },
+        ]}
+        actions={
+          <Button variant="gradient" size="sm" onClick={() => setShowForm(!showForm)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            {showForm ? 'Annuler' : 'Ajouter'}
+          </Button>
+        }
+      />
 
       {/* Add form */}
       {showForm && (
