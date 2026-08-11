@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { BookOpen, Clock, Layers } from 'lucide-react';
 import StarRating from './StarRating';
+import { LayawayCardButton, LayawayBadge } from './LayawayCardButton';
 import type { TrainingResult } from './types';
 
 interface TrainingCardProps {
@@ -48,15 +49,20 @@ export default function TrainingCard({ item, view = 'grid' }: TrainingCardProps)
               {priceLabel}
             </span>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/business/${item.businessSlug || item.id}`);
-            }}
-            className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
-          >
-            S'inscrire
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/business/${item.businessSlug || item.id}`);
+              }}
+              className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              S'inscrire
+            </button>
+            {item.layawayOfferId && (
+              <LayawayCardButton offerId={item.layawayOfferId} size="xs" />
+            )}
+          </div>
         </div>
       </div>
     );
@@ -67,11 +73,12 @@ export default function TrainingCard({ item, view = 'grid' }: TrainingCardProps)
       onClick={handleCardClick}
       className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-brand/20 hover:shadow-card transition-all duration-200 overflow-hidden group cursor-pointer"
     >
-      <div className="h-36 bg-gradient-to-br from-brand to-brand-700 flex flex-col items-center justify-center gap-1.5">
+      <div className="h-36 bg-gradient-to-br from-brand to-brand-700 flex flex-col items-center justify-center gap-1.5 relative">
         <BookOpen className="h-10 w-10 text-white/90" />
         <span className="px-2 py-0.5 rounded-full bg-white/15 text-white text-[10px] font-medium">
           {item.category || 'Formation'}
         </span>
+        {item.layawayOfferId && <LayawayBadge className="absolute top-2 right-2" />}
       </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-0.5">
@@ -98,15 +105,20 @@ export default function TrainingCard({ item, view = 'grid' }: TrainingCardProps)
             {priceLabel}
           </span>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push(`/business/${item.businessSlug || item.id}`);
-          }}
-          className="w-full mt-3 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
-        >
-          S'inscrire
-        </button>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/business/${item.businessSlug || item.id}`);
+            }}
+            className="flex-1 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
+          >
+            S'inscrire
+          </button>
+          {item.layawayOfferId && (
+            <LayawayCardButton offerId={item.layawayOfferId} className="flex-1" />
+          )}
+        </div>
       </div>
     </div>
   );

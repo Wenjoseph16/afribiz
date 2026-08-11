@@ -10,6 +10,7 @@ import { useCartStore } from '@/stores/cartStore';
 import { useAddToCart } from '@/features/hooks';
 import { ProductDetailModal } from '@/components/marketplace/ProductDetailModal';
 import StarRating from './StarRating';
+import { LayawayCardButton, LayawayBadge } from './LayawayCardButton';
 import type { ProductResult } from './types';
 
 interface ProductCardProps {
@@ -170,6 +171,12 @@ export default function ProductCard({ item, view = 'grid' }: ProductCardProps) {
       >
         Commander
       </button>
+      {item.layawayOfferId && (
+        <LayawayCardButton
+          offerId={item.layawayOfferId}
+          className={isList ? 'px-3 py-1.5' : 'flex-1'}
+        />
+      )}
       {!isList && (
         <div className="w-full flex gap-1.5 mt-1">
           <button
@@ -233,11 +240,14 @@ export default function ProductCard({ item, view = 'grid' }: ProductCardProps) {
                 </svg>
               </div>
             )}
-            {badge > 0 && (
-              <span className="absolute top-1 left-1 bg-red-500 text-white text-[9px] font-bold px-1 py-0.5 rounded">
-                -{badge}%
-              </span>
-            )}
+          {badge > 0 && (
+            <span className="absolute top-1 left-1 bg-red-500 text-white text-[9px] font-bold px-1 py-0.5 rounded">
+              -{badge}%
+            </span>
+          )}
+          {item.layawayOfferId && (
+            <LayawayBadge className="absolute top-1 right-1" />
+          )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">

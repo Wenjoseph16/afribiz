@@ -11,6 +11,7 @@ import {
   Package,
   Bookmark,
   QrCode,
+  MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ShareBusinessModal } from './ShareBusinessModal';
@@ -40,6 +41,24 @@ export function Header({ business, slug, hasProducts, hasServices, hasRooms, has
       label: 'Appeler',
       icon: <Phone className="w-4 h-4" />,
       href: `tel:${business.phone}`,
+    });
+  }
+
+  // Itinéraire — Google Maps (GPS réel ou lien configuré par le business)
+  const mapsHref =
+    business.googleMapsLink ||
+    (business.latitude != null && business.longitude != null
+      ? `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`
+      : business.address
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+            `${business.name} ${business.address} ${business.city}`
+          )}`
+        : null);
+  if (mapsHref) {
+    actions.push({
+      label: 'Itinéraire',
+      icon: <MapPin className="w-4 h-4" />,
+      href: mapsHref,
     });
   }
 

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Bed, Users } from 'lucide-react';
 import StarRating from './StarRating';
+import { LayawayCardButton, LayawayBadge } from './LayawayCardButton';
 import type { RoomResult } from './types';
 
 interface RoomCardProps {
@@ -63,15 +64,20 @@ export default function RoomCard({ item, view = 'grid' }: RoomCardProps) {
               )}
             </div>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/business/${item.businessSlug || item.id}`);
-            }}
-            className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
-          >
-            Réserver
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/business/${item.businessSlug || item.id}`);
+              }}
+              className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              Réserver
+            </button>
+            {item.layawayOfferId && (
+              <LayawayCardButton offerId={item.layawayOfferId} size="xs" />
+            )}
+          </div>
         </div>
       </div>
     );
@@ -82,7 +88,7 @@ export default function RoomCard({ item, view = 'grid' }: RoomCardProps) {
       onClick={handleCardClick}
       className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-brand/20 hover:shadow-card transition-all duration-200 overflow-hidden group cursor-pointer"
     >
-      <div className="h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+      <div className="h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden relative">
         {item.image ? (
           <Image
             src={item.image}
@@ -94,6 +100,7 @@ export default function RoomCard({ item, view = 'grid' }: RoomCardProps) {
         ) : (
           <Bed className="h-10 w-10 text-gray-300 dark:text-gray-600" />
         )}
+        {item.layawayOfferId && <LayawayBadge className="absolute top-2 right-2" />}
       </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-0.5">
@@ -124,15 +131,20 @@ export default function RoomCard({ item, view = 'grid' }: RoomCardProps) {
             </span>
           )}
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push(`/business/${item.businessSlug || item.id}`);
-          }}
-          className="w-full mt-3 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
-        >
-          Réserver
-        </button>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/business/${item.businessSlug || item.id}`);
+            }}
+            className="flex-1 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
+          >
+            Réserver
+          </button>
+          {item.layawayOfferId && (
+            <LayawayCardButton offerId={item.layawayOfferId} className="flex-1" />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -243,7 +243,10 @@ const BIZ_DEFS: any[] = [
     description: 'Restaurant traditionnel ivoirien : plats du terroir, ambiance chaleureuse et service de livraison.',
     shortDescription: 'Cuisine ivoirienne authentique', tagline: 'Le goût du terroir',
     email: 'contact@saveur-abidjan.com', phone: '+2250102030405', country: 'Côte d\'Ivoire', city: 'Abidjan', region: 'Cocody',
-    address: 'Angré 7e tranche', foundedYear: 2019, employeeCount: 14, rating: 4.6, reviewCount: 96,
+    address: 'Angré 7e tranche', latitude: 5.348, longitude: -3.9777,
+    googleMapsLink: 'https://maps.google.com/?q=5.348,-3.9777',
+    facebook: 'https://facebook.com/saveurdabidjan', instagram: 'https://instagram.com/saveurdabidjan', tiktok: 'https://tiktok.com/@saveurdabidjan',
+    foundedYear: 2019, employeeCount: 14, rating: 4.6, reviewCount: 96,
     modules: ['PRODUCTS', 'MENU', 'ORDERS', 'BOOKINGS', 'DELIVERIES', 'PROMOTIONS', 'EMPLOYEES', 'PLANNING', 'CRM', 'MARKETING', 'DEBTS_PAYMENTS', 'QUOTES_INVOICES', 'AFRISCORE', 'DOCUMENTS'],
   },
   {
@@ -251,7 +254,10 @@ const BIZ_DEFS: any[] = [
     description: 'Salon de beauté : coiffure, manucure, soins du visage et maquillage. Rendez-vous en ligne.',
     shortDescription: 'Coiffure & soins de beauté', tagline: 'Révélez votre éclat',
     email: 'contact@kenzabeaute.com', phone: '+221770001122', country: 'Sénégal', city: 'Dakar', region: 'Almadies',
-    address: 'Route des Almadies', foundedYear: 2020, employeeCount: 6, rating: 4.8, reviewCount: 54,
+    address: 'Route des Almadies', latitude: 14.7459, longitude: -17.4847,
+    googleMapsLink: 'https://maps.google.com/?q=14.7459,-17.4847',
+    facebook: 'https://facebook.com/kenzabeaute', instagram: 'https://instagram.com/kenzabeaute', tiktok: 'https://tiktok.com/@kenzabeaute',
+    foundedYear: 2020, employeeCount: 6, rating: 4.8, reviewCount: 54,
     modules: ['SERVICES', 'BOOKINGS', 'CRM', 'PROMOTIONS', 'PORTFOLIO', 'EMPLOYEES', 'PLANNING', 'MARKETING', 'AFRISCORE', 'SAVINGS'],
   },
   {
@@ -259,7 +265,10 @@ const BIZ_DEFS: any[] = [
     description: 'Hôtel 3 étoiles au cœur d\'Abidjan : chambres climatisées, piscine, séminaires et restauration.',
     shortDescription: 'Hôtel 3 étoiles & séminaires', tagline: 'Votre second chez-vous',
     email: 'reservation@hotelpalmier.com', phone: '+22527210000', country: 'Côte d\'Ivoire', city: 'Abidjan', region: 'Plateau',
-    address: 'Bd de la République', foundedYear: 2015, employeeCount: 32, rating: 4.4, reviewCount: 140,
+    address: 'Bd de la République', latitude: 5.3224, longitude: -4.0181,
+    googleMapsLink: 'https://maps.google.com/?q=5.3224,-4.0181',
+    facebook: 'https://facebook.com/hotelpalmier', instagram: 'https://instagram.com/hotelpalmier', linkedin: 'https://linkedin.com/company/hotelpalmier',
+    foundedYear: 2015, employeeCount: 32, rating: 4.4, reviewCount: 140,
     modules: ['ROOMS', 'BOOKINGS', 'SERVICES', 'QUOTES_INVOICES', 'EVENTS', 'EMPLOYEES', 'CRM', 'PROMOTIONS', 'DOCUMENTS'],
   },
   {
@@ -267,7 +276,10 @@ const BIZ_DEFS: any[] = [
     description: 'Smartphones, accessoires et produits high-tech au meilleur prix, livrés dans toute l\'Afrique de l\'Ouest.',
     shortDescription: 'High-tech & smartphones', tagline: 'La tech pour tous',
     email: 'contact@techstoreafrique.com', phone: '+233202020202', country: 'Ghana', city: 'Accra', region: 'Osu',
-    address: 'Oxford Street, Osu', foundedYear: 2021, employeeCount: 8, rating: 4.5, reviewCount: 78,
+    address: 'Oxford Street, Osu', latitude: 5.56, longitude: -0.1755,
+    googleMapsLink: 'https://maps.google.com/?q=5.56,-0.1755',
+    facebook: 'https://facebook.com/techstoreafrique', instagram: 'https://instagram.com/techstoreafrique', twitter: 'https://twitter.com/techstoreafrique',
+    foundedYear: 2021, employeeCount: 8, rating: 4.5, reviewCount: 78,
     modules: ['PRODUCTS', 'ORDERS', 'DELIVERIES', 'DEBTS_PAYMENTS', 'PROMOTIONS', 'CRM', 'MARKETING', 'DOCUMENTS', 'QUOTES_INVOICES', 'SAVINGS'],
   },
   {
@@ -275,7 +287,10 @@ const BIZ_DEFS: any[] = [
     description: 'Entreprise de construction et de rénovation : devis, chantiers, gros œuvre et finitions.',
     shortDescription: 'Construction & rénovation', tagline: 'Construisons l\'avenir',
     email: 'contact@buildpro.ci', phone: '+2250708091011', country: 'Côte d\'Ivoire', city: 'Abidjan', region: 'Yopougon',
-    address: 'Zone industrielle Yopougon', foundedYear: 2017, employeeCount: 22, rating: 4.7, reviewCount: 41,
+    address: 'Zone industrielle Yopougon', latitude: 5.3279, longitude: -4.109,
+    googleMapsLink: 'https://maps.google.com/?q=5.3279,-4.109',
+    facebook: 'https://facebook.com/buildproci', instagram: 'https://instagram.com/buildproci', linkedin: 'https://linkedin.com/company/buildpro',
+    foundedYear: 2017, employeeCount: 22, rating: 4.7, reviewCount: 41,
     modules: ['PORTFOLIO', 'QUOTES_INVOICES', 'ADVANCED_TASKS', 'PLANNING', 'EMPLOYEES', 'DOCUMENTS', 'PARTNERS', 'CRM', 'TRAINING'],
   },
   {
@@ -283,7 +298,10 @@ const BIZ_DEFS: any[] = [
     description: 'Organisation d\'événements, location de matériel (tentes, sonorisation) et billetterie en ligne.',
     shortDescription: 'Événements & locations', tagline: 'Vos événements réussis',
     email: 'contact@evenementsplus.com', phone: '+22997000000', country: 'Bénin', city: 'Cotonou', region: 'Ganhi',
-    address: 'Bd St Michel', foundedYear: 2018, employeeCount: 10, rating: 4.3, reviewCount: 33,
+    address: 'Bd St Michel', latitude: 6.3654, longitude: 2.4254,
+    googleMapsLink: 'https://maps.google.com/?q=6.3654,2.4254',
+    facebook: 'https://facebook.com/evenementsplus', instagram: 'https://instagram.com/evenementsplus', tiktok: 'https://tiktok.com/@evenementsplus',
+    foundedYear: 2018, employeeCount: 10, rating: 4.3, reviewCount: 33,
     modules: ['PRODUCTS', 'EVENTS', 'RENTALS', 'BOOKINGS', 'ORDERS', 'PROMOTIONS', 'CRM', 'MARKETING', 'PLANNING', 'EMPLOYEES'],
   },
 ];
@@ -293,11 +311,25 @@ async function seedBusinesses() {
   for (const d of BIZ_DEFS) {
     await prisma.business.upsert({
       where: { id: d.id },
-      update: {},
+      // update appliqué : GPS, réseaux sociaux et googleMapsLink suivent le seed
+      // même pour les business déjà existants (vitrine vivante dès la 1re exécution).
+      update: {
+        latitude: d.latitude ?? null,
+        longitude: d.longitude ?? null,
+        googleMapsLink: d.googleMapsLink ?? null,
+        facebook: d.facebook ?? null,
+        instagram: d.instagram ?? null,
+        twitter: d.twitter ?? null,
+        linkedin: d.linkedin ?? null,
+        tiktok: d.tiktok ?? null,
+      },
       create: {
         id: d.id, ownerId: d.ownerId, name: d.name, slug: d.slug, type: d.type,
         description: d.description, shortDescription: d.shortDescription, tagline: d.tagline,
         email: d.email, phone: d.phone, country: d.country, city: d.city, region: d.region, address: d.address,
+        latitude: d.latitude ?? null, longitude: d.longitude ?? null, googleMapsLink: d.googleMapsLink ?? null,
+        facebook: d.facebook ?? null, instagram: d.instagram ?? null,
+        twitter: d.twitter ?? null, linkedin: d.linkedin ?? null, tiktok: d.tiktok ?? null,
         foundedYear: d.foundedYear, employeeCount: d.employeeCount,
         planId: 'platform-afribiz',
         isActive: true, isVerified: true, isPremium: true, isNew: false,

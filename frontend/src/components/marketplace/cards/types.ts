@@ -21,6 +21,8 @@ export interface BaseResult {
   image?: string;
   distance?: string;
   businessSlug?: string;
+  /** Id de l'offre épargne active (badge 🔒 Épargner) — undefined si indisponible */
+  layawayOfferId?: string;
 }
 
 export interface BusinessResult extends BaseResult {

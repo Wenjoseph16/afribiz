@@ -177,7 +177,10 @@ export default function RightSidebar({ trending }: RightSidebarProps) {
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                 >
                   <div className="w-7 h-7 rounded-lg bg-cyan-50 dark:bg-cyan-900/30 flex items-center justify-center text-[10px] font-bold text-cyan-600 shrink-0">
-                    {new Date(ev.date).getDate()}
+                    {(() => {
+                      const d = new Date(ev.date);
+                      return Number.isNaN(d.getTime()) ? '•' : d.getDate();
+                    })()}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-brand transition-colors">

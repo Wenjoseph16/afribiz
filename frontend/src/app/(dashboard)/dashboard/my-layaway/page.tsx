@@ -414,7 +414,8 @@ export default function MyLayawayPage() {
               className="w-full px-4 py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
             <p className="text-[11px] text-gray-400 mt-1">
-              Min {formatPrice(contributePlan?.minInstallment)} · Max {formatPrice(contributePlan?.remaining)}
+              Min {formatPrice(contributePlan?.minInstallment ?? 1000)} · Max{' '}
+              {formatPrice(contributePlan?.remaining ?? 0)}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">

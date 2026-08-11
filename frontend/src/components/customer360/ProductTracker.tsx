@@ -12,12 +12,25 @@ interface Props {
   trackClick?: boolean;
 }
 
+function canTrack(user: any) {
+  if (!user) return false;
+  const roles = user.roles || [];
+  return (
+    user.primaryRole === 'BUSINESS' ||
+    user.primaryRole === 'ADMIN' ||
+    roles.includes('BUSINESS') ||
+    roles.includes('ADMIN')
+  );
+}
+
 export function ProductViewTracker({ businessId, productId, source }: Props) {
   const tracked = useRef(false);
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
-    if (tracked.current || !businessId || !productId) return;
+    // Route réservée BUSINESS/ADMIN : on ne tracke que pour le propriétaire du
+    // business (visites de SES produits côté CRM) — jamais pour un visiteur public.
+    if (tracked.current || !businessId || !productId || !canTrack(user)) return;
     tracked.current = true;
 
     apiClient
@@ -26,10 +39,10 @@ export function ProductViewTracker({ businessId, productId, source }: Props) {
         userId: user?.id,
         source: source || 'direct',
       })
-      .catch((e) => {
-        console.error('Erreur tracking produit:', e);
+      .catch(() => {
+        /* tracking non bloquant — jamais de bruit console */
       });
-  }, [businessId, productId, source, user?.id]);
+  }, [businessId, productId, source, user]);
 
   return null;
 }
@@ -38,14 +51,15 @@ export function useProductClick() {
   const user = useAuthStore((s) => s.user);
 
   return async (businessId: string, productId: string, source?: string) => {
+    if (!canTrack(user)) return;
     try {
       await apiClient.trackProductClick({
         productId,
         userId: user?.id,
         source: source || 'marketplace',
       });
-    } catch (e) {
-      console.error('Erreur click produit:', e);
+    } catch {
+      /* tracking non bloquant */
     }
   };
 }

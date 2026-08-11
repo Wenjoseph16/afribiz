@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   Star,
+  Share2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { apiClient } from '@/services/apiClient';
@@ -25,6 +26,19 @@ interface ContactProps {
 }
 
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+// Réseaux sociaux configurables sur le profil business (vitrine enrichie)
+const SOCIALS: {
+  key: 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'tiktok';
+  label: string;
+  prefix: string;
+}[] = [
+  { key: 'facebook', label: 'Facebook', prefix: 'https://facebook.com/' },
+  { key: 'instagram', label: 'Instagram', prefix: 'https://instagram.com/' },
+  { key: 'twitter', label: 'X (Twitter)', prefix: 'https://x.com/' },
+  { key: 'linkedin', label: 'LinkedIn', prefix: 'https://linkedin.com/in/' },
+  { key: 'tiktok', label: 'TikTok', prefix: 'https://tiktok.com/@' },
+];
 
 type FormErrors = {
   name?: string;
@@ -104,6 +118,51 @@ export function Contact({ business }: ContactProps) {
   };
 
   const todayStatus = getTodayStatus();
+
+  // Réseaux sociaux renseignés (handle court ou URL complète)
+  const socials = SOCIALS.filter((s) => (business as any)[s.key]).map((s) => {
+    const raw = String((business as any)[s.key]);
+    const href = raw.startsWith('http') ? raw : `${s.prefix}${raw.replace(/^@/, '')}`;
+    return { ...s, handle: raw.replace(/^@/, ''), href };
+  });
+
+  const renderSocialIcon = (key: string) => {
+    const cls = 'w-4 h-4 shrink-0';
+    switch (key) {
+      case 'facebook':
+        return (
+          <svg viewBox="0 0 24 24" className={`${cls} fill-blue-600`} aria-hidden="true">
+            <path d="M24 12.07C24 5.44 18.63.07 12 .07S0 5.44 0 12.07c0 5.99 4.39 10.95 10.13 11.85v-8.38H7.08v-3.47h3.05V9.43c0-3.01 1.79-4.67 4.53-4.67 1.31 0 2.69.24 2.69.24v2.95h-1.51c-1.49 0-1.96.93-1.96 1.87v2.25h3.33l-.53 3.47h-2.8v8.38C19.61 23.02 24 18.06 24 12.07z" />
+          </svg>
+        );
+      case 'instagram':
+        return (
+          <svg viewBox="0 0 24 24" className={`${cls} fill-pink-600`} aria-hidden="true">
+            <path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.64-.07-4.85s.01-3.58.07-4.85C2.38 3.92 3.9 2.38 7.15 2.23 8.42 2.17 8.8 2.16 12 2.16zm0 5.84a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 6.6a2.6 2.6 0 1 1 0-5.2 2.6 2.6 0 0 1 0 5.2zm5.1-7.4a.93.93 0 1 1-1.86 0 .93.93 0 0 1 1.86 0zM12 0C8.74 0 8.33.01 7.05.07 2.7.27.27 2.7.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.2 4.35 2.63 6.78 6.98 6.98 1.28.06 1.69.07 4.95.07s3.67-.01 4.95-.07c4.35-.2 6.78-2.63 6.98-6.98.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95C23.73 2.7 21.3.27 16.95.07 15.67.01 15.26 0 12 0z" />
+          </svg>
+        );
+      case 'twitter':
+        return (
+          <svg viewBox="0 0 24 24" className={`${cls} fill-sky-500`} aria-hidden="true">
+            <path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93L18.9 1.15zm-1.29 19.49h2.04L6.49 3.24H4.3l13.31 17.4z" />
+          </svg>
+        );
+      case 'linkedin':
+        return (
+          <svg viewBox="0 0 24 24" className={`${cls} fill-blue-700`} aria-hidden="true">
+            <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z" />
+          </svg>
+        );
+      case 'tiktok':
+        return (
+          <svg viewBox="0 0 24 24" className={`${cls} fill-gray-900 dark:fill-gray-100`} aria-hidden="true">
+            <path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-2.59-2.59c.27 0 .53.04.78.12V9.77a5.76 5.76 0 0 0-.78-.05 5.66 5.66 0 1 0 5.66 5.66V9.9a7.32 7.32 0 0 0 4.28 1.37V8.18a4.28 4.28 0 0 1-3.2-2.36z" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <section id="section-contact" className="scroll-mt-24">
@@ -377,6 +436,33 @@ export function Contact({ business }: ContactProps) {
               <p className="text-sm text-gray-400">Non renseignés</p>
             )}
           </div>
+          {socials.length > 0 && (
+            <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-600">
+                  <Share2 className="h-4 w-4" />
+                </div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Nos réseaux sociaux
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {socials.map((s) => (
+                  <a
+                    key={s.key}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={s.label}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:border-brand/40 hover:text-gray-900 dark:hover:text-gray-100 hover:shadow-sm hover:-translate-y-0.5 transition-all group"
+                  >
+                    {renderSocialIcon(s.key)}
+                    <span className="truncate max-w-[110px]">{s.handle}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           {business.whatsapp && (
             <a
               href={`https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent('Bonjour, je vous contacte depuis votre page AfriBiz.')}`}

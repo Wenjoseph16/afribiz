@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Clock } from 'lucide-react';
 import StarRating from './StarRating';
+import { LayawayCardButton, LayawayBadge } from './LayawayCardButton';
 import type { ServiceResult } from './types';
 
 interface ServiceCardProps {
@@ -65,6 +66,7 @@ export default function ServiceCard({ item, view = 'grid' }: ServiceCardProps) {
             >
               Devis
             </Link>
+            {item.layawayOfferId && <LayawayCardButton offerId={item.layawayOfferId} />}
           </div>
         </div>
       </div>
@@ -73,7 +75,7 @@ export default function ServiceCard({ item, view = 'grid' }: ServiceCardProps) {
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-brand/20 hover:shadow-card transition-all duration-200 overflow-hidden group">
-      <div className="h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+      <div className="h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden relative">
         {item.image ? (
           <Image
             src={item.image}
@@ -85,6 +87,7 @@ export default function ServiceCard({ item, view = 'grid' }: ServiceCardProps) {
         ) : (
           <Clock className="h-10 w-10 text-gray-300 dark:text-gray-600" />
         )}
+        {item.layawayOfferId && <LayawayBadge className="absolute top-2 right-2" />}
       </div>
       <div className="p-4">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-0.5">
@@ -106,7 +109,7 @@ export default function ServiceCard({ item, view = 'grid' }: ServiceCardProps) {
             {item.duration}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link
             href={`/business/${item.businessSlug || item.id}`}
             className="flex-1 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors inline-block text-center"
@@ -119,6 +122,9 @@ export default function ServiceCard({ item, view = 'grid' }: ServiceCardProps) {
           >
             Devis
           </Link>
+          {item.layawayOfferId && (
+            <LayawayCardButton offerId={item.layawayOfferId} className="flex-1" />
+          )}
         </div>
       </div>
     </div>

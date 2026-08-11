@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ import {
   Globe,
   Building2,
   ArrowLeft,
+  QrCode,
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { DashboardChartsDynamic as DashboardCharts } from '@/components/dashboard/DashboardChartsDynamic';
@@ -116,6 +117,16 @@ const BusinessDiscountsCard = dynamic(() => import('@/components/dashboard/Busin
   ssr: false,
   loading: () => <div className="h-56 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
 });
+const BusinessQrModal = dynamic(
+  () =>
+    import('@/components/dashboard/BusinessQrModal').then((mod) => ({
+      default: mod.BusinessQrModal,
+    })),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+);
 
 // ─── Mapping module BusinessModule -> vraie page du dashboard ───
 // Les codes enum (QUOTES_INVOICES, DEBTS_PAYMENTS…) ne correspondent pas
@@ -221,6 +232,7 @@ export default function BusinessDashboardPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { business } = useBusinessStore();
+  const [qrOpen, setQrOpen] = useState(false);
 
   const {
     data: myBusiness,
@@ -537,6 +549,12 @@ export default function BusinessDashboardPage() {
               </Button>
             </Link>
           )}
+          {biz?.slug && (
+            <Button variant="outline" size="sm" onClick={() => setQrOpen(true)}>
+              <QrCode className="h-4 w-4 mr-1.5" />
+              QR code
+            </Button>
+          )}
           <Link href="/dashboard/public-page">
             <Button size="sm">
               <Settings className="h-4 w-4 mr-1.5" />
@@ -545,6 +563,14 @@ export default function BusinessDashboardPage() {
           </Link>
         </div>
       </div>
+
+      <BusinessQrModal
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        businessName={biz?.name || 'Mon business'}
+        slug={biz?.slug || ''}
+        logo={biz?.logo}
+      />
 
       <AdSlot page="DASHBOARD_BUSINESS" position="TOP_BANNER" />
 

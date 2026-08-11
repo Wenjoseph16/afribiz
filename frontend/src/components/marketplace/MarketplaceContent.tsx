@@ -104,6 +104,7 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
       image: item.logo || item.images?.[0] || item.image || '',
       businessSlug: item.slug || item.business?.slug || item.id,
       distance: item.distanceFormatted || undefined,
+      layawayOfferId: item.layawayOfferId || undefined,
     };
     switch (_type) {
       case 'business':
@@ -755,8 +756,10 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
           </div>
         </section>
 
-        <TrendingSection items={trendingBusinesses} isLoading={trendingLoading && !trending} />
-        {forYouItems.length > 0 && (
+        {!isSearching && (
+          <TrendingSection items={trendingBusinesses} isLoading={trendingLoading && !trending} />
+        )}
+        {!isSearching && forYouItems.length > 0 && (
           <section className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Pour vous</h2>

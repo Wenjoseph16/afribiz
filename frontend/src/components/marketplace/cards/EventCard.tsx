@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Calendar } from 'lucide-react';
 import StarRating from './StarRating';
+import { LayawayCardButton, LayawayBadge } from './LayawayCardButton';
 import type { EventResult } from './types';
 
 interface EventCardProps {
@@ -55,15 +56,20 @@ export default function EventCard({ item, view = 'grid' }: EventCardProps) {
               </span>
             </div>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/business/${item.businessSlug || item.id}`);
-            }}
-            className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
-          >
-            Participer
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/business/${item.businessSlug || item.id}`);
+              }}
+              className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              Participer
+            </button>
+            {item.layawayOfferId && (
+              <LayawayCardButton offerId={item.layawayOfferId} size="xs" />
+            )}
+          </div>
         </div>
       </div>
     );
@@ -74,7 +80,7 @@ export default function EventCard({ item, view = 'grid' }: EventCardProps) {
       onClick={handleCardClick}
       className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-brand/20 hover:shadow-card transition-all duration-200 overflow-hidden group cursor-pointer"
     >
-      <div className="h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+      <div className="h-36 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden relative">
         {item.image ? (
           <Image
             src={item.image}
@@ -86,6 +92,7 @@ export default function EventCard({ item, view = 'grid' }: EventCardProps) {
         ) : (
           <Calendar className="h-10 w-10 text-gray-300 dark:text-gray-600" />
         )}
+        {item.layawayOfferId && <LayawayBadge className="absolute top-2 right-2" />}
       </div>
       <div className="p-4">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-0.5">
@@ -95,15 +102,20 @@ export default function EventCard({ item, view = 'grid' }: EventCardProps) {
           <Calendar className="h-3 w-3" /> {item.date} • {item.city}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.organizer}</p>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push(`/business/${item.businessSlug || item.id}`);
-          }}
-          className="w-full mt-3 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
-        >
-          Participer - {item.price > 0 ? `${item.price.toLocaleString()} FCFA` : 'Gratuit'}
-        </button>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/business/${item.businessSlug || item.id}`);
+            }}
+            className="flex-1 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
+          >
+            Participer - {item.price > 0 ? `${item.price.toLocaleString()} FCFA` : 'Gratuit'}
+          </button>
+          {item.layawayOfferId && (
+            <LayawayCardButton offerId={item.layawayOfferId} className="flex-1" />
+          )}
+        </div>
       </div>
     </div>
   );

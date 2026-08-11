@@ -8,12 +8,24 @@ interface Props {
   businessId: string;
 }
 
+function canTrack(user: any) {
+  if (!user) return false;
+  const roles = user.roles || [];
+  return (
+    user.primaryRole === 'BUSINESS' ||
+    user.primaryRole === 'ADMIN' ||
+    roles.includes('BUSINESS') ||
+    roles.includes('ADMIN')
+  );
+}
+
 export function PageViewTracker({ businessId }: Props) {
   const tracked = useRef(false);
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
-    if (tracked.current || !businessId) return;
+    // Route réservée BUSINESS/ADMIN (CRM du propriétaire) — jamais pour un visiteur public.
+    if (tracked.current || !businessId || !canTrack(user)) return;
     tracked.current = true;
 
     const duration = 0;
@@ -26,7 +38,7 @@ export function PageViewTracker({ businessId }: Props) {
         duration,
       })
       .catch(() => {});
-  }, [businessId, user?.id]);
+  }, [businessId, user]);
 
   return null;
 }

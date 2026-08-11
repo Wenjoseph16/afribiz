@@ -6,7 +6,7 @@ export function formatCurrency(amount: number | string | null | undefined): stri
   }
 
   const numValue = typeof amount === 'string' ? Number(amount) : amount;
-  if (numValue <= 0) {
+  if (typeof numValue !== 'number' || Number.isNaN(numValue) || numValue <= 0) {
     return 'Gratuit';
   }
 

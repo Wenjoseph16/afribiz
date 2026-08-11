@@ -694,6 +694,31 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
     total += count;
   }
 
+  // ── Enrichissement épargne (Layaway) : badge « 🔒 Épargner » sur les items
+  //    qui ont une offre active (produit, service, chambre, location, événement,
+  //    formation). Un seul batch par type — jamais bloquant pour la recherche.
+  const LAYAWAY_TYPES = ['product', 'service', 'room', 'rental', 'event', 'training'];
+  const offerMaps: Record<string, Record<string, string>> = {};
+  await Promise.all(
+    LAYAWAY_TYPES.map(async (t) => {
+      const ids = results.filter((r) => (r as any)._type === t).map((r) => r.id);
+      if (ids.length === 0) return;
+      try {
+        const offers = await prisma.layawayOffer.findMany({
+          where: { itemType: t.toUpperCase(), itemId: { in: ids }, isActive: true },
+          select: { itemId: true, id: true },
+        });
+        offerMaps[t] = Object.fromEntries(offers.map((o) => [o.itemId, o.id]));
+      } catch {
+        offerMaps[t] = {};
+      }
+    })
+  );
+  results.forEach((r) => {
+    const t = (r as any)._type;
+    if (t && offerMaps[t]?.[r.id]) (r as any).layawayOfferId = offerMaps[t][r.id];
+  });
+
   return {
     data: results.slice(skip, skip + limit),
     total,
@@ -836,13 +861,43 @@ export async function getTrending() {
     }),
   ]);
 
+  // Enrichissement épargne (badge 🔒) — mêmes règles que la recherche principale
+  const trendingOfferIds: Record<string, string> = {};
+  try {
+    const offers = await prisma.layawayOffer.findMany({
+      where: {
+        itemType: { in: ['PRODUCT', 'SERVICE', 'ROOM', 'RENTAL', 'EVENT', 'TRAINING'] },
+        itemId: {
+          in: [
+            ...topProducts.map((p) => p.id),
+            ...topServices.map((s) => s.id),
+            ...topEvents.map((e) => e.id),
+            ...topRooms.map((r) => r.id),
+            ...topTrainings.map((t) => t.id),
+          ],
+        },
+        isActive: true,
+      },
+      select: { itemId: true, id: true },
+    });
+    offers.forEach((o) => {
+      trendingOfferIds[o.itemId] = o.id;
+    });
+  } catch {
+    /* non bloquant */
+  }
+  const withOffer = (item: any) =>
+    trendingOfferIds[item.id] ? { ...item, layawayOfferId: trendingOfferIds[item.id] } : item;
+
   return {
     topBusinesses,
-    topProducts,
-    topServices,
-    topEvents,
-    topRooms: topRooms.map((r) => ({ ...r, name: r.name, _type: 'room' })),
-    topTrainings: topTrainings.map((t) => ({ ...t, name: t.title, currency: 'FCFA', _type: 'training' })),
+    topProducts: topProducts.map(withOffer),
+    topServices: topServices.map(withOffer),
+    topEvents: topEvents.map(withOffer),
+    topRooms: topRooms.map((r) => withOffer({ ...r, name: r.name, _type: 'room' })),
+    topTrainings: topTrainings.map((t) =>
+      withOffer({ ...t, name: t.title, currency: 'FCFA', _type: 'training' })
+    ),
     topModules,
   };
 }

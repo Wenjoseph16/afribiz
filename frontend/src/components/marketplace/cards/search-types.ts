@@ -47,6 +47,8 @@ export interface ApiSearchItem {
   _moduleCount?: number;
   coverImage?: string;
   afriScore?: number;
+  /** Id de l'offre épargne active jointe par le backend (badge 🔒) */
+  layawayOfferId?: string;
   developer?: { companyName?: string };
   version?: string;
   totalInstalls?: number;
