@@ -154,6 +154,18 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
   const hasShorts = (shortsData?.items?.length || 0) > 0;
   const hasActiveLive = (livesData?.items?.length || 0) > 0;
 
+  // Catalogues vides masqués (vitrine propre 2027 : pas de section morte)
+  const hasProducts = (products?.length || 0) > 0;
+  const hasServices = (services?.length || 0) > 0;
+  const hasMenu = (menu?.categories?.length || 0) > 0 || (menu?.uncategorized?.length || 0) > 0;
+  const hasRooms = (rooms?.length || 0) > 0;
+  const hasEvents = (events?.length || 0) > 0;
+  const hasRentals = (rentals?.length || 0) > 0;
+  const hasPortfolio = (portfolio?.length || 0) > 0;
+  const hasPromotions = (promotions?.length || 0) > 0;
+  const hasPartners = (partners?.length || 0) > 0;
+  const hasTrainings = (trainings?.length || 0) > 0;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -205,7 +217,14 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
       <PageViewTracker businessId={business.id} />
       <Navbar />
       <Banner business={business} slug={slug} />
-      <Header business={business} />
+      <Header
+        business={business}
+        slug={slug}
+        hasProducts={hasProducts}
+        hasServices={hasServices}
+        hasRooms={hasRooms}
+        hasRentals={hasRentals}
+      />
 
       {hasActiveLive && <LiveBanner businessId={business.id} />}
       <InternalNav
@@ -213,6 +232,16 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
         hasStories={hasStories}
         hasShorts={hasShorts}
         hasActiveLive={hasActiveLive}
+        hasProducts={hasProducts}
+        hasServices={hasServices}
+        hasMenu={hasMenu}
+        hasRooms={hasRooms}
+        hasEvents={hasEvents}
+        hasRentals={hasRentals}
+        hasPortfolio={hasPortfolio}
+        hasPromotions={hasPromotions}
+        hasPartners={hasPartners}
+        hasTrainings={hasTrainings}
         slug={slug}
       />
 
@@ -275,7 +304,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               <MediaShorts businessId={business.id} businessSlug={slug} />
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PRODUCTS') && (
+              {modules.includes('PRODUCTS') && hasProducts && (
                 <Products
                   businessId={business.id}
                   businessName={business.name}
@@ -284,12 +313,12 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('SERVICES') && (
+              {modules.includes('SERVICES') && hasServices && (
                 <Services services={services || []} businessSlug={slug} />
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('MENU') && (
+              {modules.includes('MENU') && hasMenu && (
                 <Menu
                   categories={menu?.categories || []}
                   uncategorized={menu?.uncategorized || []}
@@ -298,7 +327,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('ROOMS') && <Rooms rooms={rooms || []} />}
+              {modules.includes('ROOMS') && hasRooms && <Rooms rooms={rooms || []} />}
             </ErrorBoundary>
             <ErrorBoundary>
               {modules.includes('BOOKINGS') && (
@@ -310,22 +339,24 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('EVENTS') && <Events events={events || []} />}
+              {modules.includes('EVENTS') && hasEvents && <Events events={events || []} />}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('RENTALS') && <Rentals rentals={rentals || []} />}
+              {modules.includes('RENTALS') && hasRentals && <Rentals rentals={rentals || []} />}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PORTFOLIO') && <Portfolio items={portfolio || []} />}
+              {modules.includes('PORTFOLIO') && hasPortfolio && <Portfolio items={portfolio || []} />}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PROMOTIONS') && <Promotions promotions={promotions || []} />}
+              {modules.includes('PROMOTIONS') && hasPromotions && (
+                <Promotions promotions={promotions || []} />
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PARTNERS') && <Partners partners={partners || []} />}
+              {modules.includes('PARTNERS') && hasPartners && <Partners partners={partners || []} />}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('TRAINING') && (
+              {modules.includes('TRAINING') && hasTrainings && (
                 <Trainings trainings={trainings || []} businessSlug={slug} />
               )}
             </ErrorBoundary>

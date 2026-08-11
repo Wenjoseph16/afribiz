@@ -5,6 +5,8 @@ export type ResultType =
   | 'menu'
   | 'event'
   | 'rental'
+  | 'room'
+  | 'training'
   | 'developer'
   | 'module';
 
@@ -85,6 +87,26 @@ export interface RentalResult extends BaseResult {
   image: string;
 }
 
+export interface RoomResult extends BaseResult {
+  type: 'room';
+  pricePerNight: number;
+  promoPrice?: number;
+  roomType: string;
+  capacity: number;
+  businessName: string;
+  available: boolean;
+  image: string;
+}
+
+export interface TrainingResult extends BaseResult {
+  type: 'training';
+  price: number;
+  duration: string;
+  lessons: number;
+  category: string;
+  businessName: string;
+}
+
 export interface DeveloperResult extends BaseResult {
   type: 'developer';
   photo?: string;
@@ -109,6 +131,8 @@ export type ResultItem =
   | MenuResult
   | EventResult
   | RentalResult
+  | RoomResult
+  | TrainingResult
   | DeveloperResult
   | ModuleResult;
 

@@ -21,6 +21,8 @@ import type {
   MenuResult,
   EventResult,
   RentalResult,
+  RoomResult,
+  TrainingResult,
   DeveloperResult,
   ModuleResult,
 } from '@/components/marketplace/ResultCard';
@@ -172,6 +174,28 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
           available: item.isAvailable,
           image: item.images?.[0] || '',
         } as RentalResult;
+      case 'room':
+        return {
+          ...base,
+          type: 'room',
+          pricePerNight: Number(item.price) || 0,
+          promoPrice: item.promotionalPrice ? Number(item.promotionalPrice) : undefined,
+          roomType: item.type || '',
+          capacity: item.capacity || 2,
+          businessName: item.business?.name || '',
+          available: item.isActive !== false,
+          image: item.images?.[0] || item.image || '',
+        } as RoomResult;
+      case 'training':
+        return {
+          ...base,
+          type: 'training',
+          price: Number(item.price) || 0,
+          duration: item.duration || '',
+          lessons: item.lessons || 0,
+          category: item.category || '',
+          businessName: item.business?.name || '',
+        } as TrainingResult;
       case 'developer':
         return {
           ...base,
@@ -496,6 +520,12 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
     );
     (trending.topEvents || []).forEach((e: ApiSearchItem) =>
       items.push(mapItem({ ...e, _type: 'event', business: { name: e.business?.name } }))
+    );
+    (trending.topRooms || []).forEach((r: ApiSearchItem) =>
+      items.push(mapItem({ ...r, _type: 'room', business: { name: r.business?.name } }))
+    );
+    (trending.topTrainings || []).forEach((t: ApiSearchItem) =>
+      items.push(mapItem({ ...t, _type: 'training', business: { name: t.business?.name } }))
     );
     return items;
   }, [trending]);

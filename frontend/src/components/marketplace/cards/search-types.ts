@@ -24,7 +24,9 @@ export interface ApiSearchItem {
   promotionalPrice?: number | string;
   stock?: number;
   isAvailable?: boolean;
+  isActive?: boolean;
   duration?: string;
+  lessons?: number;
   latitude?: number;
   longitude?: number;
   distanceFormatted?: string;

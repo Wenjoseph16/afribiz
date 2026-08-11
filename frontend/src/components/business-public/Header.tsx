@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Business } from '@/types/business';
 import {
   Phone,
@@ -9,14 +10,23 @@ import {
   FileText,
   Package,
   Bookmark,
+  QrCode,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ShareBusinessModal } from './ShareBusinessModal';
 
 interface HeaderProps {
   business: Business;
+  slug?: string;
+  // Drapeaux de contenu : les CTA ne s'affichent que si la section cible a de la donnée
+  hasProducts?: boolean;
+  hasServices?: boolean;
+  hasRooms?: boolean;
+  hasRentals?: boolean;
 }
 
-export function Header({ business }: HeaderProps) {
+export function Header({ business, slug, hasProducts, hasServices, hasRooms, hasRentals }: HeaderProps) {
+  const [shareOpen, setShareOpen] = useState(false);
   const actions: {
     label: string;
     icon: React.ReactNode;
@@ -42,18 +52,20 @@ export function Header({ business }: HeaderProps) {
     });
   }
 
-  if (business.modules.includes('ROOMS') || business.modules.includes('SERVICES')) {
+  const canBookRooms = business.modules.includes('ROOMS') && hasRooms;
+  const canBookServices = business.modules.includes('SERVICES') && hasServices;
+  if (canBookRooms || canBookServices) {
     actions.push({
       label: 'Réserver',
       icon: <Calendar className="w-4 h-4" />,
       onClick: () => {
-        const target = business.modules.includes('ROOMS') ? 'section-rooms' : 'section-services';
+        const target = canBookRooms ? 'section-rooms' : 'section-services';
         document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' });
       },
     });
   }
 
-  if (business.modules.includes('PRODUCTS')) {
+  if (business.modules.includes('PRODUCTS') && hasProducts) {
     actions.push({
       label: 'Commander',
       icon: <ShoppingCart className="w-4 h-4" />,
@@ -62,7 +74,7 @@ export function Header({ business }: HeaderProps) {
     });
   }
 
-  if (business.modules.includes('SERVICES') || business.type === 'FREELANCE') {
+  if ((business.modules.includes('SERVICES') && hasServices) || business.type === 'FREELANCE') {
     actions.push({
       label: 'Demander un devis',
       icon: <FileText className="w-4 h-4" />,
@@ -71,7 +83,7 @@ export function Header({ business }: HeaderProps) {
     });
   }
 
-  if (business.modules.includes('RENTALS')) {
+  if (business.modules.includes('RENTALS') && hasRentals) {
     actions.push({
       label: 'Louer',
       icon: <Package className="w-4 h-4" />,
@@ -89,7 +101,9 @@ export function Header({ business }: HeaderProps) {
     });
   }
 
-  if (actions.length === 0) return null;
+  // Lien + QR code unique de la vitrine — toujours visible, même sans contact
+  const showShare = !!slug;
+  if (actions.length === 0 && !showShare) return null;
 
   return (
     <div
@@ -123,8 +137,28 @@ export function Header({ business }: HeaderProps) {
               {action.label}
             </a>
           ))}
+
+          {/* 🔗 Lien & QR code unique de la vitrine */}
+          {showShare && (
+            <button
+              onClick={() => setShareOpen(true)}
+              aria-label="Partager et QR code de la vitrine"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors border border-brand/30 text-brand hover:bg-brand/10 dark:text-brand-300"
+            >
+              <QrCode className="w-4 h-4" />
+              Partager
+            </button>
+          )}
         </div>
       </div>
+
+      <ShareBusinessModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        businessName={business.name}
+        slug={slug || ''}
+        logo={business.logo}
+      />
     </div>
   );
 }

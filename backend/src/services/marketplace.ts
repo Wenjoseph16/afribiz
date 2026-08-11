@@ -37,7 +37,9 @@ interface TextSearchConfig {
     | 'MenuItem'
     | 'Event'
     | 'Rental'
-    | 'Product';
+    | 'Product'
+    | 'Room'
+    | 'Training';
   fields: string[];
   baseFilter: string;
 }
@@ -99,7 +101,18 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
   const excluded = params.excluded || [];
   const activeTypes = params.type
     ? params.type.split(',')
-    : ['business', 'product', 'service', 'menu', 'event', 'rental', 'developer', 'module'];
+    : [
+        'business',
+        'product',
+        'service',
+        'menu',
+        'event',
+        'rental',
+        'room',
+        'training',
+        'developer',
+        'module',
+      ];
 
   const typeKeyMap: Record<string, string> = {
     business: 'b',
@@ -108,6 +121,8 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
     menu: 'm',
     event: 'e',
     rental: 'r',
+    room: 'h',
+    training: 't',
     developer: 'd',
     module: 'o',
   };
@@ -480,6 +495,100 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
     total += count;
   }
 
+  // ---- ROOMS (chambres / hébergement) ----
+  if (activeTypes.includes('room')) {
+    const where = await applyTextSearch({ isActive: true }, q, phrases, excluded, {
+      model: 'Room',
+      fields: ['name', 'description'],
+      baseFilter: '"isActive" = true',
+    });
+    const priceFilter = buildPriceFilter(params.priceMin, params.priceMax);
+    if (priceFilter) where.price = priceFilter;
+
+    const [data, count] = await Promise.all([
+      prisma.room.findMany({
+        where,
+        skip: typeOffsets.room || 0,
+        take: perTypeLimit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          shortDescription: true,
+          price: true,
+          currency: true,
+          images: true,
+          capacity: true,
+          isPromotional: true,
+          promotionalPrice: true,
+          business: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              rating: true,
+              city: true,
+              country: true,
+            },
+          },
+        },
+      }),
+      prisma.room.count({ where }),
+    ]);
+    data.forEach((r) => results.push({ ...r, _type: 'room' as const }));
+    currentFetched.room = (currentFetched.room || 0) + data.length;
+    total += count;
+  }
+
+  // ---- TRAININGS (formations) ----
+  if (activeTypes.includes('training')) {
+    const where = await applyTextSearch({ deletedAt: null }, q, phrases, excluded, {
+      model: 'Training',
+      fields: ['title', 'description'],
+      baseFilter: '"deletedAt" IS NULL',
+    });
+    const priceFilter = buildPriceFilter(params.priceMin, params.priceMax);
+    if (priceFilter) where.price = priceFilter;
+
+    const [data, count] = await Promise.all([
+      prisma.training.findMany({
+        where,
+        skip: typeOffsets.training || 0,
+        take: perTypeLimit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          category: true,
+          duration: true,
+          lessons: true,
+          price: true,
+          business: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              rating: true,
+              city: true,
+              country: true,
+            },
+          },
+        },
+      }),
+      prisma.training.count({ where }),
+    ]);
+    // Le modèle Training n'a pas de champ currency — FCFA par défaut (plateforme Afrique de l'Ouest)
+    data.forEach((t) =>
+      results.push({ ...t, name: t.title, currency: 'FCFA', _type: 'training' as const })
+    );
+    currentFetched.training = (currentFetched.training || 0) + data.length;
+    total += count;
+  }
+
   // ---- RENTALS ----
   if (activeTypes.includes('rental')) {
     const where = await applyTextSearch({ isActive: true }, q, phrases, excluded, {
@@ -598,7 +707,15 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
 // TRENDING
 // ============================================
 export async function getTrending() {
-  const [topBusinesses, topProducts, topServices, topEvents, topModules] = await Promise.all([
+  const [
+    topBusinesses,
+    topProducts,
+    topServices,
+    topEvents,
+    topRooms,
+    topTrainings,
+    topModules,
+  ] = await Promise.all([
     prisma.business.findMany({
       where: { isActive: true, deletedAt: null },
       orderBy: { rating: 'desc' },
@@ -667,6 +784,40 @@ export async function getTrending() {
         },
       },
     }),
+    prisma.room.findMany({
+      where: { isActive: true },
+      orderBy: { price: 'asc' },
+      take: 6,
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        price: true,
+        currency: true,
+        images: true,
+        capacity: true,
+        business: {
+          select: { id: true, name: true, slug: true, logo: true, city: true, country: true },
+        },
+      },
+    }),
+    prisma.training.findMany({
+      where: { deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        duration: true,
+        lessons: true,
+        price: true,
+        business: {
+          select: { id: true, name: true, slug: true, logo: true, city: true, country: true },
+        },
+      },
+    }),
     prisma.developerModule.findMany({
       where: { status: 'PUBLISHED' },
       orderBy: { totalInstalls: 'desc' },
@@ -685,18 +836,36 @@ export async function getTrending() {
     }),
   ]);
 
-  return { topBusinesses, topProducts, topServices, topEvents, topModules };
+  return {
+    topBusinesses,
+    topProducts,
+    topServices,
+    topEvents,
+    topRooms: topRooms.map((r) => ({ ...r, name: r.name, _type: 'room' })),
+    topTrainings: topTrainings.map((t) => ({ ...t, name: t.title, currency: 'FCFA', _type: 'training' })),
+    topModules,
+  };
 }
 
 // ============================================
 // MARKETPLACE STATS
 // ============================================
 export async function getMarketplaceStats() {
-  const [businessCount, productCount, serviceCount, eventCount, reviewAgg] = await Promise.all([
+  const [
+    businessCount,
+    productCount,
+    serviceCount,
+    eventCount,
+    roomCount,
+    trainingCount,
+    reviewAgg,
+  ] = await Promise.all([
     prisma.business.count({ where: { isActive: true, deletedAt: null } }),
     prisma.product.count({ where: { isActive: true } }),
     prisma.service.count({ where: { isActive: true } }),
     prisma.event.count({ where: { isActive: true } }),
+    prisma.room.count({ where: { isActive: true } }),
+    prisma.training.count({ where: { deletedAt: null } }),
     prisma.businessReview.aggregate({ _avg: { rating: true }, _count: { rating: true } }),
   ]);
 
@@ -705,6 +874,8 @@ export async function getMarketplaceStats() {
     products: productCount,
     services: serviceCount,
     events: eventCount,
+    rooms: roomCount,
+    trainings: trainingCount,
     averageRating: reviewAgg._avg.rating ? Number(reviewAgg._avg.rating.toFixed(1)) : 4.8,
     totalReviews: reviewAgg._count.rating,
   };

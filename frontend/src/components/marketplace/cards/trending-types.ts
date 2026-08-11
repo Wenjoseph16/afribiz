@@ -60,5 +60,7 @@ export interface TrendingData {
   topProducts?: TrendingProduct[];
   topServices?: TrendingService[];
   topEvents?: TrendingEvent[];
+  topRooms?: TrendingProduct[];
+  topTrainings?: TrendingProduct[];
   topModules?: TrendingModule[];
 }

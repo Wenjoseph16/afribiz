@@ -9,6 +9,8 @@ import {
   MenuCard,
   EventCard,
   RentalCard,
+  RoomCard,
+  TrainingCard,
   DeveloperCard,
   ModuleCard,
 } from '@/components/marketplace/cards';
@@ -21,6 +23,8 @@ import type {
   MenuResult,
   EventResult,
   RentalResult,
+  RoomResult,
+  TrainingResult,
   DeveloperResult,
   ModuleResult,
   ResultCardProps,
@@ -44,6 +48,10 @@ export default function ResultCard({ item, view = 'grid' }: ResultCardProps) {
       return <EventCard item={item} view={view} />;
     case 'rental':
       return <RentalCard item={item} view={view} />;
+    case 'room':
+      return <RoomCard item={item} view={view} />;
+    case 'training':
+      return <TrainingCard item={item} view={view} />;
     case 'developer':
       return <DeveloperCard item={item} view={view} />;
     case 'module':
@@ -62,6 +70,8 @@ export type {
   MenuResult,
   EventResult,
   RentalResult,
+  RoomResult,
+  TrainingResult,
   DeveloperResult,
   ModuleResult,
 };

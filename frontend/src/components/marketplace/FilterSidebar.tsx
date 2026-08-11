@@ -54,6 +54,8 @@ const OFFER_TYPES = [
   { value: 'product', label: 'Produits' },
   { value: 'service', label: 'Services' },
   { value: 'menu', label: 'Menus' },
+  { value: 'room', label: 'Chambres & Hôtels' },
+  { value: 'training', label: 'Formations' },
   { value: 'event', label: 'Événements' },
   { value: 'rental', label: 'Locations' },
   { value: 'developer', label: 'Développeurs' },

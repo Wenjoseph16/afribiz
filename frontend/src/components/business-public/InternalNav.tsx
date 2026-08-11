@@ -29,9 +29,30 @@ interface InternalNavProps {
   hasShorts?: boolean;
   hasActiveLive?: boolean;
   slug?: string;
+  // 👇 Drapeaux de contenu : une section de catalogue ne s'affiche que si elle a de la donnée
+  hasProducts?: boolean;
+  hasServices?: boolean;
+  hasMenu?: boolean;
+  hasRooms?: boolean;
+  hasEvents?: boolean;
+  hasRentals?: boolean;
+  hasPortfolio?: boolean;
+  hasPromotions?: boolean;
+  hasPartners?: boolean;
+  hasTrainings?: boolean;
 }
 
-const moduleConfig: Partial<Record<BusinessModule, { label: string; icon: React.ReactNode }>> = {
+/**
+ * 🔒 WHITELIST CLIENT-ONLY
+ * Seules les sections que LE CLIENT doit voir apparaissent dans le menu de la vitrine.
+ * Les modules internes (SAVINGS, CRM, MARKETING, MEDIA, AFRISCORE, GROUP_BUY, VOICE,
+ * ORDERS, QUOTES_INVOICES, DEBTS_PAYMENTS, PLANNING, EMPLOYEES, SUBSCRIPTIONS,
+ * DELIVERIES, DOCUMENTS, DISPUTES, MODULE_MARKETPLACE, ADVANCED_TASKS...) sont
+ * EXCLUS : ils exposeraient le fonctionnement interne du business.
+ */
+const CLIENT_MODULE_CONFIG: Partial<
+  Record<BusinessModule, { label: string; icon: React.ReactNode }>
+> = {
   PRODUCTS: { label: 'Produits', icon: <ShoppingBag className="w-5 h-5" /> },
   SERVICES: { label: 'Services', icon: <Wrench className="w-5 h-5" /> },
   MENU: { label: 'Menu', icon: <Utensils className="w-5 h-5" /> },
@@ -45,7 +66,36 @@ const moduleConfig: Partial<Record<BusinessModule, { label: string; icon: React.
   TRAINING: { label: 'Formations', icon: <BookOpen className="w-5 h-5" /> },
 };
 
-export function InternalNav({ modules, hasStories, hasShorts, hasActiveLive }: InternalNavProps) {
+// Catalogues pilotés par la donnée : ne s'affichent que si hasX est true
+const DATA_GATED: Partial<Record<BusinessModule, keyof InternalNavProps>> = {
+  PRODUCTS: 'hasProducts',
+  SERVICES: 'hasServices',
+  MENU: 'hasMenu',
+  ROOMS: 'hasRooms',
+  EVENTS: 'hasEvents',
+  RENTALS: 'hasRentals',
+  PORTFOLIO: 'hasPortfolio',
+  PROMOTIONS: 'hasPromotions',
+  PARTNERS: 'hasPartners',
+  TRAINING: 'hasTrainings',
+};
+
+export function InternalNav({
+  modules,
+  hasStories,
+  hasShorts,
+  hasActiveLive,
+  hasProducts,
+  hasServices,
+  hasMenu,
+  hasRooms,
+  hasEvents,
+  hasRentals,
+  hasPortfolio,
+  hasPromotions,
+  hasPartners,
+  hasTrainings,
+}: InternalNavProps) {
   const [activeId, setActiveId] = useState('section-accueil');
   const [isSticking, setIsSticking] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
@@ -70,14 +120,36 @@ export function InternalNav({ modules, hasStories, hasShorts, hasActiveLive }: I
       : []),
   ];
 
+  // 🔒 Filtre : uniquement les modules client-facing présents dans la whitelist
+  const flagMap: Record<string, boolean> = {
+    hasProducts: !!hasProducts,
+    hasServices: !!hasServices,
+    hasMenu: !!hasMenu,
+    hasRooms: !!hasRooms,
+    hasEvents: !!hasEvents,
+    hasRentals: !!hasRentals,
+    hasPortfolio: !!hasPortfolio,
+    hasPromotions: !!hasPromotions,
+    hasPartners: !!hasPartners,
+    hasTrainings: !!hasTrainings,
+  };
+  const clientSections = modules
+    .filter((m) => CLIENT_MODULE_CONFIG[m])
+    .filter((m) => {
+      const gate = DATA_GATED[m];
+      // BOOKINGS = formulaire de demande → toujours affiché si module actif
+      return gate ? flagMap[gate as string] : true;
+    })
+    .map((m) => ({
+      id: `section-${m.toLowerCase()}`,
+      label: CLIENT_MODULE_CONFIG[m]?.label || m,
+      icon: CLIENT_MODULE_CONFIG[m]?.icon,
+    }));
+
   const allSections = [
     { id: 'section-accueil', label: 'Accueil', icon: <Home className="w-5 h-5" /> },
     ...mediaSections,
-    ...modules.map((m) => ({
-      id: `section-${m.toLowerCase()}`,
-      label: moduleConfig[m]?.label || m,
-      icon: moduleConfig[m]?.icon,
-    })),
+    ...clientSections,
     { id: 'section-faq', label: 'FAQ', icon: <HelpCircle className="w-5 h-5" /> },
     { id: 'section-contact', label: 'Contact', icon: <Mail className="w-5 h-5" /> },
     { id: 'section-reviews', label: 'Avis', icon: <MessageSquare className="w-5 h-5" /> },
