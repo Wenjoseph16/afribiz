@@ -96,8 +96,14 @@ export default function AdminModulesPage() {
   const { data: modulesData, isLoading } = useAdminModules(params);
   const actionMutation = useAdminModuleAction();
 
-  const modules = Array.isArray(modulesData) ? modulesData : (modulesData?.modules ?? []);
-  const totalPages = modulesData?.totalPages ?? 1;
+  // ⚠️ l'API admin renvoie { items, total, page, limit, totalPages } — gérer les 2 formes
+  const raw = modulesData as {
+    items?: unknown[];
+    modules?: unknown[];
+    totalPages?: number;
+  } | null;
+  const modules = (Array.isArray(raw) ? raw : (raw?.items ?? raw?.modules)) ?? [];
+  const totalPages = raw?.totalPages ?? 1;
 
   const handleAction = async (id: string, action: string, moduleName: string) => {
     setActionTarget({ id, action, name: moduleName });

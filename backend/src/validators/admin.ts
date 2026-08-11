@@ -3,7 +3,18 @@ import { z } from 'zod';
 const userActions = ['suspend', 'activate', 'block', 'delete'] as const;
 const businessActions = ['validate', 'verify', 'suspend', 'block', 'delete'] as const;
 const developerActions = ['validate', 'verify', 'suspend', 'block', 'delete'] as const;
-const moduleActions = ['validate', 'reject', 'publish', 'archive', 'delete'] as const;
+// Accepte aussi les libellés de l'UI admin (français) — normalisés côté service
+const moduleActions = [
+  'validate',
+  'reject',
+  'publish',
+  'archive',
+  'delete',
+  'valider',
+  'refuser',
+  'publier',
+  'archiver',
+] as const;
 const backupActions = ['manual', 'auto'] as const;
 const escrowDecisions = ['release', 'refund'] as const;
 

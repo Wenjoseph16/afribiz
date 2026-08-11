@@ -1014,6 +1014,18 @@ export const updateModuleStatus = async (
   action: 'validate' | 'reject' | 'publish' | 'archive' | 'delete',
   adminUserId?: string
 ) => {
+  // Normalise les libellés de l'UI admin (français) vers les actions métier
+  const ACTION_ALIASES: Record<
+    string,
+    'validate' | 'reject' | 'publish' | 'archive' | 'delete'
+  > = {
+    valider: 'publish', // un module en revue approuvé → publié + visible marketplace
+    publier: 'publish',
+    refuser: 'reject',
+    archiver: 'archive',
+  };
+  action = ACTION_ALIASES[action] || action;
+
   if (action === 'delete') throw new AppError("La suppression d'un module est interdite", 400);
   const mod = await prisma.developerModule.findUnique({ where: { id } });
   if (!mod) throw new AppError('Module introuvable', 404);

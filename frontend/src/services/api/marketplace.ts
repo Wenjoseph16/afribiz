@@ -10,11 +10,13 @@ export function injectMarketplace(api: ApiClientMethods) {
   api.getTrendingMarketplace = function () {
     return this.get('/marketplace/trending');
   };
+  // ⚠️ Le marketplace des MODULES DEVELOPPEURS est monté sur /api/developer/marketplace
+  // (router public côté backend) — PAS sur /api/marketplace (router business).
   api.getMarketplaceModules = function (params?: any) {
-    return this.get('/marketplace/modules', { params });
+    return this.get('/developer/marketplace/modules', { params });
   };
   api.getMarketplaceModule = function (slug: string) {
-    return this.get(`/marketplace/modules/${slug}`);
+    return this.get(`/developer/marketplace/modules/${slug}`);
   };
   api.getMarketplaceStats = function () {
     return this.get('/marketplace/stats');
@@ -36,13 +38,13 @@ export function injectMarketplace(api: ApiClientMethods) {
     return this.get('/marketplace/ads', { params });
   };
   api.startMarketplaceModuleTrial = function (moduleId: string) {
-    return this.post(`/marketplace/modules/${moduleId}/trial`);
+    return this.post(`/developer/marketplace/modules/${moduleId}/trial`);
   };
   api.purchaseMarketplaceModule = function (
     moduleId: string,
     data: { provider: string; phone: string }
   ) {
-    return this.post(`/marketplace/modules/${moduleId}/purchase`, data);
+    return this.post(`/developer/marketplace/modules/${moduleId}/purchase`, data);
   };
   api.getBusinessInstalledModules = function () {
     return this.get('/business/modules/installed');
@@ -51,10 +53,10 @@ export function injectMarketplace(api: ApiClientMethods) {
     return this.post(`/business/modules/update/${installationId}`);
   };
   api.confirmMarketplaceModulePayment = function (data: { providerRef: string }) {
-    return this.post('/marketplace/confirm-payment', data);
+    return this.post('/developer/marketplace/confirm-payment', data);
   };
   api.installMarketplaceModule = function (moduleId: string, data?: any) {
-    return this.post(`/marketplace/modules/${moduleId}/install`, data);
+    return this.post(`/developer/marketplace/modules/${moduleId}/install`, data);
   };
   api.getModuleAssignments = function () {
     return this.get('/business/modules/assignments');
