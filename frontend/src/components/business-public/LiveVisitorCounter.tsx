@@ -27,6 +27,7 @@ export function LiveVisitorCounter({
 
   useEffect(() => {
     if (!slug) return;
+    let timer: ReturnType<typeof setInterval> | null = null;
 
     const fetchStats = async () => {
       try {
@@ -36,15 +37,22 @@ export function LiveVisitorCounter({
           if (json.success && json.data) {
             setData(json.data);
           }
+        } else if (timer) {
+          // Endpoint indisponible (404/500) : on stoppe le polling pour ne pas
+          // spamer les logs serveur toutes les 15 s (ex. route absente).
+          clearInterval(timer);
+          timer = null;
         }
       } catch {
-        // Silently fail
+        // Panne réseau intermittente : on retente au prochain tick
       }
     };
 
     fetchStats();
-    const interval = setInterval(fetchStats, 15000); // Refresh every 15s
-    return () => clearInterval(interval);
+    timer = setInterval(fetchStats, 15000); // Refresh every 15s
+    return () => {
+      if (timer) clearInterval(timer);
+    };
   }, [slug]);
 
   if (!data) return null;

@@ -110,13 +110,13 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
               ) : (
                 <div className="hidden sm:flex items-center gap-2">
                   <Link
-                    href="/auth/login"
+                    href="/login"
                     className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
                     Connexion
                   </Link>
                   <Link
-                    href="/auth/signup"
+                    href="/signup"
                     className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200 dark:shadow-emerald-900/30"
                   >
                     Créer mon business
@@ -165,7 +165,7 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
                 ) : (
                   <>
                     <Link
-                      href="/auth/login"
+                      href="/login"
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
@@ -173,7 +173,7 @@ export default function MarketplaceLayout({ children }: { children: React.ReactN
                       Connexion
                     </Link>
                     <Link
-                      href="/auth/signup"
+                      href="/signup"
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium bg-emerald-600 text-white mt-1"
                     >

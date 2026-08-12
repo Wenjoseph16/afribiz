@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Lock } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/services/apiClient';
 import { cn } from '@/lib/utils';
 
@@ -23,28 +22,36 @@ export function LayawayCardButton({
   size?: 'sm' | 'xs';
 }) {
   const router = useRouter();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [starting, setStarting] = useState(false);
+  // Pages publiques (marketplace) : le store zustand (skipHydration) n'est pas
+  // hydraté — on lit le token directement depuis localStorage (pattern vitrine).
+  const hasToken =
+    typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
 
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAuthenticated()) {
+    if (!hasToken) {
       router.push('/login?redirect=/dashboard/my-layaway');
       return;
     }
     setStarting(true);
     try {
       await apiClient.createLayawayPlan(offerId);
-    } catch {
-      // 409 « plan déjà actif » → on y va quand même
-    } finally {
       setStarting(false);
       router.push('/dashboard/my-layaway');
+    } catch (err: any) {
+      setStarting(false);
+      if (err?.response?.status === 409) {
+        // Plan déjà actif → on y va quand même
+        router.push('/dashboard/my-layaway');
+      }
+      // Erreur réelle : on reste sur la page (le bouton se réarme)
     }
   };
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       disabled={starting}
       title="Épargnez progressivement et achetez quand vous êtes prêt — argent sécurisé en escrow"

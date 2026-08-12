@@ -1,5 +1,8 @@
-export function formatCurrency(amount: number | string | null | undefined): string {
-  const CURRENCY_SYMBOL = 'FCFA';
+export function formatCurrency(
+  amount: number | string | null | undefined,
+  currency?: string
+): string {
+  const CURRENCY_SYMBOL = currency || 'FCFA';
 
   if (amount === null || amount === undefined) {
     return 'Gratuit';

@@ -80,10 +80,10 @@ export default function CheckoutPage() {
           qu'invité.
         </p>
         <div className="flex flex-col gap-3 w-full">
-          <Link href={`/auth/login?redirect=/checkout`} className="w-full">
+          <Link href={`/login?redirect=/checkout`} className="w-full">
             <Button className="w-full">Se connecter</Button>
           </Link>
-          <Link href="/auth/signup" className="w-full">
+          <Link href="/signup" className="w-full">
             <Button variant="outline" className="w-full">
               Créer un compte
             </Button>

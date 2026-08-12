@@ -26,6 +26,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import StarRating from '@/components/marketplace/cards/StarRating';
 import AdSlot from '@/components/ads/AdSlot';
+import { LayawayMiniCard } from '@/components/marketplace/LayawayMiniCard';
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -262,6 +263,14 @@ export default function ProductDetailPage() {
                 </span>
               )}
             </div>
+
+            {/* Mini carte Épargne Achat — s'affiche si le business a activé l'épargne */}
+            <LayawayMiniCard
+              itemType="PRODUCT"
+              itemId={product.id}
+              targetPrice={product.price}
+              currency={product.currency || 'FCFA'}
+            />
 
             {product.business && (
               <Link

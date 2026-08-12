@@ -31,6 +31,8 @@ function saveFiltersToStorage(filters: FilterState) {
 }
 
 function loadFiltersFromStorage(): Partial<FilterState> {
+  // SSR / pré-rendu : pas de localStorage côté serveur → on retourne vide
+  if (typeof window === 'undefined') return {};
   try {
     const stored = localStorage.getItem(FILTER_STORAGE_KEY);
     return stored ? JSON.parse(stored) : {};
