@@ -92,6 +92,9 @@ export default function PointOfSalePage() {
   const [dueDate, setDueDate] = useState(defaultDueDate());
   const [notes, setNotes] = useState('');
   const [createdOrder, setCreatedOrder] = useState<any>(null);
+  const [debtModalOpen, setDebtModalOpen] = useState(false);
+  const [debtPayState, setDebtPayState] = useState<Record<string, { amount: string; loading: boolean }>>({});
+  const [debtFeedback, setDebtFeedback] = useState<string | null>(null);
 
   // ── Données ──
   const { data: productsData, isLoading: productsLoading } = useQuery({
@@ -127,6 +130,45 @@ export default function PointOfSalePage() {
       : productsData?.products || productsData?.items || productsData?.data || [];
     return (list || []).filter((p: any) => p.isActive !== false);
   }, [productsData]);
+
+  const { data: clientDebtsData, refetch: refetchClientDebts } = useQuery({
+    queryKey: ['client-debts', 'pos', client?.id],
+    queryFn: async () => {
+      const res = await apiClient.getDebts({ buyerId: client?.id, limit: 10 });
+      return res.data.data;
+    },
+    enabled: debtModalOpen && !!client?.id,
+  });
+
+  const clientDebts = useMemo(() => {
+    const list = Array.isArray(clientDebtsData)
+      ? clientDebtsData
+      : clientDebtsData?.debts || clientDebtsData?.data || [];
+    return (list || []).filter(
+      (d: any) => d.status === 'ACTIVE' || d.status === 'PARTIALLY_PAID' || d.status === 'OVERDUE' || d.status === 'CRITICAL'
+    );
+  }, [clientDebtsData]);
+
+  const payClientDebt = async (debt: any) => {
+    const st = debtPayState[debt.id];
+    const amount = Number(st?.amount || debt.amount || 0);
+    if (!amount || amount <= 0) {
+      setDebtFeedback('Montant invalide');
+      return;
+    }
+    setDebtPayState((prev) => ({ ...prev, [debt.id]: { amount: st?.amount || String(debt.amount || ''), loading: true } }));
+    setDebtFeedback(null);
+    try {
+      await apiClient.registerDebtPayment(debt.id, { amount, paymentMethod: 'CASH' });
+      setDebtFeedback('Paiement enregistré ✅');
+      refetchClientDebts();
+      qc.invalidateQueries({ queryKey: ['business-clients'] });
+    } catch (e: any) {
+      setDebtFeedback(e?.response?.data?.message || e?.message || 'Erreur');
+    } finally {
+      setDebtPayState((prev) => ({ ...prev, [debt.id]: { ...prev[debt.id], loading: false } }));
+    }
+  };
 
   const clients = useMemo(() => {
     const list = Array.isArray(clientsData)
@@ -569,9 +611,16 @@ export default function PointOfSalePage() {
                   </p>
                 )}
                 {Number(client.debtBalance || 0) > 0 && (
-                  <p className="text-xs font-semibold text-red-500">
-                    Doit {formatPrice(Number(client.debtBalance || 0))}
-                  </p>
+                  <button
+                    onClick={() => {
+                      setDebtModalOpen(true);
+                      setDebtFeedback(null);
+                    }}
+                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-2 py-1 rounded-full hover:bg-red-100 dark:hover:bg-red-950/70 transition-colors"
+                  >
+                    <Banknote className="h-3 w-3" />
+                    Doit {formatPrice(Number(client.debtBalance || 0))} — Encaisser
+                  </button>
                 )}
               </div>
               <button
@@ -950,6 +999,107 @@ export default function PointOfSalePage() {
             )}
             Encaisser
           </Button>
+        </div>
+      )}
+
+      {/* ══ Modale encaisser la dette du client ══ */}
+      {debtModalOpen && client && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setDebtModalOpen(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-amber-600" /> Encaisser la dette
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {client.name} — doit {formatPrice(Number(client.debtBalance || 0))}
+                </p>
+              </div>
+              <button
+                onClick={() => setDebtModalOpen(false)}
+                className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {clientDebts.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Toutes les dettes de ce client sont soldées 🎉</p>
+                </div>
+              ) : (
+                clientDebts.map((d: any) => {
+                  const st = debtPayState[d.id];
+                  const remaining = Number(d.amount || d.remainingAmount || 0);
+                  return (
+                    <div
+                      key={d.id}
+                      className="rounded-2xl border border-gray-200 dark:border-gray-700 p-3 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {formatPrice(remaining)}
+                          </p>
+                          <p className="text-[11px] text-gray-500">
+                            Réf. {d.reference || d.id?.slice(0, 8)}
+                            {d.daysOverdue ? ` · ${d.daysOverdue} j de retard` : ''}
+                          </p>
+                        </div>
+                        {remaining > 0 && d.daysOverdue ? (
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 dark:bg-red-950/40 px-2 py-0.5 rounded-full">
+                            En retard
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={st?.amount ?? ''}
+                          placeholder={String(remaining || '')}
+                          onChange={(e) =>
+                            setDebtPayState((prev) => ({
+                              ...prev,
+                              [d.id]: { amount: e.target.value, loading: false },
+                            }))
+                          }
+                          className="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 bg-transparent dark:text-gray-100 outline-none"
+                        />
+                        <Button
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+                          disabled={st?.loading}
+                          onClick={() => payClientDebt(d)}
+                        >
+                          {st?.loading ? (
+                            <Loader className="h-3.5 w-3.5 animate-spin mr-1" />
+                          ) : (
+                            <Banknote className="h-3.5 w-3.5 mr-1" />
+                          )}
+                          Encaisser
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              {debtFeedback && (
+                <p
+                  className={`text-xs text-center ${debtFeedback.includes('✅') ? 'text-emerald-600' : 'text-red-500'}`}
+                >
+                  {debtFeedback}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

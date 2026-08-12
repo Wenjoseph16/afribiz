@@ -124,6 +124,10 @@ const BusinessSubscriptionsCard = dynamic(
     loading: () => <div className="h-56 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
   }
 );
+const BusinessDebtsCard = dynamic(() => import('@/components/dashboard/BusinessDebtsCard'), {
+  ssr: false,
+  loading: () => <div className="h-56 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+});
 const BusinessQrModal = dynamic(
   () =>
     import('@/components/dashboard/BusinessQrModal').then((mod) => ({
@@ -735,6 +739,7 @@ export default function BusinessDashboardPage() {
           <DashboardCharts stats={aggStats} orders={orders} />
         </div>
         <div className="space-y-6">
+          <BusinessDebtsCard />
           <BusinessDiscountsCard stats={aggStats?.discounts} />
           <BusinessSubscriptionsCard />
         </div>

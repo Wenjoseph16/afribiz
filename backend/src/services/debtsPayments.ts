@@ -158,12 +158,14 @@ export async function listDebts(ownerId: string, filters: any) {
     search,
     dateFrom,
     dateTo,
+    buyerId,
   } = filters;
   const where: Prisma.DebtWhereInput = { businessId: business.id, deletedAt: null };
   if (status) where.status = status as any;
   if (priority) where.priority = priority as any;
   if (sourceType) where.sourceType = sourceType as any;
   if (riskLevel) where.riskLevel = riskLevel as any;
+  if (buyerId) where.buyerId = buyerId as string;
   if (dateFrom || dateTo) {
     where.createdAt = {};
     if (dateFrom) where.createdAt.gte = new Date(dateFrom);
@@ -176,18 +178,36 @@ export async function listDebts(ownerId: string, filters: any) {
       { buyer: { phone: { contains: search, mode: 'insensitive' } } },
       { notes: { contains: search, mode: 'insensitive' } },
     ];
-  const skip = (page - 1) * limit;
+  const pageNum = Number(page) || 1;
+  const limitNum = Math.min(Number(limit) || 20, 100);
+  const skip = (pageNum - 1) * limitNum;
   const [debts, total] = await Promise.all([
     prisma.debt.findMany({
       where,
       include: debtInclude,
       skip,
-      take: limit,
+      take: limitNum,
       orderBy: { updatedAt: 'desc' },
     }),
     prisma.debt.count({ where }),
   ]);
-  return { debts, total, page, limit, totalPages: Math.ceil(total / limit) };
+  // Champs dérivés pour le frontend (Carnet) : nom client, montant restant, référence, retard…
+  const mapped = debts.map((d) => ({
+    ...d,
+    clientName: d.buyer
+      ? `${d.buyer.firstName || ''} ${d.buyer.lastName || ''}`.trim() || null
+      : null,
+    clientPhone: d.buyer?.phone || null,
+    clientEmail: d.buyer?.email || null,
+    amount: Number(d.remainingAmount),
+    paidAmount: Number(d.amountPaid || 0),
+    description: d.notes,
+    reference: d.order?.orderNumber || d.invoice?.invoiceNumber || d.id.slice(0, 8),
+    daysOverdue: d.dueDate
+      ? Math.max(0, Math.floor((Date.now() - new Date(d.dueDate).getTime()) / 86400000))
+      : 0,
+  }));
+  return { debts: mapped, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
 }
 
 export async function getDebt(ownerId: string, debtId: string) {
@@ -197,7 +217,42 @@ export async function getDebt(ownerId: string, debtId: string) {
     include: debtInclude,
   });
   if (!debt) throw new AppError('Dette non trouvée', 404);
-  return debt;
+
+  // Historique des paiements reconstruit depuis le journal financier
+  // (le modèle Payment n'a pas de debtId ; chaque encaissement est journalisé)
+  const logs = await prisma.financialLog.findMany({
+    where: {
+      businessId: business.id,
+      action: 'PAYMENT_RECEIVED',
+      // entityType/entityId sont stockés dans metadata (JSON)
+      metadata: { path: ['entityId'], equals: debtId },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return {
+    ...debt,
+    clientName: debt.buyer
+      ? `${debt.buyer.firstName || ''} ${debt.buyer.lastName || ''}`.trim() || null
+      : null,
+    clientPhone: debt.buyer?.phone || null,
+    clientEmail: debt.buyer?.email || null,
+    amount: Number(debt.remainingAmount),
+    description: debt.notes,
+    reference: debt.order?.orderNumber || debt.invoice?.invoiceNumber || debt.id.slice(0, 8),
+    daysOverdue: debt.dueDate
+      ? Math.max(0, Math.floor((Date.now() - new Date(debt.dueDate).getTime()) / 86400000))
+      : 0,
+    paymentHistory: logs.map((l) => ({
+      id: l.id,
+      amount: Number(l.amount || 0),
+      method: (l.metadata as any)?.paymentMethod || 'CASH',
+      status: 'COMPLETED',
+      date: l.createdAt,
+      createdAt: l.createdAt,
+      reference: debt.order?.orderNumber || debt.invoice?.invoiceNumber || debtId.slice(0, 8),
+    })),
+  };
 }
 
 export async function updateDebt(ownerId: string, debtId: string, data: any) {
@@ -320,6 +375,7 @@ export async function registerDebtPayment(
     entityId: debtId,
     description: `Paiement de ${data.amount} reçu sur dette #${debt.id.substring(0, 8)}`,
     amount: data.amount,
+    metadata: { paymentMethod: (data as any).method || data.paymentMethod || 'CASH', notes: data.notes || null },
   });
 
   if (updated.status === 'SETTLED') {
