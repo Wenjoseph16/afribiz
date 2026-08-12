@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, PaymentMethod } from '@prisma/client';
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import {
@@ -29,6 +29,24 @@ async function getBusinessByOwner(ownerId: string) {
   if (!hasBusinessModule(business, 'ORDERS'))
     throw new AppError('Module Commandes non activ\u00e9', 403);
   return business;
+}
+
+// Mappe les méthodes de paiement du POS vers l'enum Payment (traçabilité comptable)
+function mapToPaymentMethod(method?: string): PaymentMethod {
+  switch (String(method || '').toUpperCase()) {
+    case 'CASH':
+      return 'CASH';
+    case 'ESCROW':
+      return 'ESCROW';
+    case 'BANK_TRANSFER':
+      return 'BANK_TRANSFER';
+    case 'CREDIT_CARD':
+    case 'CARD':
+      return 'CREDIT_CARD';
+    default:
+      // WAVE, TMONEY, MTN, ORANGE, FLOOZ, STRIPE, FEDAPAY... → Mobile Money
+      return 'MOBILE_MONEY';
+  }
 }
 
 function generateOrderNumber(): string {
@@ -176,9 +194,49 @@ export async function createOrder(ownerId: string, data: any) {
       include: orderInclude,
     });
 
-    // Create debt if payment is partial
-    if (data.paymentMethod === 'CASH' && data.depositAmount && Number(data.depositAmount) < total) {
-      const remaining = total - Number(data.depositAmount);
+    // ── POS (2027) : paiement, record Payment & dette intelligente ──
+    // Modes supportés :
+    //   - CASH/MOBILE_MONEY/... sans acompte  → payée en totalité (PAID)
+    //   - acompte partiel (depositAmount < total) → record Payment + dette pour le reste
+    //   - CREDIT                                → dette complète (le client emporte, paie plus tard)
+    const paidAmount = Math.min(Number(data.depositAmount || 0), total);
+    const isCredit = String(data.paymentMethod || '').toUpperCase() === 'CREDIT';
+    const fullyPaid = !isCredit && (paidAmount >= total || !data.depositAmount);
+
+    await tx.order.update({
+      where: { id: created.id },
+      data: {
+        paymentMethod: data.paymentMethod || null,
+        paymentStatus: isCredit ? 'UNPAID' : fullyPaid ? 'PAID' : 'PARTIAL',
+        paidAt: fullyPaid ? new Date() : null,
+      },
+    });
+
+    // Enregistrer le paiement réellement reçu (traçabilité comptable) —
+    // même les règlements complets (espèces / mobile money) laissent une trace Payment
+    if (!isCredit) {
+      const paymentAmount = fullyPaid ? total : paidAmount;
+      if (paymentAmount > 0) {
+        await tx.payment.create({
+          data: {
+            userId: data.buyerId || ownerId,
+            businessId: business.id,
+            orderId: created.id,
+            amount: paymentAmount,
+            currency: data.currency || business.settings?.currency || 'FCFA',
+            method: mapToPaymentMethod(data.paymentMethod),
+            status: 'COMPLETED',
+            isManual: true,
+            paidAt: new Date(),
+            description: `Paiement ${data.paymentMethod || 'CASH'} — ${orderNumber}`,
+          },
+        });
+      }
+    }
+
+    // Dette : crédit complet (CREDIT) ou reste sur acompte partiel
+    const remaining = total - paidAmount;
+    if (remaining > 0 && (isCredit || data.depositAmount)) {
       await tx.debt.create({
         data: {
           orderId: created.id,
@@ -190,7 +248,11 @@ export async function createOrder(ownerId: string, data: any) {
             ? new Date(data.debtDueDate)
             : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           status: 'ACTIVE',
-          notes: data.debtNotes,
+          notes:
+            data.debtNotes ||
+            (isCredit
+              ? 'Vente à crédit (POS)'
+              : `Reste après acompte de ${paidAmount} ${data.currency || 'FCFA'}`),
         },
       });
     }

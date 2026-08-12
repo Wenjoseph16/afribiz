@@ -216,6 +216,20 @@ export const getMyBusinessClients = catchAsyncErrors(
       orderBy: { createdAt: 'desc' },
     });
 
+    // Soldes dus par client (dettes actives) — affiché en rouge au Point de Vente
+    const debts = await prisma.debt.groupBy({
+      by: ['buyerId'],
+      where: {
+        businessId: business.id,
+        buyerId: { not: null },
+        status: { in: ['ACTIVE', 'PARTIALLY_PAID'] },
+      },
+      _sum: { remainingAmount: true },
+    });
+    const debtMap = new Map(
+      debts.map((d) => [d.buyerId as string, Number(d._sum.remainingAmount || 0)])
+    );
+
     const clients = orders
       .filter((o): o is typeof o & Record<'buyer', NonNullable<typeof o.buyer>> => o.buyer !== null)
       .map((o) => ({
@@ -228,6 +242,7 @@ export const getMyBusinessClients = catchAsyncErrors(
         totalSpent: Number(o.totalAmount),
         reviewCount: 0,
         loyal: false,
+        debtBalance: debtMap.get(o.buyer.id) || 0,
       }));
 
     res.json({ success: true, data: { clients, total: clients.length } });

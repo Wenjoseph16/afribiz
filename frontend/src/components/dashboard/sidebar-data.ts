@@ -359,6 +359,12 @@ export const BUSINESS_CORE_NAV: NavGroup[] = [
     label: 'Ventes',
     items: [
       {
+        label: 'Point de vente',
+        href: '/dashboard/business/pos',
+        icon: 'Store',
+        module: 'ORDERS',
+      },
+      {
         label: 'Commandes',
         href: '/dashboard/business/orders',
         icon: 'ShoppingCart',
