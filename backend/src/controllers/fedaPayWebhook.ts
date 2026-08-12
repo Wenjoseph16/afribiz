@@ -105,6 +105,20 @@ export async function handleFedaPayWebhook(req: Request, res: Response) {
       }
     }
 
+    // Abonnement : si la transaction est un paiement de souscription (metadata
+    // type=SUBSCRIPTION) et qu'elle est approuvée → activer la souscription
+    // (crédit wallet net de commission, idempotent via activateSubscription).
+    const meta = (transaction.metadata as any) || {};
+    if (meta.type === 'SUBSCRIPTION' && meta.subscriptionId && newStatus === 'SUCCESS' && transaction.userId) {
+      try {
+        const { confirmSubscriptionPaymentByRef } = await import('../services/subscriptions');
+        await confirmSubscriptionPaymentByRef(transaction.providerRef || providerRef || '', transaction.userId);
+        logger.info('FedaPay webhook: subscription ' + meta.subscriptionId + ' activated');
+      } catch (e) {
+        logger.error('FedaPay webhook: failed to activate subscription', { error: e });
+      }
+    }
+
     res.status(200).json({ received: true });
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';

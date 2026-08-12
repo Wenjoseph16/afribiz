@@ -76,3 +76,58 @@ export function useSubscriptionStats() {
     },
   });
 }
+
+// ============================================================
+// CÔTÉ CLIENT (self-service)
+// ============================================================
+
+export const mySubscriptionKeys = {
+  current: ['my-subscription'] as const,
+};
+
+export function useMySubscription() {
+  return useQuery({
+    queryKey: mySubscriptionKeys.current,
+    queryFn: async () => {
+      const res = await apiClient.getMySubscription();
+      return res.data.data;
+    },
+    retry: false,
+  });
+}
+
+export function useSubscribeToPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      planId,
+      opts,
+    }: {
+      planId: string;
+      opts?: { provider?: string; phone?: string; autoRenew?: boolean };
+    }) => apiClient.subscribeToPlan(planId, opts),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mySubscriptionKeys.current });
+    },
+  });
+}
+
+export function useConfirmSubscriptionPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (providerRef: string) => apiClient.confirmSubscriptionPayment(providerRef),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mySubscriptionKeys.current });
+    },
+  });
+}
+
+export function useCancelMySubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.cancelMySubscription(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mySubscriptionKeys.current });
+    },
+  });
+}

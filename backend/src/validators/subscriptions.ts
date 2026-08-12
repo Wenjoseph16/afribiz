@@ -48,6 +48,30 @@ export const createSubscriptionSchema = z.object({
   autoRenew: z.boolean().optional().default(true),
 });
 
+// Schéma côté client (self-service) : l'utilisateur s'abonne à un plan public
+// sans renseigner de clientId — c'est son propre compte qui devient l'abonné.
+// Le paiement Mobile Money est initié au moment de la souscription.
+export const subscribeSchema = z
+  .object({
+    planId: z.string().min(1, 'Plan requis'),
+    autoRenew: z.boolean().optional().default(true),
+    provider: z.string().optional(),
+    phone: z
+      .string()
+      .optional()
+      .refine((v) => !v || /^[+0-9 ]{8,20}$/.test(v), 'Numéro de téléphone invalide'),
+  })
+  .refine((d) => {
+    // Tout provider de paiement électronique exige un numéro pour initier la transaction
+    // (CASH/absent = paiement comptant, pas de numéro requis).
+    const needsPhone = d.provider && d.provider !== 'CASH';
+    return !needsPhone || !!d.phone;
+  }, 'Le numéro de téléphone est requis pour ce mode de paiement');
+
+export const confirmSubscriptionSchema = z.object({
+  providerRef: z.string().min(1, 'Référence de paiement requise'),
+});
+
 export const cancelSubscriptionSchema = z.object({
   reason: z.string().optional(),
 });

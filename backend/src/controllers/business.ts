@@ -159,6 +159,15 @@ export const getBusinessTrainings = catchAsyncErrors(
   }
 );
 
+export const getBusinessSubscriptionPlans = catchAsyncErrors(
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const { slug } = req.params;
+    const { getPublicSubscriptionPlans } = await import('../services/subscriptions');
+    const data = await getPublicSubscriptionPlans(slug);
+    res.json({ success: true, data });
+  }
+);
+
 async function getBusinessByOwner(userId: string) {
   const business = await prisma.business.findUnique({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business non trouvé', 404);

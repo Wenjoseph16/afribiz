@@ -83,6 +83,7 @@ export interface ApiClientMethods {
   getBusinessPartners(slug?: string): Promise<any>;
   getBusinessPortfolio(slug?: string): Promise<any>;
   getBusinessTrainings(slug?: string): Promise<any>;
+  getBusinessSubscriptionPlans(slug: string): Promise<any>;
   getPublicPagePreview(): Promise<any>;
   updatePublicPage(data: any): Promise<any>;
 
@@ -1157,7 +1158,11 @@ export interface ApiClientMethods {
   adminCancelSubscription(id: string): Promise<any>;
   adminRenewSubscription(id: string): Promise<any>;
   getMySubscription(): Promise<any>;
-  subscribeToPlan(planId: string): Promise<any>;
+  subscribeToPlan(
+    planId: string,
+    opts?: { provider?: string; phone?: string; autoRenew?: boolean }
+  ): Promise<any>;
+  confirmSubscriptionPayment(providerRef: string): Promise<any>;
   cancelMySubscription(): Promise<any>;
 
   // ============================================

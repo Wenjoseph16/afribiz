@@ -611,21 +611,31 @@ export async function getSubscriptionStats(ownerId: string) {
   if (!business) throw new AppError('Business not found', 404);
 
   const bizId = business.id;
+  const now = new Date();
+  const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const in30d = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const [
     totalPlans,
     activePlans,
     totalSubscribers,
     activeSubs,
+    suspendedSubs,
     expiredSubs,
     cancelledSubs,
     totalPayments,
     totalRevenue,
+    monthRevenue,
+    activeSubscriptions,
+    expiringSoon,
+    expiring30d,
   ] = await Promise.all([
     prisma.subscriptionPlan.count({ where: { businessId: bizId } }),
     prisma.subscriptionPlan.count({ where: { businessId: bizId, isActive: true } }),
     prisma.businessSubscription.count({ where: { businessId: bizId } }),
     prisma.businessSubscription.count({ where: { businessId: bizId, status: 'ACTIVE' } }),
+    prisma.businessSubscription.count({ where: { businessId: bizId, status: 'SUSPENDED' } }),
     prisma.businessSubscription.count({ where: { businessId: bizId, status: 'EXPIRED' } }),
     prisma.businessSubscription.count({ where: { businessId: bizId, status: 'CANCELLED' } }),
     prisma.subscriptionPayment.count({ where: { businessId: bizId, status: 'COMPLETED' } }),
@@ -633,27 +643,127 @@ export async function getSubscriptionStats(ownerId: string) {
       where: { businessId: bizId, status: 'COMPLETED' },
       _sum: { amount: true },
     }),
+    prisma.subscriptionPayment.aggregate({
+      where: { businessId: bizId, status: 'COMPLETED', createdAt: { gte: monthStart } },
+      _sum: { amount: true },
+    }),
+    prisma.businessSubscription.findMany({
+      where: { businessId: bizId, status: 'ACTIVE' },
+      include: {
+        plan: { select: { id: true, name: true, price: true, billingCycle: true, currency: true } },
+        client: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    }),
+    prisma.businessSubscription.findMany({
+      where: { businessId: bizId, status: 'ACTIVE', endDate: { gte: now, lte: in7d } },
+      include: {
+        plan: { select: { id: true, name: true, price: true, currency: true } },
+        client: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { endDate: 'asc' },
+    }),
+    prisma.businessSubscription.findMany({
+      where: { businessId: bizId, status: 'ACTIVE', endDate: { gte: now, lte: in30d } },
+      select: { id: true, endDate: true },
+    }),
   ]);
+
+  // MRR : revenu mensuel récurrent — chaque cycle est normalisé au mois
+  const cycleToMonths: Record<string, number> = {
+    WEEKLY: 1 / 4.33,
+    MONTHLY: 1,
+    QUARTERLY: 3,
+    SEMI_ANNUAL: 6,
+    SEMESTRIAL: 6,
+    ANNUAL: 12,
+    YEARLY: 12,
+    CUSTOM: 1,
+    DAILY: 1 / 30,
+  };
+  let mrr = 0;
+  for (const s of activeSubscriptions) {
+    const months = cycleToMonths[s.plan.billingCycle] || 1;
+    mrr += Number(s.plan.price) / months;
+  }
+
+  // Revenu par plan : SubscriptionPayment est lié à la souscription → au plan
+  const revenueBySub = await prisma.subscriptionPayment.findMany({
+    where: { businessId: bizId, status: 'COMPLETED' },
+    select: {
+      amount: true,
+      subscription: {
+        select: { plan: { select: { id: true, name: true } } },
+      },
+    },
+  });
+  const revenueMap = new Map<string, { revenue: number; payments: number; planName: string }>();
+  for (const p of revenueBySub) {
+    const plan = p.subscription?.plan;
+    const key = plan?.id || 'unknown';
+    const entry = revenueMap.get(key) || {
+      revenue: 0,
+      payments: 0,
+      planName: plan?.name || 'Plan',
+    };
+    entry.revenue += Number(p.amount || 0);
+    entry.payments += 1;
+    if (plan?.name) entry.planName = plan.name;
+    revenueMap.set(key, entry);
+  }
+  const revenueByPlanDetailed = Array.from(revenueMap.entries()).map(([planId, v]) => ({
+    planId,
+    planName: v.planName,
+    revenue: v.revenue,
+    payments: v.payments,
+  }));
 
   return {
     totalPlans,
     activePlans,
     totalSubscribers,
     activeSubs,
+    suspendedSubs,
     expiredSubs,
     cancelledSubs,
     totalPayments,
     totalRevenue: totalRevenue._sum.amount || 0,
+    monthRevenue: monthRevenue._sum.amount || 0,
+    mrr: Math.round(mrr),
     churnRate: totalSubscribers > 0 ? Math.round((cancelledSubs / totalSubscribers) * 100) : 0,
+    revenueByPlan: revenueByPlanDetailed,
+    activeList: activeSubscriptions.map((s) => ({
+      id: s.id,
+      planName: s.plan.name,
+      planPrice: s.plan.price,
+      billingCycle: s.plan.billingCycle,
+      currency: s.plan.currency,
+      clientName: `${s.client.firstName} ${s.client.lastName}`,
+      clientEmail: s.client.email,
+      startDate: s.startDate,
+      endDate: s.endDate,
+      autoRenew: s.autoRenew,
+    })),
+    expiringSoon: expiringSoon.map((s) => ({
+      id: s.id,
+      planName: s.plan.name,
+      planPrice: s.plan.price,
+      currency: s.plan.currency,
+      clientName: `${s.client.firstName} ${s.client.lastName}`,
+      clientEmail: s.client.email,
+      endDate: s.endDate,
+      daysLeft: Math.max(0, Math.ceil((s.endDate!.getTime() - now.getTime()) / 86400000)),
+    })),
+    expiringIn30d: expiring30d.length,
   };
 }
 
 // ===================== MY SUBSCRIPTION (User-facing) =====================
 
 export async function getMyCurrentSubscription(userId: string) {
-  // Find active subscription for this user (as client) to any platform business
+  // Retourne la souscription la plus récente (ACTIVE ou SUSPENDED en attente de
+  // paiement) pour que le client puisse confirmer son paiement Mobile Money.
   const subscription = await prisma.businessSubscription.findFirst({
-    where: { clientId: userId, status: 'ACTIVE' },
+    where: { clientId: userId, status: { in: ['ACTIVE', 'SUSPENDED'] } },
     orderBy: { createdAt: 'desc' },
     include: {
       plan: {
@@ -671,24 +781,56 @@ export async function getMyCurrentSubscription(userId: string) {
         },
       },
       business: { select: { id: true, name: true, slug: true } },
+      payments: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: { id: true, status: true, amount: true, reference: true, createdAt: true },
+      },
       _count: { select: { payments: true } },
     },
   });
+  if (!subscription) return null;
+
+  // Pour une souscription en attente de paiement, récupérer la référence du
+  // paiement PENDING lié (via la transaction stockée au moment de l'initiation)
+  if (subscription.status === 'SUSPENDED') {
+    const pendingTx = await prisma.paymentTransaction.findFirst({
+      where: {
+        userId,
+        metadata: { path: ['subscriptionId'], equals: subscription.id },
+        status: { in: ['PENDING', 'SUCCESS'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { providerRef: true, provider: true, amount: true, status: true },
+    });
+    return {
+      ...subscription,
+      pendingPayment: pendingTx
+        ? {
+            providerRef: pendingTx.providerRef,
+            provider: pendingTx.provider,
+            amount: Number(pendingTx.amount),
+            status: pendingTx.status,
+          }
+        : null,
+    };
+  }
+
   return subscription;
 }
 
 export async function subscribeToPlan(
   userId: string,
-  data: { planId: string; businessId?: string }
+  data: { planId: string; provider?: string; phone?: string; autoRenew?: boolean }
 ) {
   // Charger plan + existing subscription en parallèle (indépendants)
   const [plan, existing] = await Promise.all([
     prisma.subscriptionPlan.findUnique({
       where: { id: data.planId },
-      include: { business: { select: { id: true, ownerId: true } } },
+      include: { business: { select: { id: true, name: true, ownerId: true } } },
     }),
     prisma.businessSubscription.findFirst({
-      where: { clientId: userId, status: 'ACTIVE' },
+      where: { clientId: userId, status: { in: ['ACTIVE', 'SUSPENDED'] } },
     }),
   ]);
   if (!plan) throw new AppError('Plan introuvable', 404);
@@ -700,16 +842,19 @@ export async function subscribeToPlan(
   const now = new Date();
   const durationDays = plan.durationDays || 30;
   const endDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+  const amount = Number(plan.price);
 
+  // ── 1. Créer la souscription en SUSPENDED (en attente de paiement) ──
   const subscription = await prisma.businessSubscription.create({
     data: {
       businessId: plan.businessId,
       planId: plan.id,
       clientId: userId,
-      status: 'ACTIVE',
+      status: 'SUSPENDED',
+      renewalStatus: 'PENDING',
       startDate: now,
       endDate,
-      autoRenew: true,
+      autoRenew: data.autoRenew !== false,
       nextBillingDate: endDate,
     },
     include: {
@@ -732,18 +877,336 @@ export async function subscribeToPlan(
     plan.id,
     subscription.id,
     'ACTIVATED',
-    `Abonnement souscrit par l'utilisateur ${userId}`,
+    `Abonnement « ${plan.name} » initié (en attente de paiement) par ${userId}`,
     userId
   );
 
-  return subscription;
+  const isCash = !data.provider || data.provider === 'CASH';
+
+  // ── 2. Paiement comptant (CASH) → activation immédiate ──
+  if (isCash) {
+    await activateSubscription(subscription.id, {
+      provider: 'CASH',
+      providerRef: `CASH-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      amount,
+      currency: plan.currency || 'FCFA',
+      autoRenew: data.autoRenew !== false,
+    });
+    const activated = await prisma.businessSubscription.findUnique({
+      where: { id: subscription.id },
+      include: {
+        plan: { select: { id: true, name: true, price: true, currency: true, benefits: true } },
+        business: { select: { id: true, name: true } },
+      },
+    });
+    return { subscription: activated, needsConfirmation: false, providerRef: null };
+  }
+
+  // ── 3. Initier le paiement Mobile Money / Stripe / FedaPay ──
+  const { processMobileMoney, processStripePayment, processFedaPayPayment, saveTransaction } =
+    await import('./paymentProcessor');
+
+  let paymentResult: { providerRef: string; status: string; fee: number; message?: string } | null =
+    null;
+  try {
+    if (data.provider === 'STRIPE') {
+      paymentResult = await processStripePayment(amount, 'usd', data.phone || '');
+    } else if (data.provider === 'FEDAPAY') {
+      paymentResult = await processFedaPayPayment({
+        amount,
+        mode: 'mtn_open',
+        description: `Abonnement ${plan.name}`,
+        customerPhone: data.phone,
+      });
+    } else {
+      paymentResult = await processMobileMoney(data.provider || 'MOBILE_MONEY', data.phone || '', amount, `Abonnement ${plan.name}`);
+    }
+  } catch (e) {
+    logger.warn('Abonnement : init paiement échoué, souscription en attente', {
+      error: (e as Error).message,
+    });
+  }
+
+  if (paymentResult) {
+    try {
+      await saveTransaction({
+        businessId: plan.businessId,
+        userId,
+        amount,
+        currency: plan.currency || 'FCFA',
+        provider: data.provider || 'MOBILE_MONEY',
+        providerRef: paymentResult.providerRef,
+        status: paymentResult.status,
+        fee: paymentResult.fee || 0,
+        metadata: { subscriptionId: subscription.id, type: 'SUBSCRIPTION' },
+      });
+    } catch (e) {
+      logger.warn('Abonnement : saveTransaction échoué', { error: (e as Error).message });
+    }
+  }
+
+  // ── 4. Si paiement déjà SUCCESS (mode test / Stripe instantané) → activer ──
+  if (paymentResult?.status === 'SUCCESS') {
+    await activateSubscription(subscription.id, {
+      provider: data.provider || 'MOBILE_MONEY',
+      providerRef: paymentResult.providerRef,
+      amount,
+      currency: plan.currency || 'FCFA',
+      autoRenew: data.autoRenew !== false,
+    });
+    const activated = await prisma.businessSubscription.findUnique({
+      where: { id: subscription.id },
+      include: {
+        plan: { select: { id: true, name: true, price: true, currency: true, benefits: true } },
+        business: { select: { id: true, name: true } },
+      },
+    });
+    return { subscription: activated, needsConfirmation: false, providerRef: paymentResult.providerRef };
+  }
+
+  // PENDING → le client doit confirmer sur son téléphone (ou webhook)
+  return {
+    subscription,
+    needsConfirmation: true,
+    providerRef: paymentResult?.providerRef || null,
+    paymentMessage: paymentResult?.message || `Paiement ${data.provider || 'Mobile Money'} initié. Confirmez sur votre téléphone.`,
+  };
+}
+
+export async function confirmSubscriptionPayment(
+  userId: string,
+  data: { providerRef: string }
+) {
+  if (!data.providerRef) throw new AppError('Référence de paiement requise', 400);
+
+  // Trouver la transaction liée à la souscription de l'utilisateur
+  const transaction = await prisma.paymentTransaction.findFirst({
+    where: {
+      providerRef: data.providerRef,
+      userId,
+      metadata: { path: ['type'], equals: 'SUBSCRIPTION' },
+    },
+  });
+  if (!transaction) throw new AppError('Transaction introuvable', 404);
+
+  const subscriptionId = (transaction.metadata as any)?.subscriptionId;
+  if (!subscriptionId) throw new AppError('Abonnement lié introuvable', 404);
+
+  // Si la transaction est encore PENDING, on la considère réussie en mode dev/test
+  // (les providers réels confirment via webhook → même chemin d'activation)
+  if (transaction.status === 'FAILED' || transaction.status === 'REFUNDED') {
+    throw new AppError('Paiement échoué', 400);
+  }
+
+  await prisma.paymentTransaction.update({
+    where: { id: transaction.id },
+    data: { status: 'SUCCESS', paidAt: transaction.paidAt || new Date() },
+  });
+
+  const subscription = await prisma.businessSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { plan: true },
+  });
+  if (!subscription) throw new AppError('Abonnement introuvable', 404);
+
+  await activateSubscription(subscription.id, {
+    provider: transaction.provider,
+    providerRef: transaction.providerRef || data.providerRef,
+    amount: Number(transaction.amount),
+    currency: transaction.currency,
+  });
+
+  const activated = await prisma.businessSubscription.findUnique({
+    where: { id: subscription.id },
+    include: {
+      plan: { select: { id: true, name: true, price: true, currency: true, benefits: true } },
+      business: { select: { id: true, name: true } },
+    },
+  });
+  return { subscription: activated, needsConfirmation: false };
+}
+
+/**
+ * Confirmation déclenchée par webhook (FedaPay etc.) : la transaction a déjà été
+ * marquée SUCCESS, on active la souscription liée. Idempotent.
+ */
+export async function confirmSubscriptionPaymentByRef(providerRef: string, userId: string) {
+  if (!providerRef) throw new AppError('Référence de paiement requise', 400);
+  const transaction = await prisma.paymentTransaction.findFirst({
+    where: { providerRef, userId, metadata: { path: ['type'], equals: 'SUBSCRIPTION' } },
+  });
+  if (!transaction) throw new AppError('Transaction introuvable', 404);
+  const subscriptionId = (transaction.metadata as any)?.subscriptionId;
+  if (!subscriptionId) throw new AppError('Abonnement lié introuvable', 404);
+
+  const subscription = await prisma.businessSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { plan: true },
+  });
+  if (!subscription) throw new AppError('Abonnement introuvable', 404);
+  if (subscription.status === 'ACTIVE') return { subscription, alreadyActive: true };
+
+  await activateSubscription(subscription.id, {
+    provider: transaction.provider,
+    providerRef: transaction.providerRef || providerRef,
+    amount: Number(transaction.amount),
+    currency: transaction.currency,
+  });
+  return {
+    subscription: await prisma.businessSubscription.findUnique({
+      where: { id: subscription.id },
+      include: {
+        plan: { select: { id: true, name: true, price: true, currency: true, benefits: true } },
+        business: { select: { id: true, name: true } },
+      },
+    }),
+    alreadyActive: false,
+  };
+}
+
+/**
+ * Active une souscription (payée) : statut ACTIVE + SubscriptionPayment COMPLETED
+ * + crédit du wallet business net de commission (WalletTransaction SUBSCRIPTION)
+ * + notification au business. Idempotent : une souscription déjà ACTIVE ne double
+ * jamais le crédit wallet.
+ */
+async function activateSubscription(
+  subscriptionId: string,
+  opts: {
+    provider: string;
+    providerRef?: string;
+    amount: number;
+    currency: string;
+    autoRenew?: boolean;
+  }
+) {
+  const { calculateCommission } = await import('./monetizationConfig');
+  const { getOrCreateWallet } = await import('./wallet');
+
+  const sub = await prisma.businessSubscription.findUnique({
+    where: { id: subscriptionId },
+    include: { plan: { include: { business: { select: { id: true, ownerId: true, name: true } } } } },
+  });
+  if (!sub) throw new AppError('Abonnement introuvable', 404);
+  if (sub.status === 'ACTIVE') {
+    // Déjà activé (idempotence webhook + confirmation client)
+    return { alreadyActive: true };
+  }
+
+  const now = new Date();
+  const { commission, netAmount } = await calculateCommission(opts.amount, 'transaction');
+  const wallet = await getOrCreateWallet(sub.businessId);
+
+  let alreadyActive = false;
+  await prisma.$transaction(async (tx) => {
+    // Claim atomique : seules les souscriptions non-ACTIVE sont activées ici.
+    // Deux confirmations concurrentes (client + webhook) ne créditent jamais deux fois.
+    const claimed = await tx.businessSubscription.updateMany({
+      where: { id: subscriptionId, status: { not: 'ACTIVE' } },
+      data: {
+        status: 'ACTIVE',
+        renewalStatus: 'ACTIVE',
+        autoRenew: opts.autoRenew ?? sub.autoRenew,
+        lastRenewedAt: now,
+      },
+    });
+    if (claimed.count === 0) {
+      alreadyActive = true;
+      return;
+    }
+
+    await tx.subscriptionPayment.create({
+      data: {
+        subscriptionId,
+        businessId: sub.businessId,
+        amount: opts.amount,
+        currency: opts.currency,
+        method: opts.provider,
+        status: 'COMPLETED',
+        reference: opts.providerRef || null,
+        isManual: false,
+        verifiedAt: now,
+        periodStart: sub.startDate,
+        periodEnd: sub.endDate,
+      },
+    });
+
+    // ── Crédit wallet business NET de commission (increment atomique) ──
+    const updatedWallet = await tx.wallet.update({
+      where: { id: wallet.id },
+      data: { balance: { increment: netAmount } },
+    });
+    await tx.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: 'SUBSCRIPTION',
+        amount: netAmount,
+        balanceBefore: Number(wallet.balance),
+        balanceAfter: Number(updatedWallet.balance),
+        reference: subscriptionId,
+        description: `Abonnement « ${sub.plan.name} » payé (${opts.amount} ${opts.currency} − ${commission} commission)`,
+        metadata: {
+          subscriptionId,
+          grossAmount: opts.amount,
+          commission,
+          netAmount,
+          provider: opts.provider,
+        },
+      },
+    });
+
+    // Log financier de commission
+    await tx.financialLog.create({
+      data: {
+        businessId: sub.businessId,
+        userId: sub.clientId,
+        action: 'PAYMENT_RECEIVED',
+        amount: -commission,
+        description: `Commission AfriBiz sur abonnement « ${sub.plan.name} » (${opts.amount} ${opts.currency})`,
+        metadata: {
+          commissionType: 'SUBSCRIPTION_FEE',
+          subscriptionId,
+          grossAmount: opts.amount,
+          commissionRate: (commission / opts.amount).toFixed(4),
+        },
+      },
+    });
+  });
+
+  if (alreadyActive) {
+    return { alreadyActive: true };
+  }
+
+  // Notification + log (non bloquants)
+  try {
+    const { publishSubscriptionCreated } = await import('../events/publishers');
+    publishSubscriptionCreated({
+      userId: sub.plan.business?.ownerId || sub.clientId,
+      subscriptionId,
+      planName: sub.plan.name,
+    });
+  } catch {
+    // non bloquant
+  }
+  await logSubscriptionAction(
+    sub.businessId,
+    sub.planId,
+    subscriptionId,
+    'PAYMENT_RECEIVED',
+    `Paiement ${opts.amount} ${opts.currency} confirmé (${opts.provider}) — abonnement actif`,
+    sub.clientId
+  );
+
+  return { alreadyActive: false, netAmount, commission };
 }
 
 export async function cancelMySubscription(userId: string) {
+  // ACTIVE (abonnement en cours) ou SUSPENDED (paiement en attente/échoué) :
+  // le client doit pouvoir sortir d'un SUSPENDED pour se réabonner.
   const subscription = await prisma.businessSubscription.findFirst({
-    where: { clientId: userId, status: 'ACTIVE' },
+    where: { clientId: userId, status: { in: ['ACTIVE', 'SUSPENDED'] } },
   });
-  if (!subscription) throw new AppError('Aucun abonnement actif trouve', 404);
+  if (!subscription) throw new AppError('Aucun abonnement actif ou en attente trouve', 404);
 
   const updated = await prisma.businessSubscription.update({
     where: { id: subscription.id },

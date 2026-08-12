@@ -146,3 +146,15 @@ export const cancelMySubscription = catchAsyncErrors(
     res.json({ success: true, data: subscription, message: 'Abonnement annulé' });
   }
 );
+
+export const confirmSubscriptionPayment = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await subscriptionService.confirmSubscriptionPayment(req.user.id, req.body);
+    res.json({
+      success: true,
+      data: result,
+      message: 'Paiement confirmé, abonnement activé',
+    });
+  }
+);

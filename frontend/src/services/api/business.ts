@@ -70,6 +70,9 @@ export function injectBusiness(api: ApiClientMethods) {
     const url = slug ? `/business/${slug}/trainings` : '/trainings/business';
     return this.get(url);
   };
+  api.getBusinessSubscriptionPlans = function (slug: string) {
+    return this.get(`/business/${slug}/subscriptions`);
+  };
   api.getPublicPagePreview = function () {
     return this.get('/business/public-page-preview');
   };

@@ -21,6 +21,7 @@ import {
   Play,
   Camera,
   Radio,
+  Repeat,
 } from 'lucide-react';
 
 interface InternalNavProps {
@@ -40,15 +41,18 @@ interface InternalNavProps {
   hasPromotions?: boolean;
   hasPartners?: boolean;
   hasTrainings?: boolean;
+  hasSubscriptions?: boolean;
 }
 
 /**
  * 🔒 WHITELIST CLIENT-ONLY
  * Seules les sections que LE CLIENT doit voir apparaissent dans le menu de la vitrine.
  * Les modules internes (SAVINGS, CRM, MARKETING, MEDIA, AFRISCORE, GROUP_BUY, VOICE,
- * ORDERS, QUOTES_INVOICES, DEBTS_PAYMENTS, PLANNING, EMPLOYEES, SUBSCRIPTIONS,
+ * ORDERS, QUOTES_INVOICES, DEBTS_PAYMENTS, PLANNING, EMPLOYEES,
  * DELIVERIES, DOCUMENTS, DISPUTES, MODULE_MARKETPLACE, ADVANCED_TASKS...) sont
  * EXCLUS : ils exposeraient le fonctionnement interne du business.
+ * SUBSCRIPTIONS est INCLUS : les forfaits publics (ex. salle de sport, salon) sont
+ * une vitrine commerciale que le client doit pouvoir voir et souscrire.
  */
 const CLIENT_MODULE_CONFIG: Partial<
   Record<BusinessModule, { label: string; icon: React.ReactNode }>
@@ -64,6 +68,7 @@ const CLIENT_MODULE_CONFIG: Partial<
   PROMOTIONS: { label: 'Promotions', icon: <Tag className="w-5 h-5" /> },
   PARTNERS: { label: 'Partenaires', icon: <Users className="w-5 h-5" /> },
   TRAINING: { label: 'Formations', icon: <BookOpen className="w-5 h-5" /> },
+  SUBSCRIPTIONS: { label: 'Abonnements', icon: <Repeat className="w-5 h-5" /> },
 };
 
 // Catalogues pilotés par la donnée : ne s'affichent que si hasX est true
@@ -78,6 +83,7 @@ const DATA_GATED: Partial<Record<BusinessModule, keyof InternalNavProps>> = {
   PROMOTIONS: 'hasPromotions',
   PARTNERS: 'hasPartners',
   TRAINING: 'hasTrainings',
+  SUBSCRIPTIONS: 'hasSubscriptions',
 };
 
 export function InternalNav({
@@ -95,6 +101,7 @@ export function InternalNav({
   hasPromotions,
   hasPartners,
   hasTrainings,
+  hasSubscriptions,
 }: InternalNavProps) {
   const [activeId, setActiveId] = useState('section-accueil');
   const [isSticking, setIsSticking] = useState(false);
@@ -132,6 +139,7 @@ export function InternalNav({
     hasPromotions: !!hasPromotions,
     hasPartners: !!hasPartners,
     hasTrainings: !!hasTrainings,
+    hasSubscriptions: !!hasSubscriptions,
   };
   const clientSections = modules
     .filter((m) => CLIENT_MODULE_CONFIG[m])

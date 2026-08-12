@@ -17,6 +17,7 @@ import {
   useBusinessReviews,
   useBusinessBookings,
   useBusinessTrainings,
+  useBusinessSubscriptionPlans,
 } from '@/features/hooks';
 import { useBusinessStories } from '@/hooks/features/useStories';
 import { useShorts } from '@/hooks/features/useShorts';
@@ -98,6 +99,10 @@ const MediaShorts = dynamic(
   () => import('./sections/MediaShorts').then((m) => ({ default: m.MediaShorts })),
   { ssr: false }
 );
+const Subscriptions = dynamic(
+  () => import('./sections/Subscriptions').then((m) => ({ default: m.Subscriptions })),
+  { ssr: false }
+);
 
 interface BusinessPageProps {
   slug: string;
@@ -145,6 +150,9 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
   const { data: trainings } = useBusinessTrainings(slug, {
     enabled: modules.includes('TRAINING') && !!business,
   });
+  const { data: subscriptionPlans } = useBusinessSubscriptionPlans(slug, {
+    enabled: modules.includes('SUBSCRIPTIONS') && !!business,
+  });
 
   const { data: stories } = useBusinessStories(business?.id || '');
   const { data: shortsData } = useShorts({ businessId: business?.id, limit: 1 });
@@ -165,6 +173,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
   const hasPromotions = (promotions?.length || 0) > 0;
   const hasPartners = (partners?.length || 0) > 0;
   const hasTrainings = (trainings?.length || 0) > 0;
+  const hasSubscriptions = (subscriptionPlans?.length || 0) > 0;
 
   if (isLoading) {
     return (
@@ -242,6 +251,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
         hasPromotions={hasPromotions}
         hasPartners={hasPartners}
         hasTrainings={hasTrainings}
+        hasSubscriptions={hasSubscriptions}
         slug={slug}
       />
 
@@ -358,6 +368,11 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
             <ErrorBoundary>
               {modules.includes('TRAINING') && hasTrainings && (
                 <Trainings trainings={trainings || []} businessSlug={slug} />
+              )}
+            </ErrorBoundary>
+            <ErrorBoundary>
+              {modules.includes('SUBSCRIPTIONS') && hasSubscriptions && (
+                <Subscriptions slug={slug} plans={subscriptionPlans || []} />
               )}
             </ErrorBoundary>
             <ErrorBoundary>

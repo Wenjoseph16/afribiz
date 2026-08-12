@@ -10,7 +10,8 @@ export function useReviews(params?: { page?: number; limit?: number }) {
     queryKey: [...reviewKeys.all, params],
     queryFn: async () => {
       const res = await apiClient.getReviews(params);
-      return res.data.data;
+      const d = res.data as unknown as { reviews?: unknown[]; data?: unknown[] };
+      return (d.reviews || d.data || []) as any;
     },
   });
 }
@@ -45,7 +46,8 @@ export function useProductReviews(productId: string, params?: { page?: number; l
     queryKey: ['reviews', 'product', productId, params],
     queryFn: async () => {
       const res = await apiClient.get(`/reviews/product/${productId}`, { params });
-      return res.data.data;
+      const d = res.data as unknown as { reviews?: unknown[]; data?: unknown[] };
+      return (d.reviews || d.data || []) as any;
     },
     enabled: !!productId,
   });
@@ -56,7 +58,8 @@ export function useServiceReviews(serviceId: string, params?: { page?: number; l
     queryKey: ['reviews', 'service', serviceId, params],
     queryFn: async () => {
       const res = await apiClient.get(`/reviews/service/${serviceId}`, { params });
-      return res.data.data;
+      const d = res.data as unknown as { reviews?: unknown[]; data?: unknown[] };
+      return (d.reviews || d.data || []) as any;
     },
     enabled: !!serviceId,
   });

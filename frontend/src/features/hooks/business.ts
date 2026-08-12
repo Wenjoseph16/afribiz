@@ -324,6 +324,21 @@ export function useBusinessTrainings(
   });
 }
 
+export function useBusinessSubscriptionPlans(
+  slug: string,
+  options?: Partial<UseQueryOptions<any[]>>
+): UseQueryResult<any[]> {
+  return useQuery<any[]>({
+    queryKey: [...businessKeys.public(slug), 'subscriptions'],
+    queryFn: async () => {
+      const res = await apiClient.getBusinessSubscriptionPlans(slug);
+      return res.data.data as any[];
+    },
+    enabled: !!slug,
+    ...options,
+  });
+}
+
 export const profileKeys = {
   all: ['profile'] as const,
 };

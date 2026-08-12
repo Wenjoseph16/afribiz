@@ -5,8 +5,10 @@ import {
   createPlanSchema,
   updatePlanSchema,
   createSubscriptionSchema,
+  subscribeSchema,
   cancelSubscriptionSchema,
   recordPaymentSchema,
+  confirmSubscriptionSchema,
 } from '../validators/subscriptions';
 import {
   listSubscriptionPlans,
@@ -25,6 +27,7 @@ import {
   getMySubscription,
   subscribeToPlan,
   cancelMySubscription,
+  confirmSubscriptionPayment,
 } from '../controllers/subscriptions';
 
 const router = Router();
@@ -69,7 +72,13 @@ router.get('/logs', businessGuard, listSubscriptionLogs);
 
 // User-facing subscription endpoints
 router.get('/my-subscription', anyGuard, getMySubscription);
-router.post('/subscribe', anyGuard, validateBody(createSubscriptionSchema), subscribeToPlan);
+router.post('/subscribe', anyGuard, validateBody(subscribeSchema), subscribeToPlan);
+router.post(
+  '/subscribe/confirm',
+  anyGuard,
+  validateBody(confirmSubscriptionSchema),
+  confirmSubscriptionPayment
+);
 router.post('/my-subscription/cancel', anyGuard, cancelMySubscription);
 
 export default router;

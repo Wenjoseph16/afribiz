@@ -258,7 +258,7 @@ const BIZ_DEFS: any[] = [
     googleMapsLink: 'https://maps.google.com/?q=14.7459,-17.4847',
     facebook: 'https://facebook.com/kenzabeaute', instagram: 'https://instagram.com/kenzabeaute', tiktok: 'https://tiktok.com/@kenzabeaute',
     foundedYear: 2020, employeeCount: 6, rating: 4.8, reviewCount: 54,
-    modules: ['SERVICES', 'BOOKINGS', 'CRM', 'PROMOTIONS', 'PORTFOLIO', 'EMPLOYEES', 'PLANNING', 'MARKETING', 'AFRISCORE', 'SAVINGS'],
+    modules: ['SERVICES', 'BOOKINGS', 'CRM', 'PROMOTIONS', 'PORTFOLIO', 'EMPLOYEES', 'PLANNING', 'MARKETING', 'AFRISCORE', 'SAVINGS', 'SUBSCRIPTIONS'],
   },
   {
     id: B.HOTEL, ownerId: U.OWNER_HOTEL, name: 'Hôtel Palmier', slug: 'hotel-palmier', type: BusinessType.HOTEL,
@@ -2198,6 +2198,7 @@ export async function seedRealistic() {
   await seedSatisfaction();
   await seedAdSlots();
   await seedAdCampaigns();
+  await seedBusinessSubscriptions();
   await seedMediaCommerce();
   console.log('\n✅ Seed réaliste terminé. Mdp unique : ' + PASSWORD);
 }
@@ -2795,6 +2796,125 @@ async function seedSatisfaction() {
     data: { satisfactionSurveySentAt: null },
   });
   console.log('✓ Satisfaction : 6 réponses d\'enquête liées à de vraies commandes/séjours');
+}
+
+// ============================================================
+// ABONNEMENTS BUSINESS — plans publics + abonnement actif client
+// (vitrine « Abonnements » : le salon Kenza Beauté propose des forfaits)
+// ============================================================
+async function seedBusinessSubscriptions() {
+  // ── Purge ciblée (idempotent) ──
+  await prisma.subscriptionLog.deleteMany({ where: { businessId: B.SALON } });
+  await prisma.subscriptionPayment.deleteMany({ where: { businessId: B.SALON } });
+  await prisma.businessSubscription.deleteMany({ where: { businessId: B.SALON } });
+  await prisma.subscriptionPrivilege.deleteMany({
+    where: { plan: { businessId: B.SALON } },
+  });
+  await prisma.subscriptionPlan.deleteMany({ where: { businessId: B.SALON } });
+
+  // ── Plans du salon (forfaits beauté, réalistes Abidjan) ──
+  const salonPlans = [
+    {
+      id: 'pl-salon-basic', businessId: B.SALON,
+      name: 'Forfait Découverte',
+      description: 'Un forfait mensuel pour découvrir nos soins : 2 prestations incluses par mois.',
+      type: 'STANDARD', price: 15000, currency: 'FCFA', billingCycle: 'MONTHLY',
+      durationDays: 30, trialDays: 7, sortOrder: 1, featured: false,
+      badge: null, benefits: [
+        '2 prestations incluses / mois',
+        'Coupe ou manucure au choix',
+        'Réduction 10% sur les soins en plus',
+        'Réservation prioritaire',
+      ],
+    },
+    {
+      id: 'pl-salon-premium', businessId: B.SALON,
+      name: 'Forfait Premium',
+      description: 'Soins illimités pendant 1 mois : la liberté totale pour prendre soin de vous.',
+      type: 'PREMIUM', price: 40000, currency: 'FCFA', billingCycle: 'MONTHLY',
+      durationDays: 30, trialDays: 3, sortOrder: 2, featured: true,
+      badge: '🔥 Populaire', benefits: [
+        'Prestations illimitées',
+        'Coiffure + soins + manucure inclus',
+        'Réduction 20% sur les produits',
+        'Accès prioritaire aux créneaux du week-end',
+        'Consultation beauté offerte / mois',
+      ],
+    },
+    {
+      id: 'pl-salon-vip', businessId: B.SALON,
+      name: 'Forfait VIP Annuel',
+      description: 'Le meilleur rapport qualité-prix : toute une année de soins premium.',
+      type: 'VIP', price: 360000, currency: 'FCFA', billingCycle: 'ANNUAL',
+      durationDays: 365, trialDays: 0, sortOrder: 3, featured: false,
+      badge: '👑 VIP', benefits: [
+        'Tout le Premium, sur 12 mois',
+        '2 mois offerts (≈ 40 000 FCFA d\'économie)',
+        'Séance VIP offerte le mois de votre anniversaire',
+        'Invitations aux événements privés du salon',
+      ],
+    },
+  ];
+
+  for (const plan of salonPlans) {
+    await prisma.subscriptionPlan.upsert({
+      where: { id: plan.id },
+      update: {},
+      create: {
+        id: plan.id, businessId: plan.businessId, name: plan.name, description: plan.description,
+        type: plan.type as any, price: plan.price, currency: plan.currency,
+        billingCycle: plan.billingCycle as any, durationDays: plan.durationDays,
+        trialDays: plan.trialDays, sortOrder: plan.sortOrder, featured: plan.featured,
+        badge: plan.badge, benefits: plan.benefits, isPublic: true, isActive: true,
+      },
+    });
+  }
+
+  // ── Privilèges du plan Premium (affichés en carte) ──
+  const premiumPrivileges = [
+    { id: 'prv-salon-prem-1', planId: 'pl-salon-premium', code: 'UNLIMITED_ACCESS', label: 'Prestations illimitées', description: 'Toutes les prestations, sans limite', value: -1, valueType: 'COUNT', sortOrder: 1 },
+    { id: 'prv-salon-prem-2', planId: 'pl-salon-premium', code: 'PRODUCT_DISCOUNT', label: '-20% produits', description: 'Sur toute la boutique', value: 20, valueType: 'PERCENT', sortOrder: 2 },
+    { id: 'prv-salon-prem-3', planId: 'pl-salon-premium', code: 'PRIORITY_SLOTS', label: 'Créneaux prioritaires', description: 'Week-ends en priorité', value: 1, valueType: 'FLAG', sortOrder: 3 },
+  ];
+  for (const pr of premiumPrivileges) {
+    await prisma.subscriptionPrivilege.upsert({
+      where: { id: pr.id }, update: {},
+      create: { id: pr.id, planId: pr.planId, code: pr.code, label: pr.label, description: pr.description, value: pr.value, valueType: pr.valueType, sortOrder: pr.sortOrder },
+    });
+  }
+
+  // ── Abonnement actif (Awa → Forfait Premium) ──
+  const now = new Date();
+  const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  await prisma.businessSubscription.upsert({
+    where: { id: 'bs-salon-1' },
+    update: {},
+    create: {
+      id: 'bs-salon-1', businessId: B.SALON, planId: 'pl-salon-premium', clientId: U.CLIENT_1,
+      status: 'ACTIVE', startDate: now, endDate: end, nextBillingDate: end,
+      autoRenew: true, renewalStatus: 'ACTIVE', renewalCount: 1, lastRenewedAt: now,
+    },
+  });
+  await prisma.subscriptionPayment.upsert({
+    where: { id: 'sp-salon-1' },
+    update: {},
+    create: {
+      id: 'sp-salon-1', subscriptionId: 'bs-salon-1', businessId: B.SALON,
+      amount: 40000, currency: 'FCFA', method: 'MOBILE_MONEY', status: 'COMPLETED',
+      reference: 'PAY-SALON-001', isManual: true, verifiedAt: now,
+      periodStart: now, periodEnd: end,
+    },
+  });
+  await prisma.subscriptionLog.upsert({
+    where: { id: 'sl-salon-1' },
+    update: {},
+    create: {
+      id: 'sl-salon-1', businessId: B.SALON, planId: 'pl-salon-premium', subscriptionId: 'bs-salon-1',
+      action: 'ACTIVATED', description: 'Abonnement Premium souscrit par Awa Coulibaly (seed)', performedBy: U.CLIENT_1,
+    },
+  });
+
+  console.log('✓ Abonnements business : 3 plans Kenza Beauté + 1 abonnement actif (Awa → Premium)');
 }
 
 // Exécution directe (npx tsx prisma/seedRealistic.ts)

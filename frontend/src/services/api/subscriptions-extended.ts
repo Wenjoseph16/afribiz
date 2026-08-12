@@ -35,12 +35,18 @@ export function injectSubscriptionsExtended(api: ApiClientMethods) {
     return this.post('/admin/subscriptions/' + id + '/renew');
   };
   api.getMySubscription = function () {
-    return this.get('/subscriptions/my-subscription');
+    return this.get('/business/subscriptions/my-subscription');
   };
-  api.subscribeToPlan = function (planId: string) {
-    return this.post('/subscriptions/subscribe', { planId });
+  api.subscribeToPlan = function (planId: string, opts?: { provider?: string; phone?: string; autoRenew?: boolean }) {
+    return this.post('/business/subscriptions/subscribe', {
+      planId,
+      ...(opts || {}),
+    });
+  };
+  api.confirmSubscriptionPayment = function (providerRef: string) {
+    return this.post('/business/subscriptions/subscribe/confirm', { providerRef });
   };
   api.cancelMySubscription = function () {
-    return this.post('/subscriptions/my-subscription/cancel');
+    return this.post('/business/subscriptions/my-subscription/cancel');
   };
 }

@@ -341,6 +341,10 @@ app.use('/api/messages', messagesRoutes);
 app.use('/api/business/accounting', accountingRoutes);
 app.use('/api/business/accounting/reports', accountingAdvancedRoutes);
 
+// ⚠️ subscriptionsRoutes doit être monté AVANT businessRoutes : ce dernier a un
+// router.use(requireRole(['BUSINESS','ADMIN'])) global qui bloquerait sinon les
+// endpoints client (/subscribe, /my-subscription) pour les rôles CLIENT/DEVELOPER.
+app.use('/api/business/subscriptions', subscriptionsRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/business/products', productRoutes);
 app.use('/api/business/services', serviceRoutes);
@@ -358,7 +362,6 @@ app.use('/api/business/employees', employeesRoutes);
 app.use('/api/business/employees/leaves', employeeLeavesRoutes);
 app.use('/api/business/employees/payroll', payrollRoutes);
 app.use('/api/business/portfolio', portfolioRoutes);
-app.use('/api/business/subscriptions', subscriptionsRoutes);
 app.use('/api/business/delivery', deliveryRoutes);
 app.use('/api/business/events', eventsRoutes);
 app.use('/api/events', clientEventsRoutes);

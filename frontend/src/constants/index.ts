@@ -28,6 +28,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Commandes', href: '/dashboard/orders', icon: 'ShoppingBag' },
       { label: 'Mes épargnes', href: '/dashboard/my-layaway', icon: 'PiggyBank' },
       { label: 'Réservations', href: '/dashboard/bookings', icon: 'Calendar' },
+      { label: 'Abonnements', href: '/dashboard/my-subscriptions', icon: 'Repeat' },
       { label: 'Locations', href: '/dashboard/my-rentals', icon: 'Car' },
       { label: 'Événements', href: '/dashboard/my-events', icon: 'CalendarDays' },
       { label: 'Formations', href: '/dashboard/my-trainings', icon: 'GraduationCap' },
