@@ -2174,6 +2174,7 @@ model Product {
   weightUnit             String?          @default("kg")
   unit                   String?          @default("piece")
   dimensions             String?
+  priceOnDemand          Boolean          @default(false)
   deliveryFee            Decimal?         @db.Decimal(12, 2)
   isActive               Boolean          @default(true)
   isPhysical             Boolean          @default(true)

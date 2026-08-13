@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { authMiddleware, requireRole } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
+  getDeliverySettings,
+  updateDeliverySettings,
   listDeliveryZones,
   createDeliveryZone,
   updateDeliveryZone,
@@ -38,6 +40,10 @@ router.use(authMiddleware, requireRole(['BUSINESS', 'ADMIN']));
 
 // Stats (must be before :id routes)
 router.get('/stats', getDeliveryStats);
+
+// Réglages livraison/retrait (avant /zones)
+router.get('/settings', getDeliverySettings);
+router.put('/settings', updateDeliverySettings);
 
 // Zones
 router.get('/zones', listDeliveryZones);

@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   Save,
-  Upload,
   Plus,
   X,
-  Image,
   Package,
   Tag,
   DollarSign,
@@ -17,13 +15,19 @@ import {
   Truck,
   Eye,
   Search,
+  Sparkles,
   Loader,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
+import { apiClient } from '@/services/apiClient';
 import { useMyProduct, useUpdateProduct, useProductCategories } from '@/features/hooks';
+import { useNotifyError } from '@/hooks/useNotifyError';
+import { ImageDropzone, type DropImage } from '@/components/formkit/ImageDropzone';
+import { MoneyInput } from '@/components/formkit/MoneyInput';
 
 interface Variant {
   key: string;
@@ -34,6 +38,16 @@ interface Variant {
   id?: string;
 }
 
+/** Convertit un dataUrl (image compressée du dropzone) en File prêt pour uploadMultipleMedia */
+function dataUrlToFile(dataUrl: string, name: string): File {
+  const [meta, b64] = dataUrl.split(',');
+  const mime = meta.match(/data:(.*?);/)?.[1] || 'image/jpeg';
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new File([arr], name || 'image.jpg', { type: mime });
+}
+
 export default function EditProductPage() {
   const params = useParams();
   const router = useRouter();
@@ -41,6 +55,7 @@ export default function EditProductPage() {
   const { data: product, isLoading } = useMyProduct(id);
   const updateProduct = useUpdateProduct();
   const { data: catsData } = useProductCategories();
+  const notifyError = useNotifyError();
 
   // Main info
   const [name, setName] = useState('');
@@ -61,15 +76,16 @@ export default function EditProductPage() {
     [tagsStr]
   );
 
-  // Media
-  const [images, setImages] = useState<string[]>([]);
+  // Media — URLs existantes + nouvelles images (dataUrl)
+  const [images, setImages] = useState<DropImage[]>([]);
   const [video, setVideo] = useState('');
 
   // Pricing
-  const [price, setPrice] = useState('');
+  const [price, setPrice] = useState(0);
+  const [priceOnDemand, setPriceOnDemand] = useState(false);
   const [currency, setCurrency] = useState('FCFA');
   const [isPromotional, setIsPromotional] = useState(false);
-  const [promotionalPrice, setPromotionalPrice] = useState('');
+  const [promotionalPrice, setPromotionalPrice] = useState(0);
   const [discountPercent, setDiscountPercent] = useState('');
 
   const autoDiscount = useMemo(() => {
@@ -80,7 +96,7 @@ export default function EditProductPage() {
   }, [price, promotionalPrice, discountPercent]);
 
   // Stock
-  const [stock, setStock] = useState('');
+  const [stock, setStock] = useState(0);
   const [lowStockThreshold, setLowStockThreshold] = useState('5');
   const [unit, setUnit] = useState('piece');
   const [availability, setAvailability] = useState<'in_stock' | 'out_of_stock' | 'pre_order'>(
@@ -93,10 +109,16 @@ export default function EditProductPage() {
   const nextVariantKey = useRef(100);
 
   // Delivery
-  const [weight, setWeight] = useState('');
+  const [weight, setWeight] = useState(0);
   const [dimensions, setDimensions] = useState('');
   const [isPhysical, setIsPhysical] = useState(true);
-  const [deliveryFee, setDeliveryFee] = useState('');
+  const [deliveryFee, setDeliveryFee] = useState(0);
+
+  // Épargne Achat — état pré-rempli si une offre existe déjà
+  const [enableLayaway, setEnableLayaway] = useState(false);
+  const [layawayDuration, setLayawayDuration] = useState('90');
+  const [layawayMinInstallment, setLayawayMinInstallment] = useState(2000);
+  const [layawayLoading, setLayawayLoading] = useState(false);
 
   // Visibility
   const [isVisibleOnPublicPage, setIsVisibleOnPublicPage] = useState(true);
@@ -107,6 +129,7 @@ export default function EditProductPage() {
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
 
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Load product data
@@ -120,14 +143,22 @@ export default function EditProductPage() {
       setSku(product.sku || '');
       setBarcode(product.barcode || '');
       setTagsStr((product.tags || []).join(', '));
-      setImages(product.images || []);
+      // URLs existantes → préviews du dropzone (le dataUrl sert de src ; un http reste http)
+      setImages(
+        (product.images || []).map((url: string) => ({
+          dataUrl: url,
+          name: url.split('/').pop() || 'image',
+          size: 0,
+        }))
+      );
       setVideo(product.video || '');
-      setPrice(product.price?.toString() || '');
+      setPrice(Number(product.price) || 0);
+      setPriceOnDemand(!!product.priceOnDemand);
       setCurrency(product.currency || 'FCFA');
       setIsPromotional(product.isPromotional || false);
-      setPromotionalPrice(product.promotionalPrice?.toString() || '');
+      setPromotionalPrice(Number(product.promotionalPrice) || 0);
       setDiscountPercent(product.discountPercent?.toString() || '');
-      setStock(product.stock?.toString() || '');
+      setStock(Number(product.stock) || 0);
       setLowStockThreshold(product.lowStockThreshold?.toString() || '5');
       setUnit(product.unit || 'piece');
       setAvailability(
@@ -144,10 +175,10 @@ export default function EditProductPage() {
           stock: v.stock?.toString() || '',
         }))
       );
-      setWeight(product.weight?.toString() || '');
+      setWeight(Number(product.weight) || 0);
       setDimensions(product.dimensions || '');
       setIsPhysical(product.isPhysical !== false);
-      setDeliveryFee(product.deliveryFee?.toString() || '');
+      setDeliveryFee(Number(product.deliveryFee) || 0);
       setIsVisibleOnPublicPage(product.isVisibleOnPublicPage !== false);
       setIsVisibleOnMarketplace(product.isVisibleOnMarketplace !== false);
       setIsActive(product.isActive !== false);
@@ -155,6 +186,29 @@ export default function EditProductPage() {
       setSeoDescription(product.seoDescription || '');
     }
   }, [product]);
+
+  // Épargne : état actuel de l'offre (si le produit en a déjà une)
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setLayawayLoading(true);
+    apiClient
+      .getActiveLayawayOffer('PRODUCT', id)
+      .then((res: any) => {
+        if (cancelled) return;
+        const offer = res?.data?.data;
+        if (offer) {
+          setEnableLayaway(true);
+          if (offer.durationDays) setLayawayDuration(String(offer.durationDays));
+          if (offer.minInstallment) setLayawayMinInstallment(Number(offer.minInstallment));
+        }
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setLayawayLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const categories: any[] = Array.isArray(catsData) ? catsData : catsData?.data || [];
 
@@ -173,12 +227,37 @@ export default function EditProductPage() {
     setVariants((prev) => prev.map((v) => (v.key === key ? { ...v, [field]: value } : v)));
   };
 
+  /** Upload réel : seules les nouvelles images (dataUrl) partent au serveur */
+  const uploadNewImages = useCallback(async (imgs: DropImage[]): Promise<string[]> => {
+    const fresh = imgs.filter((i) => i.dataUrl.startsWith('data:'));
+    if (fresh.length === 0) return [];
+    setUploading(true);
+    try {
+      const res = await apiClient.uploadMultipleMedia(
+        fresh.map((f, i) => dataUrlToFile(f.dataUrl, f.name || `produit-${i + 1}.jpg`))
+      );
+      const data = res.data?.data;
+      const urls: string[] = Array.isArray(data) ? data.map((d: any) => d.url).filter(Boolean) : [];
+      return urls;
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !price) return;
+    if (!name.trim()) return;
+    if (!priceOnDemand && !price) return;
     setSaving(true);
 
     try {
+      // 1. Vrai upload des nouvelles images
+      const existingUrls = images
+        .filter((i) => !i.dataUrl.startsWith('data:'))
+        .map((i) => i.dataUrl);
+      const newUrls = await uploadNewImages(images);
+      const allImages = [...existingUrls, ...newUrls];
+
       const data: any = {
         name: name.trim(),
         shortDescription: shortDescription.trim() || undefined,
@@ -188,16 +267,17 @@ export default function EditProductPage() {
         barcode: barcode.trim() || undefined,
         categoryId: categoryId || null,
         tags,
-        price: Number(price),
+        price: priceOnDemand ? 0 : Number(price) || 0,
+        priceOnDemand,
         currency,
-        images,
+        images: allImages,
         video: video.trim() || undefined,
         stock: availability === 'out_of_stock' ? 0 : Number(stock) || 0,
         lowStockThreshold: Number(lowStockThreshold) || 5,
         unit,
         isOnPreOrder: availability === 'pre_order',
         isPromotional,
-        promotionalPrice: isPromotional && promotionalPrice ? Number(promotionalPrice) : undefined,
+        promotionalPrice: isPromotional && promotionalPrice > 0 ? Number(promotionalPrice) : undefined,
         discountPercent: autoDiscount || 0,
         weight: weight ? Number(weight) : undefined,
         dimensions: dimensions.trim() || undefined,
@@ -226,9 +306,32 @@ export default function EditProductPage() {
         data.variants = [];
       }
 
+      // 2. Mise à jour du produit
       await updateProduct.mutateAsync({ id, data });
+
+      // 3. Épargne Achat : activer / désactiver l'offre
+      if (enableLayaway && priceOnDemand === false && price > 0) {
+        await apiClient.createLayawayOffer({
+          itemType: 'PRODUCT',
+          itemId: id,
+          durationDays: Number(layawayDuration) || 90,
+          minInstallment: layawayMinInstallment || 2000,
+        });
+      }
+      if (!enableLayaway) {
+        try {
+          const offers = await apiClient.getLayawayOffers();
+          const list = offers?.data?.data?.offers || offers?.data?.data || [];
+          const mine = list.find((o: any) => o.itemType === 'PRODUCT' && o.itemId === id);
+          if (mine) await apiClient.deleteLayawayOffer(mine.id);
+        } catch {
+          /* pas d'offre : rien à désactiver */
+        }
+      }
+
       router.push(`/dashboard/products/${id}`);
-    } catch {
+    } catch (err) {
+      notifyError(err, 'Erreur', 'Impossible de modifier le produit');
       setSaving(false);
     }
   };
@@ -249,7 +352,7 @@ export default function EditProductPage() {
     );
   }
 
-  const isPending = saving || updateProduct.isPending;
+  const isPending = saving || uploading || updateProduct.isPending;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
@@ -365,42 +468,22 @@ export default function EditProductPage() {
           </div>
         </Card>
 
-        {/* B — Médias */}
+        {/* B — Médias : vrai upload */}
         <Card>
           <div className="flex items-center gap-2 mb-5">
-            <Image className="h-4 w-4 text-brand" />
+            <Package className="h-4 w-4 text-brand" />
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
               Médias
             </h3>
           </div>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {images.map((img, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square rounded-xl bg-gray-100 dark:bg-gray-700 overflow-hidden group"
-                >
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    🖼️
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
-                    className="absolute top-1 right-1 p-1 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setImages((prev) => [...prev, `img-${Date.now()}`])}
-                className="aspect-square rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-brand hover:text-brand transition-colors"
-              >
-                <Upload className="h-5 w-5" />
-                <span className="text-[10px] font-medium">Ajouter</span>
-              </button>
-            </div>
+            <ImageDropzone
+              label="Photos du produit"
+              images={images}
+              onChange={setImages}
+              maxImages={6}
+              help="Ajoutez de nouvelles photos ou retirez les anciennes — compression automatique côté client."
+            />
             <Input
               label="Vidéo produit (URL)"
               value={video}
@@ -418,16 +501,34 @@ export default function EditProductPage() {
               Prix
             </h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              label="Prix normal *"
-              type="number"
-              min={0}
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              required
+
+          <label className="flex items-center gap-3 cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              checked={priceOnDemand}
+              onChange={(e) => setPriceOnDemand(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
             />
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Prix sur demande 💬
+              </p>
+              <p className="text-xs text-gray-500">
+                Le client vous contacte pour connaître le prix
+              </p>
+            </div>
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className={cn(priceOnDemand && 'opacity-50 pointer-events-none')}>
+              <MoneyInput
+                label="Prix normal"
+                value={priceOnDemand ? null : price}
+                onChange={setPrice}
+                currency={currency}
+                required={!priceOnDemand}
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Devise
@@ -460,12 +561,11 @@ export default function EditProductPage() {
           {isPromotional && (
             <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/20">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Input
+                <MoneyInput
                   label="Prix promotionnel"
-                  type="number"
-                  min={0}
                   value={promotionalPrice}
-                  onChange={(e) => setPromotionalPrice(e.target.value)}
+                  onChange={setPromotionalPrice}
+                  currency={currency}
                 />
                 <Input
                   label="Réduction (%)"
@@ -488,6 +588,69 @@ export default function EditProductPage() {
           )}
         </Card>
 
+        {/* C2 — Épargne Achat */}
+        <Card>
+          <div className="flex items-center gap-2 mb-5">
+            <Sparkles className="h-4 w-4 text-brand" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+              Épargne Achat
+            </h3>
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              checked={enableLayaway}
+              onChange={(e) => setEnableLayaway(e.target.checked)}
+              disabled={layawayLoading || (priceOnDemand || price <= 0)}
+              className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
+            />
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {layawayLoading ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" /> Vérification…
+                  </span>
+                ) : (
+                  'Activer l\'épargne sur ce produit 🐷'
+                )}
+              </p>
+              <p className="text-xs text-gray-500">
+                {priceOnDemand || price <= 0
+                  ? "Renseignez un prix pour pouvoir activer l'épargne"
+                  : "Vos clients épargnent par petites cotisations — argent sécurisé en escrow (commission 1%)"}
+              </p>
+            </div>
+          </label>
+
+          {enableLayaway && !layawayLoading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/20">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Durée d'épargne
+                </label>
+                <select
+                  value={layawayDuration}
+                  onChange={(e) => setLayawayDuration(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none transition-all"
+                >
+                  <option value="30">30 jours</option>
+                  <option value="60">60 jours</option>
+                  <option value="90">90 jours</option>
+                  <option value="180">6 mois</option>
+                  <option value="365">12 mois</option>
+                </select>
+              </div>
+              <MoneyInput
+                label="Cotisation minimale"
+                value={layawayMinInstallment}
+                onChange={setLayawayMinInstallment}
+                currency={currency}
+                help="Montant minimum versé à chaque fois"
+              />
+            </div>
+          )}
+        </Card>
+
         {/* D — Stock */}
         <Card>
           <div className="flex items-center gap-2 mb-5">
@@ -502,7 +665,7 @@ export default function EditProductPage() {
               type="number"
               min={0}
               value={stock}
-              onChange={(e) => setStock(e.target.value)}
+              onChange={(e) => setStock(Number(e.target.value))}
               disabled={availability === 'out_of_stock'}
             />
             <Input
@@ -697,13 +860,11 @@ export default function EditProductPage() {
           </div>
           {isPhysical && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Input
+              <MoneyInput
                 label="Poids (kg)"
-                type="number"
-                min={0}
-                step="0.01"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                onChange={setWeight}
+                currency="kg"
               />
               <Input
                 label="Dimensions"
@@ -711,12 +872,11 @@ export default function EditProductPage() {
                 onChange={(e) => setDimensions(e.target.value)}
                 placeholder="Ex: 30x20x10 cm"
               />
-              <Input
+              <MoneyInput
                 label="Frais de livraison"
-                type="number"
-                min={0}
                 value={deliveryFee}
-                onChange={(e) => setDeliveryFee(e.target.value)}
+                onChange={setDeliveryFee}
+                currency={currency}
               />
             </div>
           )}
@@ -807,12 +967,21 @@ export default function EditProductPage() {
 
         {/* Submit */}
         <div className="flex items-center justify-end gap-3 sticky bottom-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-4 -mx-4 -mb-4 rounded-b-2xl border-t border-gray-100 dark:border-gray-800">
+          {uploading && (
+            <span className="flex items-center gap-1.5 text-xs text-brand">
+              <Loader2 className="h-4 w-4 animate-spin" /> Upload des photos…
+            </span>
+          )}
           <Link href={`/dashboard/products/${id}`}>
             <Button variant="outline" type="button">
               Annuler
             </Button>
           </Link>
-          <Button type="submit" isLoading={isPending} disabled={!name.trim() || !price}>
+          <Button
+            type="submit"
+            isLoading={isPending}
+            disabled={!name.trim() || (!priceOnDemand && !price)}
+          >
             <Save className="h-4 w-4 mr-1.5" />
             Enregistrer les modifications
           </Button>

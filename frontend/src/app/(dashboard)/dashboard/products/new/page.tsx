@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import {
   Save,
-  Upload,
   Plus,
   X,
-  Image,
   Package,
   Tag,
   DollarSign,
@@ -17,13 +15,19 @@ import {
   Truck,
   Eye,
   Search,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
+import { apiClient } from '@/services/apiClient';
 import { useCreateProduct, useProductCategories } from '@/features/hooks';
 import { useNotifyError } from '@/hooks/useNotifyError';
+import { ImageDropzone, type DropImage } from '@/components/formkit/ImageDropzone';
+import { MoneyInput } from '@/components/formkit/MoneyInput';
+import { useAutoSave } from '@/components/formkit/useAutoSave';
 
 interface Variant {
   key: string;
@@ -33,20 +37,43 @@ interface Variant {
   stock: string;
 }
 
+/** Convertit un dataUrl (image compressée du dropzone) en File prêt pour uploadMultipleMedia */
+function dataUrlToFile(dataUrl: string, name: string): File {
+  const [meta, b64] = dataUrl.split(',');
+  const mime = meta.match(/data:(.*?);/)?.[1] || 'image/jpeg';
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new File([arr], name || 'image.jpg', { type: mime });
+}
+
 export default function NewProductPage() {
   const router = useRouter();
   const createProduct = useCreateProduct();
   const { data: catsData } = useProductCategories();
 
-  // Main info
-  const [name, setName] = useState('');
-  const [shortDescription, setShortDescription] = useState('');
-  const [description, setDescription] = useState('');
+  // ── AutoSave : le gérant qui remplit 15 min ne perd jamais son brouillon ──
+  const form = useAutoSave(
+    'product:new:v1',
+    {
+      name: '',
+      shortDescription: '',
+      description: '',
+      brand: '',
+      sku: '',
+      barcode: '',
+      price: 0,
+      priceOnDemand: false,
+      stock: 0,
+      weight: 0,
+      deliveryFee: 0,
+    },
+    700
+  );
+
   const [categoryId, setCategoryId] = useState('');
-  const [brand, setBrand] = useState('');
-  const [sku, setSku] = useState('');
-  const [barcode, setBarcode] = useState('');
   const [tagsStr, setTagsStr] = useState('');
+  const [currency, setCurrency] = useState('FCFA');
 
   const tags = useMemo(
     () =>
@@ -57,32 +84,28 @@ export default function NewProductPage() {
     [tagsStr]
   );
 
-  // Media
-  const [images, setImages] = useState<string[]>([]);
+  // Media — vrai upload via ImageDropzone
+  const [images, setImages] = useState<DropImage[]>([]);
   const [video, setVideo] = useState('');
 
   // Pricing
-  const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('FCFA');
   const [isPromotional, setIsPromotional] = useState(false);
-  const [promotionalPrice, setPromotionalPrice] = useState('');
+  const [promotionalPrice, setPromotionalPrice] = useState(0);
   const [discountPercent, setDiscountPercent] = useState('');
 
   const autoDiscount = useMemo(() => {
-    const p = Number(price);
+    const p = Number(form.value.price);
     const pp = Number(promotionalPrice);
     if (p > 0 && pp > 0 && pp < p) return Math.round((1 - pp / p) * 100);
     return Number(discountPercent) || 0;
-  }, [price, promotionalPrice, discountPercent]);
+  }, [form.value.price, promotionalPrice, discountPercent]);
 
   // Stock
-  const [stock, setStock] = useState('');
   const [lowStockThreshold, setLowStockThreshold] = useState('5');
   const [unit, setUnit] = useState('piece');
   const [availability, setAvailability] = useState<'in_stock' | 'out_of_stock' | 'pre_order'>(
     'in_stock'
   );
-  const [isOnPreOrder, setIsOnPreOrder] = useState(false);
 
   // Variants
   const [hasVariants, setHasVariants] = useState(false);
@@ -107,10 +130,13 @@ export default function NewProductPage() {
   };
 
   // Delivery
-  const [weight, setWeight] = useState('');
   const [dimensions, setDimensions] = useState('');
   const [isPhysical, setIsPhysical] = useState(true);
-  const [deliveryFee, setDeliveryFee] = useState('');
+
+  // Épargne Achat — activée à la création (l'offre a besoin de l'id du produit)
+  const [enableLayaway, setEnableLayaway] = useState(false);
+  const [layawayDuration, setLayawayDuration] = useState('90');
+  const [layawayMinInstallment, setLayawayMinInstallment] = useState(2000);
 
   // Visibility
   const [isVisibleOnPublicPage, setIsVisibleOnPublicPage] = useState(true);
@@ -121,41 +147,65 @@ export default function NewProductPage() {
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
 
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const categories: any[] = Array.isArray(catsData) ? catsData : catsData?.data || [];
   const notifyError = useNotifyError();
 
+  /** Upload réel : seul le dataUrl (nouvelle image) part au serveur, compressé côté client. */
+  const uploadNewImages = useCallback(async (imgs: DropImage[]): Promise<string[]> => {
+    const fresh = imgs.filter((i) => i.dataUrl.startsWith('data:'));
+    if (fresh.length === 0) return [];
+    setUploading(true);
+    try {
+      const res = await apiClient.uploadMultipleMedia(
+        fresh.map((f, i) => dataUrlToFile(f.dataUrl, f.name || `produit-${i + 1}.jpg`))
+      );
+      const data = res.data?.data;
+      const urls: string[] = Array.isArray(data) ? data.map((d: any) => d.url).filter(Boolean) : [];
+      return urls;
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !price) return;
+    if (!form.value.name.trim()) return;
+    if (!form.value.priceOnDemand && !form.value.price) return;
     setSaving(true);
 
     try {
+      // 1. Vrai upload des images compressées
+      const imageUrls = await uploadNewImages(images);
+
       const data: any = {
-        name: name.trim(),
-        shortDescription: shortDescription.trim() || undefined,
-        description: description.trim() || undefined,
-        brand: brand.trim() || undefined,
-        sku: sku.trim() || undefined,
-        barcode: barcode.trim() || undefined,
+        name: form.value.name.trim(),
+        shortDescription: form.value.shortDescription.trim() || undefined,
+        description: form.value.description.trim() || undefined,
+        brand: form.value.brand.trim() || undefined,
+        sku: form.value.sku.trim() || undefined,
+        barcode: form.value.barcode.trim() || undefined,
         categoryId: categoryId || undefined,
-        tags: tags,
-        price: Number(price),
+        tags,
+        price: form.value.priceOnDemand ? 0 : Number(form.value.price) || 0,
+        priceOnDemand: form.value.priceOnDemand,
         currency,
-        images,
+        images: imageUrls,
         video: video.trim() || undefined,
-        stock: availability === 'out_of_stock' ? 0 : Number(stock) || 0,
+        stock: availability === 'out_of_stock' ? 0 : Number(form.value.stock) || 0,
         lowStockThreshold: Number(lowStockThreshold) || 5,
         unit,
         isOnPreOrder: availability === 'pre_order',
         isPromotional,
-        promotionalPrice: isPromotional && promotionalPrice ? Number(promotionalPrice) : undefined,
+        promotionalPrice:
+          isPromotional && promotionalPrice > 0 ? Number(promotionalPrice) : undefined,
         discountPercent: autoDiscount || 0,
-        weight: weight ? Number(weight) : undefined,
+        weight: form.value.weight ? Number(form.value.weight) : undefined,
         dimensions: dimensions.trim() || undefined,
         isPhysical,
-        deliveryFee: deliveryFee ? Number(deliveryFee) : undefined,
+        deliveryFee: form.value.deliveryFee ? Number(form.value.deliveryFee) : undefined,
         isVisibleOnPublicPage,
         isVisibleOnMarketplace,
         isActive,
@@ -170,12 +220,31 @@ export default function NewProductPage() {
           .map((v) => ({
             name: v.name.trim(),
             sku: v.sku.trim() || undefined,
-            price: v.price ? Number(v.price) : Number(price),
+            price: v.price ? Number(v.price) : Number(form.value.price),
             stock: Number(v.stock) || 0,
           }));
       }
 
-      await createProduct.mutateAsync(data);
+      // 2. Création du produit
+      const res = await createProduct.mutateAsync(data);
+      const createdId = res?.data?.data?.id;
+
+      // 3. Épargne Achat : activation sur le produit fraîchement créé
+      if (enableLayaway && createdId) {
+        try {
+          await apiClient.createLayawayOffer({
+            itemType: 'PRODUCT',
+            itemId: createdId,
+            durationDays: Number(layawayDuration) || 90,
+            minInstallment: layawayMinInstallment || 2000,
+          });
+        } catch (layErr) {
+          // L'épargne ne bloque pas la création du produit
+          console.warn('Layaway activation skipped:', layErr);
+        }
+      }
+
+      form.reset();
       router.push('/dashboard/products');
     } catch (err) {
       notifyError(err, 'Erreur', 'Impossible de créer le produit');
@@ -183,25 +252,32 @@ export default function NewProductPage() {
     }
   };
 
-  const isPending = saving || createProduct.isPending;
+  const isPending = saving || uploading || createProduct.isPending;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
       {/* Header */}
       <PageHeader
         title="Nouveau produit"
-        description="Ajoutez un produit à votre catalogue"
+        description="Ajoutez un produit à votre catalogue — photos, prix sur demande, épargne"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Produits', href: '/dashboard/products' },
           { label: 'Nouveau produit' },
         ]}
         actions={
-          <Link href="/dashboard/products">
-            <Button variant="outline" type="button">
-              Annuler
-            </Button>
-          </Link>
+          <>
+            {form.hasDraft && (
+              <span className="hidden sm:flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1.5 rounded-lg">
+                <Sparkles className="h-3.5 w-3.5" /> Brouillon restauré
+              </span>
+            )}
+            <Link href="/dashboard/products">
+              <Button variant="outline" type="button">
+                Annuler
+              </Button>
+            </Link>
+          </>
         }
       />
 
@@ -218,8 +294,8 @@ export default function NewProductPage() {
             <div className="sm:col-span-2">
               <Input
                 label="Nom du produit *"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={form.value.name}
+                onChange={(e) => form.setValue('name', e.target.value)}
                 placeholder="Ex: Tissu Wax Africain"
                 required
               />
@@ -229,8 +305,8 @@ export default function NewProductPage() {
                 Description courte
               </label>
               <input
-                value={shortDescription}
-                onChange={(e) => setShortDescription(e.target.value)}
+                value={form.value.shortDescription}
+                onChange={(e) => form.setValue('shortDescription', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-brand focus:ring-brand/20 outline-none transition-all"
                 placeholder="Brève description (max 150 caractères)"
                 maxLength={150}
@@ -241,8 +317,8 @@ export default function NewProductPage() {
                 Description complète
               </label>
               <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                value={form.value.description}
+                onChange={(e) => form.setValue('description', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:border-brand focus:ring-brand/20 outline-none transition-all resize-none min-h-[100px]"
                 placeholder="Description détaillée du produit..."
                 rows={4}
@@ -267,20 +343,20 @@ export default function NewProductPage() {
             </div>
             <Input
               label="Marque"
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
+              value={form.value.brand}
+              onChange={(e) => form.setValue('brand', e.target.value)}
               placeholder="Ex: Wax Africain"
             />
             <Input
               label="SKU / Référence"
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
+              value={form.value.sku}
+              onChange={(e) => form.setValue('sku', e.target.value)}
               placeholder="Ex: WAX-001"
             />
             <Input
               label="Code-barres"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
+              value={form.value.barcode}
+              onChange={(e) => form.setValue('barcode', e.target.value)}
               placeholder="Ex: 4901234567890"
             />
             <div className="sm:col-span-2">
@@ -306,43 +382,22 @@ export default function NewProductPage() {
           </div>
         </Card>
 
-        {/* B — Médias */}
+        {/* B — Médias : vrai upload, compressé côté client */}
         <Card>
           <div className="flex items-center gap-2 mb-5">
-            <Image className="h-4 w-4 text-brand" />
+            <Package className="h-4 w-4 text-brand" />
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
               Médias
             </h3>
           </div>
           <div className="space-y-4">
-            {/* Image upload zone */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {images.map((img, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square rounded-xl bg-gray-100 dark:bg-gray-700 overflow-hidden group"
-                >
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    🖼️
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
-                    className="absolute top-1 right-1 p-1 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setImages((prev) => [...prev, `img-${Date.now()}`])}
-                className="aspect-square rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-brand hover:text-brand transition-colors"
-              >
-                <Upload className="h-5 w-5" />
-                <span className="text-[10px] font-medium">Ajouter</span>
-              </button>
-            </div>
+            <ImageDropzone
+              label="Photos du produit"
+              images={images}
+              onChange={setImages}
+              maxImages={6}
+              help="Glissez vos photos — elles sont compressées sur votre téléphone avant l'envoi (réalité africaine : pas d'upload de 3 Mo sur du 2G)."
+            />
             <Input
               label="Vidéo produit (URL)"
               value={video}
@@ -360,17 +415,36 @@ export default function NewProductPage() {
               Prix
             </h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              label="Prix normal *"
-              type="number"
-              min={0}
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="5000"
-              required
+
+          {/* Prix sur demande — la réalité africaine : pas toujours un prix affiché */}
+          <label className="flex items-center gap-3 cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              checked={form.value.priceOnDemand}
+              onChange={(e) => form.setValue('priceOnDemand', e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
             />
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Prix sur demande 💬
+              </p>
+              <p className="text-xs text-gray-500">
+                Le client vous contacte pour connaître le prix (idéal pour le sur-mesure, les grosses commandes)
+              </p>
+            </div>
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className={cn(form.value.priceOnDemand && 'opacity-50 pointer-events-none')}>
+              <MoneyInput
+                label="Prix normal"
+                value={form.value.priceOnDemand ? null : form.value.price}
+                onChange={(v) => form.setValue('price', v)}
+                currency={currency}
+                placeholder="5000"
+                required={!form.value.priceOnDemand}
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Devise
@@ -404,12 +478,11 @@ export default function NewProductPage() {
           {isPromotional && (
             <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/20">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Input
+                <MoneyInput
                   label="Prix promotionnel"
-                  type="number"
-                  min={0}
                   value={promotionalPrice}
-                  onChange={(e) => setPromotionalPrice(e.target.value)}
+                  onChange={setPromotionalPrice}
+                  currency={currency}
                   placeholder="4000"
                 />
                 <Input
@@ -434,6 +507,62 @@ export default function NewProductPage() {
           )}
         </Card>
 
+        {/* C2 — Épargne Achat : le client épargne pour ce produit (escrow sécurisé) */}
+        <Card>
+          <div className="flex items-center gap-2 mb-5">
+            <Sparkles className="h-4 w-4 text-brand" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+              Épargne Achat
+            </h3>
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              checked={enableLayaway}
+              onChange={(e) => setEnableLayaway(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
+            />
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Activer l'épargne sur ce produit 🐷
+              </p>
+              <p className="text-xs text-gray-500">
+                Vos clients peuvent épargner par petites cotisations — l'argent est sécurisé en escrow
+                et vous est libéré à l'achat (commission 1%)
+              </p>
+            </div>
+          </label>
+
+          {enableLayaway && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-900/20">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Durée d'épargne
+                </label>
+                <select
+                  value={layawayDuration}
+                  onChange={(e) => setLayawayDuration(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none transition-all"
+                >
+                  <option value="30">30 jours</option>
+                  <option value="60">60 jours</option>
+                  <option value="90">90 jours</option>
+                  <option value="180">6 mois</option>
+                  <option value="365">12 mois</option>
+                </select>
+              </div>
+              <MoneyInput
+                label="Cotisation minimale"
+                value={layawayMinInstallment}
+                onChange={setLayawayMinInstallment}
+                currency={currency}
+                placeholder="2000"
+                help="Montant minimum que le client doit verser à chaque fois"
+              />
+            </div>
+          )}
+        </Card>
+
         {/* D — Stock */}
         <Card>
           <div className="flex items-center gap-2 mb-5">
@@ -447,8 +576,8 @@ export default function NewProductPage() {
               label="Quantité disponible"
               type="number"
               min={0}
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
+              value={form.value.stock}
+              onChange={(e) => form.setValue('stock', Number(e.target.value))}
               placeholder="10"
               disabled={availability === 'out_of_stock'}
             />
@@ -591,7 +720,7 @@ export default function NewProductPage() {
                       type="number"
                       min={0}
                       className="w-full px-3 py-2 text-sm rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none text-right"
-                      placeholder={price || '0'}
+                      placeholder={String(form.value.price) || '0'}
                     />
                   </div>
                   <div className="col-span-2">
@@ -649,13 +778,11 @@ export default function NewProductPage() {
           </div>
           {isPhysical && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Input
+              <MoneyInput
                 label="Poids (kg)"
-                type="number"
-                min={0}
-                step="0.01"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                value={form.value.weight}
+                onChange={(v) => form.setValue('weight', v)}
+                currency="kg"
                 placeholder="0.5"
               />
               <Input
@@ -664,12 +791,11 @@ export default function NewProductPage() {
                 onChange={(e) => setDimensions(e.target.value)}
                 placeholder="Ex: 30x20x10 cm"
               />
-              <Input
+              <MoneyInput
                 label="Frais de livraison"
-                type="number"
-                min={0}
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(e.target.value)}
+                value={form.value.deliveryFee}
+                onChange={(v) => form.setValue('deliveryFee', v)}
+                currency={currency}
                 placeholder="2000"
               />
             </div>
@@ -743,7 +869,7 @@ export default function NewProductPage() {
               label="Titre SEO"
               value={seoTitle}
               onChange={(e) => setSeoTitle(e.target.value)}
-              placeholder={name || 'Titre pour les moteurs de recherche'}
+              placeholder={form.value.name || 'Titre pour les moteurs de recherche'}
               maxLength={200}
             />
             <div>
@@ -765,12 +891,21 @@ export default function NewProductPage() {
 
         {/* Submit */}
         <div className="flex items-center justify-end gap-3 sticky bottom-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-4 -mx-4 -mb-4 rounded-b-2xl border-t border-gray-100 dark:border-gray-800">
+          {uploading && (
+            <span className="flex items-center gap-1.5 text-xs text-brand">
+              <Loader2 className="h-4 w-4 animate-spin" /> Upload des photos…
+            </span>
+          )}
           <Link href="/dashboard/products">
             <Button variant="outline" type="button">
               Annuler
             </Button>
           </Link>
-          <Button type="submit" isLoading={isPending} disabled={!name.trim() || !price}>
+          <Button
+            type="submit"
+            isLoading={isPending}
+            disabled={!form.value.name.trim() || (!form.value.priceOnDemand && !form.value.price)}
+          >
             <Save className="h-4 w-4 mr-1.5" />
             Enregistrer le produit
           </Button>

@@ -566,6 +566,12 @@ export class ApiClient {
   async getDeliveryStats() {
     return this.instance.get<ApiResponse>('/business/delivery/stats');
   }
+  async getDeliverySettings() {
+    return this.instance.get<ApiResponse>('/business/delivery/settings');
+  }
+  async updateDeliverySettings(data: any) {
+    return this.instance.put<ApiResponse>('/business/delivery/settings', data);
+  }
   async getDeliveryZones() {
     return this.instance.get<ApiResponse>('/business/delivery/zones');
   }

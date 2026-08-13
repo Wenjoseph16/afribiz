@@ -568,6 +568,7 @@ export const MODULE_SUB_ITEMS: Record<string, { label: string; href: string; ico
     { label: 'Zones de livraison', href: '/dashboard/deliveries/zones', icon: 'Globe' },
     { label: 'Livreurs', href: '/dashboard/deliveries/drivers', icon: 'User' },
     { label: 'Stats', href: '/dashboard/deliveries/stats', icon: 'BarChart3' },
+    { label: 'Réglages', href: '/dashboard/deliveries/settings', icon: 'Settings' },
   ],
   ['Employés']: [
     { label: 'Rôles', href: '/dashboard/employees/roles', icon: 'Shield' },

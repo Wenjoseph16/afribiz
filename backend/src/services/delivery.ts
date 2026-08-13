@@ -11,6 +11,42 @@ import {
 } from '../events/publishers';
 import { getIO } from './socket';
 
+// ===== RÉGLAGES LIVRAISON / RETRAIT =====
+// Le business décide : livraison ON/OFF, retrait ON/OFF, seuil de livraison offerte.
+// Consommé par le checkout intelligent (POST /api/delivery-info).
+export async function getDeliverySettings(userId: string) {
+  const business = await getBusinessByOwner(userId);
+  const settings = await prisma.businessSettings.findUnique({ where: { businessId: business.id } });
+  return {
+    deliveryEnabled: settings?.deliveryEnabled ?? true,
+    pickupEnabled: settings?.pickupEnabled ?? true,
+    minDeliveryAmount: settings?.minDeliveryAmount ? Number(settings.minDeliveryAmount) : null,
+  };
+}
+
+export async function updateDeliverySettings(userId: string, data: any) {
+  const business = await getBusinessByOwner(userId);
+  const settings = await prisma.businessSettings.upsert({
+    where: { businessId: business.id },
+    create: {
+      businessId: business.id,
+      deliveryEnabled: data.deliveryEnabled !== undefined ? !!data.deliveryEnabled : true,
+      pickupEnabled: data.pickupEnabled !== undefined ? !!data.pickupEnabled : true,
+      minDeliveryAmount: data.minDeliveryAmount ? Number(data.minDeliveryAmount) : null,
+    },
+    update: {
+      deliveryEnabled: data.deliveryEnabled !== undefined ? !!data.deliveryEnabled : undefined,
+      pickupEnabled: data.pickupEnabled !== undefined ? !!data.pickupEnabled : undefined,
+      minDeliveryAmount: data.minDeliveryAmount ? Number(data.minDeliveryAmount) : null,
+    },
+  });
+  return {
+    deliveryEnabled: settings.deliveryEnabled,
+    pickupEnabled: settings.pickupEnabled,
+    minDeliveryAmount: settings.minDeliveryAmount ? Number(settings.minDeliveryAmount) : null,
+  };
+}
+
 // ===== ZONES =====
 export async function listDeliveryZones(userId: string) {
   const business = await getBusinessByOwner(userId);

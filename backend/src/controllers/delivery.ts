@@ -3,6 +3,22 @@ import { AuthenticatedRequest } from '../middlewares/auth';
 import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import * as deliveryService from '../services/delivery';
 
+export const getDeliverySettings = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await deliveryService.getDeliverySettings(req.user.id);
+    res.json({ success: true, data: result });
+  }
+);
+
+export const updateDeliverySettings = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) throw new AppError('Non authentifié', 401);
+    const result = await deliveryService.updateDeliverySettings(req.user.id, req.body);
+    res.json({ success: true, data: result });
+  }
+);
+
 export const listDeliveryZones = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
