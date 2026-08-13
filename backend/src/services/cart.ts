@@ -35,6 +35,32 @@ function generateOrderNumber(): string {
   );
 }
 
+/**
+ * Checkout intelligent : calcule le frais de livraison CÔTÉ SERVEUR depuis la zone
+ * choisie par le client (le client ne peut pas inventer son propre tarif).
+ * Livraison gratuite au-delà du seuil configuré par le business (minDeliveryAmount).
+ */
+async function resolveDeliveryFee(
+  businessId: string | undefined,
+  deliveryType: string,
+  deliveryZoneId: string | undefined,
+  subtotal: number
+): Promise<{ fee: number; zoneName: string | null }> {
+  if (!businessId || deliveryType !== 'DELIVERY' || !deliveryZoneId) {
+    return { fee: 0, zoneName: null };
+  }
+  const zone = await prisma.deliveryZone.findUnique({ where: { id: deliveryZoneId } });
+  if (!zone || zone.businessId !== businessId) {
+    throw new AppError('Zone de livraison invalide pour ce commerce', 400);
+  }
+  let fee = Number(zone.fee);
+  const settings = await prisma.businessSettings.findUnique({ where: { businessId } });
+  if (settings?.minDeliveryAmount && subtotal >= Number(settings.minDeliveryAmount)) {
+    fee = 0; // livraison offerte au-delà du seuil
+  }
+  return { fee, zoneName: zone.name };
+}
+
 const cartInclude = {
   items: {
     include: {
@@ -241,7 +267,10 @@ export async function guestCheckout(data: {
   email: string;
   contactName: string;
   contactPhone?: string;
+  type?: string;
   deliveryAddress?: string;
+  deliveryZoneId?: string;
+  scheduledAt?: string;
   deliveryLat?: number;
   deliveryLng?: number;
   notes?: string;
@@ -262,7 +291,6 @@ export async function guestCheckout(data: {
     (sum: number, item) => sum + item.unitPrice * item.quantity,
     0
   );
-  const total = subtotal;
   const orderNumber = generateOrderNumber();
 
   let businessId: string | undefined;
@@ -289,6 +317,12 @@ export async function guestCheckout(data: {
     }
   }
 
+  // Frais de livraison calculé côté serveur depuis la zone choisie (impossible de tricher)
+  const { fee: deliveryFee } = businessId
+    ? await resolveDeliveryFee(businessId, data.type || 'DELIVERY', data.deliveryZoneId, subtotal)
+    : { fee: 0 };
+  const total = subtotal + deliveryFee;
+
   const order = await prisma.$transaction(async (tx) => {
     for (const item of data.items) {
       if (item.productId) {
@@ -304,13 +338,16 @@ export async function guestCheckout(data: {
         orderNumber,
         buyerId: null,
         businessId,
-        type: 'DELIVERY',
+        type: (data.type as any) || 'DELIVERY',
         source: 'WEB_SITE',
         status: 'PENDING',
         guestEmail: data.email,
         contactName: data.contactName || null,
         contactPhone: data.contactPhone || null,
         subtotal,
+        deliveryFee,
+        deliveryZoneId: data.deliveryZoneId || null,
+        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         totalAmount: total,
         currency: 'FCFA',
         deliveryAddress: data.deliveryAddress || null,
@@ -372,6 +409,8 @@ export async function checkout(
   data: {
     type: string;
     deliveryAddress?: string;
+    deliveryZoneId?: string;
+    scheduledAt?: string;
     deliveryLat?: number;
     deliveryLng?: number;
     contactPhone?: string;
@@ -449,7 +488,11 @@ export async function checkout(
     }
   }
 
-  const total = Math.max(0, subtotal - discountAmount);
+  // Frais de livraison calculé côté serveur depuis la zone (le client ne fixe pas le tarif)
+  const { fee: deliveryFee } = businessId
+    ? await resolveDeliveryFee(businessId, data.type, data.deliveryZoneId, subtotal)
+    : { fee: 0 };
+  const total = Math.max(0, subtotal - discountAmount) + deliveryFee;
   const orderNumber = generateOrderNumber();
 
   const order = await prisma.$transaction(async (tx) => {
@@ -475,6 +518,9 @@ export async function checkout(
         contactPhone: data.contactPhone || null,
         subtotal,
         discountAmount,
+        deliveryFee,
+        deliveryZoneId: data.deliveryZoneId || null,
+        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         totalAmount: total,
         currency,
         deliveryAddress: data.deliveryAddress || null,

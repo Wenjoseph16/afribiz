@@ -23,6 +23,8 @@ export const applyCouponSchema = z.object({
 export const checkoutSchema = z.object({
   type: z.enum(['DELIVERY', 'PICKUP', 'DINE_IN', 'TAKEAWAY']).default('DELIVERY'),
   deliveryAddress: z.string().optional(),
+  deliveryZoneId: z.string().optional(),
+  scheduledAt: z.string().optional(),
   deliveryLat: z.number().optional(),
   deliveryLng: z.number().optional(),
   contactPhone: z.string().optional(),

@@ -712,6 +712,10 @@ export class ApiClient {
   async checkout(data: Record<string, unknown>) {
     return this.instance.post<ApiResponse>('/cart/checkout', data);
   }
+  /** Checkout intelligent : config livraison/retrait + zones du business du panier */
+  async getDeliveryInfo(productIds: string[], serviceIds?: string[]) {
+    return this.instance.post<ApiResponse>('/delivery-info', { productIds, serviceIds });
+  }
   async applyCoupon(code: string) {
     return this.instance.post<ApiResponse>('/cart/coupon', { code });
   }
