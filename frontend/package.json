@@ -10,7 +10,7 @@
     "start": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next start",
     "lint": "next lint",
     "format": "prettier --write src/",
-    "type-check": "cross-env NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit",
+    "type-check": "cross-env NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit --incremental",
     "test": "jest",
     "test:unit": "jest",
     "test:coverage": "jest --coverage"

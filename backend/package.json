@@ -7,6 +7,7 @@
   "scripts": {
     "predev": "prisma generate",
     "dev": "tsx watch src/server.ts",
+    "dev:debug": "tsx watch --inspect=9229 src/server.ts",
     "vercel-build": "prisma generate && tsc -p tsconfig.vercel.json",
     "build": "tsc",
     "start": "node dist/server.js",
@@ -17,7 +18,7 @@
     "test:integration": "jest --config jest.integration.config.ts",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "type-check": "cross-env NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit",
+    "type-check": "cross-env NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit --incremental",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seedRealistic.ts",
     "db:seed:plans": "tsx scripts/seed-platform-plans.ts",
