@@ -38,6 +38,14 @@ describe('growthEngineService', () => {
       (mockPrisma.business.findUnique as jest.Mock).mockResolvedValue(mockBusiness);
       (mockPrisma.conversation.count as jest.Mock).mockResolvedValue(0);
       (mockPrisma.growthBrief.create as jest.Mock).mockResolvedValue(mockBrief);
+      // Pilier 3 : copilote quotidien
+      (mockPrisma.order.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { totalAmount: null },
+        _count: 0,
+      });
+      (mockPrisma.debt.findMany as jest.Mock).mockResolvedValue([]);
+      (mockPrisma.product.findMany as jest.Mock).mockResolvedValue([]);
+      (mockPrisma.delivery.findMany as jest.Mock).mockResolvedValue([]);
     }
 
     test('generates morning brief with metrics', async () => {

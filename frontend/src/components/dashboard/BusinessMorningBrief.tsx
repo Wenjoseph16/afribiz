@@ -13,6 +13,10 @@ import {
   Lightbulb,
   ArrowRight,
   Sparkles,
+  TrendingUp,
+  HandCoins,
+  Truck,
+  Package,
 } from 'lucide-react';
 import { apiClient } from '@/services/apiClient';
 import { Card } from '@/components/ui/Card';
@@ -34,6 +38,16 @@ interface GrowthBrief {
     unreadMessages: number;
     eventsToday: number;
     activePromotions: number;
+    // Pilier 3 — copilote quotidien
+    revenueYesterday: number;
+    ordersYesterday: number;
+    debtorsToday: number;
+    debtsToCollectToday: number;
+    debtorNames: string[];
+    lowStockCount: number;
+    lowStockNames: string[];
+    deliveriesToShip: number;
+    deliveryZones: string[];
   };
   advice: {
     type: string;
@@ -115,22 +129,104 @@ export default function BusinessMorningBrief() {
       padding="lg"
       className="bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-amber-950/20 dark:via-gray-900 dark:to-orange-950/20 border-amber-100 dark:border-amber-900/40"
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
-          <Sunrise className="h-5 w-5 text-white" />
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+            <Sunrise className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Brief du matin</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {brief.date
+                ? new Date(brief.date).toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                  })
+                : "Votre journée en un coup d'œil"}
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Brief du matin</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {brief.date
-              ? new Date(brief.date).toLocaleDateString('fr-FR', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                })
-              : "Votre journée en un coup d'œil"}
+
+        {/* CA d'hier — le chiffre du matin */}
+        <div className="shrink-0 text-right rounded-xl border border-amber-200 dark:border-amber-800/60 bg-white/70 dark:bg-gray-800/60 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+            CA d'hier
+          </p>
+          <p className="flex items-center justify-end gap-1 text-base font-extrabold text-gray-900 dark:text-gray-100">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+            {(m.revenueYesterday ?? 0).toLocaleString('fr-FR')} FCFA
           </p>
         </div>
+      </div>
+
+      {/* Priorités du jour — le copilote agit */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+        <Link
+          href="/dashboard/debts-payments"
+          className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white/70 dark:bg-gray-800/50 hover:border-amber-400/60 hover:shadow-sm transition-all"
+        >
+          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+            <HandCoins className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+              À encaisser
+            </p>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              {m.debtorsToday ?? 0} client{m.debtorsToday > 1 ? 's' : ''}
+            </p>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+              {(m.debtsToCollectToday ?? 0).toLocaleString('fr-FR')} FCFA
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/deliveries"
+          className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white/70 dark:bg-gray-800/50 hover:border-blue-400/60 hover:shadow-sm transition-all"
+        >
+          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+            <Truck className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+              À livrer
+            </p>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              {m.deliveriesToShip ?? 0} commande{m.deliveriesToShip > 1 ? 's' : ''}
+            </p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              {m.deliveryZones && m.deliveryZones.length > 0
+                ? m.deliveryZones.join(', ')
+                : m.deliveriesToShip
+                  ? 'Préparation / route'
+                  : 'Aucune livraison en cours'}
+            </p>
+          </div>
+        </Link>
+
+        <Link
+          href="/dashboard/products/stock-alerts"
+          className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white/70 dark:bg-gray-800/50 hover:border-rose-400/60 hover:shadow-sm transition-all"
+        >
+          <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+            <Package className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+              Stock faible
+            </p>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              {m.lowStockCount ?? 0} produit{m.lowStockCount > 1 ? 's' : ''}
+            </p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              {m.lowStockNames && m.lowStockNames.length > 0
+                ? m.lowStockNames.join(', ')
+                : 'Tout est approvisionné'}
+            </p>
+          </div>
+        </Link>
       </div>
 
       {/* Metrics grid */}

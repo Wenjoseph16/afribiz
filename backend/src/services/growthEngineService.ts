@@ -143,13 +143,109 @@ export async function generateMorningBrief(businessId: string) {
     }
   })();
 
-  const advice = generateAdvice({ orders, bookings, promotions, offerFlashes, satisfaction, afriScore });
+  // ── Pilier 3 : le copilote du quotidien ──
+  // CA d'hier + clients à payer aujourd'hui + stock faible + commandes à livrer.
+  const [yesterdayAgg, debtorsDue, lowStockProducts, deliveriesToShip] = await Promise.all([
+    // 1. CA d'hier (total encaissé sur les commandes de la veille)
+    prisma.order.aggregate({
+      where: {
+        businessId,
+        deletedAt: null,
+        createdAt: { gte: YESTERDAY_START(), lte: YESTERDAY_END() },
+      },
+      _sum: { totalAmount: true },
+      _count: true,
+    }),
+    // 2. Clients qui doivent payer aujourd'hui (dettes échues ou dues au plus tard ce soir)
+    prisma.debt.findMany({
+      where: {
+        businessId,
+        deletedAt: null,
+        status: { in: ['ACTIVE', 'PARTIALLY_PAID'] },
+        dueDate: { lte: TODAY_END() },
+      },
+      select: {
+        id: true,
+        remainingAmount: true,
+        dueDate: true,
+        buyer: { select: { firstName: true, lastName: true, businessName: true } },
+      },
+      orderBy: { dueDate: 'asc' },
+      take: 15,
+    }),
+    // 3. Produits en stock faible (seuil par produit, défaut 5)
+    prisma.product.findMany({
+      where: {
+        businessId,
+        deletedAt: null,
+        isActive: true,
+        OR: [{ stock: { lte: 5 } }, { lowStockThreshold: { gt: 0 } }],
+      },
+      select: { name: true, stock: true, lowStockThreshold: true },
+      orderBy: { stock: 'asc' },
+      take: 20,
+    }),
+    // 4. Commandes à livrer (livraisons en cours de préparation/affectation/route)
+    prisma.delivery.findMany({
+      where: { businessId, status: { in: ['PREPARING', 'ASSIGNED', 'IN_TRANSIT'] } },
+      select: {
+        id: true,
+        deliveryNumber: true,
+        status: true,
+        zoneName: true,
+        recipientName: true,
+        address: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    }),
+  ]);
+
+  const revenueYesterday = Number(yesterdayAgg._sum.totalAmount || 0);
+  const ordersYesterday = yesterdayAgg._count || 0;
+
+  const lowStockFiltered = lowStockProducts.filter(
+    (p: any) => p.stock <= (p.lowStockThreshold ?? 5)
+  );
+  const lowStockCount = lowStockFiltered.length;
+  const lowStockNames = lowStockFiltered.slice(0, 5).map((p: any) => p.name);
+
+  const debtsToCollectToday = debtorsDue.reduce((s, d) => s + Number(d.remainingAmount), 0);
+  const debtorNames = debtorsDue
+    .slice(0, 5)
+    .map(
+      (d: any) =>
+        d.buyer?.businessName ||
+        [d.buyer?.firstName, d.buyer?.lastName].filter(Boolean).join(' ') ||
+        'Client'
+    );
+
+  const deliveryZones = [
+    ...new Set(deliveriesToShip.map((d: any) => d.zoneName).filter(Boolean)),
+  ] as string[];
+
+  const advice = generateAdvice({
+    orders,
+    bookings,
+    promotions,
+    offerFlashes,
+    satisfaction,
+    afriScore,
+    revenueYesterday,
+    ordersYesterday,
+    debtorsToday: debtorsDue.length,
+    debtsToCollectToday,
+    lowStockCount,
+    lowStockNames,
+    deliveriesToShip: deliveriesToShip.length,
+  });
 
   const quickActions = generateQuickActions(
     orders.length,
     bookings.length,
     promotions.length,
-    offerFlashes.length
+    offerFlashes.length,
+    { deliveriesToShip: deliveriesToShip.length, debtorsToday: debtorsDue.length, lowStockCount }
   );
 
   const metrics = {
@@ -164,6 +260,16 @@ export async function generateMorningBrief(businessId: string) {
     unreadMessages: unreadConversations,
     eventsToday: events.length,
     activePromotions: promotions.length + offerFlashes.length,
+    // Pilier 3
+    revenueYesterday,
+    ordersYesterday,
+    debtorsToday: debtorsDue.length,
+    debtsToCollectToday,
+    debtorNames,
+    lowStockCount,
+    lowStockNames,
+    deliveriesToShip: deliveriesToShip.length,
+    deliveryZones,
   };
 
   const brief = await prisma.growthBrief.create({
@@ -431,13 +537,21 @@ export async function generateAllEveningSummaries() {
 // ADVISORS & GENERATORS
 // ──────────────────────────────────────────────
 
-function generateAdvice({    orders,
-    bookings,
-    promotions,
-    offerFlashes,
-    satisfaction,
-    afriScore,
-  }: any): any[] {
+function generateAdvice({
+  orders,
+  bookings,
+  promotions,
+  offerFlashes,
+  satisfaction,
+  afriScore,
+  revenueYesterday,
+  ordersYesterday,
+  debtorsToday,
+  debtsToCollectToday,
+  lowStockCount,
+  lowStockNames,
+  deliveriesToShip,
+}: any): any[] {
   const advice: any[] = [];
 
   if (orders.length > 5) {
@@ -551,6 +665,60 @@ function generateAdvice({    orders,
     }
   }
 
+  // ── Pilier 3 : le copilote du quotidien ──
+
+  // CA d'hier : signal de tendance (bonne nouvelle ou appel à l'action)
+  if (revenueYesterday === 0 && ordersYesterday === 0) {
+    advice.push({
+      type: 'revenue-flat',
+      priority: 'medium',
+      message:
+        "Aucune vente hier. Relancez vos clients fidèles ou lancez une petite promotion pour redémarrer la journée.",
+      action: 'Créer une promotion',
+      link: '/dashboard/promotions/new',
+    });
+  } else if (revenueYesterday > 0) {
+    advice.push({
+      type: 'revenue-yesterday',
+      priority: 'low',
+      message: `CA d'hier : ${revenueYesterday.toLocaleString('fr-FR')} FCFA (${ordersYesterday} commande(s)). ${ordersYesterday > 0 ? "Gardez le même rythme aujourd'hui." : ''}`,
+    });
+  }
+
+  // Clients à payer aujourd'hui : l'argent à encaisser est le plus urgent
+  if (debtorsToday > 0) {
+    advice.push({
+      type: 'debtors-due',
+      priority: 'high',
+      message: `${debtorsToday} client(s) doivent vous régler ${debtsToCollectToday.toLocaleString('fr-FR')} FCFA aujourd'hui. Envoyez les rappels avant la fermeture.`,
+      action: 'Encaisser les créances',
+      link: '/dashboard/debts-payments',
+    });
+  }
+
+  // Commandes à livrer aujourd'hui
+  if (deliveriesToShip > 0) {
+    advice.push({
+      type: 'deliveries',
+      priority: 'high',
+      message: `${deliveriesToShip} commande(s) à livrer (${deliveriesToShip > 1 ? 'préparation, affectation ou route' : 'en cours'}). Organisez vos livreurs dès maintenant.`,
+      action: 'Voir les livraisons',
+      link: '/dashboard/deliveries',
+    });
+  }
+
+  // Stock faible : évitez la rupture avant le rush
+  if (lowStockCount > 0) {
+    const names = (lowStockNames || []).slice(0, 3).join(', ');
+    advice.push({
+      type: 'low-stock',
+      priority: 'medium',
+      message: `${lowStockCount} produit(s) en stock faible${names ? ` (${names}${lowStockCount > 3 ? ', …' : ''})` : ''}. Réapprovisionnez avant la rupture.`,
+      action: 'Voir le stock',
+      link: '/dashboard/products/stock-alerts',
+    });
+  }
+
   return advice;
 }
 
@@ -558,9 +726,29 @@ function generateQuickActions(
   ordersCount: number,
   bookingsCount: number,
   _promosCount: number,
-  _flashCount: number
+  _flashCount: number,
+  daily?: { deliveriesToShip: number; debtorsToday: number; lowStockCount: number }
 ) {
   const actions: any[] = [];
+
+  // Pilier 3 : les actions du jour passent en premier
+  if (daily && daily.deliveriesToShip > 0) {
+    actions.push({ label: 'Livrer les commandes', icon: 'truck', link: '/dashboard/deliveries' });
+  }
+  if (daily && daily.debtorsToday > 0) {
+    actions.push({
+      label: 'Encaisser les créances',
+      icon: 'wallet',
+      link: '/dashboard/debts-payments',
+    });
+  }
+  if (daily && daily.lowStockCount > 0) {
+    actions.push({
+      label: 'Réapprovisionner',
+      icon: 'package',
+      link: '/dashboard/products/stock-alerts',
+    });
+  }
 
   actions.push({
     label: 'Créer une promotion',
@@ -575,7 +763,7 @@ function generateQuickActions(
 
   actions.push({ label: 'Messages non lus', icon: 'message', link: '/dashboard/messages' });
 
-  return actions.slice(0, 4);
+  return actions.slice(0, 6);
 }
 
 function generateImprovementAxes({
