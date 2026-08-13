@@ -4,8 +4,92 @@ import { catchAsyncErrors } from '../middlewares/errorHandler';
 import * as businessService from '../services/business';
 import { getPublicPlatformPlans } from '../services/subscriptions';
 import { prisma } from '../lib/db';
+import { computePrice, PriceItemInput } from '../services/priceEngine';
 
 const router = Router();
+
+// ============================================
+// POST /api/catalog/attachments
+// Résolveur unifié : pour une liste d'articles, retourne en UN appel les
+// badges, le prix effectif (calculé par le PriceEngine côté serveur), les
+// remises et les boutons à afficher. Public — marketplace, fiche produit,
+// page publique, mini-site WhatsApp et contenu shoppable l'utilisent.
+// ============================================
+router.post(
+  '/catalog/attachments',
+  catchAsyncErrors(async (req: Request, res: Response) => {
+    const { items } = (req.body || {}) as { items?: PriceItemInput[] };
+    if (!items || items.length === 0) {
+      res.json(successResponse({ items: {} }));
+      return;
+    }
+    if (items.length > 100) {
+      res.status(400).json(successResponse(null, 'Maximum 100 articles par appel'));
+      return;
+    }
+
+    // Résoudre le business depuis le premier article (le panier/marketplace est mono-business)
+    let businessId: string | undefined;
+    for (const it of items) {
+      if (it.itemType === 'PRODUCT') {
+        const p = await prisma.product.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        if (p?.businessId) {
+          businessId = p.businessId;
+          break;
+        }
+      }
+      if (it.itemType === 'SERVICE') {
+        const s = await prisma.service.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        if (s?.businessId) {
+          businessId = s.businessId;
+          break;
+        }
+      }
+      if (it.itemType === 'ROOM') {
+        const r = await prisma.room.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        if (r?.businessId) {
+          businessId = r.businessId;
+          break;
+        }
+      }
+    }
+    if (!businessId) {
+      res.json(successResponse({ items: {} }));
+      return;
+    }
+
+    const result: Record<string, any> = {};
+    for (const it of items) {
+      try {
+        const price = await computePrice(businessId, it);
+        result[`${it.itemType}:${it.itemId}`] = {
+          itemType: price.itemType,
+          itemId: price.itemId,
+          basePrice: price.basePrice,
+          unitPrice: price.unitPrice,
+          currency: price.currency,
+          discountAmount: price.discountAmount,
+          breakdown: price.breakdown,
+          available: price.available,
+          reason: price.reason ?? null,
+          badges: price.badges,
+          layawayOfferId: price.layawayOfferId ?? null,
+          groupBuyId: price.groupBuyId ?? null,
+          promotional: price.promotional,
+        };
+      } catch (err) {
+        result[`${it.itemType}:${it.itemId}`] = {
+          itemType: it.itemType,
+          itemId: it.itemId,
+          error: (err as Error).message,
+          available: false,
+        };
+      }
+    }
+
+    res.json(successResponse({ items: result }));
+  })
+);
 
 // ============================================
 // POST /api/public/delivery-info

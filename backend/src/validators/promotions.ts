@@ -1,7 +1,19 @@
 import { z } from 'zod';
 
 const promoTypes = ['PERCENTAGE', 'FIXED', 'FREE_SHIPPING', 'BUY_X_GET_Y', 'LOYALTY'] as const;
-const targetTypes = ['ALL', 'PRODUCTS', 'MENU_ITEMS', 'CATEGORIES', 'SERVICES'] as const;
+// Aligné sur l'enum Prisma PromotionTargetType (Chantier 2 — socle de rattachement) :
+// chaque type de catalogue est ciblable, y compris TRAINING et RENTAL.
+const targetTypes = [
+  'ALL',
+  'PRODUCT',
+  'SERVICE',
+  'MENU_ITEM',
+  'ROOM',
+  'EVENT',
+  'DELIVERY',
+  'TRAINING',
+  'RENTAL',
+] as const;
 const discountTypes = ['PERCENTAGE', 'FIXED'] as const;
 const campaignChannels = ['WHATSAPP', 'SMS', 'EMAIL', 'PUSH', 'SOCIAL'] as const;
 const audienceTypes = ['ALL', 'NEW_CLIENTS', 'VIP', 'LOYAL', 'INACTIVE'] as const;

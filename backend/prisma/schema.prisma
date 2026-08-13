@@ -8544,3 +8544,28 @@ model SatisfactionSurveyResponse {
   @@index([orderId])
   @@index([score])
 }
+
+// ============================================
+// CATALOGUE — RATTACHEMENT UNIFIÉ (Chantier 2)
+// ============================================
+
+model CatalogAttachment {
+  id         String   @id @default(uuid())
+  businessId String
+  itemType   String   // PRODUCT | SERVICE | MENU_ITEM | ROOM | RENTAL | EVENT | TRAINING
+  itemId     String
+  sourceType String   // DISCOUNT_TIER | NEGOTIATION | CUSTOM_BADGE | WHATSAPP_TEMPLATE | STORY | SHORT | LIVE | ...
+  sourceId   String?  // id du mécanisme si rattaché à une entité existante
+  scopeType  String   @default("ITEM") // ALL | CATEGORY | ITEM
+  categoryId String?
+  config     Json?    @default("{}")
+  isActive   Boolean  @default(true)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([businessId, itemType, itemId, isActive])
+  @@index([sourceType, sourceId])
+  @@index([scopeType, categoryId])
+}

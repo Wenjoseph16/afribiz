@@ -76,6 +76,21 @@ export async function getPromotion(ownerId: string, promoId: string) {
   return promo;
 }
 
+// Mapping des anciennes valeurs frontend vers l'enum Prisma (Chantier 2) :
+// l'UI utilisait autrefois 'PRODUCTS'/'MENU_ITEMS'/'SERVICES'/'CATEGORIES' —
+// on normalise vers l'enum réel pour ne jamais casser les données existantes.
+const LEGACY_TARGET_MAP: Record<string, string> = {
+  PRODUCTS: 'PRODUCT',
+  SERVICES: 'SERVICE',
+  MENU_ITEMS: 'MENU_ITEM',
+  CATEGORIES: 'CATEGORY',
+};
+
+export function normalizeTargetType(targetType?: string): string {
+  if (!targetType) return 'ALL';
+  return LEGACY_TARGET_MAP[targetType] || targetType;
+}
+
 export async function createPromotion(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
   const promo = await prisma.promotion.create({
@@ -86,7 +101,7 @@ export async function createPromotion(ownerId: string, data: any) {
       promotionType: data.promotionType || 'PERCENTAGE',
       discountValue: data.discountValue,
       code: data.code || generateCode('PROMO'),
-      targetType: data.targetType || 'ALL',
+      targetType: normalizeTargetType(data.targetType) as any,
       targetIds: data.targetIds || [],
       minOrderAmount: data.minOrderAmount || null,
       maxUsageCount: data.maxUsageCount || null,

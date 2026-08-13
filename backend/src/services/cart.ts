@@ -22,6 +22,8 @@ import {
 import { getEscrowCommissionRate } from './monetizationConfig';
 import { syncClientFromOrder, recalculateAllDynamicSegments } from './crm';
 import { logActivity } from './customer360';
+import { computePrice } from './priceEngine';
+import { logger } from '../lib/logger';
 
 function generateOrderNumber(): string {
   const d = new Date();
@@ -287,10 +289,6 @@ export async function guestCheckout(data: {
   if (!data.email) throw new AppError('Email requis pour la commande invité', 400);
   if (!data.items || data.items.length === 0) throw new AppError('Votre panier est vide', 400);
 
-  const subtotal = data.items.reduce(
-    (sum: number, item) => sum + item.unitPrice * item.quantity,
-    0
-  );
   const orderNumber = generateOrderNumber();
 
   let businessId: string | undefined;
@@ -317,18 +315,64 @@ export async function guestCheckout(data: {
     }
   }
 
-  // Frais de livraison calculé côté serveur depuis la zone choisie (impossible de tricher)
-  const { fee: deliveryFee } = businessId
-    ? await resolveDeliveryFee(businessId, data.type || 'DELIVERY', data.deliveryZoneId, subtotal)
-    : { fee: 0 };
+  // ── PRICE ENGINE : chaque ligne est recalculée côté serveur ──
+  // Le client ne peut PAS choisir son prix : le unitPrice envoyé est ignoré
+  // pour les articles du catalogue, et le moteur applique flash/groupé/tier/promo.
+  // (Les commandes invité viennent toujours du site : tous les items ont un lien catalogue.)
+  if (!businessId) throw new AppError('Aucun commerce dans votre panier', 400);
+
+  const pricedLines: Array<{
+    productId?: string;
+    serviceId?: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    image?: string;
+    discountAmount: number;
+  }> = [];
+  let computedSubtotal = 0;
+  for (const item of data.items) {
+    const itemType = item.productId ? 'PRODUCT' : 'SERVICE';
+    const itemId = item.productId || item.serviceId!;
+    const price = await computePrice(businessId, {
+      itemType,
+      itemId,
+      quantity: item.quantity,
+      clientPrice: Number(item.unitPrice) || 0,
+    });
+    if (!price.available) {
+      throw new AppError(`${price.name || item.name || 'Article'}: ${price.reason || 'indisponible'}`, 400);
+    }
+    pricedLines.push({
+      productId: item.productId,
+      serviceId: item.serviceId,
+      name: price.name || item.name || 'Article',
+      quantity: item.quantity,
+      unitPrice: price.unitPrice,
+      image: item.image,
+      discountAmount: price.discountAmount,
+    });
+    computedSubtotal += price.unitPrice * item.quantity;
+  }
+  const subtotal = computedSubtotal;
+  // Remise totale = somme des remises moteur par ligne (tracée sur la commande)
+  const discountAmount = pricedLines.reduce((s, l) => s + (l.discountAmount || 0), 0);
+
+  // Frais de livraison calculé côté serveur depuis la zone (impossible de tricher)
+  const { fee: deliveryFee } = await resolveDeliveryFee(
+    businessId,
+    data.type || 'DELIVERY',
+    data.deliveryZoneId,
+    subtotal
+  );
   const total = subtotal + deliveryFee;
 
   const order = await prisma.$transaction(async (tx) => {
-    for (const item of data.items) {
-      if (item.productId) {
+    for (const line of pricedLines) {
+      if (line.productId) {
         await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
+          where: { id: line.productId },
+          data: { stock: { decrement: line.quantity } },
         });
       }
     }
@@ -340,12 +384,12 @@ export async function guestCheckout(data: {
         businessId,
         type: (data.type as any) || 'DELIVERY',
         source: 'WEB_SITE',
-        status: 'PENDING',
-        guestEmail: data.email,
-        contactName: data.contactName || null,
-        contactPhone: data.contactPhone || null,
-        subtotal,
-        deliveryFee,
+        status: 'PENDING',          guestEmail: data.email,
+          contactName: data.contactName || null,
+          contactPhone: data.contactPhone || null,
+          subtotal,
+          discountAmount: discountAmount || null,
+          deliveryFee,
         deliveryZoneId: data.deliveryZoneId || null,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         totalAmount: total,
@@ -353,26 +397,25 @@ export async function guestCheckout(data: {
         deliveryAddress: data.deliveryAddress || null,
         deliveryLat: data.deliveryLat || null,
         deliveryLng: data.deliveryLng || null,
-        notes: data.notes || null,
-        items: {
-          create: data.items.map((item) => ({
-            productId: item.productId,
-            serviceId: item.serviceId,
-            name: item.name,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.unitPrice * item.quantity,
-          })),
+        notes: data.notes || null,          items: {
+            create: pricedLines.map((line) => ({
+              productId: line.productId || null,
+              serviceId: line.serviceId || null,
+              name: line.name,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              total: line.unitPrice * line.quantity,
+            })),
+          },
         },
-      },
-      include: {
-        items: true,
-        business: { select: { id: true, name: true } },
-      },
-    });
+        include: {
+          items: true,
+          business: { select: { id: true, name: true } },
+        },
+      });
 
-    return created;
-  });
+      return created;
+    });
 
   // Notifier le business : nouvelle commande invité (temps réel + notification propriétaire)
   if (businessId) {
@@ -422,7 +465,6 @@ export async function checkout(
   const cart = await getOrCreateCart(userId);
   if (cart.items.length === 0) throw new AppError('Votre panier est vide', 400);
 
-  const subtotal = cart.items.reduce((sum: number, item: any) => sum + Number(item.total), 0);
   const currency = 'FCFA';
 
   // Résoudre le business du panier AVANT le calcul : la remise dépend du commerce
@@ -451,14 +493,80 @@ export async function checkout(
     }
   }
 
-  // ── Calcul RÉEL de la remise (coupon validé OU promo auto-appliquée) ──
-  let discountAmount = 0;
+  if (!businessId) throw new AppError('Aucun commerce dans votre panier', 400);
+
+  // ── PRICE ENGINE : chaque ligne du panier est RECALCULÉE côté serveur ──
+  // Le prix stocké dans le panier au moment de l'ajout peut être périmé (promo
+  // expirée, flash terminé, stock épuisé). Ici on reprend la vérité du catalogue
+  // + les mécanismes actifs. Le client ne peut pas tricher sur les prix.
+  const pricedLines: Array<{
+    productId?: string | null;
+    variantId?: string | null;
+    serviceId?: string | null;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    discountAmount: number;
+    notes?: string | null;
+    priceEngine: any;
+  }> = [];
+  let subtotal = 0;
+  for (const item of cart.items as any[]) {
+    if (!item.productId && !item.serviceId) {
+      // Ligne libre (montant saisi au POS / service sur-mesure) : prix du panier conservé
+      pricedLines.push({
+        productId: item.productId,
+        variantId: item.variantId,
+        serviceId: item.serviceId,
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice) || 0,
+        discountAmount: 0,
+        notes: item.notes,
+        priceEngine: null,
+      });
+      subtotal += (Number(item.unitPrice) || 0) * item.quantity;
+      continue;
+    }
+    const itemType = item.productId ? 'PRODUCT' : 'SERVICE';
+    const itemId = item.productId || item.serviceId;
+    const price = await computePrice(businessId, {
+      itemType,
+      itemId,
+      quantity: item.quantity,
+      clientPrice: Number(item.unitPrice) || 0,
+    });
+    if (!price.available) {
+      throw new AppError(`${item.name || 'Article'}: ${price.reason || 'indisponible'}`, 400);
+    }
+    pricedLines.push({
+      productId: item.productId,
+      variantId: item.variantId,
+      serviceId: item.serviceId,
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: price.unitPrice,
+      discountAmount: price.discountAmount,
+      notes: item.notes,
+      priceEngine: price,
+    });
+    subtotal += price.unitPrice * item.quantity;
+  }
+
+  // ── Remise totale : remises du PriceEngine (par ligne) + coupon ──
+  // ATTENTION aux doubles comptes : le subtotal est DÉJÀ réduit par le moteur
+  // (chaque ligne porte son unitPrice recalculé). Le total facturé ne soustrait
+  // donc QUE le coupon par-dessus. Le discountAmount global de la commande = somme
+  // des remises par ligne + coupon — tracé pour le boss (qui a accordé quoi).
+  const engineDiscounts = pricedLines.reduce((s, l) => s + (l.discountAmount || 0), 0);
+  let couponDiscount = 0;
+  let discountAmount = engineDiscounts;
   let promoNote = '';
   if (cart.coupon) {
-    if (!businessId) throw new AppError('Aucun commerce dans votre panier', 400);
     // Re-validation au moment du checkout (le coupon a pu expirer / être épuisé)
     const coupon = await findValidCoupon(cart.coupon.code, businessId, subtotal, userId);
-    discountAmount = computeCouponDiscount(coupon, subtotal);
+    couponDiscount = computeCouponDiscount(coupon, subtotal);
+    discountAmount = engineDiscounts + couponDiscount;
     await prisma.coupon.update({
       where: { id: coupon.id },
       data: { useCount: { increment: 1 } },
@@ -466,42 +574,31 @@ export async function checkout(
     await logPromotionApplied(businessId, {
       promotionId: coupon.promotionId,
       couponId: coupon.id,
-      description: `Coupon ${coupon.code} appliqué au checkout (${discountAmount} FCFA)`,
-      metadata: { subtotal, discountAmount },
+      description: `Coupon ${coupon.code} appliqué au checkout (${couponDiscount} FCFA)`,
+      metadata: { subtotal, discountAmount: couponDiscount },
     });
-    promoNote = `Promo : ${coupon.code} (-${discountAmount} FCFA)`;
-  } else if (businessId) {
-    // Promotion créée par le business avec autoApply → elle s'applique réellement
-    const auto = await getAutoApplyDiscount(businessId, cart.items, subtotal);
-    if (auto) {
-      discountAmount = auto.discount;
-      await prisma.promotion.update({
-        where: { id: auto.promotion.id },
-        data: { usageCount: { increment: 1 } },
-      });
-      await logPromotionApplied(businessId, {
-        promotionId: auto.promotion.id,
-        description: `Promo auto « ${auto.promotion.title} » appliquée au checkout (${discountAmount} FCFA)`,
-        metadata: { subtotal, discountAmount },
-      });
-      promoNote = `Promo : ${auto.promotion.title} (-${discountAmount} FCFA)`;
-    }
+    promoNote = `Promo : ${coupon.code} (-${couponDiscount} FCFA)`;
+  } else if (engineDiscounts > 0) {
+    promoNote = `Remises automatiques (${engineDiscounts} FCFA)`;
   }
 
   // Frais de livraison calculé côté serveur depuis la zone (le client ne fixe pas le tarif)
-  const { fee: deliveryFee } = businessId
-    ? await resolveDeliveryFee(businessId, data.type, data.deliveryZoneId, subtotal)
-    : { fee: 0 };
-  const total = Math.max(0, subtotal - discountAmount) + deliveryFee;
+  const { fee: deliveryFee } = await resolveDeliveryFee(
+    businessId,
+    data.type,
+    data.deliveryZoneId,
+    subtotal
+  );
+  const total = Math.max(0, subtotal - couponDiscount) + deliveryFee;
   const orderNumber = generateOrderNumber();
 
   const order = await prisma.$transaction(async (tx) => {
-    // Decrement stock for products
-    for (const item of cart.items) {
-      if (item.productId) {
+    // Decrement stock for products (prix recalculé par le PriceEngine)
+    for (const line of pricedLines) {
+      if (line.productId) {
         await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
+          where: { id: line.productId },
+          data: { stock: { decrement: line.quantity } },
         });
       }
     }
@@ -529,15 +626,15 @@ export async function checkout(
         notes: data.notes || null,
         internalNotes: promoNote || null,
         items: {
-          create: cart.items.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            serviceId: item.serviceId,
-            name: item.name,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: Number(item.total),
-            notes: item.notes,
+          create: pricedLines.map((line) => ({
+            productId: line.productId || null,
+            variantId: line.variantId || null,
+            serviceId: line.serviceId || null,
+            name: line.name,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            total: line.unitPrice * line.quantity,
+            notes: line.notes || null,
           })),
         },
       },
