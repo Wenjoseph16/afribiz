@@ -13,6 +13,8 @@ const targetTypes = [
   'DELIVERY',
   'TRAINING',
   'RENTAL',
+  'CATEGORY',
+  'ITEMS',
 ] as const;
 const discountTypes = ['PERCENTAGE', 'FIXED'] as const;
 const campaignChannels = ['WHATSAPP', 'SMS', 'EMAIL', 'PUSH', 'SOCIAL'] as const;

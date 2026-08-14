@@ -549,6 +549,8 @@ enum PromotionTargetType {
   TRAINING
   RENTAL
   DELIVERY
+  CATEGORY
+  ITEMS
   ALL
 }
 

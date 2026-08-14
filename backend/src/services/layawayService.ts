@@ -203,6 +203,167 @@ export async function createLayawayOffer(
   return { offer, item };
 }
 
+/**
+ * Activation en masse (Socle de rattachement) : le business choisit le scope
+ * via le ScopePicker (TOUT · UNE CATÉGORIE · DES ARTICLES PRÉCIS) et une offre
+ * d'épargne est créée pour CHAQUE article résolu — une seule action, N offres.
+ */
+export async function createLayawayOffersBatch(
+  ownerId: string,
+  data: {
+    itemType: string;
+    scope: 'ALL' | 'CATEGORY' | 'ITEMS';
+    categoryIds?: string[];
+    itemIds?: string[];
+    durationDays?: number;
+    minInstallment?: number;
+  }
+) {
+  const business = await getBusinessByOwner(ownerId);
+  const SUPPORTED = ['PRODUCT', 'SERVICE', 'ROOM', 'RENTAL', 'EVENT', 'TRAINING'];
+  if (!SUPPORTED.includes(data.itemType)) {
+    throw new AppError(`Type d'article non supporté (${SUPPORTED.join(', ')})`, 400);
+  }
+  const scope = data.scope || 'ALL';
+  const categoryIds = data.categoryIds || [];
+  const itemIds = data.itemIds || [];
+
+  // Résolution des articles selon le scope.
+  const rows = await findItemsForBatch(business.id, data.itemType, scope, categoryIds, itemIds);
+  if (rows.length === 0) {
+    throw new AppError(
+      scope === 'ITEMS'
+        ? 'Aucun article trouvé pour les identifiants fournis'
+        : "Aucun article de ce type dans le catalogue (ou dans les catégories choisies)",
+      400
+    );
+  }
+
+  const durationDays = Math.max(7, Math.min(365, data.durationDays || 90));
+  const minInstallment = Math.max(1000, data.minInstallment || 2000);
+  let activated = 0;
+  let skipped = 0;
+  const offers = [];
+
+  for (const row of rows) {
+    // Un article sans prix ne peut pas être épargné : on le saute (pas d'échec global).
+    if (!row.price || row.price <= 0) {
+      skipped++;
+      continue;
+    }
+    const offer = await prisma.layawayOffer.upsert({
+      where: { itemType_itemId: { itemType: data.itemType, itemId: row.id } },
+      update: { businessId: business.id, durationDays, minInstallment, isActive: true },
+      create: {
+        businessId: business.id,
+        itemType: data.itemType,
+        itemId: row.id,
+        durationDays,
+        minInstallment,
+        isActive: true,
+      },
+    });
+    offers.push({ offer, item: { id: row.id, name: row.name, price: row.price } });
+    activated++;
+  }
+
+  trackAnalyticsEvent({
+    businessId: business.id,
+    userId: ownerId,
+    type: 'layaway',
+    category: 'commercial',
+    eventName: 'LAYAWAY_OFFERS_BATCH_CREATED',
+    properties: { itemType: data.itemType, scope, count: activated, skipped },
+  }).catch(() => {});
+
+  return { offers, activated, skipped };
+}
+
+/** Liste les articles d'un type pour le batch (selon le scope). */
+async function findItemsForBatch(
+  businessId: string,
+  itemType: string,
+  scope: string,
+  categoryIds: string[],
+  itemIds: string[]
+): Promise<{ id: string; name: string; price: number }[]> {
+  if (itemType === 'PRODUCT') {
+    const where: any = { businessId, deletedAt: null };
+    if (scope === 'CATEGORY' && categoryIds.length) where.categoryId = { in: categoryIds };
+    if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
+    const rows = await prisma.product.findMany({
+      where,
+      select: { id: true, name: true, price: true },
+    });
+    return rows.map((r) => ({ id: r.id, name: r.name, price: Number(r.price || 0) }));
+  }
+  if (itemType === 'SERVICE') {
+    const where: any = { businessId };
+    if (scope === 'CATEGORY' && categoryIds.length) where.categoryId = { in: categoryIds };
+    if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
+    const rows = await prisma.service.findMany({
+      where,
+      select: { id: true, name: true, price: true },
+    });
+    return rows.map((r) => ({ id: r.id, name: r.name, price: Number(r.price || 0) }));
+  }
+  if (itemType === 'ROOM') {
+    if (scope === 'CATEGORY') {
+      throw new AppError(
+        "Le ciblage par catégorie n'est pas disponible pour les chambres — choisissez 'Tout' ou des chambres précises",
+        400
+      );
+    }
+    const where: any = { businessId };
+    if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
+    const rows = await prisma.room.findMany({ where, select: { id: true, name: true, price: true } });
+    return rows.map((r) => ({ id: r.id, name: r.name, price: Number(r.price || 0) }));
+  }
+  if (itemType === 'RENTAL') {
+    if (scope === 'CATEGORY') {
+      throw new AppError(
+        "Le ciblage par catégorie n'est pas disponible pour les locations — choisissez 'Tout' ou des locations précises",
+        400
+      );
+    }
+    const where: any = { businessId };
+    if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
+    const rows = await prisma.rental.findMany({ where, select: { id: true, name: true, price: true } });
+    return rows.map((r) => ({ id: r.id, name: r.name, price: Number(r.price || 0) }));
+  }
+  if (itemType === 'EVENT') {
+    if (scope === 'CATEGORY') {
+      throw new AppError(
+        "Le ciblage par catégorie n'est pas disponible pour les événements — choisissez 'Tout' ou des événements précis",
+        400
+      );
+    }
+    const where: any = { businessId };
+    if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
+    const rows = await prisma.event.findMany({ where, select: { id: true, title: true } });
+    // Prix cible = billet le moins cher (épargner pour un billet d'événement)
+    return Promise.all(
+      rows.map(async (r) => {
+        const tickets = await prisma.eventTicket.findMany({ where: { eventId: r.id } });
+        const price =
+          tickets.length > 0 ? Math.min(...tickets.map((t) => Number(t.price || 0))) : 0;
+        return { id: r.id, name: r.title, price };
+      })
+    );
+  }
+  // TRAINING
+  if (scope === 'CATEGORY') {
+    throw new AppError(
+      "Le ciblage par catégorie n'est pas disponible pour les formations — choisissez 'Tout' ou des formations précises",
+      400
+    );
+  }
+  const where: any = { businessId };
+  if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
+  const rows = await prisma.training.findMany({ where, select: { id: true, title: true, price: true } });
+  return rows.map((r) => ({ id: r.id, name: r.title, price: Number(r.price || 0) }));
+}
+
 export async function listLayawayOffers(ownerId: string) {
   const business = await getBusinessByOwner(ownerId);
   const offers = await prisma.layawayOffer.findMany({
@@ -212,7 +373,10 @@ export async function listLayawayOffers(ownerId: string) {
   // Enrichir chaque offre avec le nom/prix de l'item
   return Promise.all(
     offers.map(async (o) => {
-      let item: { name: string; price: number; image?: string | null } = { name: o.itemId, price: 0 };
+      let item: { name: string; price: number; image?: string | null } = {
+        name: o.itemId,
+        price: 0,
+      };
       try {
         item = await resolveItem(business.id, o.itemType, o.itemId);
       } catch {
@@ -225,17 +389,24 @@ export async function listLayawayOffers(ownerId: string) {
 
 export async function toggleLayawayOffer(ownerId: string, offerId: string, isActive: boolean) {
   const business = await getBusinessByOwner(ownerId);
-  const offer = await prisma.layawayOffer.findFirst({ where: { id: offerId, businessId: business.id } });
+  const offer = await prisma.layawayOffer.findFirst({
+    where: { id: offerId, businessId: business.id },
+  });
   if (!offer) throw new AppError('Offre épargne non trouvée', 404);
   return prisma.layawayOffer.update({ where: { id: offer.id }, data: { isActive } });
 }
 
 export async function deleteLayawayOffer(ownerId: string, offerId: string) {
   const business = await getBusinessByOwner(ownerId);
-  const offer = await prisma.layawayOffer.findFirst({ where: { id: offerId, businessId: business.id } });
+  const offer = await prisma.layawayOffer.findFirst({
+    where: { id: offerId, businessId: business.id },
+  });
   if (!offer) throw new AppError('Offre épargne non trouvée', 404);
-  const activePlans = await prisma.layawayPlan.count({ where: { offerId: offer.id, status: { in: ['ACTIVE', 'READY'] } } });
-  if (activePlans > 0) throw new AppError('Impossible : des plans épargne sont en cours sur cet article', 400);
+  const activePlans = await prisma.layawayPlan.count({
+    where: { offerId: offer.id, status: { in: ['ACTIVE', 'READY'] } },
+  });
+  if (activePlans > 0)
+    throw new AppError('Impossible : des plans épargne sont en cours sur cet article', 400);
   await prisma.layawayOffer.delete({ where: { id: offer.id } });
   return { success: true };
 }
@@ -263,7 +434,10 @@ export async function getBusinessLayawayStats(ownerId: string) {
     prisma.layawayPlan.count({ where: { businessId: business.id, status: 'ACTIVE' } }),
     prisma.layawayPlan.count({ where: { businessId: business.id, status: 'READY' } }),
     prisma.layawayPlan.count({ where: { businessId: business.id, status: 'COMPLETED' } }),
-    prisma.layawayPlan.aggregate({ where: { businessId: business.id, status: { in: ['ACTIVE', 'READY'] } }, _sum: { savedAmount: true } }),
+    prisma.layawayPlan.aggregate({
+      where: { businessId: business.id, status: { in: ['ACTIVE', 'READY'] } },
+      _sum: { savedAmount: true },
+    }),
   ]);
   const totalEscrowed = Number(escrowAgg._sum.savedAmount || 0);
   return {
@@ -316,7 +490,8 @@ export async function createLayawayPlan(clientId: string, offerId: string) {
 
   const item = await resolveItem(offer.businessId, offer.itemType, offer.itemId);
   const targetAmount = item.price;
-  if (targetAmount <= 0) throw new AppError('Cet article ne peut pas être épargné (prix manquant)', 400);
+  if (targetAmount <= 0)
+    throw new AppError('Cet article ne peut pas être épargné (prix manquant)', 400);
 
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + offer.durationDays);
@@ -366,7 +541,10 @@ export async function createLayawayPlan(clientId: string, offerId: string) {
   }
 
   // Notifier le business : un client commence à épargner sur son produit
-  const owner = await prisma.business.findUnique({ where: { id: offer.businessId }, select: { ownerId: true } });
+  const owner = await prisma.business.findUnique({
+    where: { id: offer.businessId },
+    select: { ownerId: true },
+  });
   if (owner?.ownerId) {
     await notify(
       owner.ownerId,
@@ -376,7 +554,10 @@ export async function createLayawayPlan(clientId: string, offerId: string) {
       `${item.name} — un client a commencé à épargner (${offer.durationDays} jours).`,
       '/dashboard/business/layaway'
     ).catch(() => {});
-    emitBusiness(offer.businessId, 'layaway:plan-created', { planId: plan.id, itemName: item.name });
+    emitBusiness(offer.businessId, 'layaway:plan-created', {
+      planId: plan.id,
+      itemName: item.name,
+    });
   }
 
   trackAnalyticsEvent({
@@ -432,7 +613,8 @@ export async function contributeToLayaway(
 ) {
   const plan = await prisma.layawayPlan.findFirst({ where: { id: planId, clientId } });
   if (!plan) throw new AppError('Plan épargne non trouvé', 404);
-  if (plan.status !== 'ACTIVE') throw new AppError('Ce plan ne peut plus recevoir de cotisations', 400);
+  if (plan.status !== 'ACTIVE')
+    throw new AppError('Ce plan ne peut plus recevoir de cotisations', 400);
 
   const saved = Number(plan.savedAmount);
   const target = Number(plan.targetAmount);
@@ -447,15 +629,26 @@ export async function contributeToLayaway(
   }
 
   const method = (data.method || 'MOBILE_MONEY').toUpperCase();
-  const provider = method.startsWith('WAVE') ? 'WAVE' : method.startsWith('ORANGE') ? 'ORANGE' : method;
+  const provider = method.startsWith('WAVE')
+    ? 'WAVE'
+    : method.startsWith('ORANGE')
+      ? 'ORANGE'
+      : method;
 
   // Paiement Mobile Money (simulé en dev, FedaPay en prod)
   let paymentRef = `LAY-${Date.now()}`;
   try {
-    const mm = await processMobileMoney(provider, data.phone || '+2250000000000', amount, `Épargne ${plan.itemName}`);
+    const mm = await processMobileMoney(
+      provider,
+      data.phone || '+2250000000000',
+      amount,
+      `Épargne ${plan.itemName}`
+    );
     paymentRef = (mm as any)?.reference || (mm as any)?.providerRef || paymentRef;
   } catch (err) {
-    logger.warn('Layaway payment provider failed, fallback simulation', { error: (err as Error).message });
+    logger.warn('Layaway payment provider failed, fallback simulation', {
+      error: (err as Error).message,
+    });
   }
 
   // Transaction : escrow + payment + contribution + progression
@@ -553,7 +746,10 @@ export async function contributeToLayaway(
       progress: computeProgress(result.newSaved, target),
     });
   }
-  const owner = await prisma.business.findUnique({ where: { id: plan.businessId }, select: { ownerId: true } });
+  const owner = await prisma.business.findUnique({
+    where: { id: plan.businessId },
+    select: { ownerId: true },
+  });
   if (owner?.ownerId) {
     await notify(
       owner.ownerId,
@@ -595,7 +791,8 @@ export async function contributeToLayaway(
 export async function cancelLayawayPlan(clientId: string, planId: string) {
   const plan = await prisma.layawayPlan.findFirst({ where: { id: planId, clientId } });
   if (!plan) throw new AppError('Plan épargne non trouvé', 404);
-  if (!['ACTIVE', 'READY'].includes(plan.status)) throw new AppError('Ce plan ne peut pas être annulé', 400);
+  if (!['ACTIVE', 'READY'].includes(plan.status))
+    throw new AppError('Ce plan ne peut pas être annulé', 400);
 
   const saved = Number(plan.savedAmount);
 
@@ -608,7 +805,11 @@ export async function cancelLayawayPlan(clientId: string, planId: string) {
     if (plan.escrowId) {
       await tx.escrow.update({
         where: { id: plan.escrowId },
-        data: { status: 'REFUNDED', refundedAt: new Date(), notes: `Remboursement intégral épargne ${plan.itemName}` },
+        data: {
+          status: 'REFUNDED',
+          refundedAt: new Date(),
+          notes: `Remboursement intégral épargne ${plan.itemName}`,
+        },
       });
       await tx.payment.updateMany({
         where: { escrowId: plan.escrowId },
@@ -631,7 +832,10 @@ export async function cancelLayawayPlan(clientId: string, planId: string) {
     '/dashboard/my-layaway'
   ).catch(() => {});
   emitUser(clientId, 'layaway:cancelled', { planId: plan.id, refunded: saved });
-  const owner = await prisma.business.findUnique({ where: { id: plan.businessId }, select: { ownerId: true } });
+  const owner = await prisma.business.findUnique({
+    where: { id: plan.businessId },
+    select: { ownerId: true },
+  });
   if (owner?.ownerId) {
     await notify(
       owner.ownerId,
@@ -692,7 +896,9 @@ export async function confirmLayawayCheckout(
   // Dates par défaut (chambre / location) : week-end prochain si non fournies
   const defaultCheckIn = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const checkIn = options?.checkIn ? new Date(options.checkIn) : defaultCheckIn;
-  let checkOut = options?.checkOut ? new Date(options.checkOut) : new Date(checkIn.getTime() + 24 * 60 * 60 * 1000);
+  let checkOut = options?.checkOut
+    ? new Date(options.checkOut)
+    : new Date(checkIn.getTime() + 24 * 60 * 60 * 1000);
   if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
     throw new AppError('Dates de réservation invalides', 400);
   }
@@ -1084,7 +1290,10 @@ export async function confirmLayawayCheckout(
         `/dashboard/orders/${result.order.id}`
       ).catch(() => {});
     }
-    emitBusiness(plan.businessId, 'layaway:completed', { planId: plan.id, orderId: result.order.id });
+    emitBusiness(plan.businessId, 'layaway:completed', {
+      planId: plan.id,
+      orderId: result.order.id,
+    });
   }
 
   // 3b. Notification promo — le client sait exactement ce qu'il a économisé.
@@ -1169,7 +1378,14 @@ export async function confirmLayawayCheckout(
     type: 'layaway',
     category: 'payment',
     eventName: 'LAYAWAY_COMPLETED',
-    properties: { planId, orderId: result.order.id, amount: target, discount: discountAmount, total, fee },
+    properties: {
+      planId,
+      orderId: result.order.id,
+      amount: target,
+      discount: discountAmount,
+      total,
+      fee,
+    },
   }).catch(() => {});
 
   logger.info(

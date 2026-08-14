@@ -84,6 +84,7 @@ export interface PriceResult {
 
 interface CatalogItem {
   id: string;
+  type: string;
   name: string;
   price: number;
   currency: string;
@@ -103,7 +104,7 @@ async function loadCatalogItem(
   itemType: string,
   itemId: string
 ): Promise<CatalogItem> {
-  const base = { id: itemId, name: '', price: 0, currency: 'FCFA', stock: null, categoryId: null };
+  const base = { id: itemId, type: itemType, name: '', price: 0, currency: 'FCFA', stock: null, categoryId: null };
 
   if (itemType === 'PRODUCT') {
     const p = await prisma.product.findFirst({
@@ -243,8 +244,19 @@ async function findTargetedPromo(
 
   let best: { promotion: any; discount: number } | null = null;
   for (const promo of promos) {
+    // Socle de rattachement : le ciblage suit le ScopePicker (toute l'entreprise /
+    // une catégorie / des articles précis / un type + articles précis).
     let applies = promo.targetType === 'ALL';
-    if (!applies && promo.targetType !== 'ALL' && promo.targetIds.includes(item.id)) {
+    if (!applies && promo.targetType === 'CATEGORY') {
+      applies = !!item.categoryId && promo.targetIds.includes(item.categoryId);
+    } else if (!applies && promo.targetType === 'ITEMS') {
+      applies = promo.targetIds.includes(item.id);
+    } else if (
+      !applies &&
+      promo.targetType !== 'ALL' &&
+      promo.targetType === item.type &&
+      promo.targetIds.includes(item.id)
+    ) {
       applies = true;
     }
     if (!applies) continue;

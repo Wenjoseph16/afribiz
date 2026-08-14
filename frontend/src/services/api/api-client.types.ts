@@ -918,6 +918,7 @@ export interface ApiClientMethods {
   addFavorite(type: string, referenceId: string): Promise<any>;
   // ── Épargne Achat (Layaway) ──
   createLayawayOffer(data: any): Promise<any>;
+  createLayawayOffersBatch(data: any): Promise<any>;
   getLayawayOffers(): Promise<any>;
   toggleLayawayOffer(id: string, isActive: boolean): Promise<any>;
   deleteLayawayOffer(id: string): Promise<any>;

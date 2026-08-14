@@ -195,7 +195,9 @@ export type UpdateEmployeeData = Partial<CreateEmployeeData>;
 export interface CreatePromotionData {
   title: string;
   description?: string;
-  discountType: string;
+  /** Alias historique — le backend attend `promotionType` (PERCENTAGE | FIXED | …) */
+  discountType?: string;
+  promotionType?: string;
   discountValue: number;
   startsAt?: string;
   endsAt?: string;

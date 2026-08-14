@@ -5,6 +5,9 @@ export function injectLayaway(api: ApiClientMethods) {
   api.createLayawayOffer = function (data: any) {
     return this.post('/layaway/offers', data);
   };
+  api.createLayawayOffersBatch = function (data: any) {
+    return this.post('/layaway/offers/batch', data);
+  };
   api.getLayawayOffers = function () {
     return this.get('/layaway/offers');
   };

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import {
   createOffer,
+  createOffersBatch,
   listOffers,
   toggleOffer,
   deleteOffer,
@@ -28,6 +29,7 @@ router.use(authMiddleware);
 
 // ── Business : offres d'épargne ──
 router.post('/offers', createOffer);
+router.post('/offers/batch', createOffersBatch);
 router.get('/offers', listOffers);
 router.patch('/offers/:id', toggleOffer);
 router.delete('/offers/:id', deleteOffer);
