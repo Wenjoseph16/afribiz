@@ -919,6 +919,10 @@ export interface ApiClientMethods {
   // ── Épargne Achat (Layaway) ──
   createLayawayOffer(data: any): Promise<any>;
   createLayawayOffersBatch(data: any): Promise<any>;
+  getSuppliers(params?: any): Promise<any>;
+  createSupplier(data: any): Promise<any>;
+  updateSupplier(id: string, data: any): Promise<any>;
+  deleteSupplier(id: string): Promise<any>;
   getLayawayOffers(): Promise<any>;
   toggleLayawayOffer(id: string, isActive: boolean): Promise<any>;
   deleteLayawayOffer(id: string): Promise<any>;

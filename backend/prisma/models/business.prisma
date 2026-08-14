@@ -75,6 +75,7 @@ model Business {
   hours                 BusinessHour[]
   paymentMethods        BusinessPaymentMethod[]
   deliveryZones         DeliveryZone[]
+  suppliers             Supplier[]
   services              Service[]
   serviceCategories     ServiceCategory[]
   menuCategories        MenuCategory[]

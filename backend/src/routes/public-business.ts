@@ -176,6 +176,22 @@ router.post(
           crossSellItems: await crossSellNames(price.crossSellItems),
           timeslotMinutes: price.timeslotMinutes ?? null,
           lowStockThreshold: price.lowStockThreshold ?? null,
+          // Étape E : mécanismes de confiance / logistique / opérations
+          negotiable: price.negotiable ?? false,
+          negotiationMinDiscount: price.negotiationMinDiscount ?? null,
+          commissionPercent: price.commissionPercent ?? null,
+          commissionEmployeeIds: price.commissionEmployeeIds ?? null,
+          vipRestricted: price.vipRestricted ?? false,
+          allowedSegments: price.allowedSegments ?? null,
+          storePickup: price.storePickup ?? null,
+          preorder: price.preorder ?? null,
+          warranty: price.warranty ?? null,
+          returnPolicy: price.returnPolicy ?? null,
+          lotTrace: price.lotTrace ?? null,
+          techSheet: price.techSheet ?? null,
+          notice: price.notice ?? null,
+          supplier: price.supplier ?? null,
+          zoneRestriction: price.zoneRestriction ?? null,
         };
       } catch (err) {
         result[`${it.itemType}:${it.itemId}`] = {

@@ -449,3 +449,25 @@ model RoomBlockedDate {
   @@index([startDate, endDate])
 }
 
+
+// ============================================
+// FOURNISSEURS
+// ============================================
+
+model Supplier {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  note        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, isActive])
+}

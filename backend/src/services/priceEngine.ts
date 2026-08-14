@@ -80,6 +80,22 @@ export interface PriceResult {
   crossSellItems: Array<{ itemType: string; itemId: string }>;
   timeslotMinutes?: number;
   lowStockThreshold?: number;
+  // ── Étape E : mécanismes rattachés (négociation, commission, confiance, logistique…) ──
+  negotiable?: boolean;
+  negotiationMinDiscount?: number;
+  commissionPercent?: number;
+  commissionEmployeeIds?: string[];
+  vipRestricted?: boolean;
+  allowedSegments?: string[];
+  storePickup?: { available: boolean; instructions?: string };
+  preorder?: { leadDays: number; message?: string };
+  warranty?: { durationDays: number; conditions?: string };
+  returnPolicy?: { days: number; conditions?: string };
+  lotTrace?: { trackLots: boolean; defaultExpiryDays?: number };
+  techSheet?: { attributes: Array<{ key: string; label: string; value: string }> };
+  notice?: { url: string; label?: string };
+  supplier?: { supplierId: string; costPrice?: number; leadTimeDays?: number };
+  zoneRestriction?: { zoneIds: string[]; mode: 'ONLY' | 'EXCLUDE' };
 }
 
 interface CatalogItem {
@@ -313,6 +329,20 @@ const MECHANISM_SOURCE_TYPES = [
   'CROSS_SELL',
   'TIMESLOT',
   'LOW_STOCK',
+  'CUSTOM_BADGE',
+  // ── Étape E : mécanismes exposés (fiche + résolveur + POS) ──
+  'NEGOTIATION',
+  'COMMISSION',
+  'VIP_ONLY',
+  'STORE_PICKUP',
+  'PREORDER',
+  'TECH_SHEET',
+  'NOTICE',
+  'WARRANTY',
+  'RETURN_POLICY',
+  'LOT_TRACE',
+  'SUPPLIER',
+  'ZONE_RESTRICTION',
 ];
 
 /** Charge tous les mécanismes rattachés à l'article en UNE seule requête. */
@@ -381,13 +411,6 @@ export async function computePrice(
 
   let unitPrice = basePrice;
   let appliedMechanism: string | null = null;
-
-  // 0. Négociation (mécanisme le plus fort) — réservée au Chantier 6 (lien éphémère + token).
-  // Ici on ne fait que signaler que l'article est négociable ; aucun prix client n'est
-  // accepté sans preuve d'accord business. Le client ne peut JAMAIS s'accorder un prix.
-  if (item.allowsNegotiation) {
-    badges.push('🤝 Négociable');
-  }
 
   // 1. Prix flash (fenêtre de temps)
   if (
@@ -598,6 +621,93 @@ export async function computePrice(
     ? crossConfig.items
     : [];
 
+  // ── Étape E : mécanismes de confiance / logistique / opérations (exposés à la fiche) ──
+  // Négociation (toggle du business — le client ne peut jamais s'accorder un prix)
+  const negConfig = mechanisms.get('NEGOTIATION');
+  const negotiable = negConfig ? negConfig.enabled !== false : !!item.allowsNegotiation;
+  if (negotiable) badges.push('🤝 Négociable');
+  const negotiationMinDiscount = negConfig?.minDiscountPercent;
+
+  // Commission employé
+  const commConfig = mechanisms.get('COMMISSION');
+  const commissionPercent = commConfig ? Number(commConfig.percent ?? 0) : undefined;
+  const commissionEmployeeIds = Array.isArray(commConfig?.employeeIds)
+    ? commConfig.employeeIds
+    : undefined;
+
+  // Réservé aux segments précis (VIP, fidèles…)
+  const vipConfig = mechanisms.get('VIP_ONLY');
+  const allowedSegments = Array.isArray(vipConfig?.allowedSegments)
+    ? vipConfig.allowedSegments
+    : undefined;
+
+  // Retrait en boutique / précommande / garantie / retour / lot / fiche technique / notice / fournisseur / zones
+  const storePickup = mechanisms.get('STORE_PICKUP')
+    ? {
+        available: mechanisms.get('STORE_PICKUP').available !== false,
+        instructions: mechanisms.get('STORE_PICKUP').instructions || undefined,
+      }
+    : undefined;
+  const preorderConfig = mechanisms.get('PREORDER');
+  const preorder = preorderConfig
+    ? {
+        leadDays: Number(preorderConfig.leadDays ?? 0),
+        message: preorderConfig.message || undefined,
+      }
+    : undefined;
+  if (preorder) badges.push('📦 Précommande');
+  const warrantyConfig = mechanisms.get('WARRANTY');
+  const warranty = warrantyConfig
+    ? {
+        durationDays: Number(warrantyConfig.durationDays ?? 0),
+        conditions: warrantyConfig.conditions || undefined,
+      }
+    : undefined;
+  if (warranty) badges.push(`🛡️ Garantie ${warranty.durationDays}j`);
+  const returnConfig = mechanisms.get('RETURN_POLICY');
+  const returnPolicy = returnConfig
+    ? {
+        days: Number(returnConfig.days ?? 0),
+        conditions: returnConfig.conditions || undefined,
+      }
+    : undefined;
+  const lotConfig = mechanisms.get('LOT_TRACE');
+  const lotTrace = lotConfig
+    ? {
+        trackLots: lotConfig.trackLots !== false,
+        defaultExpiryDays: lotConfig.defaultExpiryDays || undefined,
+      }
+    : undefined;
+  const techConfig = mechanisms.get('TECH_SHEET');
+  const techSheet = techConfig
+    ? { attributes: Array.isArray(techConfig.attributes) ? techConfig.attributes : [] }
+    : undefined;
+  const noticeConfig = mechanisms.get('NOTICE');
+  const notice = noticeConfig
+    ? { url: noticeConfig.url, label: noticeConfig.label || undefined }
+    : undefined;
+  const supplierConfig = mechanisms.get('SUPPLIER');
+  const supplier = supplierConfig
+    ? {
+        supplierId: supplierConfig.supplierId,
+        costPrice: supplierConfig.costPrice !== undefined ? Number(supplierConfig.costPrice) : undefined,
+        leadTimeDays: supplierConfig.leadTimeDays !== undefined ? Number(supplierConfig.leadTimeDays) : undefined,
+      }
+    : undefined;
+  const zoneConfig = mechanisms.get('ZONE_RESTRICTION');
+  const zoneRestriction = zoneConfig
+    ? {
+        zoneIds: Array.isArray(zoneConfig.zoneIds) ? zoneConfig.zoneIds : [],
+        mode: zoneConfig.mode === 'EXCLUDE' ? ('EXCLUDE' as const) : ('ONLY' as const),
+      }
+    : undefined;
+
+  // Badge personnalisé (« Édition limitée », « Nouveau »…)
+  const badgeConfig = mechanisms.get('CUSTOM_BADGE');
+  if (badgeConfig?.label) {
+    badges.push(`${badgeConfig.emoji || '⭐'} ${badgeConfig.label}`);
+  }
+
   // Badge épargne
   let layawayOfferId: string | null = null;
   try {
@@ -638,6 +748,21 @@ export async function computePrice(
     maxQuantity: mq ? (mq.maxQuantity ?? undefined) : undefined,
     availabilityOpen: avOpen.open,
     availabilityReason: av && !avOpen.open ? avOpen.reason : undefined,
+    negotiable,
+    negotiationMinDiscount,
+    commissionPercent,
+    commissionEmployeeIds,
+    vipRestricted: allowedSegments ? allowedSegments.length > 0 : undefined,
+    allowedSegments,
+    storePickup,
+    preorder,
+    warranty,
+    returnPolicy,
+    lotTrace,
+    techSheet,
+    notice,
+    supplier,
+    zoneRestriction,
     personalizationFields,
     giftWrapPrice,
     crossSellItems,

@@ -155,6 +155,29 @@ export default function NewProductPage() {
   const [crossSellList, setCrossSellList] = useState<any[]>([]);
   const nextPersoKey = useRef(2);
 
+  // ── Étape E — Réglages avancés 2027 : négociation, confiance, logistique, opérations ──
+  const [allowNegotiation, setAllowNegotiation] = useState(false);
+  const [customBadgeLabel, setCustomBadgeLabel] = useState('');
+  const [customBadgeEmoji, setCustomBadgeEmoji] = useState('⭐');
+  const [warrantyDays, setWarrantyDays] = useState('');
+  const [warrantyConditions, setWarrantyConditions] = useState('');
+  const [returnDays, setReturnDays] = useState('');
+  const [returnConditions, setReturnConditions] = useState('');
+  const [lotTracking, setLotTracking] = useState(false);
+  const [lotExpiryDays, setLotExpiryDays] = useState('');
+  const [commissionPercent, setCommissionPercent] = useState('');
+  const [storePickupEnabled, setStorePickupEnabled] = useState(true);
+  // Prix dégressifs par quantité (grossiste/épicier)
+  const [tierRows, setTierRows] = useState<Array<{ key: string; minQuantity: string; percent: string }>>([]);
+  const nextTierKey = useRef(1);
+  // Fournisseur
+  const [suppliersList, setSuppliersList] = useState<any[]>([]);
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
+  const [supplierCostPrice, setSupplierCostPrice] = useState('');
+  const [newSupplierName, setNewSupplierName] = useState('');
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [supplierSaving, setSupplierSaving] = useState(false);
+
   // Ventes croisées : liste des produits du business pour le multi-sélecteur
   useEffect(() => {
     apiClient
@@ -164,7 +187,47 @@ export default function NewProductPage() {
         setCrossSellList(Array.isArray(list) ? list : list.items ?? []);
       })
       .catch(() => {});
+    // Fournisseurs du business
+    apiClient
+      .getSuppliers()
+      .then((res: any) => {
+        const data = res?.data?.data ?? {};
+        setSuppliersList(Array.isArray(data) ? data : data.suppliers ?? []);
+      })
+      .catch(() => {});
   }, []);
+
+  const addTierRow = () => {
+    setTierRows((prev) => [
+      ...prev,
+      { key: `t${nextTierKey.current++}`, minQuantity: '', percent: '' },
+    ]);
+  };
+  const updateTierRow = (key: string, field: 'minQuantity' | 'percent', value: string) => {
+    setTierRows((prev) => prev.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
+  };
+  const removeTierRow = (key: string) => {
+    setTierRows((prev) => prev.filter((r) => r.key !== key));
+  };
+
+  const addSupplier = async () => {
+    if (!newSupplierName.trim()) return;
+    setSupplierSaving(true);
+    try {
+      const res = await apiClient.createSupplier({ name: newSupplierName.trim() });
+      const created = res?.data?.data;
+      if (created?.id) {
+        setSuppliersList((prev) => [created, ...prev]);
+        setSelectedSupplierId(created.id);
+        setNewSupplierName('');
+        setShowAddSupplier(false);
+      }
+    } catch {
+      /* silencieux : l'ajout ne bloque pas la création du produit */
+    } finally {
+      setSupplierSaving(false);
+    }
+  };
 
   const toggleDay = (day: number) => {
     setAvailDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
@@ -345,6 +408,65 @@ export default function NewProductPage() {
           tasks.push(
             attach('CROSS_SELL', {
               items: crossSellIds.map((id) => ({ itemType: 'PRODUCT', itemId: id })),
+            })
+          );
+        }
+
+        // ── Étape E — mécanismes 2027 ──
+        if (allowNegotiation) {
+          tasks.push(attach('NEGOTIATION', { enabled: true }));
+        }
+        if (customBadgeLabel.trim()) {
+          tasks.push(
+            attach('CUSTOM_BADGE', { label: customBadgeLabel.trim(), emoji: customBadgeEmoji })
+          );
+        }
+        if (Number(warrantyDays) > 0) {
+          tasks.push(
+            attach('WARRANTY', {
+              durationDays: Number(warrantyDays),
+              conditions: warrantyConditions.trim() || undefined,
+            })
+          );
+        }
+        if (returnDays !== '') {
+          tasks.push(
+            attach('RETURN_POLICY', {
+              days: Number(returnDays) || 0,
+              conditions: returnConditions.trim() || undefined,
+            })
+          );
+        }
+        if (lotTracking) {
+          tasks.push(
+            attach('LOT_TRACE', {
+              trackLots: true,
+              defaultExpiryDays: Number(lotExpiryDays) || undefined,
+            })
+          );
+        }
+        if (Number(commissionPercent) > 0) {
+          tasks.push(attach('COMMISSION', { percent: Number(commissionPercent) }));
+        }
+        if (!storePickupEnabled) {
+          tasks.push(attach('STORE_PICKUP', { available: false }));
+        }
+        const validTiers = tierRows.filter((r) => Number(r.minQuantity) > 0 && Number(r.percent) > 0);
+        if (validTiers.length > 0) {
+          tasks.push(
+            attach('DISCOUNT_TIER', {
+              tiers: validTiers.map((r) => ({
+                minQuantity: Number(r.minQuantity),
+                percent: Number(r.percent),
+              })),
+            })
+          );
+        }
+        if (selectedSupplierId) {
+          tasks.push(
+            attach('SUPPLIER', {
+              supplierId: selectedSupplierId,
+              costPrice: supplierCostPrice ? Number(supplierCostPrice) : undefined,
             })
           );
         }
@@ -907,6 +1029,244 @@ export default function NewProductPage() {
               </select>
               <p className="text-[11px] text-gray-400 mt-1">« Les clients achètent aussi » (Ctrl + clic)</p>
             </div>
+          </div>
+
+          {/* ── Étape E — Négociation + badge + confiance (garantie, retour, lot) ── */}
+          <div className="mt-5 p-4 bg-gray-50/60 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowNegotiation}
+                  onChange={(e) => setAllowNegotiation(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    Autoriser la négociation 🤝
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Le client propose son prix — vous acceptez ou contre-proposez (Prix Flash Client)
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={lotTracking}
+                  onChange={(e) => setLotTracking(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    Traçabilité lot + péremption 📦
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Vivres et produits frais : numéro de lot et date de péremption
+                  </p>
+                </div>
+              </label>
+            </div>
+            {lotTracking && (
+              <div className="mt-3 max-w-xs">
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Péremption par défaut (jours)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={lotExpiryDays}
+                  onChange={(e) => setLotExpiryDays(e.target.value)}
+                  placeholder="Ex. 180"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                />
+              </div>
+            )}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Badge personnalisé
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={customBadgeLabel}
+                    onChange={(e) => setCustomBadgeLabel(e.target.value)}
+                    placeholder="Ex. Édition limitée"
+                    className="flex-1 px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                  />
+                  <input
+                    value={customBadgeEmoji}
+                    onChange={(e) => setCustomBadgeEmoji(e.target.value)}
+                    className="w-14 px-2 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-center outline-none focus:border-brand"
+                    title="Emoji du badge"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Garantie (jours)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={warrantyDays}
+                  onChange={(e) => setWarrantyDays(e.target.value)}
+                  placeholder="Ex. 365"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Retour / SAV (jours)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={returnDays}
+                  onChange={(e) => setReturnDays(e.target.value)}
+                  placeholder="Ex. 7"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Commission employé (%)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={commissionPercent}
+                  onChange={(e) => setCommissionPercent(e.target.value)}
+                  placeholder="Ex. 2"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                />
+              </div>
+            </div>
+            <label className="mt-4 flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={storePickupEnabled}
+                onChange={(e) => setStorePickupEnabled(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Retrait en boutique 🏪
+                </p>
+                <p className="text-xs text-gray-500">
+                  Décochez si cet article n'est jamais retiré sur place
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* ── Étape E — Prix dégressifs par quantité (grossiste) ── */}
+          <div className="mt-5">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Prix dégressifs par quantité 📉
+                </p>
+                <p className="text-xs text-gray-500">
+                  3 articles = −5%, 10 = −10% — le bon prix pour le détail ET le demi-gros
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addTierRow}
+                className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+              >
+                <Plus className="w-3.5 h-3.5" /> Ajouter un palier
+              </button>
+            </div>
+            {tierRows.length > 0 && (
+              <div className="space-y-2">
+                {tierRows.map((r) => (
+                  <div key={r.key} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-2 items-center">
+                    <input
+                      type="number"
+                      min={1}
+                      value={r.minQuantity}
+                      onChange={(e) => updateTierRow(r.key, 'minQuantity', e.target.value)}
+                      placeholder="Quantité min (ex. 3)"
+                      className="px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={r.percent}
+                      onChange={(e) => updateTierRow(r.key, 'percent', e.target.value)}
+                      placeholder="Remise % (ex. 5)"
+                      className="px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeTierRow(r.key)}
+                      className="p-1.5 text-gray-400 hover:text-red-500"
+                      title="Retirer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Étape E — Fournisseur ── */}
+          <div className="mt-5">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              Fournisseur 🏭
+            </p>
+            <p className="text-xs text-gray-500 mb-2">
+              Qui approvisionne cet article + prix d'achat (marge calculée automatiquement)
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex gap-2">
+                <select
+                  value={selectedSupplierId}
+                  onChange={(e) => setSelectedSupplierId(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                >
+                  <option value="">Aucun fournisseur</option>
+                  {suppliersList.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSupplier((v) => !v)}
+                  className="px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 text-xs font-medium text-brand hover:border-brand/50 transition-colors"
+                >
+                  {showAddSupplier ? 'Fermer' : '+ Nouveau'}
+                </button>
+              </div>
+              <input
+                type="number"
+                min={0}
+                value={supplierCostPrice}
+                onChange={(e) => setSupplierCostPrice(e.target.value)}
+                placeholder="Prix d'achat FCFA (marge)"
+                className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+              />
+            </div>
+            {showAddSupplier && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={newSupplierName}
+                  onChange={(e) => setNewSupplierName(e.target.value)}
+                  placeholder="Nom du fournisseur"
+                  className="flex-1 px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                />
+                <Button type="button" size="sm" variant="outline" onClick={addSupplier} disabled={supplierSaving}>
+                  {supplierSaving ? 'Ajout...' : 'Ajouter'}
+                </Button>
+              </div>
+            )}
           </div>
         </Card>
 
