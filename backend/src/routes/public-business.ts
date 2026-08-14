@@ -145,6 +145,23 @@ router.post(
       return out;
     };
 
+    // Cible de navigation (clic → commande) : produit → fiche produit, sinon page vitrine
+    const resolveTarget = async (
+      itemType: string,
+      itemId: string
+    ): Promise<{ path: string } | null> => {
+      try {
+        if (itemType === 'PRODUCT') {
+          const p = await prisma.product.findUnique({ where: { id: itemId }, select: { slug: true } });
+          return p?.slug ? { path: `/product/${p.slug}` } : null;
+        }
+        const biz = await prisma.business.findUnique({ where: { id: businessId }, select: { slug: true } });
+        return biz?.slug ? { path: `/business/${biz.slug}` } : null;
+      } catch {
+        return null;
+      }
+    };
+
     const result: Record<string, any> = {};
     for (const it of items) {
       try {
@@ -192,6 +209,7 @@ router.post(
           notice: price.notice ?? null,
           supplier: price.supplier ?? null,
           zoneRestriction: price.zoneRestriction ?? null,
+          target: await resolveTarget(price.itemType, price.itemId),
         };
       } catch (err) {
         result[`${it.itemType}:${it.itemId}`] = {

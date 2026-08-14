@@ -1649,6 +1649,7 @@ model Business {
   paymentMethods        BusinessPaymentMethod[]
   deliveryZones         DeliveryZone[]
   suppliers             Supplier[]
+  affiliateLinks        AffiliateLink[]
   services              Service[]
   serviceCategories     ServiceCategory[]
   menuCategories        MenuCategory[]
@@ -2333,6 +2334,7 @@ model Order {
   deliveryLng     Float?
   contactPhone    String?
   contactName     String?
+  refCode         String? // lien d'affiliation (code) utilisé pour cette commande
   scheduledAt     DateTime?
   paidAt          DateTime?
   deliveredAt     DateTime?
@@ -8605,4 +8607,29 @@ model Supplier {
 
   @@index([businessId])
   @@index([businessId, isActive])
+}
+
+// ============================================
+// PROGRAMME D'AFFILIATION (chaque client devient un vendeur)
+// ============================================
+
+model AffiliateLink {
+  id               String   @id @default(uuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  itemType         String
+  itemId           String
+  code             String   @unique
+  commissionPercent Decimal @db.Decimal(5, 2)
+  ownerId          String?
+  clicks           Int      @default(0)
+  orders           Int      @default(0)
+  commissionTotal  Decimal  @default(0) @db.Decimal(12, 2)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([businessId, itemType, itemId])
+  @@index([businessId])
+  @@index([code])
 }

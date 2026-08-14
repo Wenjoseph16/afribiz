@@ -12,6 +12,7 @@ import {
   publishSatisfactionSurvey,
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
+import { applyAffiliateOnPaid } from './affiliateService';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 async function getBusinessByOwner(ownerId: string) {
@@ -297,7 +298,12 @@ export async function createOrder(ownerId: string, data: any) {
  * `prepaid` (ex. commandes Épargne Achat, déjà payées en escrow) : la facture est
  * créée directement PAID avec le montant réglé, et l'événement invoice.paid est publié.
  */
-export async function ensureInvoiceForOrder(order: any, business: any, status: string, prepaid = false) {
+export async function ensureInvoiceForOrder(
+  order: any,
+  business: any,
+  status: string,
+  prepaid = false
+) {
   try {
     const finalized = prepaid || ['DELIVERED', 'COMPLETED'].includes(status);
     const billable = finalized || ['CONFIRMED', 'ACCEPTED', 'PREPARING', 'READY'].includes(status);
@@ -388,11 +394,15 @@ export async function ensureInvoiceForOrder(order: any, business: any, status: s
           where: { id: existing.id },
           data: { status: 'PAID', amountPaid: Number(order.totalAmount || 0), paidAt: new Date() },
         });
-        publishInvoicePaid(order.buyerId || business.ownerId || '', order.businessId || business.id, {
-          invoiceId: existing.id,
-          clientName: order.contactName || 'Client',
-          amount: Number(order.totalAmount || 0),
-        });
+        publishInvoicePaid(
+          order.buyerId || business.ownerId || '',
+          order.businessId || business.id,
+          {
+            invoiceId: existing.id,
+            clientName: order.contactName || 'Client',
+            amount: Number(order.totalAmount || 0),
+          }
+        );
       }
     }
   } catch (e) {
@@ -517,7 +527,15 @@ export async function updateOrderPayment(ownerId: string, orderId: string, data:
   if (data.paymentStatus) upd.paymentStatus = data.paymentStatus;
   // Order model stores payment status and paidAt; amounts/payments are tracked in Payment records
   if (data.paymentStatus === 'PAID') upd.paidAt = new Date();
-  return prisma.order.update({ where: { id: orderId }, data: upd, include: orderInclude });
+  const updated = await prisma.order.update({ where: { id: orderId }, data: upd, include: orderInclude });
+
+  // Boucle affiliation : une commande marquée PAYÉE depuis le dashboard crédite
+  // la commission au propriétaire du lien (zéro centime qui échappe au radar).
+  if (data.paymentStatus === 'PAID') {
+    applyAffiliateOnPaid(orderId).catch(() => {});
+  }
+
+  return updated;
 }
 
 export async function deleteOrder(ownerId: string, orderId: string) {

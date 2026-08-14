@@ -923,6 +923,11 @@ export interface ApiClientMethods {
   createSupplier(data: any): Promise<any>;
   updateSupplier(id: string, data: any): Promise<any>;
   deleteSupplier(id: string): Promise<any>;
+  resolveCatalogAttachments(items: Array<{ itemType: string; itemId: string; quantity?: number; options?: any }>): Promise<any>;
+  createAffiliateLink(data: any): Promise<any>;
+  getAffiliateLinks(): Promise<any>;
+  deleteAffiliateLink(id: string): Promise<any>;
+  resolveAffiliateLink(code: string): Promise<any>;
   getLayawayOffers(): Promise<any>;
   toggleLayawayOffer(id: string, isActive: boolean): Promise<any>;
   deleteLayawayOffer(id: string): Promise<any>;

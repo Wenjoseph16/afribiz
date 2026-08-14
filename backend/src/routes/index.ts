@@ -50,6 +50,7 @@ export { default as gdprRoutes } from './gdpr';
 export { default as groupBuyRoutes } from './groupBuyRoutes';
 export { default as catalogAttachmentRoutes } from './catalogAttachment';
 export { default as supplierRoutes } from './supplier';
+export { default as affiliateRoutes } from './affiliate';
 export { default as growthCoachingRoutes } from './growthCoachingRoutes';
 export { default as growthEngineRoutes } from './growthEngineRoutes';
 export { default as healthRoutes } from './health';

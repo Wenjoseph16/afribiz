@@ -49,6 +49,7 @@ model Order {
   deliveryLng     Float?
   contactPhone    String?
   contactName     String?
+  refCode         String? // lien d'affiliation (code) utilisé pour cette commande
   scheduledAt     DateTime?
   paidAt          DateTime?
   deliveredAt     DateTime?

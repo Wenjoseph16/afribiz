@@ -26,6 +26,7 @@ import { getEscrowCommissionRate } from './monetizationConfig';
 import { syncClientFromOrder, recalculateAllDynamicSegments } from './crm';
 import { logActivity } from './customer360';
 import { computePrice } from './priceEngine';
+import { applyAffiliateOnPaid } from './affiliateService';
 import { logger } from '../lib/logger';
 
 function generateOrderNumber(): string {
@@ -279,6 +280,7 @@ export async function guestCheckout(data: {
   deliveryLat?: number;
   deliveryLng?: number;
   notes?: string;
+  refCode?: string;
   paymentMethod?: string;
   items: Array<{
     productId?: string;
@@ -398,6 +400,7 @@ export async function guestCheckout(data: {
         guestEmail: data.email,
         contactName: data.contactName || null,
         contactPhone: data.contactPhone || null,
+        refCode: data.refCode || null,
         subtotal,
         discountAmount: discountAmount || null,
         deliveryFee,
@@ -502,6 +505,8 @@ export async function guestCheckout(data: {
               where: { id: order.id },
               data: { paymentStatus: 'PAID', paidAt: new Date() },
             });
+            // Affiliation : la commande payée crédite le propriétaire du lien
+            applyAffiliateOnPaid(order.id).catch(() => {});
           }
         }
       }
@@ -529,6 +534,7 @@ export async function checkout(
     contactPhone?: string;
     contactName?: string;
     notes?: string;
+    refCode?: string;
     paymentMethod: string;
   }
 ) {
@@ -687,6 +693,7 @@ export async function checkout(
         status: 'PENDING',
         contactName: data.contactName || null,
         contactPhone: data.contactPhone || null,
+        refCode: data.refCode || null,
         subtotal,
         discountAmount,
         deliveryFee,
@@ -822,6 +829,8 @@ export async function checkout(
             where: { id: order.id },
             data: { paymentStatus: 'PAID', paidAt: new Date() },
           });
+          // Affiliation : la commande payée crédite le propriétaire du lien
+          applyAffiliateOnPaid(order.id).catch(() => {});
           // Notifier l'acheteur : paiement reçu
           publishPaymentReceived({
             userId,

@@ -177,6 +177,9 @@ export default function NewProductPage() {
   const [newSupplierName, setNewSupplierName] = useState('');
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [supplierSaving, setSupplierSaving] = useState(false);
+  // Affiliation : chaque client devient un vendeur
+  const [enableAffiliate, setEnableAffiliate] = useState(false);
+  const [affiliatePercent, setAffiliatePercent] = useState('5');
 
   // Ventes croisées : liste des produits du business pour le multi-sélecteur
   useEffect(() => {
@@ -351,6 +354,19 @@ export default function NewProductPage() {
         } catch (layErr) {
           // L'épargne ne bloque pas la création du produit
           console.warn('Layaway activation skipped:', layErr);
+        }
+      }
+
+      // 3b. Affiliation : génère le lien de partage (chaque client devient un vendeur)
+      if (enableAffiliate && createdId) {
+        try {
+          await apiClient.createAffiliateLink({
+            itemType: 'PRODUCT',
+            itemId: createdId,
+            commissionPercent: Number(affiliatePercent) || 5,
+          });
+        } catch (affErr) {
+          console.warn('Affiliate link skipped:', affErr);
         }
       }
 
@@ -1211,6 +1227,47 @@ export default function NewProductPage() {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Étape F — Programme d'affiliation ── */}
+          <div className="mt-5 p-4 bg-gray-50/60 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-700">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableAffiliate}
+                onChange={(e) => setEnableAffiliate(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Programme d'affiliation 🤝
+                </p>
+                <p className="text-xs text-gray-500">
+                  Chaque client devient un vendeur : il partage le lien, vous gagnez une vente,
+                  il touche sa commission
+                </p>
+              </div>
+            </label>
+            {enableAffiliate && (
+              <div className="mt-3 max-w-xs">
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Commission du partenaire (%)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={affiliatePercent}
+                  onChange={(e) => setAffiliatePercent(e.target.value)}
+                  placeholder="Ex. 5"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Lien généré après création : /r/CODE — commission créditée à chaque commande
+                  payée
+                </p>
               </div>
             )}
           </div>

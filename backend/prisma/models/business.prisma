@@ -76,6 +76,7 @@ model Business {
   paymentMethods        BusinessPaymentMethod[]
   deliveryZones         DeliveryZone[]
   suppliers             Supplier[]
+  affiliateLinks        AffiliateLink[]
   services              Service[]
   serviceCategories     ServiceCategory[]
   menuCategories        MenuCategory[]

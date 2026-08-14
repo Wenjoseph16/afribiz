@@ -9,7 +9,10 @@ import * as analyticsEventsController from '../controllers/analyticsEventsContro
 
 const router = Router();
 
-router.use(authMiddleware);
+// Auth scoped aux routes de ce router uniquement (pas de catch-all) :
+// monté à la racine /api, un router.use(authMiddleware) sans chemin bloquerait
+// TOUTES les routes publiques montées après (affiliate, sync, voice, ussd, taxes…).
+router.use(['/analytics', '/copilot', '/datahub'], authMiddleware);
 
 /**
  * Garde Copilot IA : vérifie que le business du user a le privilège COPILOT_ACCESS.

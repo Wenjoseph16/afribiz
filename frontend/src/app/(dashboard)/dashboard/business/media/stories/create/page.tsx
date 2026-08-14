@@ -15,6 +15,7 @@ import {
   Check,
   AlertTriangle,
   Type,
+  ShoppingBag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -35,6 +36,11 @@ export default function CreateStoryPage() {
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  // Article shoppable lié (Story → Commander) : le prix affiché vient du moteur de prix
+  const [linkTargetType, setLinkTargetType] = useState('');
+  const [linkTargetId, setLinkTargetId] = useState('');
+  const [shopProducts, setShopProducts] = useState<any[]>([]);
+  const [shopServices, setShopServices] = useState<any[]>([]);
   const [stickers, setStickers] = useState<StorySticker[]>([]);
   const [uploading, setUploading] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -99,6 +105,8 @@ export default function CreateStoryPage() {
         mediaUrl,
         caption: caption.trim() || undefined,
         linkUrl: linkUrl.trim() || undefined,
+        linkTargetType: linkTargetType || undefined,
+        linkTargetId: linkTargetId || undefined,
         stickers: stickers.length > 0 ? stickers : undefined,
       });
 
@@ -248,11 +256,66 @@ export default function CreateStoryPage() {
             <p className="text-right text-[10px] text-gray-400 mt-1">{caption.length}/150</p>
           </Card>
 
+          {/* Article shoppable : la story devient une vitrine commandable */}
+          <Card className="p-4">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-2">
+              <ShoppingBag className="w-4 h-4 text-brand" />
+              Commander depuis la story
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <select
+                value={linkTargetType}
+                onChange={(e) => {
+                  setLinkTargetType(e.target.value);
+                  setLinkTargetId('');
+                  const t = e.target.value;
+                  if (t === 'PRODUCT' && shopProducts.length === 0) {
+                    apiClient.getMyProducts({ limit: 200 }).then((res: any) => {
+                      const list = res?.data?.data ?? [];
+                      setShopProducts(Array.isArray(list) ? list : list.items ?? []);
+                    }).catch(() => {});
+                  }
+                  if (t === 'SERVICE' && shopServices.length === 0) {
+                    apiClient.getMyServices({ limit: 200 }).then((res: any) => {
+                      const list = res?.data?.data ?? [];
+                      setShopServices(Array.isArray(list) ? list : list.items ?? []);
+                    }).catch(() => {});
+                  }
+                }}
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
+              >
+                <option value="">Aucun article (story simple)</option>
+                <option value="PRODUCT">Produit</option>
+                <option value="SERVICE">Service</option>
+              </select>
+              {linkTargetType && (
+                <select
+                  value={linkTargetId}
+                  onChange={(e) => setLinkTargetId(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
+                >
+                  <option value="">Choisir l'article...</option>
+                  {(linkTargetType === 'PRODUCT' ? shopProducts : shopServices).map((it: any) => (
+                    <option key={it.id} value={it.id}>
+                      {it.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            {linkTargetId && (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+                ✓ Article lié — le bouton « Commander » affichera le prix réel calculé par
+                AfriBiz
+              </p>
+            )}
+          </Card>
+
           {/* Link */}
           <Card className="p-4">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-2">
               <LinkIcon className="w-4 h-4 text-brand" />
-              Lien (optionnel)
+              Lien externe (optionnel)
             </label>
             <input
               type="url"

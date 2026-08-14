@@ -274,6 +274,38 @@ export function StoryViewer({ groups, initialGroup, onClose }: StoryViewerProps)
 
   const hasLink = !!(currentStory.linkUrl || currentStory.linkTargetId);
   const hasCommerce = !!commerce;
+
+  // Story shoppable : le prix affiché vient du moteur de prix (jamais du client)
+  const [shoppable, setShoppable] = useState<{
+    price: number;
+    target: string;
+    name?: string;
+  } | null>(null);
+  const [shoppableLoading, setShoppableLoading] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    if (currentStory?.linkTargetType && currentStory?.linkTargetId && !commerce) {
+      setShoppableLoading(true);
+      apiClient
+        .resolveCatalogAttachments([
+          { itemType: currentStory.linkTargetType, itemId: currentStory.linkTargetId, quantity: 1 },
+        ])
+        .then((res: any) => {
+          if (!alive) return;
+          const item = res?.data?.data?.items?.[`${currentStory.linkTargetType}:${currentStory.linkTargetId}`];
+          if (item?.unitPrice && item?.target?.path) {
+            setShoppable({ price: item.unitPrice, target: item.target.path, name: item.name });
+          }
+        })
+        .catch(() => {})
+        .finally(() => alive && setShoppableLoading(false));
+    } else {
+      setShoppable(null);
+    }
+    return () => {
+      alive = false;
+    };
+  }, [currentStory?.id, currentStory?.linkTargetType, currentStory?.linkTargetId, commerce]);
   const actionConfig = commerce ? COMMERCE_ACTIONS[commerce.action] : null;
   const priceDisplay = commerce?.data?.price
     ? Number(commerce.data.price).toLocaleString('fr-FR') + ' FCFA'
@@ -487,6 +519,32 @@ export function StoryViewer({ groups, initialGroup, onClose }: StoryViewerProps)
                   </>
                 )}
               </button>
+            </div>
+          )}
+
+          {/* Story shoppable : article lié → prix réel du moteur + Commander */}
+          {!hasCommerce && shoppable && (
+            <div className="space-y-2 animate-fade-in-up">
+              <div className="inline-block px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-sm font-bold shadow-lg">
+                {shoppable.name ? `${shoppable.name} · ` : ''}
+                {shoppable.price.toLocaleString('fr-FR')} FCFA
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.location.assign(shoppable.target);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 text-white text-sm font-semibold hover:from-brand-600 hover:to-brand-700 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-brand-500/30"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Commander à {shoppable.price.toLocaleString('fr-FR')} FCFA
+              </button>
+            </div>
+          )}
+          {!hasCommerce && shoppableLoading && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 backdrop-blur-md border border-white/20 text-sm text-white/90">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Chargement du prix...
             </div>
           )}
 

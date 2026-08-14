@@ -9,13 +9,13 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 
 const router = Router();
-router.use(authMiddleware);
 
 const businessGuard = requireRole(['BUSINESS', 'ADMIN']);
 const clientGuard = requireRole(['CLIENT', 'BUSINESS', 'ADMIN']);
 
 router.get(
   '/orders/:orderId/payments',
+  authMiddleware,
   clientGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const result = await hybridService.getHybridPayments(req.params.orderId);
@@ -25,6 +25,7 @@ router.get(
 
 router.post(
   '/orders/:orderId/payments/hybrid',
+  authMiddleware,
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const { amount, method, reference, isManual, proofUrl, notes } = req.body;
@@ -47,6 +48,7 @@ router.post(
 
 router.post(
   '/payments/:paymentId/verify',
+  authMiddleware,
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const { verified, notes } = req.body;
@@ -62,6 +64,7 @@ router.post(
 
 router.post(
   '/escrow/stepped',
+  authMiddleware,
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const { orderId, amount, totalSteps, stepDescriptions } = req.body;
@@ -80,6 +83,7 @@ router.post(
 
 router.post(
   '/escrow/:id/release-step/:stepNumber',
+  authMiddleware,
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const business = await prisma.business.findUnique({ where: { ownerId: req.user!.id } });
@@ -95,6 +99,7 @@ router.post(
 
 router.get(
   '/escrow/:id/steps',
+  authMiddleware,
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const business = await prisma.business.findUnique({ where: { ownerId: req.user!.id } });

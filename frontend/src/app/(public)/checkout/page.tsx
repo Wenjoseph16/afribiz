@@ -76,9 +76,22 @@ interface CheckoutForm {
 const PAYMENT_METHODS = [
   { id: 'MOBILE_MONEY', label: 'Mobile Money', desc: 'Wave, Orange, MTN, Flooz', icon: Phone },
   { id: 'ESCROW', label: 'Escrow AfriBiz', desc: 'Paiement sécurisé garanti', icon: ShieldCheck },
-  { id: 'CASH', label: 'Espèces à la réception', desc: 'Payez à la livraison / au retrait', icon: DollarSign },
-  { id: 'BANK_TRANSFER', label: 'Virement bancaire', desc: 'Traitement sous 24h', icon: CreditCard },
+  {
+    id: 'CASH',
+    label: 'Espèces à la réception',
+    desc: 'Payez à la livraison / au retrait',
+    icon: DollarSign,
+  },
+  {
+    id: 'BANK_TRANSFER',
+    label: 'Virement bancaire',
+    desc: 'Traitement sous 24h',
+    icon: CreditCard,
+  },
 ];
+
+const PAYMENT_DEMO_MODE =
+  process.env.NEXT_PUBLIC_PAYMENT_DEMO_MODE === 'true' || process.env.NODE_ENV !== 'production';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -107,7 +120,12 @@ export default function CheckoutPage() {
     lng: null,
   };
 
-  const { value: f, patch, setValue, savedAt } = useAutoSave<CheckoutForm>('checkout:v1', initialForm);
+  const {
+    value: f,
+    patch,
+    setValue,
+    savedAt,
+  } = useAutoSave<CheckoutForm>('checkout:v1', initialForm);
 
   const subtotal = totalAmount();
 
@@ -145,7 +163,9 @@ export default function CheckoutPage() {
         <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
           <ShoppingBag className="w-10 h-10 text-gray-400" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Votre panier est vide</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Votre panier est vide
+        </h1>
         <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md">
           Vous n'avez pas encore ajouté de produits à votre panier. Parcourez la marketplace pour
           trouver des offres incroyables.
@@ -161,7 +181,9 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-[60vh] max-w-md mx-auto flex flex-col items-center justify-center p-6 text-center">
         <ShieldCheck className="w-16 h-16 text-brand mb-6" />
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Finaliser votre commande</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Finaliser votre commande
+        </h1>
         <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md">
           Connectez-vous pour bénéficier de la protection Escrow AfriBiz, ou continuez en tant
           qu'invité.
@@ -237,6 +259,9 @@ export default function CheckoutPage() {
         deliveryLng: f.lng ?? undefined,
       };
 
+      // Affiliation : le parrain mémorisé via /r/:code est crédité si la commande est payée
+      const refCode = (typeof window !== 'undefined' && localStorage.getItem('afribiz_ref_code')) || undefined;
+
       if (isGuest) {
         const res = await apiClient.guestCheckout({
           email: f.email,
@@ -244,6 +269,7 @@ export default function CheckoutPage() {
           contactPhone: f.phone,
           type: f.deliveryType,
           ...deliveryPayload,
+          refCode,
           notes: f.notes,
           paymentMethod: f.paymentMethod,
           items: items.map((item) => ({
@@ -258,6 +284,7 @@ export default function CheckoutPage() {
         if (res.data.success) {
           setStep('success');
           clearCart();
+          localStorage.removeItem('afribiz_ref_code');
         } else {
           setError(res.data.message || 'Une erreur est survenue lors de la commande.');
         }
@@ -279,6 +306,7 @@ export default function CheckoutPage() {
           contactPhone: f.phone,
           contactName: f.name,
           notes: f.notes,
+          refCode,
           paymentMethod: f.paymentMethod,
           ...deliveryPayload,
         });
@@ -286,6 +314,7 @@ export default function CheckoutPage() {
         if (res.data.success) {
           setStep('success');
           clearCart();
+          localStorage.removeItem('afribiz_ref_code');
         } else {
           setError(res.data.message || 'Une erreur est survenue lors de la commande.');
         }
@@ -303,7 +332,9 @@ export default function CheckoutPage() {
         <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 className="w-10 h-10 text-emerald-600" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Commande confirmée !</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          Commande confirmée !
+        </h1>
         <p className="text-gray-500 dark:text-gray-400 mb-8">
           Votre commande a été transmise au marchand avec succès. Vous recevrez une notification dès
           qu'elle sera traitée.
@@ -406,7 +437,9 @@ export default function CheckoutPage() {
                           value: z.id,
                           label: z.name,
                           description: [
-                            z.fee === 0 || deliveryFree ? 'Gratuit' : formatPrice(z.fee, items[0].currency),
+                            z.fee === 0 || deliveryFree
+                              ? 'Gratuit'
+                              : formatPrice(z.fee, items[0].currency),
                             z.estimatedTime ? `~${z.estimatedTime} min` : '',
                           ]
                             .filter(Boolean)
@@ -535,8 +568,27 @@ export default function CheckoutPage() {
               <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand font-bold text-sm">
                 2
               </div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Méthode de paiement</h2>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                Méthode de paiement
+              </h2>
             </div>
+
+            {PAYMENT_DEMO_MODE && (
+              <div className="mb-5 rounded-xl border-2 border-dashed border-brand/30 bg-brand/5 p-4 flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-brand/10 text-brand shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Mode démonstration
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Le paiement est simulé pour tester le parcours complet : aucune somme ne sera
+                    débitée. L'escrow et les notifications fonctionnent normalement.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <ChoiceCard
               options={PAYMENT_METHODS.map((m) => ({
@@ -606,7 +658,13 @@ export default function CheckoutPage() {
               <div key={item.id} className="flex gap-3">
                 <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 shrink-0 overflow-hidden relative">
                   {item.image && (
-                    <Image src={item.image} alt={item.name} fill className="object-cover" sizes="48px" />
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                    />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
