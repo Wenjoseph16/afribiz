@@ -105,12 +105,61 @@ export async function getGroupBuy(ownerId: string, id: string) {
   };
 }
 
+// Types d'articles rattachables à un achat groupé (tous les catalogues)
+const GROUP_BUY_ITEM_TYPES = ['PRODUCT', 'SERVICE', 'MENU_ITEM', 'ROOM', 'RENTAL', 'EVENT', 'TRAINING'];
+
+/**
+ * Résout le nom réel d'un article depuis la base (n'importe quel type).
+ * Retourne null si l'article n'existe pas.
+ */
+async function resolveGroupBuyItemName(businessId: string, itemType: string | null, itemId: string | null): Promise<string | null> {
+  if (!itemType || !itemId) return null;
+  try {
+    switch (itemType) {
+      case 'PRODUCT': {
+        const p = await prisma.product.findFirst({ where: { id: itemId, businessId, deletedAt: null }, select: { name: true } });
+        return p?.name ?? null;
+      }
+      case 'SERVICE': {
+        const s = await prisma.service.findFirst({ where: { id: itemId, businessId }, select: { name: true } });
+        return s?.name ?? null;
+      }
+      case 'MENU_ITEM': {
+        const m = await prisma.menuItem.findFirst({ where: { id: itemId, businessId }, select: { name: true } });
+        return m?.name ?? null;
+      }
+      case 'ROOM': {
+        const r = await prisma.room.findFirst({ where: { id: itemId, businessId }, select: { name: true } });
+        return r?.name ?? null;
+      }
+      case 'RENTAL': {
+        const r = await prisma.rental.findFirst({ where: { id: itemId, businessId }, select: { name: true } });
+        return r?.name ?? null;
+      }
+      case 'EVENT': {
+        const e = await prisma.event.findFirst({ where: { id: itemId, businessId }, select: { title: true } });
+        return e?.title ?? null;
+      }
+      case 'TRAINING': {
+        const t = await prisma.training.findFirst({ where: { id: itemId, businessId }, select: { title: true } });
+        return t?.title ?? null;
+      }
+      default:
+        return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
 export async function createGroupBuy(
   ownerId: string,
   data: {
     title: string;
     description?: string;
-    productId?: string;
+    productId?: string; // rétrocompat
+    itemType?: string;
+    itemId?: string;
     price: number;
     groupPrice: number;
     minParticipants: number;
@@ -121,6 +170,16 @@ export async function createGroupBuy(
   }
 ) {
   const businessId = await getBusinessId(ownerId);
+  // Rétrocompat : productId devient itemType='PRODUCT' + itemId
+  const itemType = data.itemType || (data.productId ? 'PRODUCT' : null);
+  const itemId = data.itemId || data.productId || null;
+  if (itemType && !GROUP_BUY_ITEM_TYPES.includes(itemType)) {
+    throw new AppError('Type d\'article non pris en charge pour l\'achat groupé', 400);
+  }
+  if (itemType && itemId) {
+    const realName = await resolveGroupBuyItemName(businessId, itemType, itemId);
+    if (!realName) throw new AppError('Article introuvable dans votre catalogue', 404);
+  }
   // Guard: le prix groupe doit être strictement inférieur au prix normal
   const price = Number(data.price || 0);
   const groupPrice = Number(data.groupPrice || 0);
@@ -134,7 +193,9 @@ export async function createGroupBuy(
       businessId,
       title: data.title,
       description: data.description || null,
-      productId: data.productId || null,
+      productId: itemType === 'PRODUCT' ? itemId : null,
+      itemType,
+      itemId,
       price,
       groupPrice,
       currency: 'FCFA',
@@ -347,6 +408,8 @@ export async function confirmParticipantOrder(ownerId: string, participantId: st
     });
     if (claimed.count === 0) throw new AppError('Participation déjà traitée', 409);
 
+    const itemType = p.groupBuy.itemType || (p.groupBuy.productId ? 'PRODUCT' : null);
+    const itemId = p.groupBuy.itemId || p.groupBuy.productId || null;
     const created = await tx.order.create({
       data: {
         orderNumber,
@@ -368,7 +431,8 @@ export async function confirmParticipantOrder(ownerId: string, participantId: st
         items: {
           create: [
             {
-              productId: p.groupBuy.productId || null,
+              productId: itemType === 'PRODUCT' ? itemId : null,
+              serviceId: itemType === 'SERVICE' ? itemId : null,
               name: p.groupBuy.title,
               quantity,
               unitPrice: groupPrice,
@@ -378,10 +442,10 @@ export async function confirmParticipantOrder(ownerId: string, participantId: st
         },
       } as any,
     });
-    // Décrément du stock si produit lié
-    if (p.groupBuy.productId) {
+    // Décrément du stock UNIQUEMENT si produit physique lié
+    if (itemType === 'PRODUCT' && itemId) {
       await tx.product.update({
-        where: { id: p.groupBuy.productId },
+        where: { id: itemId },
         data: { stock: { decrement: quantity } },
       });
     }

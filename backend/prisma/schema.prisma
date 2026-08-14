@@ -519,6 +519,8 @@ enum PromotionTargetType {
   MENU_ITEM
   ROOM
   EVENT
+  TRAINING
+  RENTAL
   DELIVERY
   ALL
 }
@@ -3080,6 +3082,12 @@ model Message {
   sender          User              @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   content         String
   attachment      String?
+  productId       String?
+  productName     String?
+  productPrice    String?
+  productImage    String?
+  productSlug     String?
+  businessId      String?
   read            Boolean           @default(false)
   readAt          DateTime?
   createdAt       DateTime          @default(now())
@@ -3088,6 +3096,7 @@ model Message {
   @@index([conversationId])
   @@index([conversationId, createdAt])
   @@index([senderId])
+  @@index([productId])
   @@index([createdAt])
 }
 
@@ -7502,7 +7511,9 @@ model SavingsLoan {
 model GroupBuy {
   id              String         @id @default(uuid())
   businessId      String
-  productId       String?
+  productId       String? // Rétrocompat : itemType='PRODUCT' + itemId=productId
+  itemType        String?
+  itemId          String?
   title           String
   description     String?
   image           String?
@@ -7527,6 +7538,7 @@ model GroupBuy {
   @@index([businessId])
   @@index([status])
   @@index([endAt])
+  @@index([itemType, itemId])
 }
 
 model GroupBuyParticipant {

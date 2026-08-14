@@ -52,6 +52,34 @@ router.post(
           break;
         }
       }
+      if (it.itemType === 'MENU_ITEM') {
+        const m = await prisma.menuItem.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        if (m?.businessId) {
+          businessId = m.businessId;
+          break;
+        }
+      }
+      if (it.itemType === 'RENTAL') {
+        const rn = await prisma.rental.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        if (rn?.businessId) {
+          businessId = rn.businessId;
+          break;
+        }
+      }
+      if (it.itemType === 'EVENT') {
+        const ev = await prisma.event.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        if (ev?.businessId) {
+          businessId = ev.businessId;
+          break;
+        }
+      }
+      if (it.itemType === 'TRAINING') {
+        const tr = await prisma.training.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        if (tr?.businessId) {
+          businessId = tr.businessId;
+          break;
+        }
+      }
     }
     if (!businessId) {
       res.json(successResponse({ items: {} }));

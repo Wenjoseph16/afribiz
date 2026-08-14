@@ -164,7 +164,9 @@ model SavingsLoan {
 model GroupBuy {
   id              String         @id @default(uuid())
   businessId      String
-  productId       String?
+  productId       String? // Rétrocompat : itemType='PRODUCT' + itemId=productId
+  itemType        String?
+  itemId          String?
   title           String
   description     String?
   image           String?
@@ -189,6 +191,7 @@ model GroupBuy {
   @@index([businessId])
   @@index([status])
   @@index([endAt])
+  @@index([itemType, itemId])
 }
 
 

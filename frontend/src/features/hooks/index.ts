@@ -75,6 +75,8 @@ export {
   useCreateConversation,
 } from './messages';
 
+export type { MessageProduct } from './messages';
+
 export {
   financeKeys,
   useQuotes,

@@ -125,28 +125,34 @@ async function loadCatalogItem(
   throw new AppError(`Type d'article non supporté: ${itemType}`, 400);
 }
 
-/** Prome d'achat groupé active (prix de groupe atteint ou en cours). */
+/** Achat groupé actif (prix de groupe atteint ou en cours) — TOUS les types d'articles. */
 async function findActiveGroupBuy(businessId: string, itemType: string, itemId: string) {
   const now = new Date();
-  // L'achat groupé est relié à un produit via productId (l'extension itemType/itemId
-  // multi-catalogue arrive à l'Étape B du Chantier 2 — le moteur le supportera alors).
-  if (itemType !== 'PRODUCT') return null;
-  const g = await prisma.groupBuy.findFirst({
+  // Rattachement universel : itemType + itemId (rétrocompat : productId seul).
+  const gb = await prisma.groupBuy.findFirst({
     where: {
       businessId,
-      productId: itemId,
       isActive: true,
-      status: 'ACTIVE',
+      // ACTIVE (seuil pas encore atteint → badge) ou REACHED (seuil atteint → prix groupe)
+      status: { in: ['ACTIVE', 'REACHED'] },
       OR: [{ endAt: null }, { endAt: { gte: now } }],
+      AND: [
+        {
+          OR: [
+            { itemType, itemId },
+            { productId: itemId }, // rétrocompat (productId seul)
+          ],
+        },
+      ],
     },
   });
-  if (!g) return null;
-  const reached = g.currentCount >= g.minParticipants;
+  if (!gb) return null;
+  const reached = gb.currentCount >= gb.minParticipants;
   return {
-    id: g.id,
-    groupPrice: Number(g.groupPrice),
-    minParticipants: g.minParticipants,
-    currentCount: g.currentCount,
+    id: gb.id,
+    groupPrice: Number(gb.groupPrice),
+    minParticipants: gb.minParticipants,
+    currentCount: gb.currentCount,
     reached,
   };
 }

@@ -546,6 +546,8 @@ enum PromotionTargetType {
   MENU_ITEM
   ROOM
   EVENT
+  TRAINING
+  RENTAL
   DELIVERY
   ALL
 }
