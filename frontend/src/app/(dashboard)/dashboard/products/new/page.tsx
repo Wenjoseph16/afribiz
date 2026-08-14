@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/dashboard/PageHeader';
@@ -138,6 +138,53 @@ export default function NewProductPage() {
   const [layawayDuration, setLayawayDuration] = useState('90');
   const [layawayMinInstallment, setLayawayMinInstallment] = useState(2000);
 
+  // ── Étape C — Réglages avancés (rattachements : taxe, quantités, dispo, perso, cadeau, créneau, croisées) ──
+  const [taxRate, setTaxRate] = useState('');
+  const [minQuantity, setMinQuantity] = useState('');
+  const [maxQuantity, setMaxQuantity] = useState('');
+  const [enableAvailability, setEnableAvailability] = useState(false);
+  const [availDays, setAvailDays] = useState<number[]>([]);
+  const [availOpen, setAvailOpen] = useState('08:00');
+  const [availClose, setAvailClose] = useState('18:00');
+  const [persoFields, setPersoFields] = useState<Array<{ key: string; label: string; price: string; required: boolean }>>([
+    { key: 'p1', label: '', price: '', required: false },
+  ]);
+  const [giftWrapPrice, setGiftWrapPrice] = useState('');
+  const [timeslotMinutes, setTimeslotMinutes] = useState('');
+  const [crossSellIds, setCrossSellIds] = useState<string[]>([]);
+  const [crossSellList, setCrossSellList] = useState<any[]>([]);
+  const nextPersoKey = useRef(2);
+
+  // Ventes croisées : liste des produits du business pour le multi-sélecteur
+  useEffect(() => {
+    apiClient
+      .getMyProducts({ limit: 500 })
+      .then((res: any) => {
+        const list = res?.data?.data ?? [];
+        setCrossSellList(Array.isArray(list) ? list : list.items ?? []);
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleDay = (day: number) => {
+    setAvailDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  };
+
+  const updatePerso = (key: string, field: 'label' | 'price' | 'required', value: string | boolean) => {
+    setPersoFields((prev) => prev.map((f) => (f.key === key ? { ...f, [field]: value } : f)));
+  };
+
+  const addPersoField = () => {
+    setPersoFields((prev) => [
+      ...prev,
+      { key: `p${nextPersoKey.current++}`, label: '', price: '', required: false },
+    ]);
+  };
+
+  const removePersoField = (key: string) => {
+    setPersoFields((prev) => prev.filter((f) => f.key !== key));
+  };
+
   // Visibility
   const [isVisibleOnPublicPage, setIsVisibleOnPublicPage] = useState(true);
   const [isVisibleOnMarketplace, setIsVisibleOnMarketplace] = useState(true);
@@ -242,6 +289,66 @@ export default function NewProductPage() {
           // L'épargne ne bloque pas la création du produit
           console.warn('Layaway activation skipped:', layErr);
         }
+      }
+
+      // 4. Étape C — Réglages avancés : rattacher les mécanismes au produit créé
+      if (createdId) {
+        const attach = async (sourceType: string, config: any) => {
+          try {
+            await apiClient.createCatalogAttachment({
+              itemType: 'PRODUCT',
+              itemId: createdId,
+              sourceType,
+              config,
+            });
+          } catch (attErr) {
+            // Un rattachement qui échoue ne bloque pas la création du produit
+            console.warn(`Attachment ${sourceType} skipped:`, attErr);
+          }
+        };
+        const tasks: Promise<void>[] = [];
+        if (Number(taxRate) > 0) tasks.push(attach('TAX', { rate: Number(taxRate) }));
+        if (minQuantity !== '' || maxQuantity !== '') {
+          tasks.push(
+            attach('MIN_MAX_QTY', {
+              minQuantity: Number(minQuantity) || 1,
+              maxQuantity: Number(maxQuantity),
+            })
+          );
+        }
+        if (enableAvailability) {
+          tasks.push(
+            attach('AVAILABILITY', {
+              days: availDays,
+              hours: [{ open: availOpen, close: availClose }],
+            })
+          );
+        }
+        const validPerso = persoFields.filter((f) => f.label.trim());
+        if (validPerso.length > 0) {
+          tasks.push(
+            attach('PERSONALIZATION', {
+              fields: validPerso.map((f) => ({
+                key: f.key,
+                label: f.label.trim(),
+                price: Number(f.price) || 0,
+                required: f.required,
+              })),
+            })
+          );
+        }
+        if (Number(giftWrapPrice) > 0) tasks.push(attach('GIFT_WRAP', { price: Number(giftWrapPrice) }));
+        if (Number(timeslotMinutes) > 0) {
+          tasks.push(attach('TIMESLOT', { durationMinutes: Number(timeslotMinutes) }));
+        }
+        if (crossSellIds.length > 0) {
+          tasks.push(
+            attach('CROSS_SELL', {
+              items: crossSellIds.map((id) => ({ itemType: 'PRODUCT', itemId: id })),
+            })
+          );
+        }
+        await Promise.all(tasks);
       }
 
       form.reset();
@@ -429,7 +536,8 @@ export default function NewProductPage() {
                 Prix sur demande 💬
               </p>
               <p className="text-xs text-gray-500">
-                Le client vous contacte pour connaître le prix (idéal pour le sur-mesure, les grosses commandes)
+                Le client vous contacte pour connaître le prix (idéal pour le sur-mesure, les
+                grosses commandes)
               </p>
             </div>
           </label>
@@ -527,8 +635,8 @@ export default function NewProductPage() {
                 Activer l'épargne sur ce produit 🐷
               </p>
               <p className="text-xs text-gray-500">
-                Vos clients peuvent épargner par petites cotisations — l'argent est sécurisé en escrow
-                et vous est libéré à l'achat (commission 1%)
+                Vos clients peuvent épargner par petites cotisations — l'argent est sécurisé en
+                escrow et vous est libéré à l'achat (commission 1%)
               </p>
             </div>
           </label>
@@ -561,6 +669,245 @@ export default function NewProductPage() {
               />
             </div>
           )}
+        </Card>
+
+        {/* C3 — Réglages avancés : mécanismes rattachés (taxe, quantités, dispo, perso, cadeau, créneau, croisées) */}
+        <Card>
+          <div className="flex items-center gap-2 mb-5">
+            <Sparkles className="h-4 w-4 text-brand" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+              Réglages avancés
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Taxe par article (%)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={taxRate}
+                onChange={(e) => setTaxRate(e.target.value)}
+                placeholder="Ex. 18 (TVA)"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none transition-all"
+              />
+              <p className="text-[11px] text-gray-400 mt-1">Ajoutée au prix payé par le client</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Quantité min
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={minQuantity}
+                onChange={(e) => setMinQuantity(e.target.value)}
+                placeholder="1"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Quantité max
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={maxQuantity}
+                onChange={(e) => setMaxQuantity(e.target.value)}
+                placeholder="Ex. 10"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Disponibilité programmée */}
+          <div className="mt-5 p-4 bg-gray-50/60 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-700">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableAvailability}
+                onChange={(e) => setEnableAvailability(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Disponibilité programmée 🕒
+                </p>
+                <p className="text-xs text-gray-500">
+                  L'article n'est commandable que certains jours / heures — les commandes hors
+                  créneau sont refusées
+                </p>
+              </div>
+            </label>
+            {enableAvailability && (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Jours ouverts</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { d: 1, l: 'Lun' },
+                      { d: 2, l: 'Mar' },
+                      { d: 3, l: 'Mer' },
+                      { d: 4, l: 'Jeu' },
+                      { d: 5, l: 'Ven' },
+                      { d: 6, l: 'Sam' },
+                      { d: 0, l: 'Dim' },
+                    ].map(({ d, l }) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => toggleDay(d)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all',
+                          availDays.includes(d)
+                            ? 'border-brand bg-brand-50 dark:bg-brand-900/30 text-brand'
+                            : 'border-gray-200 dark:border-gray-700 text-gray-500'
+                        )}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Aucun jour sélectionné = ouvert tous les jours
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Ouvre à</label>
+                    <input
+                      type="time"
+                      value={availOpen}
+                      onChange={(e) => setAvailOpen(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Ferme à</label>
+                    <input
+                      type="time"
+                      value={availClose}
+                      onChange={(e) => setAvailClose(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Personnalisation */}
+          <div className="mt-5">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Personnalisation ✍️
+                </p>
+                <p className="text-xs text-gray-500">
+                  Gravure, broderie, taille sur mesure — champ client avec prix additionnel
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addPersoField}
+                className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+              >
+                <Plus className="w-3.5 h-3.5" /> Ajouter un champ
+              </button>
+            </div>
+            <div className="space-y-2">
+              {persoFields.map((f) => (
+                <div key={f.key} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto_auto] gap-2 items-center">
+                  <input
+                    value={f.label}
+                    onChange={(e) => updatePerso(f.key, 'label', e.target.value)}
+                    placeholder="Ex. Texte à graver"
+                    className="px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={f.price}
+                    onChange={(e) => updatePerso(f.key, 'price', e.target.value)}
+                    placeholder="Prix FCFA"
+                    className="px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
+                  />
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={f.required}
+                      onChange={(e) => updatePerso(f.key, 'required', e.target.checked)}
+                      className="w-3.5 h-3.5 rounded text-brand"
+                    />
+                    Requis
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => removePersoField(f.key)}
+                    className="p-1.5 text-gray-400 hover:text-red-500"
+                    title="Retirer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Emballage cadeau + créneau + ventes croisées */}
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Emballage cadeau (FCFA)
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={giftWrapPrice}
+                onChange={(e) => setGiftWrapPrice(e.target.value)}
+                placeholder="Ex. 1000"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Créneau horaire (min)
+              </label>
+              <input
+                type="number"
+                min={5}
+                value={timeslotMinutes}
+                onChange={(e) => setTimeslotMinutes(e.target.value)}
+                placeholder="Ex. 30"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none transition-all"
+              />
+              <p className="text-[11px] text-gray-400 mt-1">Réservation sur créneau — 1 unité max</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Ventes croisées 🔁
+              </label>
+              <select
+                multiple
+                value={crossSellIds}
+                onChange={(e) =>
+                  setCrossSellIds(Array.from(e.target.selectedOptions).map((o) => o.value))
+                }
+                className="w-full px-3 py-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm min-h-[44px] focus:border-brand outline-none"
+              >
+                {crossSellList.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-400 mt-1">« Les clients achètent aussi » (Ctrl + clic)</p>
+            </div>
+          </div>
         </Card>
 
         {/* D — Stock */}

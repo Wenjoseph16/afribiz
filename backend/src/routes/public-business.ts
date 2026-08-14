@@ -32,49 +32,70 @@ router.post(
     let businessId: string | undefined;
     for (const it of items) {
       if (it.itemType === 'PRODUCT') {
-        const p = await prisma.product.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        const p = await prisma.product.findUnique({
+          where: { id: it.itemId },
+          select: { businessId: true },
+        });
         if (p?.businessId) {
           businessId = p.businessId;
           break;
         }
       }
       if (it.itemType === 'SERVICE') {
-        const s = await prisma.service.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        const s = await prisma.service.findUnique({
+          where: { id: it.itemId },
+          select: { businessId: true },
+        });
         if (s?.businessId) {
           businessId = s.businessId;
           break;
         }
       }
       if (it.itemType === 'ROOM') {
-        const r = await prisma.room.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        const r = await prisma.room.findUnique({
+          where: { id: it.itemId },
+          select: { businessId: true },
+        });
         if (r?.businessId) {
           businessId = r.businessId;
           break;
         }
       }
       if (it.itemType === 'MENU_ITEM') {
-        const m = await prisma.menuItem.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        const m = await prisma.menuItem.findUnique({
+          where: { id: it.itemId },
+          select: { businessId: true },
+        });
         if (m?.businessId) {
           businessId = m.businessId;
           break;
         }
       }
       if (it.itemType === 'RENTAL') {
-        const rn = await prisma.rental.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        const rn = await prisma.rental.findUnique({
+          where: { id: it.itemId },
+          select: { businessId: true },
+        });
         if (rn?.businessId) {
           businessId = rn.businessId;
           break;
         }
       }
       if (it.itemType === 'EVENT') {
-        const ev = await prisma.event.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        const ev = await prisma.event.findUnique({
+          where: { id: it.itemId },
+          select: { businessId: true },
+        });
         if (ev?.businessId) {
           businessId = ev.businessId;
           break;
         }
       }
       if (it.itemType === 'TRAINING') {
-        const tr = await prisma.training.findUnique({ where: { id: it.itemId }, select: { businessId: true } });
+        const tr = await prisma.training.findUnique({
+          where: { id: it.itemId },
+          select: { businessId: true },
+        });
         if (tr?.businessId) {
           businessId = tr.businessId;
           break;
@@ -85,6 +106,44 @@ router.post(
       res.json(successResponse({ items: {} }));
       return;
     }
+
+    // Résoudre les noms des ventes croisées (affichage « les clients achètent aussi »)
+    const crossSellNames = async (
+      itemsArr: Array<{ itemType: string; itemId: string }>
+    ): Promise<Array<{ itemType: string; itemId: string; name?: string }>> => {
+      const out: Array<{ itemType: string; itemId: string; name?: string }> = [];
+      for (const c of itemsArr.slice(0, 8)) {
+        let name: string | undefined;
+        try {
+          if (c.itemType === 'PRODUCT') {
+            const p = await prisma.product.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            name = p?.name;
+          } else if (c.itemType === 'SERVICE') {
+            const s = await prisma.service.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            name = s?.name;
+          } else if (c.itemType === 'MENU_ITEM') {
+            const m = await prisma.menuItem.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            name = m?.name;
+          } else if (c.itemType === 'ROOM') {
+            const r = await prisma.room.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            name = r?.name;
+          } else if (c.itemType === 'RENTAL') {
+            const r = await prisma.rental.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            name = r?.name;
+          } else if (c.itemType === 'EVENT') {
+            const e = await prisma.event.findUnique({ where: { id: c.itemId }, select: { title: true } });
+            name = e?.title;
+          } else if (c.itemType === 'TRAINING') {
+            const t = await prisma.training.findUnique({ where: { id: c.itemId }, select: { title: true } });
+            name = t?.title;
+          }
+        } catch {
+          /* nom optionnel */
+        }
+        out.push({ itemType: c.itemType, itemId: c.itemId, name });
+      }
+      return out;
+    };
 
     const result: Record<string, any> = {};
     for (const it of items) {
@@ -98,12 +157,25 @@ router.post(
           currency: price.currency,
           discountAmount: price.discountAmount,
           breakdown: price.breakdown,
+          surcharges: price.surcharges,
           available: price.available,
           reason: price.reason ?? null,
           badges: price.badges,
           layawayOfferId: price.layawayOfferId ?? null,
           groupBuyId: price.groupBuyId ?? null,
           promotional: price.promotional,
+          // Étape C : mécanismes rattachés
+          taxRate: price.taxRate ?? null,
+          taxAmount: price.taxAmount,
+          minQuantity: price.minQuantity ?? null,
+          maxQuantity: price.maxQuantity ?? null,
+          availabilityOpen: price.availabilityOpen,
+          availabilityReason: price.availabilityReason ?? null,
+          personalizationFields: price.personalizationFields,
+          giftWrapPrice: price.giftWrapPrice ?? null,
+          crossSellItems: await crossSellNames(price.crossSellItems),
+          timeslotMinutes: price.timeslotMinutes ?? null,
+          lowStockThreshold: price.lowStockThreshold ?? null,
         };
       } catch (err) {
         result[`${it.itemType}:${it.itemId}`] = {

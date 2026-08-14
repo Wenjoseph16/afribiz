@@ -127,6 +127,7 @@ import {
   africanUnitRoutes,
   agentNetworkRoutes,
   groupBuyRoutes,
+  catalogAttachmentRoutes,
   taxRoutes,
   whatsappRoutes,
   whatsappWebhookRoutes,
@@ -470,6 +471,9 @@ app.use('/api/business/agents', agentNetworkRoutes);
 
 // 4.7 — Achat Groupé
 app.use('/api/business/group-buys', groupBuyRoutes);
+
+// 4.8 — Rattachements catalogue (taxe, quantité min/max, dispo, perso, cadeau, croisées, créneau, urgence)
+app.use('/api/business/catalog-attachments', catalogAttachmentRoutes);
 
 // 4.5 — Taxes multi-pays ZLECAF
 app.use('/api/taxes', taxRoutes);

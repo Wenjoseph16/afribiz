@@ -6,6 +6,9 @@ import {
   publishCheckoutCompleted,
   publishOrderPlaced,
   publishNewClient,
+  publishPaymentReceived,
+  publishPaymentFailed,
+  publishEscrowCreated,
 } from '../events/publishers';
 import {
   processMobileMoney,
@@ -329,6 +332,7 @@ export async function guestCheckout(data: {
     unitPrice: number;
     image?: string;
     discountAmount: number;
+    surchargeTotal?: number;
   }> = [];
   let computedSubtotal = 0;
   for (const item of data.items) {
@@ -339,10 +343,15 @@ export async function guestCheckout(data: {
       itemId,
       quantity: item.quantity,
       clientPrice: Number(item.unitPrice) || 0,
+      options: (item as any).options,
     });
     if (!price.available) {
-      throw new AppError(`${price.name || item.name || 'Article'}: ${price.reason || 'indisponible'}`, 400);
+      throw new AppError(
+        `${price.name || item.name || 'Article'}: ${price.reason || 'indisponible'}`,
+        400
+      );
     }
+    const surchargeTotal = price.surcharges.reduce((s, x) => s + x.amount, 0);
     pricedLines.push({
       productId: item.productId,
       serviceId: item.serviceId,
@@ -351,8 +360,9 @@ export async function guestCheckout(data: {
       unitPrice: price.unitPrice,
       image: item.image,
       discountAmount: price.discountAmount,
+      surchargeTotal,
     });
-    computedSubtotal += price.unitPrice * item.quantity;
+    computedSubtotal += price.unitPrice * item.quantity + surchargeTotal;
   }
   const subtotal = computedSubtotal;
   // Remise totale = somme des remises moteur par ligne (tracée sur la commande)
@@ -384,12 +394,13 @@ export async function guestCheckout(data: {
         businessId,
         type: (data.type as any) || 'DELIVERY',
         source: 'WEB_SITE',
-        status: 'PENDING',          guestEmail: data.email,
-          contactName: data.contactName || null,
-          contactPhone: data.contactPhone || null,
-          subtotal,
-          discountAmount: discountAmount || null,
-          deliveryFee,
+        status: 'PENDING',
+        guestEmail: data.email,
+        contactName: data.contactName || null,
+        contactPhone: data.contactPhone || null,
+        subtotal,
+        discountAmount: discountAmount || null,
+        deliveryFee,
         deliveryZoneId: data.deliveryZoneId || null,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         totalAmount: total,
@@ -397,25 +408,26 @@ export async function guestCheckout(data: {
         deliveryAddress: data.deliveryAddress || null,
         deliveryLat: data.deliveryLat || null,
         deliveryLng: data.deliveryLng || null,
-        notes: data.notes || null,          items: {
-            create: pricedLines.map((line) => ({
-              productId: line.productId || null,
-              serviceId: line.serviceId || null,
-              name: line.name,
-              quantity: line.quantity,
-              unitPrice: line.unitPrice,
-              total: line.unitPrice * line.quantity,
-            })),
-          },
+        notes: data.notes || null,
+        items: {
+          create: pricedLines.map((line) => ({
+            productId: line.productId || null,
+            serviceId: line.serviceId || null,
+            name: line.name,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            total: line.unitPrice * line.quantity,
+          })),
         },
-        include: {
-          items: true,
-          business: { select: { id: true, name: true } },
-        },
-      });
-
-      return created;
+      },
+      include: {
+        items: true,
+        business: { select: { id: true, name: true } },
+      },
     });
+
+    return created;
+  });
 
   // Notifier le business : nouvelle commande invité (temps réel + notification propriétaire)
   if (businessId) {
@@ -441,6 +453,64 @@ export async function guestCheckout(data: {
       }
     } catch {
       // Notification non bloquante
+    }
+  }
+
+  // Paiement invité : les commandes invité restaient sans traitement de paiement.
+  // En mode démonstration (et en test), le paiement mobile money est simulé et
+  // réussi, l'escrow est créé — le parcours complet fonctionne sans clé API.
+  if (data.paymentMethod && data.paymentMethod !== 'CASH' && businessId) {
+    try {
+      if (data.paymentMethod === 'ESCROW') {
+        const escrowRate = await getEscrowCommissionRate();
+        await prisma.escrow.create({
+          data: {
+            businessId,
+            orderId: order.id,
+            amount: total,
+            currency: 'FCFA',
+            status: 'HELD',
+            feeRate: escrowRate * 100,
+            fee: 0,
+            notes: `Escrow invité créé lors du checkout (commande ${orderNumber})`,
+          },
+        });
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { paymentStatus: 'ESCROW_HELD' },
+        });
+      } else {
+        const paymentResult = await processMobileMoney(
+          data.paymentMethod,
+          data.contactPhone || '',
+          total,
+          `Commande ${orderNumber}`
+        );
+        if (paymentResult) {
+          await saveTransaction({
+            businessId,
+            orderId: order.id,
+            amount: total,
+            currency: 'FCFA',
+            provider: data.paymentMethod,
+            providerRef: paymentResult.providerRef,
+            status: paymentResult.status,
+            fee: paymentResult.fee || 0,
+          });
+          if (paymentResult.status === 'SUCCESS') {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: { paymentStatus: 'PAID', paidAt: new Date() },
+            });
+          }
+        }
+      }
+    } catch {
+      // Payment failed — order still created, mark as payment pending
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { paymentStatus: 'FAILED' },
+      });
     }
   }
 
@@ -507,6 +577,7 @@ export async function checkout(
     quantity: number;
     unitPrice: number;
     discountAmount: number;
+    surchargeTotal?: number;
     notes?: string | null;
     priceEngine: any;
   }> = [];
@@ -535,10 +606,12 @@ export async function checkout(
       itemId,
       quantity: item.quantity,
       clientPrice: Number(item.unitPrice) || 0,
+      options: (item as any).options,
     });
     if (!price.available) {
       throw new AppError(`${item.name || 'Article'}: ${price.reason || 'indisponible'}`, 400);
     }
+    const surchargeTotal = price.surcharges.reduce((s, x) => s + x.amount, 0);
     pricedLines.push({
       productId: item.productId,
       variantId: item.variantId,
@@ -547,10 +620,11 @@ export async function checkout(
       quantity: item.quantity,
       unitPrice: price.unitPrice,
       discountAmount: price.discountAmount,
+      surchargeTotal,
       notes: item.notes,
       priceEngine: price,
     });
-    subtotal += price.unitPrice * item.quantity;
+    subtotal += price.unitPrice * item.quantity + surchargeTotal;
   }
 
   // ── Remise totale : remises du PriceEngine (par ligne) + coupon ──
@@ -684,7 +758,7 @@ export async function checkout(
       if (data.paymentMethod === 'ESCROW') {
         // Commission escrow plateforme appliquée à la libération (net au wallet)
         const escrowRate = await getEscrowCommissionRate();
-        await prisma.escrow.create({
+        const escrow = await prisma.escrow.create({
           data: {
             businessId,
             orderId: order.id,
@@ -699,6 +773,13 @@ export async function checkout(
         await prisma.order.update({
           where: { id: order.id },
           data: { paymentStatus: 'ESCROW_HELD' },
+        });
+        // Notifier l'acheteur : son paiement est sécurisé dans l'escrow
+        publishEscrowCreated({
+          userId,
+          escrowId: escrow.id,
+          amount: total.toString(),
+          orderId: order.id,
         });
       } else if (data.paymentMethod === 'STRIPE') {
         paymentResult = await processStripePayment(
@@ -725,7 +806,7 @@ export async function checkout(
         );
       }
       if (paymentResult) {
-        await saveTransaction({
+        const transaction = await saveTransaction({
           businessId,
           userId,
           orderId: order.id,
@@ -740,6 +821,21 @@ export async function checkout(
           await prisma.order.update({
             where: { id: order.id },
             data: { paymentStatus: 'PAID', paidAt: new Date() },
+          });
+          // Notifier l'acheteur : paiement reçu
+          publishPaymentReceived({
+            userId,
+            paymentId: transaction.id,
+            businessName: order.business?.name || 'AfriBiz',
+            amount: total.toString(),
+            businessId,
+          });
+        } else {
+          publishPaymentFailed({
+            userId,
+            paymentId: transaction.id,
+            amount: total.toString(),
+            reason: `Paiement ${data.paymentMethod} en attente de confirmation.`,
           });
         }
       }

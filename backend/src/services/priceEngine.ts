@@ -17,6 +17,13 @@ import { logger } from '../lib/logger';
  * pour qu'il s'empile sur la remise principale.
  */
 
+export interface PriceItemOptions {
+  /** Personnalisations choisies : { keyDuChamp: 'valeur' } */
+  personalizations?: Record<string, string>;
+  /** Emballage cadeau demandé */
+  giftWrap?: boolean;
+}
+
 export interface PriceItemInput {
   itemType: string; // PRODUCT | SERVICE | MENU_ITEM | ROOM | RENTAL | EVENT | TRAINING
   itemId: string;
@@ -25,6 +32,14 @@ export interface PriceItemInput {
   clientPrice?: number;
   /** Coupon saisi (validé séparément par findValidCoupon au checkout) */
   couponCode?: string;
+  /** Options à valeur ajoutée (personnalisation, emballage cadeau) */
+  options?: PriceItemOptions;
+}
+
+export interface SurchargeEntry {
+  mechanism: string;
+  label: string;
+  amount: number; // supplément en FCFA (positif, ajouté au total)
 }
 
 export interface PriceBreakdownEntry {
@@ -41,16 +56,30 @@ export interface PriceResult {
   basePrice: number; // prix catalogue
   unitPrice: number; // prix effectif (après remises)
   quantity: number;
-  lineTotal: number;
+  lineTotal: number; // unitPrice * quantity + suppléments (taxe, perso, cadeau)
   discountAmount: number;
   currency: string;
   breakdown: PriceBreakdownEntry[];
+  /** Suppléments ajoutés (taxe, personnalisation, emballage cadeau) */
+  surcharges: SurchargeEntry[];
   available: boolean;
-  reason?: string; // si indisponible (stock, promo expirée…)
+  reason?: string; // si indisponible (stock, fermé, hors bornes, créneau…)
   badges: string[];
   layawayOfferId?: string | null;
   groupBuyId?: string | null;
   promotional: boolean;
+  // ── Étape C : mécanismes rattachés (taxe, dispo, min/max, perso, cadeau, croisées, créneau, urgence) ──
+  taxRate?: number;
+  taxAmount: number;
+  minQuantity?: number;
+  maxQuantity?: number;
+  availabilityOpen: boolean;
+  availabilityReason?: string;
+  personalizationFields: Array<{ key: string; label: string; price: number; required: boolean }>;
+  giftWrapPrice?: number;
+  crossSellItems: Array<{ itemType: string; itemId: string }>;
+  timeslotMinutes?: number;
+  lowStockThreshold?: number;
 }
 
 interface CatalogItem {
@@ -64,6 +93,7 @@ interface CatalogItem {
   promotionalPrice?: number | null;
   promotionEndsAt?: Date | null;
   allowsNegotiation?: boolean;
+  lowStockThreshold?: number | null;
   images?: string[] | null;
 }
 
@@ -76,7 +106,9 @@ async function loadCatalogItem(
   const base = { id: itemId, name: '', price: 0, currency: 'FCFA', stock: null, categoryId: null };
 
   if (itemType === 'PRODUCT') {
-    const p = await prisma.product.findFirst({ where: { id: itemId, businessId, deletedAt: null } });
+    const p = await prisma.product.findFirst({
+      where: { id: itemId, businessId, deletedAt: null },
+    });
     if (!p) throw new AppError('Produit introuvable', 404);
     return {
       ...base,
@@ -89,23 +121,44 @@ async function loadCatalogItem(
       promotionalPrice: p.promotionalPrice != null ? Number(p.promotionalPrice) : null,
       promotionEndsAt: p.promotionEndsAt,
       allowsNegotiation: (p as any).allowsNegotiation,
+      lowStockThreshold: (p as any).lowStockThreshold ?? null,
       images: p.images,
     };
   }
   if (itemType === 'SERVICE') {
     const s = await prisma.service.findFirst({ where: { id: itemId, businessId } });
     if (!s) throw new AppError('Service introuvable', 404);
-    return { ...base, name: s.name, price: Number(s.price || 0), currency: s.currency || 'FCFA', categoryId: (s as any).categoryId ?? null, images: s.images };
+    return {
+      ...base,
+      name: s.name,
+      price: Number(s.price || 0),
+      currency: s.currency || 'FCFA',
+      categoryId: (s as any).categoryId ?? null,
+      images: s.images,
+    };
   }
   if (itemType === 'ROOM') {
     const r = await prisma.room.findFirst({ where: { id: itemId, businessId } });
     if (!r) throw new AppError('Chambre introuvable', 404);
-    return { ...base, name: r.name, price: Number(r.price || 0), currency: r.currency || 'FCFA', categoryId: (r as any).categoryId ?? null, images: r.images };
+    return {
+      ...base,
+      name: r.name,
+      price: Number(r.price || 0),
+      currency: r.currency || 'FCFA',
+      categoryId: (r as any).categoryId ?? null,
+      images: r.images,
+    };
   }
   if (itemType === 'RENTAL') {
     const r = await prisma.rental.findFirst({ where: { id: itemId, businessId } });
     if (!r) throw new AppError('Location introuvable', 404);
-    return { ...base, name: r.name, price: Number(r.price || 0), currency: r.currency || 'FCFA', images: r.images };
+    return {
+      ...base,
+      name: r.name,
+      price: Number(r.price || 0),
+      currency: r.currency || 'FCFA',
+      images: r.images,
+    };
   }
   if (itemType === 'EVENT') {
     const e = await prisma.event.findFirst({ where: { id: itemId, businessId } });
@@ -239,6 +292,66 @@ async function findTierDiscount(
   return best ? { percent: best.percent, minQuantity: best.minQuantity } : null;
 }
 
+const MECHANISM_SOURCE_TYPES = [
+  'TAX',
+  'MIN_MAX_QTY',
+  'AVAILABILITY',
+  'PERSONALIZATION',
+  'GIFT_WRAP',
+  'CROSS_SELL',
+  'TIMESLOT',
+  'LOW_STOCK',
+];
+
+/** Charge tous les mécanismes rattachés à l'article en UNE seule requête. */
+async function findMechanismAttachments(
+  businessId: string,
+  itemType: string,
+  itemId: string
+): Promise<Map<string, any>> {
+  const now = new Date();
+  const rows = await prisma.catalogAttachment.findMany({
+    where: {
+      businessId,
+      itemType,
+      itemId,
+      isActive: true,
+      sourceType: { in: MECHANISM_SOURCE_TYPES },
+      AND: [
+        { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+        { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+      ],
+    },
+    select: { sourceType: true, config: true },
+  });
+  const map = new Map<string, any>();
+  for (const r of rows) map.set(r.sourceType, (r.config as any) || {});
+  return map;
+}
+
+/** L'article est-il ouvert maintenant (disponibilité programmée) ? */
+function isOpenNow(config: any): { open: boolean; reason?: string } {
+  const days: number[] = Array.isArray(config?.days) ? config.days : [];
+  const hours: Array<{ open: string; close: string }> = Array.isArray(config?.hours)
+    ? config.hours
+    : [];
+  const now = new Date();
+  const day = now.getDay();
+  if (days.length > 0 && !days.includes(day)) {
+    return { open: false, reason: 'Fermé aujourd\'hui' };
+  }
+  if (hours.length === 0) return { open: true };
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  for (const h of hours) {
+    const [oh, om] = h.open.split(':').map(Number);
+    const [ch, cm] = h.close.split(':').map(Number);
+    const openMin = oh * 60 + om;
+    const closeMin = ch * 60 + cm;
+    if (minutes >= openMin && minutes < closeMin) return { open: true };
+  }
+  return { open: false, reason: 'Fermé actuellement' };
+}
+
 /**
  * Calcule le prix effectif d'une ligne de commande.
  * TOUJOURS côté serveur — les prix envoyés par le client sont ignorés.
@@ -265,7 +378,13 @@ export async function computePrice(
   }
 
   // 1. Prix flash (fenêtre de temps)
-  if (!appliedMechanism && item.isPromotional && item.promotionalPrice != null && item.promotionalPrice > 0 && item.promotionalPrice < unitPrice) {
+  if (
+    !appliedMechanism &&
+    item.isPromotional &&
+    item.promotionalPrice != null &&
+    item.promotionalPrice > 0 &&
+    item.promotionalPrice < unitPrice
+  ) {
     if (!item.promotionEndsAt || item.promotionEndsAt >= new Date()) {
       unitPrice = item.promotionalPrice;
       appliedMechanism = 'FLASH';
@@ -282,7 +401,11 @@ export async function computePrice(
       if (group.reached && group.groupPrice < unitPrice) {
         unitPrice = group.groupPrice;
         appliedMechanism = 'GROUP_BUY';
-        breakdown.push({ mechanism: 'GROUP_BUY', label: 'Achat groupé', amount: basePrice - unitPrice });
+        breakdown.push({
+          mechanism: 'GROUP_BUY',
+          label: 'Achat groupé',
+          amount: basePrice - unitPrice,
+        });
       }
     }
   }
@@ -327,11 +450,20 @@ export async function computePrice(
       const coupon = await prisma.coupon.findFirst({
         where: { code: { equals: input.couponCode.trim(), mode: 'insensitive' }, businessId },
       });
-      if (coupon && coupon.status === 'ACTIVE' && (!coupon.expiresAt || coupon.expiresAt >= new Date())) {
+      if (
+        coupon &&
+        coupon.status === 'ACTIVE' &&
+        (!coupon.expiresAt || coupon.expiresAt >= new Date())
+      ) {
         const discount = computeCouponDiscount(coupon, unitPrice);
         if (discount > 0) {
           unitPrice -= discount;
-          breakdown.push({ mechanism: 'COUPON', label: `Coupon ${coupon.code}`, amount: discount, cumulative: true });
+          breakdown.push({
+            mechanism: 'COUPON',
+            label: `Coupon ${coupon.code}`,
+            amount: discount,
+            cumulative: true,
+          });
           badges.push(`🏷️ ${coupon.code}`);
         }
       }
@@ -340,6 +472,10 @@ export async function computePrice(
     }
   }
 
+  // ── Mécanismes rattachés (Étape C) — chargés en UNE requête ──
+  const mechanisms = await findMechanismAttachments(businessId, input.itemType, input.itemId);
+  const surcharges: SurchargeEntry[] = [];
+
   // Disponibilité : stock suffisant ?
   let available = true;
   let reason: string | undefined;
@@ -347,6 +483,108 @@ export async function computePrice(
     available = false;
     reason = `Stock insuffisant (${item.stock} disponible)`;
   }
+
+  // Quantité min / max
+  const mq = mechanisms.get('MIN_MAX_QTY');
+  if (available && mq) {
+    const minQ = mq.minQuantity ?? 1;
+    const maxQ = mq.maxQuantity ?? 0;
+    if (quantity < minQ) {
+      available = false;
+      reason = `Quantité minimum : ${minQ} unité(s)`;
+    } else if (maxQ > 0 && quantity > maxQ) {
+      available = false;
+      reason = `Quantité maximum : ${maxQ} unité(s)`;
+    }
+  }
+
+  // Disponibilité programmée (jours + heures)
+  const av = mechanisms.get('AVAILABILITY');
+  const avOpen = av ? isOpenNow(av) : { open: true };
+  if (available && av && !avOpen.open) {
+    available = false;
+    reason = avOpen.reason || 'Fermé actuellement';
+  }
+
+  // Créneau horaire (1 unité max par réservation)
+  const ts = mechanisms.get('TIMESLOT');
+  const timeslotMinutes = ts ? (ts.durationMinutes ?? 30) : undefined;
+  if (available && ts && quantity > 1) {
+    available = false;
+    reason = 'Sur créneau horaire — 1 unité par réservation';
+  }
+  if (ts) badges.push('⏰ Sur créneau');
+
+  // Urgence / stock limité (seuil du rattachement LOW_STOCK ou seuil produit)
+  const low = mechanisms.get('LOW_STOCK');
+  const lowStockThreshold = low
+    ? (low.threshold ?? 3)
+    : item.lowStockThreshold ?? undefined;
+  if (
+    lowStockThreshold != null &&
+    item.stock !== null &&
+    item.stock !== undefined &&
+    item.stock > 0 &&
+    item.stock <= lowStockThreshold
+  ) {
+    badges.push(`🔥 Plus que ${item.stock} en stock`);
+  }
+
+  // Taxe par article (appliquée sur le prix APRÈS remises)
+  let taxRate: number | undefined;
+  let taxAmount = 0;
+  const tax = mechanisms.get('TAX');
+  if (tax && Number(tax.rate) > 0) {
+    taxRate = Number(tax.rate);
+    // TVA par unité × quantité (comptabilité correcte)
+    taxAmount = Math.round((unitPrice * taxRate) / 100) * quantity;
+    if (taxAmount > 0) {
+      surcharges.push({ mechanism: 'TAX', label: `Taxe ${taxRate}%`, amount: taxAmount });
+    }
+  }
+
+  // Personnalisation (champs choisis par le client, prix par unité)
+  const persoConfig = mechanisms.get('PERSONALIZATION');
+  const personalizationFields: Array<{
+    key: string;
+    label: string;
+    price: number;
+    required: boolean;
+  }> = Array.isArray(persoConfig?.fields) ? persoConfig.fields : [];
+  const chosen = input.options?.personalizations || {};
+  for (const f of personalizationFields) {
+    const val = chosen[f.key];
+    if (f.required && (!val || !val.trim())) {
+      throw new AppError(`Personnalisation requise : ${f.label}`, 400);
+    }
+    if (val && val.trim() && Number(f.price) > 0) {
+      surcharges.push({
+        mechanism: 'PERSONALIZATION',
+        label: f.label,
+        amount: Number(f.price) * quantity,
+      });
+    }
+  }
+  for (const key of Object.keys(chosen)) {
+    if (!personalizationFields.some((f) => f.key === key)) {
+      throw new AppError(`Personnalisation inconnue : ${key}`, 400);
+    }
+  }
+
+  // Emballage cadeau (par commande)
+  const gift = mechanisms.get('GIFT_WRAP');
+  const giftWrapPrice = gift ? Number(gift.price ?? 0) : undefined;
+  if (giftWrapPrice != null && input.options?.giftWrap && giftWrapPrice > 0) {
+    surcharges.push({ mechanism: 'GIFT_WRAP', label: 'Emballage cadeau', amount: giftWrapPrice });
+  }
+
+  // Ventes croisées
+  const crossConfig = mechanisms.get('CROSS_SELL');
+  const crossSellItems: Array<{ itemType: string; itemId: string }> = Array.isArray(
+    crossConfig?.items
+  )
+    ? crossConfig.items
+    : [];
 
   // Badge épargne
   let layawayOfferId: string | null = null;
@@ -361,7 +599,8 @@ export async function computePrice(
   }
 
   const discountAmount = Math.max(0, basePrice - unitPrice);
-  const lineTotal = unitPrice * quantity;
+  const surchargeTotal = surcharges.reduce((s, x) => s + x.amount, 0);
+  const lineTotal = unitPrice * quantity + surchargeTotal;
 
   return {
     itemType: input.itemType,
@@ -374,11 +613,23 @@ export async function computePrice(
     discountAmount,
     currency,
     breakdown,
+    surcharges,
     available,
     reason,
     badges,
     layawayOfferId,
     groupBuyId: null,
     promotional: appliedMechanism !== null,
+    taxRate,
+    taxAmount,
+    minQuantity: mq ? (mq.minQuantity ?? 1) : undefined,
+    maxQuantity: mq ? (mq.maxQuantity ?? undefined) : undefined,
+    availabilityOpen: avOpen.open,
+    availabilityReason: av && !avOpen.open ? avOpen.reason : undefined,
+    personalizationFields,
+    giftWrapPrice,
+    crossSellItems,
+    timeslotMinutes,
+    lowStockThreshold,
   };
 }

@@ -1507,6 +1507,14 @@ export interface ApiClientMethods {
   confirmGroupBuyParticipant(participantId: string): Promise<any>;
 
   // ============================================
+  // CATALOG ATTACHMENTS (injectCatalogAttachments)
+  // ============================================
+  getCatalogAttachments(params?: any): Promise<any>;
+  createCatalogAttachment(data: any): Promise<any>;
+  updateCatalogAttachment(id: string, data: any): Promise<any>;
+  deleteCatalogAttachment(id: string): Promise<any>;
+
+  // ============================================
   // TAXES ZLECAF (injectTaxes) — Phase 4.5
   // ============================================
   getCountryTaxes(): Promise<any>;
