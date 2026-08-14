@@ -1,5 +1,6 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
+import { computePrice } from './priceEngine';
 
 export async function getActiveLives(params?: {
   status?: string;
@@ -147,13 +148,30 @@ export async function addLiveProduct(liveId: string, businessId: string, data: a
   const live = await prisma.live.findFirst({ where: { id: liveId, businessId } });
   if (!live) throw new AppError('Live non trouvé', 404);
 
+  // Tout type d'article du catalogue peut être vendu en live (produit, service, chambre…)
+  const itemType = data.itemType || 'PRODUCT';
+  const itemId = data.itemId || data.productId || null;
+  let price = Number(data.price) || 0;
+
+  // Prix MOTEUR (jamais le prix client) : promo, flash, tiers appliqués
+  if (itemId) {
+    const priced = await computePrice(businessId, {
+      itemType,
+      itemId,
+      quantity: 1,
+    }).catch(() => null);
+    if (priced) price = priced.unitPrice;
+  }
+
   return prisma.liveProduct.create({
     data: {
       liveId,
-      productId: data.productId || null,
+      productId: itemType === 'PRODUCT' ? itemId : null,
+      itemType,
+      itemId,
       name: data.name,
       description: data.description,
-      price: data.price,
+      price,
       currency: data.currency || 'FCFA',
       image: data.image,
       stock: data.stock || 0,

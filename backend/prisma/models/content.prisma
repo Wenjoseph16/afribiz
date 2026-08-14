@@ -233,6 +233,9 @@ model LiveProduct {
   liveId         String
   live           Live     @relation(fields: [liveId], references: [id], onDelete: Cascade)
   productId      String?
+  // Tout type d'article du catalogue peut être vendu en live (service, chambre, location…)
+  itemType       String   @default("PRODUCT")
+  itemId         String?
   name           String
   description    String?
   price          Decimal  @db.Decimal(12, 2)

@@ -1,6 +1,7 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { publishOrderPlaced, publishNewClient } from '../events/publishers';
+import { computePrice } from './priceEngine';
 
 export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId: string) {
   let media: any;
@@ -38,13 +39,19 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
           businessId: true,
         },
       });
-      if (product)
+      if (product) {
+        const priced = await computePrice(business.id, {
+          itemType: 'PRODUCT',
+          itemId: product.id,
+          quantity: 1,
+        }).catch(() => null);
         commerce = {
           type: 'PRODUCT',
-          data: product,
+          data: { ...product, price: priced ? priced.unitPrice : product.price },
           action: 'add_to_cart',
           label: 'Ajouter au panier',
         };
+      }
       break;
     }
     case 'SERVICE': {
@@ -59,8 +66,19 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
           businessId: true,
         },
       });
-      if (service)
-        commerce = { type: 'SERVICE', data: service, action: 'book', label: 'Réserver maintenant' };
+      if (service) {
+        const priced = await computePrice(business.id, {
+          itemType: 'SERVICE',
+          itemId: service.id,
+          quantity: 1,
+        }).catch(() => null);
+        commerce = {
+          type: 'SERVICE',
+          data: { ...service, price: priced ? priced.unitPrice : service.price },
+          action: 'book',
+          label: 'Réserver maintenant',
+        };
+      }
       break;
     }
     case 'MENU_ITEM': {
@@ -75,8 +93,19 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
           businessId: true,
         },
       });
-      if (menuItem)
-        commerce = { type: 'MENU_ITEM', data: menuItem, action: 'order', label: 'Commander' };
+      if (menuItem) {
+        const priced = await computePrice(business.id, {
+          itemType: 'MENU_ITEM',
+          itemId: menuItem.id,
+          quantity: 1,
+        }).catch(() => null);
+        commerce = {
+          type: 'MENU_ITEM',
+          data: { ...menuItem, price: priced ? priced.unitPrice : menuItem.price },
+          action: 'order',
+          label: 'Commander',
+        };
+      }
       break;
     }
     case 'EVENT': {
@@ -92,8 +121,19 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
           businessId: true,
         },
       });
-      if (event)
-        commerce = { type: 'EVENT', data: event, action: 'purchase', label: 'Acheter un billet' };
+      if (event) {
+        const priced = await computePrice(business.id, {
+          itemType: 'EVENT',
+          itemId: event.id,
+          quantity: 1,
+        }).catch(() => null);
+        commerce = {
+          type: 'EVENT',
+          data: { ...event, price: priced ? priced.unitPrice : event.price },
+          action: 'purchase',
+          label: 'Acheter un billet',
+        };
+      }
       break;
     }
     case 'ROOM': {
@@ -108,7 +148,19 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
           businessId: true,
         },
       });
-      if (room) commerce = { type: 'ROOM', data: room, action: 'book', label: 'Réserver' };
+      if (room) {
+        const priced = await computePrice(business.id, {
+          itemType: 'ROOM',
+          itemId: room.id,
+          quantity: 1,
+        }).catch(() => null);
+        commerce = {
+          type: 'ROOM',
+          data: { ...room, price: priced ? priced.unitPrice : room.price },
+          action: 'book',
+          label: 'Réserver',
+        };
+      }
       break;
     }
     case 'RENTAL': {
@@ -123,7 +175,19 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
           businessId: true,
         },
       });
-      if (rental) commerce = { type: 'RENTAL', data: rental, action: 'rent', label: 'Louer' };
+      if (rental) {
+        const priced = await computePrice(business.id, {
+          itemType: 'RENTAL',
+          itemId: rental.id,
+          quantity: 1,
+        }).catch(() => null);
+        commerce = {
+          type: 'RENTAL',
+          data: { ...rental, price: priced ? priced.unitPrice : rental.price },
+          action: 'rent',
+          label: 'Louer',
+        };
+      }
       break;
     }
     case 'PROMOTION': {
@@ -188,6 +252,15 @@ export async function getMediaCommerceData(mediaType: 'STORY' | 'SHORT', mediaId
 export async function addToCartFromMedia(userId: string, productId: string, quantity = 1) {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) throw new AppError('Produit introuvable', 404);
+  if (!product.businessId) throw new AppError('Produit sans commerce', 400);
+
+  // Prix moteur (jamais le prix client) : promo, flash, tiers appliqués
+  const priced = await computePrice(product.businessId, {
+    itemType: 'PRODUCT',
+    itemId: product.id,
+    quantity,
+  });
+  const unitPrice = priced.unitPrice;
 
   const cart = await prisma.cart.upsert({
     where: { userId },
@@ -199,14 +272,14 @@ export async function addToCartFromMedia(userId: string, productId: string, quan
     where: { cartId: cart.id, productId },
   });
 
-  const total = Number(product.price) * quantity;
+  const total = unitPrice * quantity;
 
   if (existing) {
     const newQty = existing.quantity + quantity;
-    const newTotal = Number(existing.unitPrice) * newQty;
+    const newTotal = unitPrice * newQty;
     return prisma.cartItem.update({
       where: { id: existing.id },
-      data: { quantity: newQty, total: newTotal },
+      data: { quantity: newQty, unitPrice, total: newTotal },
     });
   }
 
@@ -217,7 +290,7 @@ export async function addToCartFromMedia(userId: string, productId: string, quan
       productId,
       name: product.name,
       quantity,
-      unitPrice: product.price,
+      unitPrice,
       total,
       image: images?.[0] || null,
     },
@@ -233,12 +306,19 @@ export async function createOrderFromMedia(
 ) {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) throw new AppError('Produit introuvable', 404);
+  if (!product.businessId) throw new AppError('Produit sans commerce', 400);
 
   if (product.stock !== null && product.stock < quantity) {
     throw new AppError('Stock insuffisant', 409);
   }
 
-  const unitPrice = Number(product.price);
+  // Prix moteur (jamais le prix client) : promo, flash, tiers appliqués
+  const priced = await computePrice(product.businessId, {
+    itemType: 'PRODUCT',
+    itemId: product.id,
+    quantity,
+  });
+  const unitPrice = priced.unitPrice;
   const total = unitPrice * quantity;
   const orderCount = await prisma.order.count();
   const orderNumber = `ORDER-${Date.now()}-${orderCount + 1}`;
@@ -315,8 +395,17 @@ export async function createBookingFromMedia(
   startDate?: string
 ) {
   const service = await prisma.service.findUnique({ where: { id: serviceId } });
+  if (!service) throw new AppError('Service introuvable', 404);
   const bookingCount = await prisma.booking.count();
   const bookingNumber = `BOOK-${Date.now()}-${bookingCount + 1}`;
+
+  // Prix moteur (jamais le prix client) : promo, flash, tiers appliqués
+  const priced = await computePrice(service.businessId, {
+    itemType: 'SERVICE',
+    itemId: service.id,
+    quantity: 1,
+  }).catch(() => null);
+  const price = priced ? priced.unitPrice : Number(service.price || 0);
 
   return prisma.booking.create({
     data: {
@@ -324,9 +413,9 @@ export async function createBookingFromMedia(
       businessId,
       serviceId,
       bookingNumber,
-      title: service?.name || 'Réservation depuis un média',
+      title: service.name,
       status: 'PENDING',
-      price: service?.price || 0,
+      price,
       startDate: startDate ? new Date(startDate) : new Date(Date.now() + 86400000),
     },
   });

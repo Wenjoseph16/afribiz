@@ -3,7 +3,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, Users, Eye, Send, ShoppingBag, Heart, ShieldCheck, Loader2, MessageCircle, Calendar } from 'lucide-react';
+import {
+  Play,
+  Users,
+  Eye,
+  Send,
+  ShoppingBag,
+  Heart,
+  ShieldCheck,
+  Loader2,
+  MessageCircle,
+  Calendar,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -107,15 +118,19 @@ export function LiveViewer({ liveId }: { liveId: string }) {
       window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
       return;
     }
+    // Tout type d'article du catalogue peut être vendu en live (produit, service, chambre…)
+    const itemType = p.itemType || 'PRODUCT';
+    const itemId = p.itemId || p.productId;
+    if (!itemId) return;
     setCheckout({
-      type: 'PRODUCT',
+      type: itemType,
       data: {
-        id: p.productId,
+        id: itemId,
         name: p.name,
         price: Number(p.price),
         images: p.image ? [p.image] : [],
         businessId: live.businessId,
-        slug: p.productId,
+        slug: itemId,
       },
       action: 'order',
       label: 'Commander',
@@ -128,11 +143,22 @@ export function LiveViewer({ liveId }: { liveId: string }) {
       <div className="space-y-4 min-w-0">
         <div className="relative aspect-video bg-black rounded-2xl overflow-hidden ring-1 ring-white/10">
           {live.streamUrl ? (
-            <video src={live.streamUrl} className="w-full h-full object-cover" controls autoPlay playsInline />
+            <video
+              src={live.streamUrl}
+              className="w-full h-full object-cover"
+              controls
+              autoPlay
+              playsInline
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               {live.coverImage ? (
-                <Image src={live.coverImage} alt={live.title} fill className="object-cover opacity-60" />
+                <Image
+                  src={live.coverImage}
+                  alt={live.title}
+                  fill
+                  className="object-cover opacity-60"
+                />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900" />
               )}
@@ -179,7 +205,9 @@ export function LiveViewer({ liveId }: { liveId: string }) {
         {/* Titre + business */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{live.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+              {live.title}
+            </h1>
             {live.description && (
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{live.description}</p>
             )}
@@ -237,7 +265,9 @@ export function LiveViewer({ liveId }: { liveId: string }) {
           </div>
           {products.length === 0 ? (
             <p className="p-4 text-xs text-gray-400 text-center">
-              {isLive ? 'Aucun produit épinglé pour le moment' : 'Les produits seront annoncés au démarrage'}
+              {isLive
+                ? 'Aucun produit épinglé pour le moment'
+                : 'Les produits seront annoncés au démarrage'}
             </p>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-72 overflow-y-auto">
@@ -245,7 +275,13 @@ export function LiveViewer({ liveId }: { liveId: string }) {
                 <div key={p.id} className="flex items-center gap-3 p-3">
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">
                     {p.image ? (
-                      <Image src={p.image} alt={p.name} width={48} height={48} className="object-cover w-full h-full" />
+                      <Image
+                        src={p.image}
+                        alt={p.name}
+                        width={48}
+                        height={48}
+                        className="object-cover w-full h-full"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
                         <ShoppingBag className="w-5 h-5" />
@@ -253,18 +289,28 @@ export function LiveViewer({ liveId }: { liveId: string }) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.name}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      {p.name}
+                    </p>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="text-brand-600 dark:text-brand-400 font-bold">
                         {Number(p.price).toLocaleString('fr-FR')} F
                       </span>
-                      <span className={cn('text-[10px] font-medium', p.remainingStock <= 3 ? 'text-red-500' : 'text-gray-400')}>
+                      <span
+                        className={cn(
+                          'text-[10px] font-medium',
+                          p.remainingStock <= 3 ? 'text-red-500' : 'text-gray-400'
+                        )}
+                      >
                         {p.remainingStock}/{p.stock} restants
                       </span>
                     </div>
                     {p.remainingStock <= 3 && (
                       <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden">
-                        <div className="h-full bg-red-500 rounded-full animate-pulse" style={{ width: `${Math.max(5, (p.remainingStock / p.stock) * 100)}%` }} />
+                        <div
+                          className="h-full bg-red-500 rounded-full animate-pulse"
+                          style={{ width: `${Math.max(5, (p.remainingStock / p.stock) * 100)}%` }}
+                        />
                       </div>
                     )}
                   </div>
@@ -336,13 +382,20 @@ function ChatPanel({
         {chats.map((c: any, idx: number) => (
           <div key={c.id || idx} className="flex gap-2.5 animate-fade-in">
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-purple-500 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-white">{c.userName?.charAt(0)?.toUpperCase() || '?'}</span>
+              <span className="text-[10px] font-bold text-white">
+                {c.userName?.charAt(0)?.toUpperCase() || '?'}
+              </span>
             </div>
             <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-xl px-3 py-2">
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{c.userName || 'Anonyme'}</span>
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  {c.userName || 'Anonyme'}
+                </span>
                 <span className="text-[10px] text-gray-400">
-                  {new Date(c.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(c.createdAt).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </span>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">{c.message}</p>

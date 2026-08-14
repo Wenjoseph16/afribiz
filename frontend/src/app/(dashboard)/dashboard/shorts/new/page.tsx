@@ -37,9 +37,12 @@ export default function NewShortPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Link feature
+  // Link feature — article shoppable (le prix affiché vient du moteur de prix)
   const [linkUrl, setLinkUrl] = useState('');
   const [linkTargetType, setLinkTargetType] = useState('PRODUCT');
+  const [linkTargetId, setLinkTargetId] = useState('');
+  const [shopProducts, setShopProducts] = useState<any[]>([]);
+  const [shopServices, setShopServices] = useState<any[]>([]);
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -76,6 +79,7 @@ export default function NewShortPage() {
         description: description || undefined,
         linkUrl: linkUrl || undefined,
         linkTargetType: linkTargetType || undefined,
+        linkTargetId: linkTargetId || undefined,
       });
       router.push('/dashboard/shorts');
     } catch (err) {
@@ -173,27 +177,64 @@ export default function NewShortPage() {
 
               <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  <LinkIcon className="w-4 h-4 text-brand" /> Lien d'action (Optionnel)
+                  <ShoppingBag className="w-4 h-4 text-brand" /> Commander depuis le short (Optionnel)
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select
                     value={linkTargetType}
-                    onChange={(e) => setLinkTargetType(e.target.value)}
+                    onChange={(e) => {
+                      setLinkTargetType(e.target.value);
+                      setLinkTargetId('');
+                      const t = e.target.value;
+                      if ((t === 'PRODUCT' || t === 'SERVICE') && shopProducts.length === 0 && shopServices.length === 0) {
+                        apiClient
+                          .getMyProducts({ limit: 200 })
+                          .then((res: any) => {
+                            const list = res?.data?.data ?? [];
+                            setShopProducts(Array.isArray(list) ? list : (list.items ?? []));
+                          })
+                          .catch(() => {});
+                        apiClient
+                          .getMyServices({ limit: 200 })
+                          .then((res: any) => {
+                            const list = res?.data?.data ?? [];
+                            setShopServices(Array.isArray(list) ? list : (list.items ?? []));
+                          })
+                          .catch(() => {});
+                      }
+                    }}
                     className="col-span-1 px-3 py-2.5 text-sm rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 focus:border-brand outline-none transition-all"
                   >
                     <option value="PRODUCT">Produit</option>
                     <option value="SERVICE">Service</option>
-                    <option value="EVENT">Événement</option>
                     <option value="CUSTOM_LINK">Lien web</option>
                   </select>
-                  <div className="col-span-2">
+                  {linkTargetType !== 'CUSTOM_LINK' ? (
+                    <select
+                      value={linkTargetId}
+                      onChange={(e) => setLinkTargetId(e.target.value)}
+                      className="col-span-1 px-3 py-2.5 text-sm rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 focus:border-brand outline-none transition-all"
+                    >
+                      <option value="">Choisir l'article...</option>
+                      {(linkTargetType === 'PRODUCT' ? shopProducts : shopServices).map((it: any) => (
+                        <option key={it.id} value={it.id}>
+                          {it.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
                     <Input
-                      placeholder="Identifiant ou URL..."
+                      placeholder="https://..."
                       value={linkUrl}
                       onChange={(e) => setLinkUrl(e.target.value)}
                     />
-                  </div>
+                  )}
                 </div>
+                {linkTargetId && (
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
+                    ✓ Article lié — le bouton « Commander » affichera le prix réel calculé par AfriBiz
+                  </p>
+                )}
                 <p className="text-[10px] text-gray-400 mt-2">
                   Ce lien s'affichera sous forme de bouton interactif sur votre vidéo.
                 </p>
