@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { SocketProvider } from '@/components/SocketProvider';
+import { OfflineProvider } from '@/components/OfflineProvider';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ToastProvider>
           <SocketProvider>
             <MessageNotificationInit />
+            <OfflineProvider />
             {children}
           </SocketProvider>
         </ToastProvider>

@@ -31,6 +31,8 @@ import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useBusinessStore } from '@/stores/businessStore';
 import { formatPrice } from '@/utils/helpers';
+import { createBusinessOrderOfflineAware } from '@/lib/offline/orderSync';
+import { WifiOff } from 'lucide-react';
 
 type FulfillmentType = 'DINE_IN' | 'TAKEAWAY' | 'PICKUP' | 'DELIVERY';
 type PaymentType = 'CASH' | 'MOBILE_MONEY' | 'CREDIT';
@@ -75,7 +77,12 @@ export default function PointOfSalePage() {
   const businessName = business?.name || 'Mon business';
 
   // ── État du POS ──
-  const [client, setClient] = useState<{ id?: string; name: string; phone: string; debtBalance?: number } | null>(null);
+  const [client, setClient] = useState<{
+    id?: string;
+    name: string;
+    phone: string;
+    debtBalance?: number;
+  } | null>(null);
   const [walkInName, setWalkInName] = useState('');
   const [walkInPhone, setWalkInPhone] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -93,7 +100,9 @@ export default function PointOfSalePage() {
   const [notes, setNotes] = useState('');
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [debtModalOpen, setDebtModalOpen] = useState(false);
-  const [debtPayState, setDebtPayState] = useState<Record<string, { amount: string; loading: boolean }>>({});
+  const [debtPayState, setDebtPayState] = useState<
+    Record<string, { amount: string; loading: boolean }>
+  >({});
   const [debtFeedback, setDebtFeedback] = useState<string | null>(null);
 
   // ── Données ──
@@ -145,7 +154,11 @@ export default function PointOfSalePage() {
       ? clientDebtsData
       : clientDebtsData?.debts || clientDebtsData?.data || [];
     return (list || []).filter(
-      (d: any) => d.status === 'ACTIVE' || d.status === 'PARTIALLY_PAID' || d.status === 'OVERDUE' || d.status === 'CRITICAL'
+      (d: any) =>
+        d.status === 'ACTIVE' ||
+        d.status === 'PARTIALLY_PAID' ||
+        d.status === 'OVERDUE' ||
+        d.status === 'CRITICAL'
     );
   }, [clientDebtsData]);
 
@@ -156,7 +169,10 @@ export default function PointOfSalePage() {
       setDebtFeedback('Montant invalide');
       return;
     }
-    setDebtPayState((prev) => ({ ...prev, [debt.id]: { amount: st?.amount || String(debt.amount || ''), loading: true } }));
+    setDebtPayState((prev) => ({
+      ...prev,
+      [debt.id]: { amount: st?.amount || String(debt.amount || ''), loading: true },
+    }));
     setDebtFeedback(null);
     try {
       await apiClient.registerDebtPayment(debt.id, { amount, paymentMethod: 'CASH' });
@@ -178,9 +194,7 @@ export default function PointOfSalePage() {
   }, [clientsData]);
 
   const zones = useMemo(() => {
-    const list = Array.isArray(zonesData)
-      ? zonesData
-      : zonesData?.zones || zonesData?.data || [];
+    const list = Array.isArray(zonesData) ? zonesData : zonesData?.zones || zonesData?.data || [];
     return (list || []).filter((z: any) => z.isActive !== false);
   }, [zonesData]);
 
@@ -196,7 +210,8 @@ export default function PointOfSalePage() {
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase();
     return products.filter((p: any) => {
-      if (category !== 'all' && !(p.category?.name === category || p.categoryName === category)) return false;
+      if (category !== 'all' && !(p.category?.name === category || p.categoryName === category))
+        return false;
       if (!q) return true;
       return (
         (p.name || '').toLowerCase().includes(q) ||
@@ -211,8 +226,7 @@ export default function PointOfSalePage() {
     if (!q) return clients;
     return clients.filter(
       (c: any) =>
-        (c.name || '').toLowerCase().includes(q) ||
-        (c.phone || '').toLowerCase().includes(q)
+        (c.name || '').toLowerCase().includes(q) || (c.phone || '').toLowerCase().includes(q)
     );
   }, [clients, clientSearch]);
 
@@ -301,8 +315,7 @@ export default function PointOfSalePage() {
         customerPhone: receiptPhone || undefined,
         deliveryZoneId: fulfillment === 'DELIVERY' && zoneId ? zoneId : undefined,
         deliveryFee: zoneFee || undefined,
-        deliveryAddress:
-          fulfillment === 'DELIVERY' && selectedZone ? selectedZone.name : undefined,
+        deliveryAddress: fulfillment === 'DELIVERY' && selectedZone ? selectedZone.name : undefined,
         discount: Number(discount || 0),
         notes,
         tax: 0,
@@ -316,8 +329,9 @@ export default function PointOfSalePage() {
           unitPrice: i.unitPrice,
         })),
       };
-      const res = await apiClient.createBusinessOrder(payload);
-      return res.data.data;
+      // POS offline-aware : hors-ligne → la vente est mise en file locale
+      // (serveur rejouera la vraie création au prochain flush).
+      return createBusinessOrderOfflineAware(payload);
     },
     onSuccess: (order) => {
       setCreatedOrder(order);
@@ -365,6 +379,7 @@ export default function PointOfSalePage() {
   // ── Écran succès ──
   if (createdOrder) {
     const debt = createdOrder.debts?.[0];
+    const offlineQueued = !!createdOrder.offlineQueued;
     return (
       <div className="max-w-xl mx-auto animate-fade-in py-8">
         <Card className="p-8 text-center">
@@ -375,8 +390,23 @@ export default function PointOfSalePage() {
             Vente encaissée !
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            Commande <span className="font-mono font-semibold text-gray-800 dark:text-gray-200">{createdOrder.orderNumber}</span>
+            Commande{' '}
+            <span className="font-mono font-semibold text-gray-800 dark:text-gray-200">
+              {createdOrder.orderNumber}
+            </span>
           </p>
+
+          {offlineQueued && (
+            <div className="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 mb-6 text-sm text-amber-800 dark:text-amber-200 flex items-start gap-3">
+              <WifiOff className="h-5 w-5 shrink-0 mt-0.5" />
+              <div className="text-left">
+                <p className="font-semibold">Vente enregistrée hors-ligne</p>
+                <p className="text-amber-700 dark:text-amber-300">
+                  Elle sera envoyée automatiquement dès que la connexion revient.
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-4 space-y-2 text-sm text-left mb-6">
             {(createdOrder.items || []).map((i: any, idx: number) => (
@@ -403,8 +433,8 @@ export default function PointOfSalePage() {
                   Dette créée : {formatPrice(Number(debt.remainingAmount || 0))}
                 </p>
                 <p className="text-amber-700 dark:text-amber-300">
-                  Le client doit payer avant le {new Date(dueDate).toLocaleDateString('fr-FR')}.
-                  Un rappel automatique sera envoyé.
+                  Le client doit payer avant le {new Date(dueDate).toLocaleDateString('fr-FR')}. Un
+                  rappel automatique sera envoyé.
                 </p>
               </div>
             </div>
@@ -423,11 +453,7 @@ export default function PointOfSalePage() {
                 </Button>
               </a>
             )}
-            <Button
-              variant="outline"
-              onClick={() => window.print()}
-              className="w-full sm:w-auto"
-            >
+            <Button variant="outline" onClick={() => window.print()} className="w-full sm:w-auto">
               <Printer className="h-4 w-4 mr-1.5" />
               Imprimer
             </Button>
@@ -453,7 +479,10 @@ export default function PointOfSalePage() {
       <PageHeader
         title="Point de Vente"
         description="Encaisser une vente comme au comptoir — client, articles, paiement"
-        breadcrumbs={[{ label: 'Ventes', href: '/dashboard/business/orders' }, { label: 'Point de vente' }]}
+        breadcrumbs={[
+          { label: 'Ventes', href: '/dashboard/business/orders' },
+          { label: 'Point de vente' },
+        ]}
         actions={
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
             <span className="relative flex h-2 w-2">
@@ -528,7 +557,8 @@ export default function PointOfSalePage() {
             ) : (
               filteredProducts.map((p: any) => {
                 const out = p.stock !== undefined && p.stock !== null && p.stock <= 0;
-                const low = p.stock !== undefined && p.stock !== null && p.stock > 0 && p.stock <= 5;
+                const low =
+                  p.stock !== undefined && p.stock !== null && p.stock > 0 && p.stock <= 5;
                 return (
                   <button
                     key={p.id}
@@ -563,14 +593,14 @@ export default function PointOfSalePage() {
                       </p>
                       <p
                         className={`text-[11px] ${
-                          out
-                            ? 'text-red-500'
-                            : low
-                              ? 'text-amber-500'
-                              : 'text-gray-400'
+                          out ? 'text-red-500' : low ? 'text-amber-500' : 'text-gray-400'
                         }`}
                       >
-                        {out ? 'Rupture de stock' : low ? `Stock faible : ${p.stock}` : `Stock : ${p.stock ?? '∞'}`}
+                        {out
+                          ? 'Rupture de stock'
+                          : low
+                            ? `Stock faible : ${p.stock}`
+                            : `Stock : ${p.stock ?? '∞'}`}
                       </p>
                     </div>
                     <div
@@ -639,7 +669,9 @@ export default function PointOfSalePage() {
               >
                 <User className="h-4 w-4" />
                 Choisir un client
-                <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">+ {clientsLoading ? '…' : clients.length} clients</span>
+                <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                  + {clientsLoading ? '…' : clients.length} clients
+                </span>
               </button>
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -691,7 +723,11 @@ export default function PointOfSalePage() {
                     <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
                     <button
                       onClick={() => updateQty(idx, 1)}
-                      disabled={item.stock !== undefined && item.stock !== null && item.quantity >= item.stock}
+                      disabled={
+                        item.stock !== undefined &&
+                        item.stock !== null &&
+                        item.quantity >= item.stock
+                      }
                       className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
                     >
                       <Plus className="h-3.5 w-3.5 mx-auto" />
@@ -714,7 +750,9 @@ export default function PointOfSalePage() {
           {items.length > 0 && (
             <div className="pt-3 border-t border-gray-100 dark:border-gray-800 mt-3 flex justify-between items-center">
               <span className="text-sm text-gray-500">Sous-total</span>
-              <span className="font-bold text-gray-900 dark:text-gray-100">{formatPrice(subtotal)}</span>
+              <span className="font-bold text-gray-900 dark:text-gray-100">
+                {formatPrice(subtotal)}
+              </span>
             </div>
           )}
         </Card>
@@ -759,7 +797,9 @@ export default function PointOfSalePage() {
 
           {fulfillment === 'DELIVERY' && (
             <div>
-              <label className="text-xs text-gray-500 mb-1.5 block">Zone de livraison (frais auto)</label>
+              <label className="text-xs text-gray-500 mb-1.5 block">
+                Zone de livraison (frais auto)
+              </label>
               {zones.length === 0 ? (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
                   Aucune zone configurée — le client paiera sans frais de livraison.
@@ -812,9 +852,7 @@ export default function PointOfSalePage() {
           {/* Montants selon le paiement */}
           {payment === 'CASH' && (
             <div className="space-y-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
-              <label className="text-xs text-gray-500 block">
-                Montant reçu (espèces)
-              </label>
+              <label className="text-xs text-gray-500 block">Montant reçu (espèces)</label>
               <input
                 type="number"
                 min={0}
@@ -827,7 +865,8 @@ export default function PointOfSalePage() {
                 <div className="text-xs space-y-1">
                   {Number(received || 0) >= total ? (
                     <p className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      ✅ Payé en totalité{change > 0 ? ` — monnaie à rendre : ${formatPrice(change)}` : ''}
+                      ✅ Payé en totalité
+                      {change > 0 ? ` — monnaie à rendre : ${formatPrice(change)}` : ''}
                     </p>
                   ) : (
                     <p className="text-amber-600 dark:text-amber-400 font-medium">
@@ -841,9 +880,7 @@ export default function PointOfSalePage() {
 
           {payment === 'MOBILE_MONEY' && (
             <div className="space-y-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
-              <label className="text-xs text-gray-500 block">
-                Montant payé via Mobile Money
-              </label>
+              <label className="text-xs text-gray-500 block">Montant payé via Mobile Money</label>
               <input
                 type="number"
                 min={0}
@@ -853,8 +890,8 @@ export default function PointOfSalePage() {
                 className="w-full text-lg font-bold text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 bg-transparent focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none"
               />
               <p className="text-[11px] text-gray-400">
-                Laisse vide si le client a payé la totalité ({formatPrice(total)}).
-                Montant partiel → le reste passe à crédit.
+                Laisse vide si le client a payé la totalité ({formatPrice(total)}). Montant partiel
+                → le reste passe à crédit.
               </p>
             </div>
           )}
@@ -884,7 +921,9 @@ export default function PointOfSalePage() {
 
           {isCredit && payment !== 'CREDIT' && (
             <div>
-              <label className="text-xs text-gray-500 mb-1.5 block">Échéance du reste à payer</label>
+              <label className="text-xs text-gray-500 mb-1.5 block">
+                Échéance du reste à payer
+              </label>
               <input
                 type="date"
                 value={dueDate}
@@ -1032,7 +1071,9 @@ export default function PointOfSalePage() {
               {clientDebts.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">Toutes les dettes de ce client sont soldées 🎉</p>
+                  <p className="text-sm text-gray-500">
+                    Toutes les dettes de ce client sont soldées 🎉
+                  </p>
                 </div>
               ) : (
                 clientDebts.map((d: any) => {
