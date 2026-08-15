@@ -43,6 +43,7 @@ import AdSlot from '@/components/ads/AdSlot';
 import { apiClient } from '@/services/apiClient';
 import { Loader } from '@/components/ui/Loader';
 import { CopilotDashboardBrief } from '@/components/copilot/CopilotDashboardBrief';
+import { CashWidget } from '@/components/dashboard/CashWidget';
 import { buildDashboardWorkflowState } from '@/lib/dashboardWorkflow';
 import { buildLaunchJourneyState } from '@/lib/launchJourney';
 
@@ -264,13 +265,14 @@ function ClientDashboardContent() {
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-300/10 rounded-full blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
         <div className="relative flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-full text-emerald-100 text-xs font-medium mb-3 border border-white/10">
               <Sparkles className="h-3 w-3" />
               Tableau de bord
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
               Bonjour, {firstName} 👋
             </h1>
             <p className="text-emerald-100/80 mt-1.5 text-sm sm:text-base">
@@ -285,7 +287,7 @@ function ClientDashboardContent() {
               </button>
             </Link>
             <Link href="/dashboard/explore">
-              <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white text-emerald-700 text-sm font-semibold rounded-xl hover:bg-emerald-50 shadow-lg shadow-black/10 transition-all duration-200">
+              <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white text-emerald-700 text-sm font-semibold rounded-xl hover:bg-emerald-50 shadow-lg shadow-black/10 transition-all duration-200 active:scale-[0.98]">
                 Explorer
                 <ArrowUpRight className="h-4 w-4" />
               </button>
@@ -298,14 +300,17 @@ function ClientDashboardContent() {
         <CopilotDashboardBrief />
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <Card className="border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-5">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <CashWidget />
+        </div>
+        <Card className="border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 p-5 lg:col-span-2">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-700">
                 État du workflow
               </p>
-              <h3 className="mt-1 text-xl font-semibold text-gray-900">
+              <h3 className="mt-1 text-xl font-display font-semibold text-gray-900 tracking-tight">
                 Votre espace est à {workflowState.progressScore}% de son potentiel
               </h3>
               <p className="mt-2 max-w-2xl text-sm text-gray-600">{workflowState.healthMessage}</p>
@@ -337,7 +342,7 @@ function ClientDashboardContent() {
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
                 Premier lancement
               </p>
-              <h3 className="mt-1 text-xl font-semibold text-slate-900">
+              <h3 className="mt-1 text-xl font-display font-semibold text-slate-900 tracking-tight">
                 {launchJourneyState.currentStep.title}
               </h3>
               <p className="mt-2 max-w-2xl text-sm text-slate-600">

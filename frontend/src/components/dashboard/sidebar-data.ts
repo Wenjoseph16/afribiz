@@ -365,6 +365,12 @@ export const BUSINESS_CORE_NAV: NavGroup[] = [
         module: 'ORDERS',
       },
       {
+        label: 'Ma caisse',
+        href: '/dashboard/business/caisse',
+        icon: 'Wallet',
+        module: 'ORDERS',
+      },
+      {
         label: 'Commandes',
         href: '/dashboard/business/orders',
         icon: 'ShoppingCart',

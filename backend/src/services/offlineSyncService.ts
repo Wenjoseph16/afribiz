@@ -1,6 +1,7 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { createOrder } from './orders';
+import { addMovement } from './cashService';
 
 /**
  * Dispatcher d'actions hors-ligne.
@@ -16,6 +17,24 @@ export async function executeSyncAction(action: string, userId: string, payload:
       // Vente POS hors-ligne : rejouée avec la vraie création de commande
       // (décrement stock, paiement, dette intelligente, facture).
       return createOrder(userId, payload);
+
+    case 'CREATE_CASH_MOVEMENT':
+      // Sortie de caisse / encaissement / vente libre hors-ligne : rejoué dans
+      // la caisse du jour. Idempotent grâce à offlineClientId (uuid client).
+      return addMovement(
+        userId,
+        {
+          type: payload.type,
+          amount: Number(payload.amount),
+          method: payload.method,
+          label: payload.label,
+          description: payload.description,
+          sourceType: payload.sourceType,
+          sourceId: payload.sourceId,
+          offlineClientId: payload.offlineClientId,
+        },
+        userId
+      );
 
     default:
       throw new AppError(`Action de synchronisation inconnue: ${action}`, 400);
@@ -85,7 +104,7 @@ export async function bulkSync(
   }[]
 ) {
   let synced = 0;
-  const results: { id?: string; ok: boolean; error?: string }[] = [];
+  const results: { id?: string; ok: boolean; error?: string; duplicate?: boolean }[] = [];
 
   for (const item of items) {
     try {

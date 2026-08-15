@@ -1,5 +1,7 @@
 import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
+import { logger } from '../lib/logger';
+import { addMovement, normalizeCashMethod } from './cashService';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findUnique({
@@ -78,7 +80,7 @@ export async function getExpense(ownerId: string, expenseId: string) {
 
 export async function createExpense(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
-  return prisma.expense.create({
+  const expense = await prisma.expense.create({
     data: {
       businessId: business.id,
       description: data.description,
@@ -94,6 +96,23 @@ export async function createExpense(ownerId: string, data: any) {
       taxDeductible: data.taxDeductible || false,
     },
   });
+
+  // Caisse du jour (Chantier 4) : chaque sortie d'argent est tracée dans la caisse
+  addMovement(
+    ownerId,
+    {
+      type: 'EXPENSE',
+      amount: Number(data.amount),
+      method: normalizeCashMethod(data.paymentMethod),
+      label: 'Sortie de caisse',
+      description: `${data.description || 'Dépense'}${data.reference ? ` (${data.reference})` : ''}`,
+      sourceType: 'EXPENSE',
+      sourceId: expense.id,
+    },
+    ownerId
+  ).catch((e: any) => logger.warn(`Caisse: mouvement EXPENSE non créé: ${e?.message || e}`));
+
+  return expense;
 }
 
 export async function updateExpense(ownerId: string, expenseId: string, data: any) {

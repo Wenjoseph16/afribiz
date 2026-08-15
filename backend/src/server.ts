@@ -76,6 +76,7 @@ import {
   disputesRoutes,
   accountingRoutes,
   accountingAdvancedRoutes,
+  cashRoutes,
   signatureRoutes,
   rentalsRoutes,
   developerRoutes,
@@ -343,6 +344,8 @@ app.use('/api/messages', messagesRoutes);
 // Comptabilité (doit être AVANT businessRoutes pour éviter que le requireRole de businessRoutes n'intercepte les requêtes qui tombent dans le routeur suivant)
 app.use('/api/business/accounting', accountingRoutes);
 app.use('/api/business/accounting/reports', accountingAdvancedRoutes);
+// Caisse journalière (Brique A — le Cahier de caisse)
+app.use('/api/business/cash', cashRoutes);
 
 // ⚠️ subscriptionsRoutes doit être monté AVANT businessRoutes : ce dernier a un
 // router.use(requireRole(['BUSINESS','ADMIN'])) global qui bloquerait sinon les

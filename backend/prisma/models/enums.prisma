@@ -1529,3 +1529,20 @@ enum CmsPageType {
   ARTICLE
 }
 
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+
+enum CashMovementType {
+  OPENING
+  SALE
+  FREE_SALE
+  EXPENSE
+  DEBT_COLLECTION
+  ADJUSTMENT
+  WITHDRAWAL
+}
+

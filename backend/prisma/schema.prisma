@@ -1693,6 +1693,8 @@ model Business {
   escrows               Escrow[]
   clientRisks           ClientRisk[]
   financialLogs         FinancialLog[]
+  cashSessions          CashSession[]
+  cashMovements         CashMovement[]
   planningTasks         PlanningTask[]
   employees             Employee[]
   employeeRoles         EmployeeRole[]
@@ -3716,6 +3718,54 @@ model FinancialLog {
 }
 
 // ============================================
+// CASH REGISTER (Brique A — le Cahier de caisse)
+// ============================================
+
+model CashSession {
+  id              String            @id @default(uuid())
+  businessId      String
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  openedBy        String
+  openedAt        DateTime          @default(now())
+  openingBalance  Decimal           @default(0) @db.Decimal(12, 2)
+  status          CashSessionStatus @default(OPEN)
+  closedAt        DateTime?
+  closedBy        String?
+  expectedBalance Decimal?          @db.Decimal(12, 2)
+  actualBalance   Decimal?          @db.Decimal(12, 2)
+  difference      Decimal?          @db.Decimal(12, 2)
+  closingNotes    String?
+  movements       CashMovement[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([openedAt])
+}
+
+model CashMovement {
+  id              String            @id @default(uuid())
+  sessionId       String
+  session         CashSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  businessId      String
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  type            CashMovementType
+  amount          Decimal           @db.Decimal(12, 2)
+  method          String            @default("CASH") // CASH, MOBILE_MONEY, MIXED
+  label           String
+  description     String?
+  sourceType      String? // ORDER, EXPENSE, DEBT, FREE_SALE, ADJUSTMENT
+  sourceId        String?
+  performedBy     String
+  offlineClientId String?           @unique // idempotence Chantier 3
+  createdAt       DateTime          @default(now())
+
+  @@index([sessionId])
+  @@index([businessId])
+  @@index([sourceType, sourceId])
+  @@index([offlineClientId])
+}
 // PLANNING MODELS (Module 10)
 // ============================================
 
@@ -8294,7 +8344,24 @@ model SiteStat {
 enum CmsPageType {
   PAGE
   ARTICLE
-}model AdSlot {
+}
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  OPENING
+  SALE
+  FREE_SALE
+  EXPENSE
+  DEBT_COLLECTION
+  ADJUSTMENT
+  WITHDRAWAL
+}
+
+model AdSlot {
   id          String      @id @default(uuid())
   page        String
   position    String

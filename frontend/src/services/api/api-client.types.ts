@@ -923,7 +923,9 @@ export interface ApiClientMethods {
   createSupplier(data: any): Promise<any>;
   updateSupplier(id: string, data: any): Promise<any>;
   deleteSupplier(id: string): Promise<any>;
-  resolveCatalogAttachments(items: Array<{ itemType: string; itemId: string; quantity?: number; options?: any }>): Promise<any>;
+  resolveCatalogAttachments(
+    items: Array<{ itemType: string; itemId: string; quantity?: number; options?: any }>
+  ): Promise<any>;
   createAffiliateLink(data: any): Promise<any>;
   getAffiliateLinks(): Promise<any>;
   deleteAffiliateLink(id: string): Promise<any>;
@@ -1556,6 +1558,16 @@ export interface ApiClientMethods {
   processSyncItem(id: string): Promise<any>;
   getPendingSyncCount(): Promise<any>;
   bulkSync(items: any[]): Promise<any>;
+
+  // ============================================
+  // CAISSE JOURNALIÈRE (injectCash) — Chantier 4 Brique A
+  // ============================================
+  getCashWidget(): Promise<any>;
+  getTodayCash(): Promise<any>;
+  getCashHistory(params?: any): Promise<any>;
+  openCashSession(data: { openingBalance: number }): Promise<any>;
+  addCashMovement(data: any): Promise<any>;
+  closeCashSession(data: { actualBalance: number; closingNotes?: string }): Promise<any>;
 
   // ============================================
   // VOICE CATALOGUE (injectVoiceCatalogue) — Phase 4.8

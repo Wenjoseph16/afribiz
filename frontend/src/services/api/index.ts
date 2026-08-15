@@ -15,6 +15,7 @@ export { injectBusiness } from './business';
 export { injectBusinessBookings } from './business-bookings';
 export { injectBusinessExtended } from './business-extended';
 export { injectCart } from './cart';
+export { injectCash } from './cash';
 export { injectClientData } from './client-data';
 export { injectCrm } from './crm';
 export { injectCrmAutomation } from './crm-automation';

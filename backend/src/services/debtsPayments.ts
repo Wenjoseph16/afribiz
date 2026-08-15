@@ -11,6 +11,7 @@ import {
   publishDebtSettled,
 } from '../events/publishers';
 import { getOrCreateWallet } from './wallet';
+import { addMovement, normalizeCashMethod } from './cashService';
 import { calculateCommission } from './monetizationConfig';
 import { config } from '../config/env';
 import { processDelivery } from './NotificationChannels';
@@ -207,7 +208,13 @@ export async function listDebts(ownerId: string, filters: any) {
       ? Math.max(0, Math.floor((Date.now() - new Date(d.dueDate).getTime()) / 86400000))
       : 0,
   }));
-  return { debts: mapped, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
+  return {
+    debts: mapped,
+    total,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum),
+  };
 }
 
 export async function getDebt(ownerId: string, debtId: string) {
@@ -375,8 +382,27 @@ export async function registerDebtPayment(
     entityId: debtId,
     description: `Paiement de ${data.amount} reçu sur dette #${debt.id.substring(0, 8)}`,
     amount: data.amount,
-    metadata: { paymentMethod: (data as any).method || data.paymentMethod || 'CASH', notes: data.notes || null },
+    metadata: {
+      paymentMethod: (data as any).method || data.paymentMethod || 'CASH',
+      notes: data.notes || null,
+    },
   });
+
+  // Caisse du jour (Chantier 4) : l'encaissement d'une dette entre dans la caisse
+  const method = (data as any).method || data.paymentMethod || 'CASH';
+  addMovement(
+    ownerId,
+    {
+      type: 'DEBT_COLLECTION',
+      amount: Number(data.amount),
+      method: normalizeCashMethod(method),
+      label: 'Encaissement dette',
+      description: `Paiement sur dette #${debtId.substring(0, 8)}`,
+      sourceType: 'DEBT',
+      sourceId: debtId,
+    },
+    ownerId
+  ).catch((e: any) => logger.warn(`Caisse: mouvement DEBT_COLLECTION non créé: ${e?.message || e}`));
 
   if (updated.status === 'SETTLED') {
     sendPaymentThanks(updated, business).catch(() => null);
@@ -1058,7 +1084,8 @@ export async function updateDebtReminderConfig(ownerId: string, data: any) {
   const upd: any = {};
   if (data.enabled !== undefined) upd.enabled = data.enabled;
   if (Array.isArray(data.channels)) upd.channels = data.channels;
-  if (Array.isArray(data.scheduleDays)) upd.scheduleDays = data.scheduleDays.map(Number).filter(Boolean);
+  if (Array.isArray(data.scheduleDays))
+    upd.scheduleDays = data.scheduleDays.map(Number).filter(Boolean);
   if (data.maxRemindersPerDebt !== undefined)
     upd.maxRemindersPerDebt = Number(data.maxRemindersPerDebt);
   if (typeof data.dueDateMessage === 'string' && data.dueDateMessage.trim())
@@ -1131,7 +1158,12 @@ export async function sendDebtReminder(
   // Envoi réel sur WhatsApp/SMS/Email via les canaux (dev: loggé, prod: Twilio/…)
   if (debt.buyer?.phone && (channel === 'WHATSAPP' || channel === 'SMS')) {
     try {
-      delivered = await processDelivery(channel, debt.buyer.phone, content || message, business.name);
+      delivered = await processDelivery(
+        channel,
+        debt.buyer.phone,
+        content || message,
+        business.name
+      );
     } catch (e) {
       logger.warn(`Reminder ${channel} delivery failed:`, e);
       delivered = false;
@@ -1170,7 +1202,11 @@ export async function sendDebtReminder(
 
   await prisma.debtReminder.update({
     where: { id: reminder.id },
-    data: { status: delivered ? 'SENT' : 'FAILED', sentAt: delivered ? new Date() : null, errorMessage: delivered ? null : 'Channel delivery failed' },
+    data: {
+      status: delivered ? 'SENT' : 'FAILED',
+      sentAt: delivered ? new Date() : null,
+      errorMessage: delivered ? null : 'Channel delivery failed',
+    },
   });
 
   await logFinancialAction(business.id, null, {
@@ -1393,12 +1429,7 @@ export async function autoSendDebtReminders(businessId?: string) {
         [debt.buyer?.firstName, debt.buyer?.lastName].filter(Boolean).join(' ') || 'Client';
       const paymentUrl = `${config.FRONTEND_URL}/debts-payments/${debt.id}`;
 
-      const type =
-        targetDay >= 15
-          ? 'CRITICAL_DEBT'
-          : targetDay >= 7
-            ? 'OVERDUE'
-            : 'DUE_DATE';
+      const type = targetDay >= 15 ? 'CRITICAL_DEBT' : targetDay >= 7 ? 'OVERDUE' : 'DUE_DATE';
       const template =
         type === 'CRITICAL_DEBT'
           ? cfg.criticalMessage

@@ -37,6 +37,7 @@ export function generateClientId(): string {
  * perdue (fallback : on prévient l'appelant).
  */
 export async function enqueueSyncItem(item: {
+  id?: string; // uuid client (idempotence) — généré si absent
   action: string;
   entityType: string;
   entityId?: string;
@@ -45,7 +46,7 @@ export async function enqueueSyncItem(item: {
   if (!isIndexedDBAvailable()) return null;
 
   const entry: SyncQueueItem = {
-    id: generateClientId(),
+    id: item.id || generateClientId(),
     action: item.action,
     entityType: item.entityType,
     entityId: item.entityId,

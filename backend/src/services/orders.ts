@@ -13,6 +13,7 @@ import {
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
 import { applyAffiliateOnPaid } from './affiliateService';
+import { recordOrderSale } from './cashService';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 async function getBusinessByOwner(ownerId: string) {
@@ -232,6 +233,17 @@ export async function createOrder(ownerId: string, data: any) {
             description: `Paiement ${data.paymentMethod || 'CASH'} — ${orderNumber}`,
           },
         });
+
+        // Caisse du jour (Chantier 4) : l'argent réellement encaissé entre dans
+        // la caisse, signé par l'utilisateur qui encaisse — même hors-ligne
+        // (l'action rejouée au flush retrace le mouvement sur la nouvelle commande).
+        await recordOrderSale(
+          ownerId,
+          { id: created.id, number: orderNumber, totalAmount: total, paymentMethod: data.paymentMethod },
+          paymentAmount,
+          ownerId,
+          tx
+        );
       }
     }
 
@@ -527,12 +539,19 @@ export async function updateOrderPayment(ownerId: string, orderId: string, data:
   if (data.paymentStatus) upd.paymentStatus = data.paymentStatus;
   // Order model stores payment status and paidAt; amounts/payments are tracked in Payment records
   if (data.paymentStatus === 'PAID') upd.paidAt = new Date();
-  const updated = await prisma.order.update({ where: { id: orderId }, data: upd, include: orderInclude });
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: upd,
+    include: orderInclude,
+  });
 
   // Boucle affiliation : une commande marquée PAYÉE depuis le dashboard crédite
   // la commission au propriétaire du lien (zéro centime qui échappe au radar).
   if (data.paymentStatus === 'PAID') {
     applyAffiliateOnPaid(orderId).catch(() => {});
+    // Caisse du jour (Chantier 4) : l'encaissement (ex. COD réglé au comptoir)
+    // entre dans la caisse — idempotent par montant (jamais de doublon).
+    recordOrderSale(ownerId, { id: order.id, number: order.orderNumber, paymentMethod: order.paymentMethod }, Number(order.totalAmount || 0), ownerId).catch(() => null);
   }
 
   return updated;

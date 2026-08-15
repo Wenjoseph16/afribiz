@@ -1,5 +1,6 @@
 export { default as accountingRoutes } from './accounting';
 export { default as accountingAdvancedRoutes } from './accountingAdvanced';
+export { default as cashRoutes } from './cash';
 export { default as adminRoutes } from './admin';
 export { default as adminFinanceRoutes } from './adminFinance';
 export { default as adsRoutes } from './ads';
