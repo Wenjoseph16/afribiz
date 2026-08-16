@@ -52,7 +52,7 @@ model User {
   providedBookings         Booking[]                 @relation("ProviderBookings")
   payments                 Payment[]                 @relation("UserPayments")
   reviews                  Review[]                  @relation("UserReviews")
-  business                 Business?
+  businesses               Business[]
   developerProfile         DeveloperProfile?
   businessReviews          BusinessReview[]
   sentMessages             Message[]                 @relation("SentMessages")

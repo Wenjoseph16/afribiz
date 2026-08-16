@@ -19,8 +19,8 @@ router.use(['/analytics', '/copilot', '/datahub'], authMiddleware);
  * (Option Premium 3 000 FCFA/mois — plans Gratuit/AfriBiz sans copilot refusés.)
  */
 const copilotGuard = catchAsyncErrors(async (req: AuthenticatedRequest, _res: any, next: any) => {
-  const business = await prisma.business.findUnique({
-    where: { ownerId: req.user!.id },
+  const business = await prisma.business.findFirst({
+      where: { ownerId: req.user!.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Aucun business associé à ce compte', 404);

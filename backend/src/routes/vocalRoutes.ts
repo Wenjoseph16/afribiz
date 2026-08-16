@@ -64,8 +64,8 @@ router.post('/process', authMiddleware, async (req: Request, res: Response) => {
     if (user) {
       const business = await (
         await import('../lib/db')
-      ).prisma.business.findUnique({
-        where: { ownerId: user.id },
+      ).prisma.business.findFirst({
+      where: { ownerId: user.id },
         select: { id: true },
       });
       if (business) {

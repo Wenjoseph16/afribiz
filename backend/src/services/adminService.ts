@@ -214,7 +214,7 @@ export const getUserById = async (id: string) => {
       sessions: { orderBy: { createdAt: 'desc' }, take: 10 },
       securityLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
       devices: true,
-      business: true,
+      businesses: true,
       developerProfile: true,
       _count: {
         select: {
@@ -1015,10 +1015,7 @@ export const updateModuleStatus = async (
   adminUserId?: string
 ) => {
   // Normalise les libellés de l'UI admin (français) vers les actions métier
-  const ACTION_ALIASES: Record<
-    string,
-    'validate' | 'reject' | 'publish' | 'archive' | 'delete'
-  > = {
+  const ACTION_ALIASES: Record<string, 'validate' | 'reject' | 'publish' | 'archive' | 'delete'> = {
     valider: 'publish', // un module en revue approuvé → publié + visible marketplace
     publier: 'publish',
     refuser: 'reject',

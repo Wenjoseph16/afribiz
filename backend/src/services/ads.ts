@@ -492,7 +492,7 @@ export async function getAdvertiserStats(userId: string, role: string): Promise<
   let campaigns;
 
   if (role === 'BUSINESS') {
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) {
       throw new AppError('Business non trouvé', 404);
     }
@@ -608,7 +608,7 @@ export async function getAllAdCampaigns(params?: {
 
 export async function getMyCampaigns(userId: string, role: string, _filters?: any): Promise<any[]> {
   if (role === 'BUSINESS') {
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) return [];
     return getAdCampaignsForBusiness(business.id);
   } else if (role === 'DEVELOPER') {
@@ -659,7 +659,10 @@ export async function autoActivateCampaigns(): Promise<number> {
  * Calcule le prix d'une campagne pour un emplacement et une durée (jours).
  * Interpolation linéaire entre les paliers 1j / 7j / 30j définis par l'admin.
  */
-export function computeCampaignPrice(slot: { price1Day: any; price7Days: any; price30Days: any }, days: number): number {
+export function computeCampaignPrice(
+  slot: { price1Day: any; price7Days: any; price30Days: any },
+  days: number
+): number {
   const p1 = Number(slot.price1Day || 0);
   const p7 = Number(slot.price7Days || 0);
   const p30 = Number(slot.price30Days || 0);

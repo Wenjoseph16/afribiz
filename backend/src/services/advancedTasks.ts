@@ -7,8 +7,8 @@ import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/busines
 import { DomainEventType, DomainEvent } from '../events/events';
 
 async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
-    where: { ownerId, deletedAt: null },
+  const business = await prisma.business.findFirst({
+      where: { ownerId, deletedAt: null },
     select: { id: true, name: true, modules: true },
   });
   if (!business) throw new AppError('Business not found', 404);
@@ -443,7 +443,7 @@ export async function getTaskStats(ownerId: string) {
 // ===================== AUTOMATIONS =====================
 
 async function businessId(ownerId: string) {
-  const b = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
+  const b = await prisma.business.findFirst({ where: { ownerId }, select: { id: true } });
   return b?.id || ownerId;
 }
 

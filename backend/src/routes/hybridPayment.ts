@@ -29,7 +29,7 @@ router.post(
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const { amount, method, reference, isManual, proofUrl, notes } = req.body;
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user!.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user!.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
     const payment = await hybridService.addHybridPayment({
       orderId: req.params.orderId,
@@ -68,7 +68,7 @@ router.post(
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
     const { orderId, amount, totalSteps, stepDescriptions } = req.body;
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user!.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user!.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
     const escrow = await escrowSteps.createStepEscrow({
       businessId: business.id,
@@ -86,7 +86,7 @@ router.post(
   authMiddleware,
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user!.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user!.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
     const escrow = await escrowSteps.releaseStep(
       req.params.id,
@@ -102,7 +102,7 @@ router.get(
   authMiddleware,
   businessGuard,
   catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user!.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user!.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
     const progress = await escrowSteps.getStepProgress(req.params.id, business.id);
     res.json({ success: true, data: progress });

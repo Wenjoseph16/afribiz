@@ -9,7 +9,7 @@ export const initiatePayment = catchAsyncErrors(
     if (!req.user) throw new AppError('Non authentifié', 401);
     const { provider, amount, phone, paymentMethodId, orderId, currency } = req.body;
 
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });
@@ -57,7 +57,7 @@ export const initiatePayment = catchAsyncErrors(
 export const listTransactions = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });

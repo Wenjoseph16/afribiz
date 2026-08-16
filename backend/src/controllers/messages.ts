@@ -7,6 +7,23 @@ import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import { getIO } from '../services/socket';
 import { searchIdsByText } from '../lib/fulltext';
 
+/**
+ * Extrait les champs produit passés par le client et les normalise
+ * pour être attachés à un message (snapshot affichable dans le chat).
+ */
+function productDataFrom(body: any) {
+  const p = body?.product;
+  if (!p || !p.id || !p.name) return undefined;
+  return {
+    productId: String(p.id),
+    productName: String(p.name).slice(0, 200),
+    productPrice: p.price != null ? String(p.price) : null,
+    productImage: p.image ? String(p.image) : null,
+    productSlug: p.slug ? String(p.slug) : null,
+    businessId: p.businessId ? String(p.businessId) : null,
+  };
+}
+
 export const getConversations = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
@@ -193,7 +210,13 @@ export const sendMessage = catchAsyncErrors(async (req: AuthenticatedRequest, re
   }
 
   const message = await prisma.message.create({
-    data: { conversationId, senderId: req.user.id, content: content.trim(), attachment },
+    data: {
+      conversationId,
+      senderId: req.user.id,
+      content: content.trim(),
+      attachment,
+      ...productDataFrom(req.body),
+    },
   });
 
   await prisma.conversation.update({
@@ -255,7 +278,13 @@ export const sendMessageByBody = catchAsyncErrors(
     }
 
     const message = await prisma.message.create({
-      data: { conversationId, senderId: req.user.id, content: content.trim(), attachment },
+      data: {
+        conversationId,
+        senderId: req.user.id,
+        content: content.trim(),
+        attachment,
+        ...productDataFrom(req.body),
+      },
     });
 
     await prisma.conversation.update({
@@ -317,10 +346,11 @@ export const createConversation = catchAsyncErrors(
     }
 
     const participantIds = [req.user.id, recipientId].sort();
+    // On cherche la conversation existante quel que soit son type (direct/business) :
+    // sinon on crée un doublon à chaque fois que le destinataire est propriétaire d'un business.
     const existing = await prisma.conversation.findFirst({
       where: {
         participants: { hasEvery: participantIds },
-        type: 'direct',
       },
     });
     if (existing) {
@@ -330,6 +360,7 @@ export const createConversation = catchAsyncErrors(
             conversationId: existing.id,
             senderId: req.user.id,
             content: initialMessage.trim(),
+            ...productDataFrom(req.body),
           },
         });
         await prisma.conversation.update({
@@ -364,6 +395,7 @@ export const createConversation = catchAsyncErrors(
           conversationId: conversation.id,
           senderId: req.user.id,
           content: initialMessage.trim(),
+          ...productDataFrom(req.body),
         },
       });
       await prisma.conversation.update({
@@ -425,7 +457,7 @@ export const createSupportTicket = catchAsyncErrors(
 export const getBusinessConversations = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true, name: true, logo: true },
     });

@@ -10,15 +10,22 @@ import {
   publishInvoiceSent,
   publishInvoicePaid,
   publishSatisfactionSurvey,
+  publishBossDiscountAlert,
 } from '../events/publishers';
+import { getIO } from './socket';
+import { logger } from '../lib/logger';
 import { trackAnalyticsEvent } from './analyticsService';
 import { applyAffiliateOnPaid } from './affiliateService';
 import { recordOrderSale } from './cashService';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
-async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
-    where: { ownerId, deletedAt: null },
+async function getBusinessByOwner(ownerId: string, businessId?: string | null) {
+  const where = businessId
+    ? { id: businessId, ownerId, deletedAt: null }
+    : { ownerId, deletedAt: null };
+  const business = await prisma.business.findFirst({
+      where,
+      orderBy: { createdAt: 'asc' },
     select: {
       id: true,
       name: true,
@@ -76,7 +83,7 @@ const orderInclude = {
 // ===================== ORDERS =====================
 
 export async function listBusinessOrders(ownerId: string, filters: any) {
-  const business = await getBusinessByOwner(ownerId);
+  const business = await getBusinessByOwner(ownerId, filters?.businessId);
   const page = Number(filters.page) || 1;
   const limit = Number(filters.limit) || 20;
   const { status, type, source, search, dateFrom, dateTo } = filters;
@@ -109,8 +116,8 @@ export async function listBusinessOrders(ownerId: string, filters: any) {
   return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-export async function getBusinessOrder(ownerId: string, orderId: string) {
-  const business = await getBusinessByOwner(ownerId);
+export async function getBusinessOrder(ownerId: string, orderId: string, businessId?: string | null) {
+  const business = await getBusinessByOwner(ownerId, businessId);
   const order = await prisma.order.findFirst({
     where: { id: orderId, businessId: business.id },
     include: orderInclude,
@@ -119,8 +126,71 @@ export async function getBusinessOrder(ownerId: string, orderId: string) {
   return order;
 }
 
+/**
+ * Alerte boss (Chantier 5) : si la remise d'une vente dépasse le seuil configuré
+ * (BusinessSettings.discountAlertThreshold, défaut 5000 F), le boss reçoit une
+ * alerte socket temps réel + notification in-app signée (qui/quoi/prix/remise).
+ * Fire-and-forget : ne bloque JAMAIS la vente.
+ */
+async function maybeAlertBossOnBigDiscount(
+  ownerId: string,
+  order: any,
+  business: any,
+  data: any
+) {
+  const baseAmount = Number(order.subtotal || 0);
+  const finalAmount = Number(order.totalAmount || 0);
+  const discountAmount = Math.max(0, baseAmount - finalAmount);
+  if (discountAmount <= 0) return;
+
+  const threshold = Number(
+    (business.settings as any)?.discountAlertThreshold ?? 5000
+  );
+  if (discountAmount < threshold) return;
+
+  // Socket temps réel → téléphone du boss (room user:{id})
+  getIO()
+    ?.to(`user:${ownerId}`)
+    .emit('boss:discount-alert', {
+      businessId: business.id,
+      businessName: business.name,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      baseAmount,
+      finalAmount,
+      discountAmount,
+      performedBy: data.performedBy || ownerId,
+      itemLabel: order.items?.[0]?.name || 'Article',
+      at: new Date().toISOString(),
+    });
+
+  // Nom de l'utilisateur qui a vendu (pour la signature de l'alerte)
+  let performedByName = 'Gérant';
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: data.performedBy || ownerId },
+      select: { firstName: true, lastName: true },
+    });
+    if (user) performedByName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Gérant';
+  } catch {}
+
+  publishBossDiscountAlert({
+    userId: ownerId,
+    businessId: business.id,
+    businessName: business.name,
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    baseAmount,
+    finalAmount,
+    discountAmount,
+    performedBy: data.performedBy || ownerId,
+    performedByName,
+    itemLabel: order.items?.[0]?.name || 'Article',
+  });
+}
+
 export async function createOrder(ownerId: string, data: any) {
-  const business = await getBusinessByOwner(ownerId);
+  const business = await getBusinessByOwner(ownerId, data?.businessId);
   const orderNumber = generateOrderNumber();
 
   const subtotal =
@@ -288,6 +358,12 @@ export async function createOrder(ownerId: string, data: any) {
     clientId: order.buyerId || '',
     clientName: order.contactName || 'Client',
   });
+
+  // Boss : alerte grosse remise (Chantier 5) — socket temps réel + notif in-app,
+  // si la remise dépasse le seuil configuré par le boss (fire-and-forget, jamais bloquant)
+  maybeAlertBossOnBigDiscount(ownerId, order, business, data).catch((e: any) =>
+    logger.warn(`Alerte remise non envoyée: ${e?.message || e}`)
+  );
 
   // Analytics — commande placée (fire-and-forget, non-bloquant, jamais de latence sur la réponse)
   trackAnalyticsEvent({

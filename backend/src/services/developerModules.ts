@@ -51,8 +51,8 @@ async function getDeveloperIdByUserId(userId: string): Promise<string> {
 }
 
 async function getBusinessIdByOwnerId(ownerId: string): Promise<string> {
-  const business = await prisma.business.findUnique({
-    where: { ownerId, deletedAt: null },
+  const business = await prisma.business.findFirst({
+      where: { ownerId, deletedAt: null },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -861,7 +861,7 @@ export async function confirmModulePayment(userId: string, providerRef: string) 
 
   const metadata = transaction.metadata as any;
   if (metadata?.moduleId) {
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: userId },
       select: { id: true },
     });

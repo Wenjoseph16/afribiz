@@ -9,7 +9,7 @@ import { prisma } from '../lib/db';
 
 export const getMyScore = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
 
   const score = await afriScoreService.computeBusinessScore(business.id);
@@ -19,7 +19,7 @@ export const getMyScore = catchAsyncErrors(async (req: AuthenticatedRequest, res
 export const getMyScoreHistory = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const period = req.query.period as string | undefined;
@@ -30,7 +30,7 @@ export const getMyScoreHistory = catchAsyncErrors(
 
 export const getMyBadges = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
 
   const badges = await afriScoreService.getBadges(business.id);
@@ -39,7 +39,7 @@ export const getMyBadges = catchAsyncErrors(async (req: AuthenticatedRequest, re
 
 export const getMyBenchmark = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
 
   const myScore = await prisma.businessScore.findUnique({ where: { businessId: business.id } });
@@ -391,7 +391,7 @@ export const adminRevenue = catchAsyncErrors(async (req: AuthenticatedRequest, r
 export const recomputeMyScore = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const score = await afriScoreService.computeBusinessScore(business.id);
@@ -401,7 +401,7 @@ export const recomputeMyScore = catchAsyncErrors(
 
 export const deleteConsent = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
 
   await prisma.dataConsent.deleteMany({ where: { businessId: business.id } });
@@ -412,7 +412,7 @@ export const deleteConsent = catchAsyncErrors(async (req: AuthenticatedRequest, 
 
 export const getConsent = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
 
   let consent = await prisma.dataConsent.findUnique({ where: { businessId: business.id } });
@@ -427,7 +427,7 @@ export const getConsent = catchAsyncErrors(async (req: AuthenticatedRequest, res
 
 export const updateConsent = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
 
   const {

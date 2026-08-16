@@ -2,9 +2,13 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 
-async function getBusinessByOwner(ownerId: string, db: any = prisma) {
-  const business = await db.business.findUnique({
-    where: { ownerId, deletedAt: null },
+async function getBusinessByOwner(ownerId: string, db: any = prisma, businessId?: string | null) {
+  const where = businessId
+    ? { id: businessId, ownerId, deletedAt: null }
+    : { ownerId, deletedAt: null };
+  const business = await db.business.findFirst({
+    where,
+    orderBy: { createdAt: 'asc' },
     select: { id: true, name: true, ownerId: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);

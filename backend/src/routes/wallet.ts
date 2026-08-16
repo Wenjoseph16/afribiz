@@ -23,8 +23,8 @@ const withdrawSchema = z.object({
 import { prisma } from '../lib/db';
 
 async function getBusinessIdFromUser(userId: string, optional = false) {
-  const business = await prisma.business.findUnique({
-    where: { ownerId: userId, deletedAt: null },
+  const business = await prisma.business.findFirst({
+      where: { ownerId: userId, deletedAt: null },
     select: { id: true },
   });
   if (!business) {

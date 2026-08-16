@@ -1,6 +1,6 @@
 model Business {
   id                  String                     @id @default(uuid())
-  ownerId             String                     @unique
+  ownerId             String
   owner               User                       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name                String
   slug                String                     @unique

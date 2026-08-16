@@ -197,7 +197,7 @@ export const getSearchTrends = catchAsyncErrors(
 export const getConversionFunnel = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
     const funnel = await analyticsService.getConversionFunnel(business.id);
     res.json({ success: true, data: funnel });
@@ -207,7 +207,7 @@ export const getConversionFunnel = catchAsyncErrors(
 export const getRetentionCohorts = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
     const cohorts = await analyticsService.getRetentionCohorts(business.id);
     res.json({ success: true, data: cohorts });
@@ -218,7 +218,7 @@ export const getProductRecommendations = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
     const limit = parseInt(req.query.limit as string) || 6;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
     const recommendations = await analyticsService.getProductRecommendations(business.id, limit);
     res.json({ success: true, data: recommendations });
@@ -228,7 +228,7 @@ export const getProductRecommendations = catchAsyncErrors(
 export const getEngagementAnalytics = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
     const engagement = await analyticsService.getEngagementAnalytics(business.id);
     res.json({ success: true, data: engagement });
@@ -238,7 +238,7 @@ export const getEngagementAnalytics = catchAsyncErrors(
 export const getSatisfactionAnalytics = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
     const satisfaction = await analyticsService.getSatisfactionAnalytics(business.id);
     res.json({ success: true, data: satisfaction });
@@ -247,7 +247,7 @@ export const getSatisfactionAnalytics = catchAsyncErrors(
 
 export const getDailyTips = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user!.id;
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
   const tips = await copilotService.generateDailyTips(business.id);
   res.json({ success: true, data: tips });
@@ -256,7 +256,7 @@ export const getDailyTips = catchAsyncErrors(async (req: AuthenticatedRequest, r
 export const triggerCopilotNotifications = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
     const count = await generateBusinessNotifications(business.id, business.ownerId, business.name);
     res.json({
@@ -269,7 +269,7 @@ export const triggerCopilotNotifications = catchAsyncErrors(
 export const getBusinessHealth = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
     const health = await copilotService.getBusinessHealth(business.id);
     res.json({ success: true, data: health });
@@ -281,7 +281,7 @@ export const getModuleTips = catchAsyncErrors(async (req: AuthenticatedRequest, 
   const moduleKey = req.params.moduleKey as string;
   if (!moduleKey) throw new AppError('moduleKey requis', 400);
 
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Business not found', 404);
 
   const tips = await copilotService.getModuleTips(business.id, moduleKey);
@@ -294,7 +294,7 @@ export const generateSmartTipCtrl = catchAsyncErrors(
     const { moduleKey } = req.body;
     if (!moduleKey) throw new AppError('moduleKey requis', 400);
 
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const tip = await copilotService.generateSmartTip(business.id, moduleKey);
@@ -305,7 +305,7 @@ export const generateSmartTipCtrl = catchAsyncErrors(
 export const generateDailyBriefCtrl = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const brief = await copilotService.generateDailyBriefForBusiness(business.id);
@@ -316,7 +316,7 @@ export const generateDailyBriefCtrl = catchAsyncErrors(
 export const generateDailyAnalysisCtrl = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const [tipsData, health, brief] = await Promise.all([
@@ -361,7 +361,7 @@ import * as copilotSeasonal from '../services/copilotSeasonal';
 export const getBenchmarksCtrl = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const benchmarks = await copilotBenchmark.getPeerBenchmarks(
@@ -376,7 +376,7 @@ export const getBenchmarksCtrl = catchAsyncErrors(
 export const getAnomaliesCtrl = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const anomalies = await copilotAnomaly.detectAnomalies(business.id);
@@ -387,7 +387,7 @@ export const getAnomaliesCtrl = catchAsyncErrors(
 export const getSeasonalCtrl = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const seasonal = await copilotSeasonal.getSeasonalOpportunities(business.id, business.type);
@@ -401,7 +401,7 @@ import { scheduleOnboardingSequence } from '../services/copilotOnboarding';
 export const getWeeklyReportCtrl = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     const report = await generateWeeklyReport(business.id);
@@ -412,7 +412,7 @@ export const getWeeklyReportCtrl = catchAsyncErrors(
 export const triggerOnboardingCtrl = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user!.id;
-    const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+    const business = await prisma.business.findFirst({ where: { ownerId: userId } });
     if (!business) throw new AppError('Business not found', 404);
 
     await scheduleOnboardingSequence(business.id, 'admin_manual');

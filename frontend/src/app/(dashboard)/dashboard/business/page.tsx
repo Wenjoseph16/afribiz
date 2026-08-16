@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils';
 import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
 import AdSlot from '@/components/ads/AdSlot';
 import { buildLaunchChecklistState } from '@/lib/launchChecklist';
+import { CockpitBoss } from '@/components/dashboard/CockpitBoss';
 
 // ─── Dynamic imports for heavy components ───
 const SetupAssistant = dynamic(
@@ -110,18 +111,27 @@ const BusinessReputationCard = dynamic(
   () => import('@/components/dashboard/BusinessReputationCard'),
   {
     ssr: false,
-    loading: () => <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+    loading: () => (
+      <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />
+    ),
   }
 );
-const BusinessDiscountsCard = dynamic(() => import('@/components/dashboard/BusinessDiscountsCard'), {
-  ssr: false,
-  loading: () => <div className="h-56 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
-});
+const BusinessDiscountsCard = dynamic(
+  () => import('@/components/dashboard/BusinessDiscountsCard'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-56 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />
+    ),
+  }
+);
 const BusinessSubscriptionsCard = dynamic(
   () => import('@/components/dashboard/BusinessSubscriptionsCard'),
   {
     ssr: false,
-    loading: () => <div className="h-56 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+    loading: () => (
+      <div className="h-56 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />
+    ),
   }
 );
 const BusinessDebtsCard = dynamic(() => import('@/components/dashboard/BusinessDebtsCard'), {
@@ -584,6 +594,10 @@ export default function BusinessDashboardPage() {
       />
 
       <AdSlot page="DASHBOARD_BUSINESS" position="TOP_BANNER" />
+
+      {/* Cockpit Santé du Boss (Chantier 5 — Brique B) : le centre de pilotage,
+          toutes les fonctionnalités restent accessibles en dessous */}
+      <CockpitBoss />
 
       {/* Pending Orders Alert — high priority */}
       <PendingOrdersAlert />

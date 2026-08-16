@@ -247,8 +247,9 @@ export async function computeSatisfaction(
   // significatif — l'engagement n'est ni récompensé ni pénalisé en dessous.
   // Décision assumée : ≥ 3 envoyées avec 0 réponse → pénalité engagement (signal réel).
   const surveyEngagementEligible = surveysSent >= SURVEY_MIN_SAMPLE;
-  const surveyResponseRate =
-    surveyEngagementEligible ? Math.round((surveyResponses / surveysSent) * 1000) / 10 : null;
+  const surveyResponseRate = surveyEngagementEligible
+    ? Math.round((surveyResponses / surveysSent) * 1000) / 10
+    : null;
 
   const avgRating = business.rating || 0;
   const reviewCount = business.reviewCount || 0;

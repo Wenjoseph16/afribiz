@@ -16,8 +16,8 @@ function isAdminUser(req: AuthenticatedRequest): boolean {
  */
 async function requireBusinessScope(req: AuthenticatedRequest): Promise<string | undefined> {
   if (isAdminUser(req)) return undefined;
-  const business = await prisma.business.findUnique({
-    where: { ownerId: req.user!.id },
+  const business = await prisma.business.findFirst({
+      where: { ownerId: req.user!.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Aucun business associé au compte', 404);

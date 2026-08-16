@@ -498,7 +498,7 @@ export async function generateGeographicReport(country: string, city?: string): 
   const totalRevenue = await prisma.payment.aggregate({
     where: {
       status: 'COMPLETED',
-      user: { business: { is: { country } } },
+      user: { businesses: { some: { country } } },
     },
     _sum: { amount: true },
   });

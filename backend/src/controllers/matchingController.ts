@@ -47,7 +47,7 @@ export const getSuggestedMatches = catchAsyncErrors(
 
     let result: any[] = [];
     if (userRole === 'BUSINESS') {
-      const business = await prisma.business.findUnique({ where: { ownerId: req.user.id } });
+      const business = await prisma.business.findFirst({ where: { ownerId: req.user.id } });
       if (business) {
         // Suggérer des développeurs
         result = await matching.getDevMatches(business.id, limit);

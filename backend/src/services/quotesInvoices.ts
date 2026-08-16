@@ -3,9 +3,13 @@ import { prisma } from '../lib/db';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 
-export async function getBusinessByOwner(ownerId: string, requireModule = true) {
-  const business = await prisma.business.findUnique({
-    where: { ownerId, deletedAt: null },
+export async function getBusinessByOwner(ownerId: string, requireModule = true, businessId?: string | null) {
+  const where = businessId
+    ? { id: businessId, ownerId, deletedAt: null }
+    : { ownerId, deletedAt: null };
+  const business = await prisma.business.findFirst({
+    where,
+    orderBy: { createdAt: 'asc' },
     select: { id: true, name: true, ...activeModuleAssignmentsSelect, settings: true, logo: true },
   });
   if (!business) throw new AppError('Business not found', 404);
@@ -271,7 +275,15 @@ export async function deleteQuote(ownerId: string, quoteId: string) {
 
 export async function listInvoices(ownerId: string, filters: any) {
   const business = await getBusinessByOwner(ownerId);
-  const { page: rawPage = 1, limit: rawLimit = 20, status, search, dateFrom, dateTo, overdue } = filters;
+  const {
+    page: rawPage = 1,
+    limit: rawLimit = 20,
+    status,
+    search,
+    dateFrom,
+    dateTo,
+    overdue,
+  } = filters;
   const page = Math.max(1, parseInt(String(rawPage), 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(String(rawLimit), 10) || 20));
   const where: Prisma.InvoiceWhereInput = { businessId: business.id };

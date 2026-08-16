@@ -1570,6 +1570,12 @@ export interface ApiClientMethods {
   closeCashSession(data: { actualBalance: number; closingNotes?: string }): Promise<any>;
 
   // ============================================
+  // COCKPIT SANTÉ DU BOSS (injectCockpit) — Chantier 5 Brique B
+  // ============================================
+  getBossCockpit(): Promise<any>;
+  getBusinessCockpit(businessId: string, params?: any): Promise<any>;
+
+  // ============================================
   // VOICE CATALOGUE (injectVoiceCatalogue) — Phase 4.8
   // ============================================
   getVoiceCommands(): Promise<any>;

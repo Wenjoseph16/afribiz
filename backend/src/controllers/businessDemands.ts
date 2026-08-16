@@ -6,8 +6,8 @@ import type { AuthenticatedRequest } from '../middlewares/auth';
 export const createDemand = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) throw new AppError('Non authentifié', 401);
 
-  const business = await prisma.business.findUnique({
-    where: { ownerId: req.user.id },
+  const business = await prisma.business.findFirst({
+      where: { ownerId: req.user.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -34,8 +34,8 @@ export const createDemand = catchAsyncErrors(async (req: AuthenticatedRequest, r
 export const getMyDemands = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) throw new AppError('Non authentifié', 401);
 
-  const business = await prisma.business.findUnique({
-    where: { ownerId: req.user.id },
+  const business = await prisma.business.findFirst({
+      where: { ownerId: req.user.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -58,7 +58,7 @@ export const getDemandMatches = catchAsyncErrors(
     if (!req.user) throw new AppError('Non authentifié', 401);
 
     const { id } = req.params;
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });
@@ -84,7 +84,7 @@ export const approveDeveloper = catchAsyncErrors(
 
     const { id, matchId } = req.params;
 
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });

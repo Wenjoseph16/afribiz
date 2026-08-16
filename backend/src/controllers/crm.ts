@@ -6,8 +6,8 @@ import * as crmService from '../services/crm';
 
 async function getBusinessId(req: AuthenticatedRequest) {
   if (!req.user) throw new AppError('Non authentifié', 401);
-  const business = await prisma.business.findUnique({
-    where: { ownerId: req.user.id },
+  const business = await prisma.business.findFirst({
+      where: { ownerId: req.user.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -24,7 +24,8 @@ export const getCrmDashboardStats = catchAsyncErrors(
 
 export const listClients = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   const businessId = await getBusinessId(req);
-  const { search, tagId, segmentId, isActive, savings, sortBy, sortOrder, limit, offset } = req.query;
+  const { search, tagId, segmentId, isActive, savings, sortBy, sortOrder, limit, offset } =
+    req.query;
   const result = await crmService.getBusinessClients(businessId, {
     search: search as string,
     tagId: tagId as string,

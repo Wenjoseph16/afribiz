@@ -21,3 +21,13 @@ export function injectCash(api: ApiClientMethods) {
     return this.post('/business/cash/close', data);
   };
 }
+
+/** Cockpit Santé du Boss (Chantier 5 — Brique B). */
+export function injectCockpit(api: ApiClientMethods) {
+  api.getBossCockpit = function () {
+    return this.get('/business/cockpit');
+  };
+  api.getBusinessCockpit = function (businessId: string, params?: any) {
+    return this.get(`/business/cockpit/${businessId}`, { params });
+  };
+}

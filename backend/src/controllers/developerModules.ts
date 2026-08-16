@@ -128,7 +128,7 @@ export const reinstallModule = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
     const { moduleId } = req.params;
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });

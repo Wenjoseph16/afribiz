@@ -6,8 +6,8 @@ import * as customer360Service from '../services/customer360';
 
 async function getBusinessId(req: AuthenticatedRequest) {
   if (!req.user) throw new AppError('Non authentifié', 401);
-  const business = await prisma.business.findUnique({
-    where: { ownerId: req.user.id },
+  const business = await prisma.business.findFirst({
+      where: { ownerId: req.user.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);

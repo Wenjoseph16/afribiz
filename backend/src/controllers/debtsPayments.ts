@@ -42,13 +42,11 @@ export const registerDebtPayment = catchAsyncErrors(
   }
 );
 
-export const deleteDebtCtrl = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) throw new AppError('Non authentifié', 401);
-    const result = await debtsPaymentsService.deleteDebt(req.user.id, req.params.id);
-    res.json({ success: true, data: result, message: 'Dette supprimée' });
-  }
-);
+export const deleteDebtCtrl = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new AppError('Non authentifié', 401);
+  const result = await debtsPaymentsService.deleteDebt(req.user.id, req.params.id);
+  res.json({ success: true, data: result, message: 'Dette supprimée' });
+});
 
 export const updateDebtPriority = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -238,7 +236,7 @@ export const autoScoreClientRisk = catchAsyncErrors(
     if (!req.user) throw new AppError('Non authentifié', 401);
     const { clientId } = req.body;
     if (!clientId) throw new AppError('clientId requis', 400);
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id, deletedAt: null },
       select: { id: true },
     });
@@ -251,7 +249,7 @@ export const autoScoreClientRisk = catchAsyncErrors(
 export const escalateOverdueDebts = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id, deletedAt: null },
       select: { id: true },
     });
@@ -264,7 +262,7 @@ export const escalateOverdueDebts = catchAsyncErrors(
 export const autoSendDebtReminders = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id, deletedAt: null },
       select: { id: true },
     });

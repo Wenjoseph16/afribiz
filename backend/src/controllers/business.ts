@@ -15,13 +15,20 @@ import {
 import { getBusinessPlanOverview } from '../services/planAccessService';
 import { getBusinessAlertQueue } from '../services/businessAlerts';
 
+/**
+ * Résout le business actif du requérant.
+ * MULTI-ACTIVITÉ : header `x-business-id` (ou query/body `businessId`) → ce business
+ * précis si le user le possède ; sinon le premier business du user (comportement
+ * single-business d'avant, zéro régression).
+ */
 async function getBusinessId(req: AuthenticatedRequest) {
   if (!req.user) throw new AppError('Non authentifié', 401);
-  const business = await prisma.business.findUnique({
-    where: { ownerId: req.user.id },
-    select: { id: true },
-  });
-  if (!business) throw new AppError('Business non trouvé', 404);
+  const requestedId =
+    (req.headers['x-business-id'] as string) ||
+    (req.query.businessId as string) ||
+    (req.body?.businessId as string) ||
+    null;
+  const business = await getBusinessByOwner(req.user.id, requestedId);
   return business.id;
 }
 
@@ -168,8 +175,14 @@ export const getBusinessSubscriptionPlans = catchAsyncErrors(
   }
 );
 
-async function getBusinessByOwner(userId: string) {
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+async function getBusinessByOwner(userId: string, businessId?: string | null) {
+  const where = businessId
+    ? { id: businessId, ownerId: userId, deletedAt: null }
+    : { ownerId: userId, deletedAt: null };
+  const business = await prisma.business.findFirst({
+    where,
+    orderBy: { createdAt: 'asc' },
+  });
   if (!business) throw new AppError('Business non trouvé', 404);
   return business;
 }
@@ -269,7 +282,7 @@ export const getBusinessInstalledModules = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
 
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });
@@ -370,8 +383,16 @@ export const getBusinessInstalledModules = catchAsyncErrors(
 
 export const getMyBusiness = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) throw new AppError('Non authentifié', 401);
-  const business = await businessService.getMyBusiness(req.user.id);
-  res.json({ success: true, data: business });
+  const requestedId =
+    (req.headers['x-business-id'] as string) ||
+    (req.query.businessId as string) ||
+    (req.body?.businessId as string) ||
+    null;
+  const [business, businesses] = await Promise.all([
+    businessService.getMyBusiness(req.user.id, requestedId),
+    businessService.getMyBusinesses(req.user.id),
+  ]);
+  res.json({ success: true, data: business, businesses });
 });
 
 export const getMyBusinessPlan = catchAsyncErrors(
@@ -404,7 +425,7 @@ export const toggleBusinessModule = catchAsyncErrors(
     const { module, enabled } = req.body;
     if (!module) throw new AppError('Module requis', 400);
 
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
 
     const currentModules = business.modules as string[];
@@ -457,7 +478,7 @@ export const updatePublicPage = catchAsyncErrors(
       coverImage,
       hours,
     } = req.body;
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
 
     const updateData: any = {};
@@ -518,7 +539,7 @@ export const updatePublicPage = catchAsyncErrors(
 export const getBusinessPaymentMethods = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
 
     const methods = await prisma.businessPaymentMethod.findMany({
@@ -533,7 +554,7 @@ export const addBusinessPaymentMethod = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
     const { method, name, number, nameOnAccount } = req.body;
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
 
     const pm = await prisma.businessPaymentMethod.create({
@@ -555,7 +576,7 @@ export const updateBusinessPaymentMethod = catchAsyncErrors(
     if (!req.user) throw new AppError('Non authentifié', 401);
     const { id } = req.params;
     const { method, name, number, nameOnAccount, isActive } = req.body;
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
 
     await prisma.businessPaymentMethod.updateMany({
@@ -570,7 +591,7 @@ export const deleteBusinessPaymentMethod = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
     const { id } = req.params;
-    const business = await prisma.business.findUnique({ where: { ownerId: req.user.id } });
+    const business = await prisma.business.findFirst({ where: { ownerId: req.user.id } });
     if (!business) throw new AppError('Business non trouvé', 404);
 
     await prisma.businessPaymentMethod.deleteMany({
@@ -658,7 +679,7 @@ export const submitBusinessVerification = catchAsyncErrors(
 export const getBusinessCommissionStats = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id, deletedAt: null },
       select: { id: true },
     });
@@ -803,7 +824,7 @@ export const respondToBusinessReview = catchAsyncErrors(
 export const getPublicPagePreview = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       include: {
         owner: { select: { id: true, firstName: true, lastName: true, avatar: true } },
@@ -890,7 +911,7 @@ export const getDeveloperModuleInstallations = catchAsyncErrors(
 export const getModuleAssignments = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });
@@ -905,7 +926,7 @@ export const getModuleAnalysis = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifié', 401);
     const { getBusinessModules } = await import('../services/developerConfiguration');
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });
@@ -925,7 +946,7 @@ export const confirmModuleUpdate = catchAsyncErrors(
     if (!req.user) throw new AppError('Non authentifié', 401);
     const { installationId } = req.params;
 
-    const business = await prisma.business.findUnique({
+    const business = await prisma.business.findFirst({
       where: { ownerId: req.user.id },
       select: { id: true },
     });

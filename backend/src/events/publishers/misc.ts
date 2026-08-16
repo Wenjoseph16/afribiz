@@ -576,3 +576,32 @@ export const publishReportResolved = def<{ userId: string; reportId: string; sta
   (p) => ({ reportId: p.reportId, status: p.status }),
   (_p) => ({ link: '/admin/reports' })
 );
+
+// ── Boss : alerte grosse remise (Chantier 5, Brique B) ──
+// Seuil configurable par business (BusinessSettings.discountAlertThreshold).
+// Dès qu'une vente dépasse le seuil, le boss reçoit une alerte TEMPS RÉEL
+// (socket user:{id}) + une notification in-app signée (qui/quoi/prix/remise).
+export const publishBossDiscountAlert = def<{
+  userId: string; // le boss
+  businessId: string;
+  businessName: string;
+  orderId: string;
+  orderNumber: string;
+  baseAmount: number;
+  finalAmount: number;
+  discountAmount: number;
+  performedBy: string;
+  performedByName: string;
+  itemLabel: string;
+}>(
+  DomainEventType.URGENCY_ALERT_GENERATED,
+  (p) => ({
+    businessId: p.businessId,
+    type: 'BOSS_DISCOUNT_ALERT',
+    message: `${p.itemLabel} vendu ${p.baseAmount} F à ${p.finalAmount} F (remise ${p.discountAmount} F) par ${p.performedByName}`,
+  }),
+  (p) => ({
+    businessId: p.businessId,
+    link: `/dashboard/orders/${p.orderId}`,
+  })
+);

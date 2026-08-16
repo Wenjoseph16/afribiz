@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { getBossCockpitOverview, getSingleBusinessCockpit } from '../controllers/bossCockpitController';
 import {
   getPublicBusiness,
   getBusinessProducts,
@@ -105,6 +106,8 @@ router.get('/modules/developer-installations', getDeveloperModuleInstallations);
 router.get('/modules/installed', getBusinessInstalledModules);
 router.post('/modules/update/:installationId', confirmModuleUpdate);
 router.get('/me', getMyBusiness);
+router.get('/cockpit', getBossCockpitOverview);
+router.get('/cockpit/:businessId', getSingleBusinessCockpit);
 router.get('/plan', getMyBusinessPlan);
 router.get('/alert-queue', getMyBusinessAlertQueue);
 router.get('/clients', getMyBusinessClients);

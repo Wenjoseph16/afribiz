@@ -116,25 +116,46 @@ router.post(
         let name: string | undefined;
         try {
           if (c.itemType === 'PRODUCT') {
-            const p = await prisma.product.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            const p = await prisma.product.findUnique({
+              where: { id: c.itemId },
+              select: { name: true },
+            });
             name = p?.name;
           } else if (c.itemType === 'SERVICE') {
-            const s = await prisma.service.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            const s = await prisma.service.findUnique({
+              where: { id: c.itemId },
+              select: { name: true },
+            });
             name = s?.name;
           } else if (c.itemType === 'MENU_ITEM') {
-            const m = await prisma.menuItem.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            const m = await prisma.menuItem.findUnique({
+              where: { id: c.itemId },
+              select: { name: true },
+            });
             name = m?.name;
           } else if (c.itemType === 'ROOM') {
-            const r = await prisma.room.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            const r = await prisma.room.findUnique({
+              where: { id: c.itemId },
+              select: { name: true },
+            });
             name = r?.name;
           } else if (c.itemType === 'RENTAL') {
-            const r = await prisma.rental.findUnique({ where: { id: c.itemId }, select: { name: true } });
+            const r = await prisma.rental.findUnique({
+              where: { id: c.itemId },
+              select: { name: true },
+            });
             name = r?.name;
           } else if (c.itemType === 'EVENT') {
-            const e = await prisma.event.findUnique({ where: { id: c.itemId }, select: { title: true } });
+            const e = await prisma.event.findUnique({
+              where: { id: c.itemId },
+              select: { title: true },
+            });
             name = e?.title;
           } else if (c.itemType === 'TRAINING') {
-            const t = await prisma.training.findUnique({ where: { id: c.itemId }, select: { title: true } });
+            const t = await prisma.training.findUnique({
+              where: { id: c.itemId },
+              select: { title: true },
+            });
             name = t?.title;
           }
         } catch {
@@ -152,10 +173,16 @@ router.post(
     ): Promise<{ path: string } | null> => {
       try {
         if (itemType === 'PRODUCT') {
-          const p = await prisma.product.findUnique({ where: { id: itemId }, select: { slug: true } });
+          const p = await prisma.product.findUnique({
+            where: { id: itemId },
+            select: { slug: true },
+          });
           return p?.slug ? { path: `/product/${p.slug}` } : null;
         }
-        const biz = await prisma.business.findUnique({ where: { id: businessId }, select: { slug: true } });
+        const biz = await prisma.business.findUnique({
+          where: { id: businessId },
+          select: { slug: true },
+        });
         return biz?.slug ? { path: `/business/${biz.slug}` } : null;
       } catch {
         return null;

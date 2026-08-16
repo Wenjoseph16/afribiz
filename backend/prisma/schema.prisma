@@ -884,7 +884,7 @@ model User {
   providedBookings         Booking[]                 @relation("ProviderBookings")
   payments                 Payment[]                 @relation("UserPayments")
   reviews                  Review[]                  @relation("UserReviews")
-  business                 Business?
+  businesses               Business[]
   developerProfile         DeveloperProfile?
   businessReviews          BusinessReview[]
   sentMessages             Message[]                 @relation("SentMessages")
@@ -1574,7 +1574,7 @@ model BusinessNotificationTemplate {
 
 model Business {
   id                  String                     @id @default(uuid())
-  ownerId             String                     @unique
+  ownerId             String
   owner               User                       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name                String
   slug                String                     @unique
@@ -1832,6 +1832,8 @@ model BusinessSettings {
   deliveryEnabled       Boolean  @default(true)
   pickupEnabled         Boolean  @default(true)
   minDeliveryAmount     Decimal? @db.Decimal(12, 2)
+  // Alerte boss : toute remise ≥ ce seuil (FCFA) déclenche une notification socket temps réel
+  discountAlertThreshold Decimal? @db.Decimal(12, 2)
   notificationEmail     String?
   notificationPhone     String?
   notifyNewOrders       Boolean  @default(true)

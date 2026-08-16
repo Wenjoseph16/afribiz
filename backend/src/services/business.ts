@@ -15,8 +15,9 @@ import { DEFAULT_PLAN_ID } from './planAccessService';
 import * as afriScoreService from './afriScoreService';
 
 export async function getPublicBusiness(slug: string) {
-  const business = await prisma.business.findUnique({
-    where: { slug, isActive: true, deletedAt: null },
+  const business = await prisma.business.findFirst({
+    // Accepte slug OU id (les liens marketplace peuvent pointer un business sans slug)
+    where: { OR: [{ slug }, { id: slug }], isActive: true, deletedAt: null },
     include: {
       owner: {
         select: {
@@ -74,8 +75,8 @@ export async function getPublicBusiness(slug: string) {
 }
 
 async function getBusinessIdBySlug(slug: string) {
-  const business = await prisma.business.findUnique({
-    where: { slug, isActive: true, deletedAt: null },
+  const business = await prisma.business.findFirst({
+    where: { OR: [{ slug }, { id: slug }], isActive: true, deletedAt: null },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -306,9 +307,13 @@ export interface OnboardingInput {
   }[];
 }
 
-export async function getMyBusiness(ownerId: string) {
-  const business = await prisma.business.findUnique({
-    where: { ownerId, deletedAt: null },
+export async function getMyBusiness(ownerId: string, businessId?: string | null) {
+  const where = businessId
+    ? { id: businessId, ownerId, deletedAt: null }
+    : { ownerId, deletedAt: null };
+  const business = await prisma.business.findFirst({
+      where,
+      orderBy: { createdAt: 'asc' },
     include: {
       settings: true,
       plan: { select: { id: true, name: true, price: true, currency: true, badge: true } },
@@ -336,9 +341,28 @@ export async function getMyBusiness(ownerId: string) {
   };
 }
 
-export async function getMyBusinessStats(ownerId: string) {
-  const business = await prisma.business.findUnique({
+/** Liste des business du boss (bascule multi-activité). */
+export async function getMyBusinesses(ownerId: string) {
+  return prisma.business.findMany({
     where: { ownerId, deletedAt: null },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      type: true,
+      logo: true,
+      city: true,
+      country: true,
+      isActive: true,
+      isVerified: true,
+    },
+  });
+}
+
+export async function getMyBusinessStats(ownerId: string) {
+  const business = await prisma.business.findFirst({
+      where: { ownerId, deletedAt: null },
     select: {
       id: true,
       _count: { select: { orders: true, reviews: true, products: true, services: true } },
@@ -379,8 +403,8 @@ export async function getMyBusinessStats(ownerId: string) {
 }
 
 export async function getAggregatedDashboardStats(ownerId: string) {
-  const business = await prisma.business.findUnique({
-    where: { ownerId, deletedAt: null },
+  const business = await prisma.business.findFirst({
+      where: { ownerId, deletedAt: null },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -581,9 +605,9 @@ export async function getAggregatedDashboardStats(ownerId: string) {
 }
 
 export async function createBusiness(ownerId: string, data: OnboardingInput) {
-  const existing = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
-  if (existing) throw new AppError('Vous avez déjà un business', 409);
-
+  // MULTI-ACTIVITÉ (Chantier 5) : un boss peut posséder N business (boutique + gym
+  // + locations + conférences). La contrainte unique sur ownerId a été levée par
+  // migration — plus aucune garde n'empêche de créer une 2e activité.
   const slug = await generateUniqueSlug(data.name);
 
   // Mandatory modules always activated
@@ -735,7 +759,7 @@ export async function respondToBusinessReview(
   ownerId: string,
   response: string
 ) {
-  const business = await prisma.business.findUnique({ where: { slug, ownerId, deletedAt: null } });
+  const business = await prisma.business.findFirst({ where: { slug, ownerId, deletedAt: null } });
   if (!business) throw new AppError('Business non trouvé ou accès refusé', 404);
 
   const review = await prisma.businessReview.findUnique({
@@ -766,13 +790,13 @@ export async function submitVerification(
     responsiblePhoto: string;
   }
 ) {
-  const business = await prisma.business.findUnique({ where: { ownerId: userId } });
+  const business = await prisma.business.findFirst({ where: { ownerId: userId } });
   if (!business) throw new AppError('Aucun commerce trouvé pour cet utilisateur', 404);
   if (business.verificationStatus === 'VERIFIED')
     throw new AppError('Votre commerce est déjà vérifié', 409);
 
   const updated = await prisma.business.update({
-    where: { ownerId: userId },
+    where: { id: business.id },
     data: {
       identityDocument: data.identityDocument,
       companyDocument: data.companyDocument,
