@@ -354,10 +354,28 @@ export async function createTransaction(params: {
 
 export async function retrieveTransaction(transactionId: string): Promise<FedaPayTransaction> {
   if (!isConfigured()) {
+    // Simulation : on retourne le VRAI montant de la transaction (cherché dans
+    // notre base par providerRef) pour que verifyFedaPayPayment soit exact même
+    // sans clé API — une vérification qui renvoie amount: 0 est inutilisable.
+    let amount = 0;
+    let status: string = 'approved';
+    try {
+      const { prisma } = await import('../lib/db');
+      const tx = await prisma.paymentTransaction.findFirst({
+        where: { providerRef: transactionId },
+        select: { amount: true, status: true },
+      });
+      if (tx) {
+        amount = Number(tx.amount);
+        status = tx.status === 'SUCCESS' ? 'approved' : tx.status === 'FAILED' ? 'canceled' : 'pending';
+      }
+    } catch {
+      /* base indisponible → valeurs par défaut */
+    }
     return {
       id: transactionId,
-      status: 'approved',
-      amount: 0,
+      status,
+      amount,
       currency: 'XOF',
       mode: 'simulation',
       created_at: new Date().toISOString(),

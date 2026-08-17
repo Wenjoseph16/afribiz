@@ -42,6 +42,12 @@ export function injectPayments(api: ApiClientMethods) {
   }) {
     return this.post('/payments/processor/initiate', data);
   };
+  api.confirmDemoPayment = function (providerRef: string) {
+    return this.post('/payments/processor/demo/confirm', { providerRef });
+  };
+  api.getDemoTransactions = function () {
+    return this.get('/payments/processor/demo/transactions');
+  };
   api.addPaymentProof = function (paymentId: string, data: { imageUrl: string; notes?: string }) {
     return this.post(`/payments/${paymentId}/proof`, data);
   };

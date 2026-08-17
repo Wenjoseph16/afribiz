@@ -120,7 +120,15 @@ async function loadCatalogItem(
   itemType: string,
   itemId: string
 ): Promise<CatalogItem> {
-  const base = { id: itemId, type: itemType, name: '', price: 0, currency: 'FCFA', stock: null, categoryId: null };
+  const base = {
+    id: itemId,
+    type: itemType,
+    name: '',
+    price: 0,
+    currency: 'FCFA',
+    stock: null,
+    categoryId: null,
+  };
 
   if (itemType === 'PRODUCT') {
     const p = await prisma.product.findFirst({
@@ -380,7 +388,7 @@ function isOpenNow(config: any): { open: boolean; reason?: string } {
   const now = new Date();
   const day = now.getDay();
   if (days.length > 0 && !days.includes(day)) {
-    return { open: false, reason: 'Fermé aujourd\'hui' };
+    return { open: false, reason: "Fermé aujourd'hui" };
   }
   if (hours.length === 0) return { open: true };
   const minutes = now.getHours() * 60 + now.getMinutes();
@@ -411,6 +419,10 @@ export async function computePrice(
 
   let unitPrice = basePrice;
   let appliedMechanism: string | null = null;
+  // Le mécanisme principal appliqué est-il marqué « cumulable » par le business ?
+  // Par défaut NON : une remise s'empile sur la principale UNIQUEMENT si le
+  // business l'a explicitement autorisée (config.cumulative).
+  let mainCumulative = false;
 
   // 1. Prix flash (fenêtre de temps)
   if (
@@ -423,6 +435,7 @@ export async function computePrice(
     if (!item.promotionEndsAt || item.promotionEndsAt >= new Date()) {
       unitPrice = item.promotionalPrice;
       appliedMechanism = 'FLASH';
+      mainCumulative = false;
       breakdown.push({ mechanism: 'FLASH', label: 'Prix flash', amount: basePrice - unitPrice });
       badges.push('⚡ Flash');
     }
@@ -436,6 +449,7 @@ export async function computePrice(
       if (group.reached && group.groupPrice < unitPrice) {
         unitPrice = group.groupPrice;
         appliedMechanism = 'GROUP_BUY';
+        mainCumulative = false;
         breakdown.push({
           mechanism: 'GROUP_BUY',
           label: 'Achat groupé',
@@ -449,10 +463,11 @@ export async function computePrice(
   if (!appliedMechanism) {
     const tier = await findTierDiscount(businessId, input.itemType, input.itemId, quantity);
     if (tier && tier.percent > 0) {
-      const discount = Math.round((unitPrice * tier.percent) / 100);
+      const discount = Math.min(Math.round((unitPrice * tier.percent) / 100), unitPrice);
       if (discount > 0) {
         unitPrice -= discount;
         appliedMechanism = 'TIER';
+        mainCumulative = false;
         breakdown.push({
           mechanism: 'TIER',
           label: `−${tier.percent}% dès ${tier.minQuantity} (quantité)`,
@@ -469,18 +484,26 @@ export async function computePrice(
     if (promo) {
       unitPrice -= promo.discount;
       appliedMechanism = 'PROMO';
+      mainCumulative = !!(promo.promotion as any).conditions?.cumulative;
       breakdown.push({
         mechanism: 'PROMO',
         label: promo.promotion.title || 'Promotion',
         amount: promo.discount,
-        cumulative: !!(promo.promotion as any).conditions?.cumulative,
+        cumulative: mainCumulative,
       });
       badges.push(`🔖 ${promo.promotion.title || 'Promo'}`);
     }
   }
 
-  // 5. Coupon (validé séparément au checkout — on ne fait que la remise ici)
-  if (input.couponCode && input.couponCode.trim()) {
+  // 5. Coupon — NE S'EMPILE JAMAIS sur un mécanisme non cumulable (règle de
+  // priorité du moteur : négocié > flash > groupé > dégressif > promo > coupon).
+  // Il ne s'applique que si AUCUN mécanisme n'est actif, ou si le mécanisme
+  // principal est explicitement marqué cumulable par le business.
+  if (
+    input.couponCode &&
+    input.couponCode.trim() &&
+    (!appliedMechanism || mainCumulative)
+  ) {
     try {
       const coupon = await prisma.coupon.findFirst({
         where: { code: { equals: input.couponCode.trim(), mode: 'insensitive' }, businessId },
@@ -552,9 +575,7 @@ export async function computePrice(
 
   // Urgence / stock limité (seuil du rattachement LOW_STOCK ou seuil produit)
   const low = mechanisms.get('LOW_STOCK');
-  const lowStockThreshold = low
-    ? (low.threshold ?? 3)
-    : item.lowStockThreshold ?? undefined;
+  const lowStockThreshold = low ? (low.threshold ?? 3) : (item.lowStockThreshold ?? undefined);
   if (
     lowStockThreshold != null &&
     item.stock !== null &&
@@ -690,8 +711,12 @@ export async function computePrice(
   const supplier = supplierConfig
     ? {
         supplierId: supplierConfig.supplierId,
-        costPrice: supplierConfig.costPrice !== undefined ? Number(supplierConfig.costPrice) : undefined,
-        leadTimeDays: supplierConfig.leadTimeDays !== undefined ? Number(supplierConfig.leadTimeDays) : undefined,
+        costPrice:
+          supplierConfig.costPrice !== undefined ? Number(supplierConfig.costPrice) : undefined,
+        leadTimeDays:
+          supplierConfig.leadTimeDays !== undefined
+            ? Number(supplierConfig.leadTimeDays)
+            : undefined,
       }
     : undefined;
   const zoneConfig = mechanisms.get('ZONE_RESTRICTION');
@@ -720,6 +745,8 @@ export async function computePrice(
     /* non bloquant */
   }
 
+  // Garde finale : le prix unitaire ne peut jamais devenir négatif
+  unitPrice = Math.max(0, unitPrice);
   const discountAmount = Math.max(0, basePrice - unitPrice);
   const surchargeTotal = surcharges.reduce((s, x) => s + x.amount, 0);
   const lineTotal = unitPrice * quantity + surchargeTotal;

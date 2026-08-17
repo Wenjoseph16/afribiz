@@ -46,13 +46,12 @@ export async function computeCommercialActivity(
   });
   if (!business) throw new AppError('Business not found', 404);
 
-  const totalOrders = await prisma.order.count({
-    where: { items: { some: { product: { businessId } } } },
-  });
+  // Toutes les commandes du business (produits, services, plats…) — pas seulement
+  // les commandes liées à un Product : un business de services ne doit pas être pénalisé.
+  const totalOrders = await prisma.order.count({ where: { businessId } });
 
-  const totalBookings = await prisma.booking.count({
-    where: { providerId: business.ownerId },
-  });
+  // Réservations du business (multi-activité : un boss avec gym + boutique ne mélange pas).
+  const totalBookings = await prisma.booking.count({ where: { businessId } });
 
   const [orderGrowth, revenueStability] = await Promise.all([
     computeMonthlyGrowth(businessId),
@@ -90,16 +89,10 @@ async function computeMonthlyGrowth(businessId: string): Promise<number> {
 
   const [thisCount, lastCount] = await Promise.all([
     prisma.order.count({
-      where: {
-        items: { some: { product: { businessId } } },
-        createdAt: { gte: thisMonth },
-      },
+      where: { businessId, createdAt: { gte: thisMonth } },
     }),
     prisma.order.count({
-      where: {
-        items: { some: { product: { businessId } } },
-        createdAt: { gte: lastMonth, lt: thisMonth },
-      },
+      where: { businessId, createdAt: { gte: lastMonth, lt: thisMonth } },
     }),
   ]);
 
@@ -111,14 +104,13 @@ async function computeRevenueStability(businessId: string): Promise<number> {
   const now = new Date();
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
 
+  // CA réel du business — toutes lignes de commande, tous types d'articles
   const monthlyRevenues = await prisma.$queryRaw<any[]>`
-    SELECT DATE_TRUNC('month', o."createdAt") as month, SUM(oi.total) as revenue
+    SELECT DATE_TRUNC('month', o."createdAt") as month, SUM(o."totalAmount") as revenue
     FROM "Order" o
-    JOIN "OrderItem" oi ON oi."orderId" = o.id
-    JOIN "Product" p ON p.id = oi."productId"
-    WHERE p."businessId" = ${businessId}
+    WHERE o."businessId" = ${businessId}
       AND o."createdAt" >= ${sixMonthsAgo}
-      AND o.status = 'DELIVERED'
+      AND o.status IN ('DELIVERED', 'COMPLETED')
     GROUP BY month
     ORDER BY month
   `;
@@ -143,48 +135,36 @@ export async function computeFinancialBehavior(
   const business = await prisma.business.findUnique({ where: { id: businessId } });
   if (!business) throw new AppError('Business not found', 404);
 
-  const totalPayments = await prisma.payment.count({
-    where: { order: { items: { some: { product: { businessId } } } } },
-  });
+  // Paiements du business (multi-activité : scope businessId, pas via les items)
+  const totalPayments = await prisma.payment.count({ where: { businessId } });
   const completedPayments = await prisma.payment.count({
-    where: {
-      order: { items: { some: { product: { businessId } } } },
-      status: 'COMPLETED',
-    },
+    where: { businessId, status: 'COMPLETED' },
   });
 
   const latePayments = await prisma.payment.count({
     where: {
-      order: { items: { some: { product: { businessId } } } },
+      businessId,
       paidAt: null,
       createdAt: { lte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
     },
   });
 
+  // Litiges sur les COMMANDES du business (unités cohérentes : ordres / ordres)
+  const totalOrders = await prisma.order.count({ where: { businessId } });
   const disputedOrders = await prisma.order.count({
-    where: {
-      items: { some: { product: { businessId } } },
-      status: 'CANCELLED',
-    },
+    where: { businessId, status: 'CANCELLED' },
   });
 
   const escrowPayments = await prisma.payment.count({
-    where: {
-      order: { items: { some: { product: { businessId } } } },
-      method: 'ESCROW',
-      status: 'COMPLETED',
-    },
+    where: { businessId, method: 'ESCROW', status: 'COMPLETED' },
   });
   const totalEscrow = await prisma.payment.count({
-    where: {
-      order: { items: { some: { product: { businessId } } } },
-      method: 'ESCROW',
-    },
+    where: { businessId, method: 'ESCROW' },
   });
 
   const paymentRatio = totalPayments > 0 ? (completedPayments / totalPayments) * 100 : 0;
   const lateRatio = totalPayments > 0 ? (latePayments / totalPayments) * 100 : 0;
-  const disputeRatio = totalPayments > 0 ? (disputedOrders / totalPayments) * 100 : 0;
+  const disputeRatio = totalOrders > 0 ? (disputedOrders / totalOrders) * 100 : 0;
   const escrowRate = totalEscrow > 0 ? (escrowPayments / totalEscrow) * 100 : 0;
 
   const paymentScore = clamp(Math.round(paymentRatio * 2), 0, 200);
@@ -192,7 +172,9 @@ export async function computeFinancialBehavior(
   const disputeScore = clamp(200 - Math.round(disputeRatio * 2), 0, 200);
   const escrowScore = clamp(Math.round(escrowRate * 2), 0, 200);
 
-  const weights = [0.3, 0.25, 0.15, 0.15, 0.15];
+  // Pondération corrigée : 4 composantes, poids sommant à 1 (le 5e poids fantôme
+  // rendait la pondération effective 35/29/18/18 au lieu de 35/25/20/20).
+  const weights = [0.35, 0.25, 0.2, 0.2];
   const scores = [paymentScore, lateScore, disputeScore, escrowScore];
   const score = weightedScore(scores, weights);
 
@@ -266,30 +248,46 @@ export async function computeSatisfaction(
       ? clamp(Math.round((surveyResponseRate / 100) * 200), 0, 200)
       : null;
 
+  // Temps de réponse RÉEL : pour chaque conversation, délai entre un message du
+  // client et la première réponse du business (senderId = ownerId). Les écarts
+  // entre messages consécutifs de conversations DIFFÉRENTES n'étaient pas une
+  // mesure de réactivité (un client qui écrit 10 messages d'affilée gonflait le score).
   let responseTimeScore = 0;
-  const messages = await prisma.conversation.findMany({
+  const conversations = await prisma.conversation.findMany({
     where: { participants: { has: business.ownerId } },
     orderBy: { lastMessageAt: 'desc' },
     take: 20,
+    select: { id: true },
   });
-  if (messages.length > 0) {
-    const messageDetails = await prisma.message.findMany({
-      where: { conversationId: { in: messages.map((m) => m.id) } },
-      orderBy: { createdAt: 'asc' },
-      take: 100,
+  if (conversations.length > 0) {
+    const conversationMessages = await prisma.message.findMany({
+      where: { conversationId: { in: conversations.map((c) => c.id) } },
+      orderBy: [{ conversationId: 'asc' }, { createdAt: 'asc' }],
+      select: { conversationId: true, senderId: true, createdAt: true },
+      take: 500,
     });
-    if (messageDetails.length > 0) {
-      const responseTimes: number[] = [];
-      for (let i = 1; i < messageDetails.length; i++) {
-        responseTimes.push(
-          messageDetails[i].createdAt.getTime() - messageDetails[i - 1].createdAt.getTime()
-        );
+    const byConversation = new Map<string, typeof conversationMessages>();
+    for (const m of conversationMessages) {
+      const list = byConversation.get(m.conversationId) || [];
+      list.push(m);
+      byConversation.set(m.conversationId, list);
+    }
+    const replyTimes: number[] = [];
+    for (const msgs of byConversation.values()) {
+      for (let i = 1; i < msgs.length; i++) {
+        const prev = msgs[i - 1];
+        const cur = msgs[i];
+        // Une « réponse » = message du business qui suit un message du client
+        if (prev.senderId !== business.ownerId && cur.senderId === business.ownerId) {
+          const diff = cur.createdAt.getTime() - prev.createdAt.getTime();
+          // Fenêtre réaliste : ignore les écarts > 7 jours (conversations dormantes)
+          if (diff > 0 && diff < 7 * 24 * 60 * 60 * 1000) replyTimes.push(diff);
+        }
       }
-      const avgResponse =
-        responseTimes.length > 0
-          ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
-          : 0;
-      const avgHours = avgResponse / (1000 * 60 * 60);
+    }
+    if (replyTimes.length > 0) {
+      const avgHours =
+        replyTimes.reduce((a, b) => a + b, 0) / replyTimes.length / (1000 * 60 * 60);
       responseTimeScore = clamp(Math.round(Math.max(0, 200 - avgHours * 5)), 0, 200);
     }
   }
@@ -338,30 +336,17 @@ export async function computeOperationalReliability(
   const business = await prisma.business.findUnique({ where: { id: businessId } });
   if (!business) throw new AppError('Business not found', 404);
 
-  const totalOrders = await prisma.order.count({
-    where: { items: { some: { product: { businessId } } } },
-  });
+  const totalOrders = await prisma.order.count({ where: { businessId } });
   const fulfilledOrders = await prisma.order.count({
-    where: {
-      items: { some: { product: { businessId } } },
-      status: 'DELIVERED',
-    },
+    where: { businessId, status: 'DELIVERED' },
   });
   const cancelledOrders = await prisma.order.count({
-    where: {
-      items: { some: { product: { businessId } } },
-      status: 'CANCELLED',
-    },
+    where: { businessId, status: 'CANCELLED' },
   });
 
-  const totalBookings = await prisma.booking.count({
-    where: { providerId: business.ownerId },
-  });
+  const totalBookings = await prisma.booking.count({ where: { businessId } });
   const honouredBookings = await prisma.booking.count({
-    where: {
-      providerId: business.ownerId,
-      status: 'COMPLETED',
-    },
+    where: { businessId, status: 'COMPLETED' },
   });
 
   const fulfillmentRate = totalOrders > 0 ? (fulfilledOrders / totalOrders) * 100 : 0;
@@ -455,6 +440,14 @@ export async function computeBusinessScore(businessId: string): Promise<any> {
     commercial.score + financial.score + satisfaction.score + reliability.score + profile.score;
   const category = getScoreCategory(overallScore);
 
+  // Revenu réel : somme des commandes livrées/terminées du business (le champ
+  // était codé en dur à 0 — tout affichage de revenu depuis le score mentait).
+  const revenueAgg = await prisma.order.aggregate({
+    where: { businessId, status: { in: ['DELIVERED', 'COMPLETED'] } },
+    _sum: { totalAmount: true },
+  });
+  const totalRevenue = Number(revenueAgg._sum.totalAmount || 0);
+
   const score = await prisma.businessScore.upsert({
     where: { businessId },
     update: {
@@ -467,7 +460,7 @@ export async function computeBusinessScore(businessId: string): Promise<any> {
       category: category as any,
       totalOrders: commercial.meta.totalOrders || 0,
       totalBookings: commercial.meta.totalBookings || 0,
-      totalRevenue: 0,
+      totalRevenue,
       avgRating: satisfaction.meta.avgRating || 0,
       reviewCount: satisfaction.meta.reviewCount || 0,
       completionPct: profile.meta.completionPct || 0,
@@ -486,7 +479,7 @@ export async function computeBusinessScore(businessId: string): Promise<any> {
       category: category as any,
       totalOrders: commercial.meta.totalOrders || 0,
       totalBookings: commercial.meta.totalBookings || 0,
-      totalRevenue: 0,
+      totalRevenue,
       avgRating: satisfaction.meta.avgRating || 0,
       reviewCount: satisfaction.meta.reviewCount || 0,
       completionPct: profile.meta.completionPct || 0,

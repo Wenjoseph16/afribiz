@@ -29,19 +29,56 @@ export const CASH_MOVEMENT_LABELS: Record<string, string> = {
  * Retrouve la session ouverte du jour (ou crée une session auto si aucune
  * n'existe — le premier mouvement du jour ouvre la caisse implicitement).
  */
+/** Début du jour calendaire (heure locale serveur). */
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Auto-clôture des sessions OPEN d'un jour précédent (le gérant a oublié de
+ * clôturer hier) : les ventes du jour ne doivent JAMAIS se mélanger à hier,
+ * sinon le solde attendu de la « caisse du jour » devient faux.
+ */
+async function closeStaleOpenSession(businessId: string, closedBy: string, db: any) {
+  const startOfDay = startOfToday();
+  const stale = await db.cashSession.findFirst({
+    where: { businessId, status: 'OPEN', openedAt: { lt: startOfDay } },
+    orderBy: { openedAt: 'desc' },
+    include: { movements: true },
+  });
+  if (!stale) return;
+  const totals = computeTotals(stale);
+  await db.cashSession.update({
+    where: { id: stale.id },
+    data: {
+      status: 'CLOSED',
+      closedAt: new Date(),
+      closedBy,
+      expectedBalance: totals.totals.expectedBalance,
+      actualBalance: totals.totals.expectedBalance,
+      difference: 0,
+      closingNotes: 'Auto-clôture : journée précédente non clôturée',
+    },
+  });
+  logger.warn(`Caisse: session ${stale.id} auto-clôturée (jour écoulé) par ${closedBy}`);
+}
+
 export async function getOrCreateTodaySession(ownerId: string, openedBy: string, tx?: any) {
   const db: any = tx || prisma;
   const business = await getBusinessByOwner(ownerId, db);
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDay = startOfToday();
+
+  await closeStaleOpenSession(business.id, openedBy, db);
 
   const existing = await db.cashSession.findFirst({
-    where: { businessId: business.id, status: 'OPEN' },
+    where: { businessId: business.id, status: 'OPEN', openedAt: { gte: startOfDay } },
     orderBy: { openedAt: 'desc' },
   });
   if (existing) return existing;
 
-  // Aucune session ouverte → on l'ouvre avec fond de caisse à 0
+  // Aucune session ouverte aujourd'hui → on l'ouvre avec fond de caisse à 0
   return db.cashSession.create({
     data: { businessId: business.id, openedBy, openingBalance: 0 },
   });
@@ -51,8 +88,11 @@ export async function getOrCreateTodaySession(ownerId: string, openedBy: string,
 export async function openSession(ownerId: string, openingBalance: number, openedBy: string) {
   const business = await getBusinessByOwner(ownerId);
 
+  // Une session d'hier restée ouverte ne bloque pas l'ouverture d'aujourd'hui
+  await closeStaleOpenSession(business.id, openedBy, prisma);
+
   const alreadyOpen = await prisma.cashSession.findFirst({
-    where: { businessId: business.id, status: 'OPEN' },
+    where: { businessId: business.id, status: 'OPEN', openedAt: { gte: startOfToday() } },
   });
   if (alreadyOpen) {
     throw new AppError('Une caisse est déjà ouverte pour aujourd’hui', 400);
@@ -185,7 +225,13 @@ export function normalizeCashMethod(m?: string | null): string {
  */
 export async function recordOrderSale(
   ownerId: string,
-  order: { id: string; number?: string | null; totalAmount?: number | null; paymentMethod?: string | null },
+  order: {
+    id: string;
+    number?: string | null;
+    totalAmount?: number | null;
+    paymentMethod?: string | null;
+    businessId?: string | null;
+  },
   paidAmount: number,
   performedBy: string,
   tx?: any
@@ -220,7 +266,29 @@ export async function recordOrderSale(
       tx
     );
   } catch (e: any) {
+    // Plus jamais d'échec SILENCIEUX : une vente non tracée dans la caisse est un
+    // trou de trésorerie invisible. On écrit une trace comptable dédiée pour que
+    // le boss puisse la voir (le mouvement sera rejoué par le flush offline).
     logger.warn(`Caisse: mouvement SALE non créé (commande ${order.id}): ${e?.message || e}`);
+    try {
+      await prisma.financialLog.create({
+        data: {
+          businessId: order.businessId || '',
+          userId: performedBy,
+          action: 'MANUAL_ADJUSTMENT',
+          amount: 0,
+          description: `⚠️ TRACE CAISSE EN ÉCHEC — commande ${order.number || order.id} (${Number(paidAmount || 0)} F non tracés dans la caisse du jour)`, 
+          metadata: {
+            cashTraceFailed: true,
+            orderId: order.id,
+            amount: Number(paidAmount || 0),
+            error: e?.message || String(e),
+          },
+        },
+      });
+    } catch {
+      /* la trace d'échec elle-même ne doit pas planter */
+    }
     return null;
   }
 }
@@ -229,7 +297,7 @@ export async function recordOrderSale(
 export async function getTodaySession(ownerId: string) {
   const business = await getBusinessByOwner(ownerId);
   const session = await prisma.cashSession.findFirst({
-    where: { businessId: business.id, status: 'OPEN' },
+    where: { businessId: business.id, status: 'OPEN', openedAt: { gte: startOfToday() } },
     orderBy: { openedAt: 'desc' },
     include: { movements: { orderBy: { createdAt: 'asc' } } },
   });
@@ -260,7 +328,7 @@ export async function closeSession(
 ) {
   const business = await getBusinessByOwner(ownerId);
   const session = await prisma.cashSession.findFirst({
-    where: { businessId: business.id, status: 'OPEN' },
+    where: { businessId: business.id, status: 'OPEN', openedAt: { gte: startOfToday() } },
     orderBy: { openedAt: 'desc' },
     include: { movements: { orderBy: { createdAt: 'asc' } } },
   });
@@ -320,7 +388,7 @@ async function getSessionWithTotals(businessId: string, sessionId: string) {
 export async function getCashWidget(ownerId: string) {
   const business = await getBusinessByOwner(ownerId);
   const session = await prisma.cashSession.findFirst({
-    where: { businessId: business.id, status: 'OPEN' },
+    where: { businessId: business.id, status: 'OPEN', openedAt: { gte: startOfToday() } },
     orderBy: { openedAt: 'desc' },
     include: { movements: { orderBy: { createdAt: 'asc' } } },
   });

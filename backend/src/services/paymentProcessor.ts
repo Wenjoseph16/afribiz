@@ -6,6 +6,17 @@ import { publishCommissionCharged } from '../events/publishers';
 import { calculateCommission } from './monetizationConfig';
 import * as fedapay from '../lib/fedapay';
 
+// Mode démonstration : sans clé API (Stripe/FedaPay) ou en environnement non
+// production, les paiements sont simulés pour que le parcours complet fonctionne
+// (commande → paiement → escrow → notifications). Activable/forçable via
+// PAYMENT_DEMO_MODE=true|false, sinon auto : true hors production.
+export function isPaymentDemoMode(): boolean {
+  const explicit = process.env.PAYMENT_DEMO_MODE;
+  if (explicit === 'true') return true;
+  if (explicit === 'false') return false;
+  return process.env.NODE_ENV !== 'production';
+}
+
 // ── Stripe ──
 export async function processStripePayment(
   amount: number,
@@ -13,6 +24,15 @@ export async function processStripePayment(
   paymentMethodId: string,
   description?: string
 ) {
+  if (isPaymentDemoMode()) {
+    logger.info(`Stripe [DEMO]: payment of ${amount} ${currency} simulated`);
+    return {
+      providerRef: `DEMO_STRIPE_${Date.now()}`,
+      status: 'SUCCESS' as const,
+      fee: 0,
+      message: 'Paiement Stripe simulé (mode démonstration).',
+    };
+  }
   try {
     const stripe = await getStripeClient();
     if (!stripe) throw new AppError('Stripe non configuré', 501);
@@ -42,10 +62,39 @@ export async function processMobileMoney(
   amount: number,
   description?: string
 ) {
-  const validProviders = ['TMONEY', 'FLOOZ', 'WAVE', 'MOOV_MONEY', 'MTN', 'ORANGE', 'FREE'];
+  // 'MOBILE_MONEY' est le mode générique envoyé par le site (l'opérateur précis
+  // n'est pas choisi au checkout) — accepté ici, résolu comme mobile money.
+  const validProviders = [
+    'MOBILE_MONEY',
+    'TMONEY',
+    'FLOOZ',
+    'WAVE',
+    'MOOV_MONEY',
+    'MTN',
+    'ORANGE',
+    'FREE',
+    'BANK_TRANSFER',
+    'DEMO',
+  ];
   if (!validProviders.includes(provider)) throw new AppError('Opérateur non supporté', 400);
-  if (!phone?.trim()) throw new AppError('Numéro de téléphone requis', 400);
+  if (provider !== 'DEMO' && !phone?.trim())
+    throw new AppError('Numéro de téléphone requis', 400);
   if (amount <= 0) throw new AppError('Montant invalide', 400);
+
+  // ── Mode démonstration (sans clé FedaPay) : parcours FIDÈLE à la plateforme ──
+  // Le paiement reste PENDING comme dans la vraie vie (« confirmez sur votre
+  // téléphone »). La confirmation passe par POST /payments/processor/demo/confirm,
+  // qui rejoue le webhook FedaPay de production (transaction → paiement →
+  // commande → caisse du jour) — zéro code parallèle.
+  if (provider === 'DEMO') {
+    return {
+      providerRef: `sim_demo_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      status: 'PENDING',
+      fee: Math.round(amount * 0.01),
+      message:
+        '📲 Mode démo — paiement initié. Confirmez sur votre téléphone (simulation).',
+    };
+  }
 
   // Try FedaPay first if configured
   if (fedapay.isFedaPayAvailable()) {
@@ -92,14 +141,17 @@ export async function processMobileMoney(
     '22177000000',
   ];
   const isTestMode = allowedTestPhones.includes(phone.replace(/[^0-9]/g, ''));
+  const isDemoMode = isPaymentDemoMode();
 
-  if (isTestMode) {
-    logger.info(`MobileMoney [TEST]: ${provider} payment succeeded for ${phone}, ${amount}`);
+  if (isDemoMode || isTestMode) {
+    logger.info(
+      `MobileMoney ${isDemoMode ? '[DEMO]' : '[TEST]'}: ${provider} payment succeeded for ${phone}, ${amount}`
+    );
     return {
       providerRef,
       status: 'SUCCESS',
       fee: Math.round(amount * 0.01),
-      message: `Paiement ${provider} réussi (mode test).`,
+      message: `Paiement ${provider} réussi ${isDemoMode ? '(mode démonstration).' : '(mode test).'}`,
     };
   }
 
@@ -235,11 +287,19 @@ export async function saveTransaction(data: {
         },
       });
 
-      if (data.userId) {
+      // La commission est prélevée sur les gains du business → la notifier au
+      // propriétaire du business (et non à l'acheteur `data.userId`, qui paye
+      // le prix plein : dans le checkout client, ça lui annonçait à tort une
+      // commission qu'il ne supporte pas).
+      const commissionBusiness = await prisma.business.findUnique({
+        where: { id: data.businessId },
+        select: { id: true, name: true, ownerId: true },
+      });
+      if (commissionBusiness?.ownerId) {
         publishCommissionCharged({
-          userId: data.userId,
+          userId: commissionBusiness.ownerId,
           amount: String(platformCommission),
-          businessName: 'AfriBiz',
+          businessName: commissionBusiness.name || 'AfriBiz',
           businessId: data.businessId,
         });
       }

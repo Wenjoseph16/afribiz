@@ -151,6 +151,8 @@ export interface ApiClientMethods {
     customerName?: string;
     customerEmail?: string;
   }): Promise<any>;
+  confirmDemoPayment(providerRef: string): Promise<any>;
+  getDemoTransactions(): Promise<any>;
   addPaymentProof(paymentId: string, data: { imageUrl: string; notes?: string }): Promise<any>;
 
   // ============================================

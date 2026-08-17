@@ -17,6 +17,7 @@ import { logger } from '../lib/logger';
 import { trackAnalyticsEvent } from './analyticsService';
 import { applyAffiliateOnPaid } from './affiliateService';
 import { recordOrderSale } from './cashService';
+import { computePrice } from './priceEngine';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 async function getBusinessByOwner(ownerId: string, businessId?: string | null) {
@@ -193,34 +194,106 @@ export async function createOrder(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId, data?.businessId);
   const orderNumber = generateOrderNumber();
 
-  const subtotal =
-    data.items?.reduce(
-      (sum: number, item: any) => sum + Number(item.unitPrice) * item.quantity,
-      0
-    ) || 0;
-  const tax = data.tax || 0;
-  const deliveryFee = data.deliveryFee || 0;
-  const discount = data.discount || 0;
-  const total = subtotal + Number(tax) + Number(deliveryFee) - Number(discount);
-
-  // Validate stock for products (outside transaction, read-only check)
+  // ── ANTI-TRICHE (Chantier 5.5) : chaque ligne du catalogue est RECALCULÉE côté
+  // serveur via le PriceEngine. Le `unitPrice` envoyé par le client est IGNORÉ pour
+  // les articles du catalogue (produit, service, plat). Seules les lignes libres
+  // (vente libre POS : montant tapé par le gérant, signé par ownerId) conservent
+  // le prix saisi — c'est le métier du comptoir.
+  const pricedLines: Array<{
+    productId?: string | null;
+    variantId?: string | null;
+    menuItemId?: string | null;
+    serviceId?: string | null;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    discountAmount: number;
+    variantName?: string | null;
+    sku?: string | null;
+    notes?: string | null;
+    priceEngine: any;
+  }> = [];
+  let subtotal = 0;
   for (const item of data.items || []) {
-    if (item.productId) {
-      const product = await prisma.product.findUnique({ where: { id: item.productId } });
-      if (product && product.stock < item.quantity) {
-        throw new AppError('Stock insuffisant pour ' + product.name, 400);
-      }
+    const quantity = Math.max(1, Math.floor(Number(item.quantity) || 1));
+    if (!item.productId && !item.serviceId && !item.menuItemId) {
+      // Ligne libre (montant saisi au comptoir) : prix du gérant conservé
+      const unitPrice = Math.max(0, Number(item.unitPrice) || 0);
+      pricedLines.push({
+        productId: item.productId,
+        variantId: item.variantId,
+        menuItemId: item.menuItemId,
+        serviceId: item.serviceId,
+        name: item.name,
+        quantity,
+        unitPrice,
+        discountAmount: 0,
+        variantName: item.variantName,
+        sku: item.sku,
+        notes: item.notes,
+        priceEngine: null,
+      });
+      subtotal += unitPrice * quantity;
+      continue;
     }
+    const itemType = item.productId ? 'PRODUCT' : item.serviceId ? 'SERVICE' : 'MENU_ITEM';
+    const itemId = item.productId || item.serviceId || item.menuItemId;
+    const price = await computePrice(business.id, {
+      itemType,
+      itemId,
+      quantity,
+      clientPrice: Number(item.unitPrice) || 0,
+      options: item.options,
+    });
+    if (!price.available) {
+      throw new AppError(`${item.name || 'Article'}: ${price.reason || 'indisponible'}`, 400);
+    }
+    const surchargeTotal = price.surcharges.reduce((s: number, x: any) => s + x.amount, 0);
+    pricedLines.push({
+      productId: item.productId,
+      variantId: item.variantId,
+      menuItemId: item.menuItemId,
+      serviceId: item.serviceId,
+      name: item.name,
+      quantity,
+      unitPrice: price.unitPrice,
+      discountAmount: price.discountAmount,
+      variantName: item.variantName,
+      sku: item.sku,
+      notes: item.notes,
+      priceEngine: price,
+    });
+    subtotal += price.unitPrice * quantity + surchargeTotal;
   }
+
+  // Remise / taxe / livraison : bornées pour ne jamais produire un total négatif
+  const tax = Math.max(0, Number(data.tax || 0));
+  const deliveryFee = Math.max(0, Number(data.deliveryFee || 0));
+  const discount = Math.min(Math.max(0, Number(data.discount || 0)), subtotal);
+  const total = Math.max(0, subtotal + tax + deliveryFee - discount);
 
   // Execute stock decrement + order creation + debt creation atomically
   const order = await prisma.$transaction(async (tx) => {
-    // Decrement product stock
-    for (const item of data.items || []) {
-      if (item.productId) {
+    // Decrement product stock — uniquement les produits du business (anti-triche :
+    // impossible de décrémenter le stock d'un autre commerce via un id étranger)
+    for (const line of pricedLines) {
+      if (line.productId) {
+        const product = await tx.product.findFirst({
+          where: { id: line.productId, businessId: business.id },
+          select: { id: true, stock: true, name: true },
+        });
+        if (!product) {
+          throw new AppError(
+            `Produit introuvable dans ce commerce: ${line.name || line.productId}`,
+            400
+          );
+        }
+        if (product.stock < line.quantity) {
+          throw new AppError('Stock insuffisant pour ' + product.name, 400);
+        }
         await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
+          where: { id: line.productId },
+          data: { stock: { decrement: line.quantity } },
         });
       }
     }
@@ -248,19 +321,23 @@ export async function createOrder(ownerId: string, data: any) {
         notes: data.notes,
         internalNotes: data.internalNotes,
         items: {
-          create: (data.items || []).map((item: any) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            menuItemId: item.menuItemId,
-            serviceId: item.serviceId,
-            name: item.name,
-            variantName: item.variantName,
-            sku: item.sku,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: Number(item.unitPrice) * item.quantity,
-            notes: item.notes,
-          })),
+          create: pricedLines.map((line) => {
+            const createData: any = {
+              productId: line.productId || null,
+              variantId: line.variantId || null,
+              menuItemId: line.menuItemId || null,
+              serviceId: line.serviceId || null,
+              name: line.name,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              total: line.unitPrice * line.quantity,
+              notes: line.notes || null,
+            };
+            // NOTE : variantName/sku ne sont PAS des colonnes OrderItem en base —
+            // on ne les envoie jamais au create (Prisma rejetterait « Unknown argument »).
+            // Le frontend les affiche via la relation variant/variante quand elle existe.
+            return createData;
+          }),
         },
       },
       include: orderInclude,

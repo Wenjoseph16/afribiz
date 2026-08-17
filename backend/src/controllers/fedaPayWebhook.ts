@@ -3,6 +3,113 @@ import crypto from 'crypto';
 import { prisma } from '../lib/db';
 import { logger } from '../lib/logger';
 import { config } from '../config/env';
+import { recordOrderSale } from '../services/cashService';
+
+/**
+ * Applique l'événement FedaPay à la transaction (CHEMIN UNIQUE, partagé entre
+ * le webhook réel et le simulateur de démo). Une transaction `sim_` confirmée en
+ * mode démonstration passe EXACTEMENT par le même code que la production :
+ * transaction → paiement → commande → caisse du jour.
+ */
+export async function applyFedaPayEvent(
+  providerRef: string,
+  eventType: string
+): Promise<{ transaction: any; newStatus: string | null }> {
+  let newStatus: string | null = null;
+  switch (eventType) {
+    case 'transaction.approved':
+    case 'transaction.completed':
+      newStatus = 'SUCCESS';
+      break;
+    case 'transaction.cancelled':
+    case 'transaction.failed':
+      newStatus = 'FAILED';
+      break;
+    case 'transaction.refunded':
+      newStatus = 'REFUNDED';
+      break;
+    default:
+      return { transaction: null, newStatus: null };
+  }
+
+  const transaction = await prisma.paymentTransaction.findFirst({ where: { providerRef } });
+  if (!transaction) {
+    logger.warn('FedaPay: no transaction for ref ' + providerRef);
+    return { transaction: null, newStatus };
+  }
+
+  const updateData: Record<string, unknown> = { status: newStatus };
+  if (newStatus === 'SUCCESS') {
+    updateData.paidAt = new Date();
+  }
+
+  await prisma.paymentTransaction.update({
+    where: { id: transaction.id },
+    data: updateData,
+  });
+
+  logger.info(`FedaPay: transaction ${transaction.id} updated to ${newStatus}`);
+
+  // Paiement lié à la commande (si transaction.orderId)
+  let updatedOrder: any = null;
+  if (transaction.orderId) {
+    try {
+      const payment = await prisma.payment.findFirst({
+        where: { orderId: transaction.orderId },
+      });
+      if (payment) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: newStatus === 'SUCCESS' ? 'COMPLETED' : 'FAILED',
+            paidAt: newStatus === 'SUCCESS' ? new Date() : undefined,
+          },
+        });
+      }
+
+      // Commande : marquée PAID + l'argent entre dans la caisse du jour (Chantier 4)
+      if (newStatus === 'SUCCESS') {
+        const order = await prisma.order.findUnique({
+          where: { id: transaction.orderId },
+          select: { id: true, orderNumber: true, totalAmount: true, paymentMethod: true, businessId: true },
+        });
+        if (order) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { paymentStatus: 'PAID', paidAt: new Date() },
+          });
+          updatedOrder = order;
+        }
+      }
+    } catch (e) {
+      logger.error('FedaPay: failed to update payment/order', { error: e });
+    }
+  }
+
+  // Abonnement : si la transaction est un paiement de souscription (metadata
+  // type=SUBSCRIPTION) et qu'elle est approuvée → activer la souscription
+  // (crédit wallet net de commission, idempotent via activateSubscription).
+  const meta = (transaction.metadata as any) || {};
+  if (
+    meta.type === 'SUBSCRIPTION' &&
+    meta.subscriptionId &&
+    newStatus === 'SUCCESS' &&
+    transaction.userId
+  ) {
+    try {
+      const { confirmSubscriptionPaymentByRef } = await import('../services/subscriptions');
+      await confirmSubscriptionPaymentByRef(
+        transaction.providerRef || providerRef || '',
+        transaction.userId
+      );
+      logger.info('FedaPay: subscription ' + meta.subscriptionId + ' activated');
+    } catch (e) {
+      logger.error('FedaPay: failed to activate subscription', { error: e });
+    }
+  }
+
+  return { transaction, newStatus };
+}
 
 export async function handleFedaPayWebhook(req: Request, res: Response) {
   try {
@@ -45,79 +152,7 @@ export async function handleFedaPayWebhook(req: Request, res: Response) {
       return;
     }
 
-    let newStatus: string | null = null;
-    switch (eventType) {
-      case 'transaction.approved':
-      case 'transaction.completed':
-        newStatus = 'SUCCESS';
-        break;
-      case 'transaction.cancelled':
-      case 'transaction.failed':
-        newStatus = 'FAILED';
-        break;
-      case 'transaction.refunded':
-        newStatus = 'REFUNDED';
-        break;
-      default:
-        logger.info('FedaPay webhook: unhandled event ' + eventType);
-        res.status(200).json({ received: true });
-        return;
-    }
-
-    const transaction = await prisma.paymentTransaction.findFirst({
-      where: { providerRef },
-    });
-
-    if (!transaction) {
-      logger.warn('FedaPay webhook: no transaction for ref ' + providerRef);
-      res.status(200).json({ received: true });
-      return;
-    }
-
-    const updateData: Record<string, unknown> = { status: newStatus };
-    if (newStatus === 'SUCCESS') {
-      updateData.paidAt = new Date();
-    }
-
-    await prisma.paymentTransaction.update({
-      where: { id: transaction.id },
-      data: updateData,
-    });
-
-    logger.info('FedaPay webhook: transaction ' + transaction.id + ' updated to ' + newStatus);
-
-    if (transaction.orderId) {
-      try {
-        const payment = await prisma.payment.findFirst({
-          where: { orderId: transaction.orderId },
-        });
-        if (payment) {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: newStatus === 'SUCCESS' ? 'COMPLETED' : 'FAILED',
-              paidAt: newStatus === 'SUCCESS' ? new Date() : undefined,
-            },
-          });
-        }
-      } catch (e) {
-        logger.error('FedaPay webhook: failed to update payment', { error: e });
-      }
-    }
-
-    // Abonnement : si la transaction est un paiement de souscription (metadata
-    // type=SUBSCRIPTION) et qu'elle est approuvée → activer la souscription
-    // (crédit wallet net de commission, idempotent via activateSubscription).
-    const meta = (transaction.metadata as any) || {};
-    if (meta.type === 'SUBSCRIPTION' && meta.subscriptionId && newStatus === 'SUCCESS' && transaction.userId) {
-      try {
-        const { confirmSubscriptionPaymentByRef } = await import('../services/subscriptions');
-        await confirmSubscriptionPaymentByRef(transaction.providerRef || providerRef || '', transaction.userId);
-        logger.info('FedaPay webhook: subscription ' + meta.subscriptionId + ' activated');
-      } catch (e) {
-        logger.error('FedaPay webhook: failed to activate subscription', { error: e });
-      }
-    }
+    await applyFedaPayEvent(providerRef, eventType);
 
     res.status(200).json({ received: true });
   } catch (err: unknown) {

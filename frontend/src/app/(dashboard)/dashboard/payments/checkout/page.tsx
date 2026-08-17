@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useInitiatePayment } from '@/features/hooks';
+import DemoPaymentConfirm from '@/components/payments/DemoPaymentConfirm';
 
 const FEDAPAY_MODES = [
   { id: 'mtn_open', name: 'MTN Mobile Money', icon: '📱', color: 'bg-yellow-500' },
@@ -14,6 +15,7 @@ const FEDAPAY_MODES = [
   { id: 'orange_open', name: 'Orange Money', icon: '📱', color: 'bg-orange-500' },
   { id: 'wave_open', name: 'Wave', icon: '🌊', color: 'bg-blue-500' },
   { id: 'card', name: 'Carte bancaire', icon: '💳', color: 'bg-purple-600' },
+  { id: 'demo', name: 'Démo (simulation)', icon: '🧪', color: 'bg-emerald-500' },
 ];
 
 export default function CheckoutPage() {
@@ -25,6 +27,7 @@ export default function CheckoutPage() {
   const [selectedMode, setSelectedMode] = useState('mtn_open');
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [pendingRef, setPendingRef] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,10 +35,10 @@ export default function CheckoutPage() {
 
     try {
       const res: any = await initiatePayment.mutateAsync({
-        provider: 'FEDAPAY',
+        provider: selectedMode === 'demo' ? 'DEMO' : 'FEDAPAY',
         amount: parseFloat(amount),
-        phone: phone || undefined,
-        mode: selectedMode,
+        phone: selectedMode === 'demo' ? undefined : phone || undefined,
+        mode: selectedMode === 'demo' ? undefined : selectedMode,
         currency: 'XOF',
         customerName: customerName || undefined,
         customerEmail: customerEmail || undefined,
@@ -43,6 +46,13 @@ export default function CheckoutPage() {
       });
 
       const data = res.data.data;
+
+      // Démo : le paiement reste PENDING (comme un vrai mobile money) — on attend
+      // la confirmation sur le « téléphone », rejouée par le webhook simulé.
+      if (selectedMode === 'demo' && data?.status === 'PENDING' && data?.providerRef) {
+        setPendingRef(data.providerRef);
+        return;
+      }
 
       // If FedaPay returns a redirect URL (for card payments), redirect there
       if (data?.redirectUrl) {
@@ -54,6 +64,11 @@ export default function CheckoutPage() {
     } catch (err) {
       console.error('Payment failed', err);
     }
+  };
+
+  const handleDemoConfirmed = () => {
+    setPendingRef(null);
+    router.push(`/dashboard/payments?success=true&ref=demo`);
   };
 
   return (
@@ -117,7 +132,7 @@ export default function CheckoutPage() {
             </Card>
 
             {/* Infos client */}
-            {selectedMode !== 'card' && (
+            {selectedMode !== 'card' && selectedMode !== 'demo' && (
               <Card className="p-5">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                   <Smartphone className="h-4 w-4" />
@@ -161,20 +176,32 @@ export default function CheckoutPage() {
               </div>
             </Card>
 
-            <Button
-              type="submit"
-              className="w-full py-4 text-lg"
-              disabled={initiatePayment.isPending || !amount || parseFloat(amount) <= 0}
-            >
-              {initiatePayment.isPending ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Paiement en cours...
-                </span>
-              ) : (
-                `Payer ${parseInt(amount) > 0 ? parseInt(amount).toLocaleString() : ''} FCFA`
-              )}
-            </Button>
+            {pendingRef && (
+              <DemoPaymentConfirm
+                providerRef={pendingRef}
+                amount={parseInt(amount) || 0}
+                onConfirmed={handleDemoConfirmed}
+              />
+            )}
+
+            {!pendingRef && (
+              <Button
+                type="submit"
+                className="w-full py-4 text-lg"
+                disabled={
+                  initiatePayment.isPending || !amount || parseFloat(amount) <= 0
+                }
+              >
+                {initiatePayment.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Paiement en cours...
+                  </span>
+                ) : (
+                  `Payer ${parseInt(amount) > 0 ? parseInt(amount).toLocaleString() : ''} FCFA`
+                )}
+              </Button>
+            )}
 
             {initiatePayment.error && (
               <p className="text-sm text-red-500 text-center">
