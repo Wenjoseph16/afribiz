@@ -39,7 +39,7 @@ function generateProductSlug(name: string, businessId: string): Promise<string> 
 }
 
 async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true, name: true, ...activeModuleAssignmentsSelect },
   });
@@ -629,4 +629,49 @@ export async function bulkUpdateStock(ownerId: string, items: { id: string; stoc
     });
   }
   return { updated: items.length };
+}
+
+/**
+ * Lookup code-barres dans la base partagée.
+ * Recherche un produit par son code-barres et retourne les infos
+ * pour pré-remplir le formulaire express (nom, prix, catégorie, unité).
+ * Utilisé par le scanner code-barres du Chantier 8.
+ */
+export async function lookupBarcodeByCode(code: string) {
+  const product = await prisma.product.findFirst({
+    where: { barcode: code, deletedAt: null, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      currency: true,
+      unit: true,
+      weight: true,
+      weightUnit: true,
+      barcode: true,
+      sku: true,
+      images: true,
+      category: { select: { id: true, name: true } },
+      business: { select: { id: true, name: true } },
+    },
+  });
+
+  if (!product) {
+    return { found: false, barcode: code };
+  }
+
+  return {
+    found: true,
+    barcode: code,
+    name: product.name,
+    price: Number(product.price),
+    currency: product.currency,
+    unit: product.unit,
+    weight: product.weight ? Number(product.weight) : null,
+    weightUnit: product.weightUnit,
+    sku: product.sku,
+    images: product.images,
+    category: product.category,
+    businessName: product.business?.name,
+  };
 }

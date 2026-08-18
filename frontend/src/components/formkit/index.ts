@@ -9,3 +9,6 @@ export { ScopePicker, type ScopeValue, type ScopeType } from './ScopePicker';
 export { AddressField } from './AddressField';
 export { ValidatedForm } from './ValidatedForm';
 export { useFormKit, type FormRule, type FormFieldConfig } from './useFormKit';
+export { VoiceInput } from './VoiceInput';
+export { BarcodeScanner } from './BarcodeScanner';
+export { PhotoReference, type PhotoItem } from './PhotoReference';

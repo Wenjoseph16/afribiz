@@ -235,6 +235,7 @@ export interface ApiClientMethods {
   bulkDeleteProducts(ids: string[]): Promise<any>;
   bulkToggleProducts(ids: string[], isActive: boolean): Promise<any>;
   bulkUpdateProductStock(items: { id: string; stock: number }[]): Promise<any>;
+  lookupBarcode(code: string): Promise<any>;
 
   // ============================================
   // SERVICES (injectServicesDomain)

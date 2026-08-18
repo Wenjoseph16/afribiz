@@ -323,10 +323,7 @@ export default function ProductsPage() {
       <PageHeader
         title="Centre de gestion du catalogue"
         description="Pilotez vos produits, stocks et promotions en temps réel — du premier article au best-seller"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Produits' },
-        ]}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Produits' }]}
         actions={
           <div className="flex items-center gap-2">
             <Link href="/dashboard/products/stock-alerts">
@@ -339,6 +336,12 @@ export default function ProductsPage() {
               <Button variant="outline" size="sm">
                 <Tag className="h-4 w-4 mr-1.5" />
                 Catégories
+              </Button>
+            </Link>
+            <Link href="/dashboard/products/express">
+              <Button variant="outline" size="sm">
+                <Zap className="h-4 w-4 mr-1.5" />
+                Inventaire Express
               </Button>
             </Link>
             <Link href="/dashboard/products/import">
@@ -738,25 +741,33 @@ export default function ProductsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">Prix</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">
+                  Prix
+                </p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {(selectedProduct.price ?? 0).toLocaleString()} FCFA
                 </p>
               </div>
               <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">Stock</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">
+                  Stock
+                </p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {selectedProduct.stock} unité{selectedProduct.stock > 1 ? 's' : ''}
                 </p>
               </div>
               <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">Vendus</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">
+                  Vendus
+                </p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {selectedProduct.soldCount || 0}
                 </p>
               </div>
               <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">Note</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1">
+                  Note
+                </p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {(selectedProduct.rating ?? 0).toFixed(1)} ★
                 </p>
@@ -774,7 +785,10 @@ export default function ProductsPage() {
 
             <div className="flex flex-wrap gap-2">
               {getBadges(selectedProduct).map((b, i) => (
-                <span key={i} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${b.className}`}>
+                <span
+                  key={i}
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${b.className}`}
+                >
                   {b.label}
                 </span>
               ))}

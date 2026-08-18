@@ -164,3 +164,18 @@ export const bulkUpdateStock = catchAsyncErrors(
     res.json({ success: true, ...result });
   }
 );
+
+/**
+ * Lookup code-barres dans la base partagée AfriBiz.
+ * Retourne les infos produit (nom, prix, catégorie) si trouvé,
+ * permettant de pré-remplir le formulaire express.
+ */
+export const lookupBarcode = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new AppError('Non authentifi\u00e9', 401);
+  const { code } = req.params;
+  if (!code || code.trim().length === 0) {
+    throw new AppError('Code-barres requis', 400);
+  }
+  const result = await productService.lookupBarcodeByCode(code.trim());
+  res.json({ success: true, data: result });
+});

@@ -19,6 +19,7 @@ import {
   bulkDeleteProducts,
   bulkToggleActive,
   bulkUpdateStock,
+  lookupBarcode,
 } from '../controllers/product';
 import { validateBody } from '../middlewares/validators';
 import {
@@ -35,6 +36,7 @@ router.get('/', listProducts);
 router.get('/stats', getProductStats);
 router.get('/alerts', getStockAlerts);
 router.get('/export', exportProducts);
+router.get('/barcode/:code', lookupBarcode);
 router.post('/import', importProducts);
 router.post('/bulk/delete', bulkDeleteProducts);
 router.patch('/bulk/toggle', bulkToggleActive);

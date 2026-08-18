@@ -18,14 +18,21 @@ import {
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import Papa from 'papaparse';
+import { useMutation } from '@tanstack/react-query';
+import { apiClient } from '@/services/apiClient';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface ImportPreview {
   row: number;
   name: string;
   price: string;
   stock: string;
+  barcode: string;
   category: string;
+  sku: string;
   errors: string[];
+  valid: boolean;
 }
 
 interface ImportHistoryItem {
@@ -37,36 +44,6 @@ interface ImportHistoryItem {
   errors: number;
   status: 'success' | 'partial' | 'failed';
 }
-
-const IMPORT_HISTORY: ImportHistoryItem[] = [
-  {
-    id: 'i1',
-    date: '2024-06-10 14:30',
-    fileName: 'produits-juin.csv',
-    total: 25,
-    imported: 23,
-    errors: 2,
-    status: 'partial',
-  },
-  {
-    id: 'i2',
-    date: '2024-05-28 09:15',
-    fileName: 'catalogue-complet.csv',
-    total: 50,
-    imported: 50,
-    errors: 0,
-    status: 'success',
-  },
-  {
-    id: 'i3',
-    date: '2024-05-15 16:45',
-    fileName: 'nouveautes.csv',
-    total: 12,
-    imported: 0,
-    errors: 12,
-    status: 'failed',
-  },
-];
 
 const CSV_TEMPLATE_COLUMNS = [
   'name*',
@@ -80,68 +57,140 @@ const CSV_TEMPLATE_COLUMNS = [
   'price*',
   'currency',
   'stock*',
-  'minStock',
+  'lowStockThreshold',
   'unit',
   'weight',
+  'weightUnit',
   'dimensions',
   'isPromotional',
   'promotionalPrice',
   'discountPercent',
 ];
 
+/** Valide une ligne CSV et retourne les erreurs */
+function validateRow(row: Record<string, string>, index: number): ImportPreview {
+  const errors: string[] = [];
+  const name = (row['name'] || '').trim();
+  const price = (row['price'] || '').trim();
+  const stock = (row['stock'] || '').trim();
+  const barcode = (row['barcode'] || '').trim();
+  const sku = (row['sku'] || '').trim();
+  const category = (row['categoryId'] || row['category'] || '').trim();
+
+  if (!name) errors.push('Nom manquant');
+  if (!price || isNaN(Number(price)) || Number(price) <= 0) errors.push('Prix invalide');
+  if (stock !== '' && (isNaN(Number(stock)) || Number(stock) < 0)) errors.push('Stock invalide');
+
+  return {
+    row: index + 1,
+    name,
+    price,
+    stock,
+    barcode,
+    category,
+    sku,
+    errors,
+    valid: errors.length === 0,
+  };
+}
+
+/** Transforme une ligne CSV brute en objet produit pour le backend */
+function rowToProduct(row: Record<string, string>): Record<string, unknown> {
+  const tags = (row['tags'] || '')
+    .split(/[;,]/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  return {
+    name: (row['name'] || '').trim(),
+    shortDescription: (row['shortDescription'] || '').trim() || undefined,
+    description: (row['description'] || '').trim() || undefined,
+    brand: (row['brand'] || '').trim() || undefined,
+    sku: (row['sku'] || '').trim() || undefined,
+    barcode: (row['barcode'] || '').trim() || undefined,
+    categoryId: (row['categoryId'] || '').trim() || undefined,
+    tags,
+    price: Number(row['price'] || 0),
+    currency: (row['currency'] || 'FCFA').trim(),
+    stock: Number(row['stock'] || 0),
+    lowStockThreshold: row['lowStockThreshold'] ? Number(row['lowStockThreshold']) : 5,
+    unit: (row['unit'] || 'piece').trim(),
+    weight: row['weight'] ? Number(row['weight']) : undefined,
+    weightUnit: (row['weightUnit'] || 'kg').trim(),
+    dimensions: (row['dimensions'] || '').trim() || undefined,
+    isPromotional:
+      (row['isPromotional'] || '').toLowerCase() === 'true' ||
+      (row['isPromotional'] || '').toLowerCase() === 'oui',
+    promotionalPrice: row['promotionalPrice'] ? Number(row['promotionalPrice']) : undefined,
+    discountPercent: row['discountPercent'] ? Number(row['discountPercent']) : 0,
+  };
+}
+
 export default function ImportProductsPage() {
+  const { notify } = useToast();
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const [importDone, setImportDone] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    imported: number;
+    total: number;
+    errors: { row: number; error: string }[];
+  } | null>(null);
   const [activeTab, setActiveTab] = useState<'import' | 'history'>('import');
   const [preview, setPreview] = useState<ImportPreview[] | null>(null);
+  const [rawRows, setRawRows] = useState<Record<string, string>[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const simulatePreview = useCallback(() => {
-    setPreview([
-      {
-        row: 1,
-        name: 'Tissu Wax Africain',
-        price: '5000',
-        stock: '45',
-        category: 'Vêtements',
-        errors: [],
-      },
-      {
-        row: 2,
-        name: 'Huile de coco bio',
-        price: '3500',
-        stock: '3',
-        category: 'Cosmétiques',
-        errors: [],
-      },
-      {
-        row: 3,
-        name: '',
-        price: '8500',
-        stock: '10',
-        category: 'Accessoires',
-        errors: ['Nom manquant'],
-      },
-      {
-        row: 4,
-        name: 'Beurre de karité',
-        price: 'abc',
-        stock: '20',
-        category: 'Cosmétiques',
-        errors: ['Prix invalide'],
-      },
-      {
-        row: 5,
-        name: 'Sac en raphia',
-        price: '8500',
-        stock: '',
-        category: 'Accessoires',
-        errors: ['Stock manquant'],
-      },
-    ]);
-  }, []);
+  const importMutation = useMutation({
+    mutationFn: (products: Record<string, unknown>[]) => apiClient.importProducts({ products }),
+    onSuccess: (res: any) => {
+      const data = res?.data || res;
+      setImportResult({
+        imported: data.imported || 0,
+        total: data.total || 0,
+        errors: data.errors || [],
+      });
+      setImporting(false);
+      notify({
+        title: 'Import terminé',
+        description: `${data.imported || 0}/${data.total || 0} produits importés`,
+        variant: 'success',
+      });
+    },
+    onError: (err: any) => {
+      setImporting(false);
+      notify({
+        title: "Erreur d'import",
+        description: err.message || 'Une erreur est survenue',
+        variant: 'error',
+      });
+    },
+  });
+
+  const parseCSV = useCallback(
+    (file: File) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (h: string) => h.trim().replace(/\*/g, ''),
+        complete: (results) => {
+          const rows = results.data as Record<string, string>[];
+          setRawRows(rows);
+          const validated = rows.map((row, i) => validateRow(row, i));
+          setPreview(validated);
+          setImportResult(null);
+        },
+        error: (err) => {
+          notify({
+            title: 'Erreur de parsing',
+            description: err.message,
+            variant: 'error',
+          });
+        },
+      });
+    },
+    [notify]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -162,50 +211,47 @@ export default function ImportProductsPage() {
         (file.name.endsWith('.csv') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))
       ) {
         setSelectedFile(file);
-        setImportDone(false);
-        setPreview(null);
-        simulatePreview();
+        setImportResult(null);
+        parseCSV(file);
       }
     },
-    [simulatePreview]
+    [parseCSV]
   );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setImportDone(false);
-      setPreview(null);
-      simulatePreview();
+      setImportResult(null);
+      parseCSV(file);
     }
   };
 
   const handleImport = async () => {
+    if (!preview || preview.length === 0) return;
     setImporting(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    setImporting(false);
-    setImportDone(true);
-    setSelectedFile(null);
-    setPreview(null);
+    const validProducts = rawRows.filter((_, i) => preview[i]?.valid).map(rowToProduct);
+    importMutation.mutate(validProducts);
   };
 
   const downloadTemplate = () => {
     const header = CSV_TEMPLATE_COLUMNS.join(',');
     const sampleRow = [
       'Tissu Wax',
-      'Magnifique tissu',
-      'Description complète...',
+      'Magnifique tissu africain',
+      'Description complète du produit...',
       'Wax Africain',
       'WAX-001',
       '4901234567890',
-      'cat-1',
-      'wax,africain',
+      '',
+      'wax;africain',
       '5000',
       'FCFA',
       '45',
       '10',
       'pièce',
       '0.5',
+      'kg',
       '100x150',
       'false',
       '',
@@ -221,62 +267,8 @@ export default function ImportProductsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const exportProducts = () => {
-    const header = CSV_TEMPLATE_COLUMNS.join(',');
-    const rows = [
-      [
-        'Tissu Wax Africain',
-        '',
-        'Description...',
-        'Wax Africain',
-        'WAX-001',
-        '',
-        'Vêtements',
-        'wax',
-        '5000',
-        'FCFA',
-        '45',
-        '10',
-        'pièce',
-        '0.5',
-        '100x150',
-        'true',
-        '4000',
-        '20',
-      ],
-      [
-        'Huile de coco bio',
-        'Huile naturelle',
-        '',
-        '',
-        'HUILE-001',
-        '',
-        'Cosmétiques',
-        'bio',
-        '3500',
-        'FCFA',
-        '3',
-        '10',
-        'pièce',
-        '0.25',
-        '',
-        'false',
-        '',
-        '0',
-      ],
-    ];
-    const csv = header + '\n' + rows.map((r) => r.join(',')).join('\n') + '\n';
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'mes-produits.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const totalPreviewErrors = preview?.reduce((acc, p) => acc + p.errors.length, 0) || 0;
-  const totalPreviewValid = preview?.filter((p) => p.errors.length === 0).length || 0;
+  const totalPreviewValid = preview?.filter((p) => p.valid).length || 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -294,10 +286,6 @@ export default function ImportProductsPage() {
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
               <FileText className="h-4 w-4 mr-1.5" />
               Template CSV
-            </Button>
-            <Button variant="outline" size="sm" onClick={exportProducts}>
-              <Download className="h-4 w-4 mr-1.5" />
-              Exporter
             </Button>
           </div>
         }
@@ -334,8 +322,60 @@ export default function ImportProductsPage() {
       {/* Import Tab */}
       {activeTab === 'import' && (
         <div className="space-y-6">
+          {/* Import success */}
+          {importResult && (
+            <Card className="text-center py-10">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                Import terminé !
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                {importResult.imported} produits importés avec succès
+                {importResult.errors.length > 0 && `, ${importResult.errors.length} erreur(s)`}
+              </p>
+              {importResult.errors.length > 0 && (
+                <div className="max-w-md mx-auto text-left mb-4">
+                  <p className="text-xs font-semibold text-red-600 mb-2">Erreurs :</p>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {importResult.errors.slice(0, 20).map((e, i) => (
+                      <p key={i} className="text-xs text-red-500">
+                        Ligne {e.row} : {e.error}
+                      </p>
+                    ))}
+                    {importResult.errors.length > 20 && (
+                      <p className="text-xs text-gray-400">
+                        … et {importResult.errors.length - 20} autres erreurs
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-center gap-3">
+                <Button
+                  onClick={() => {
+                    setImportResult(null);
+                    setSelectedFile(null);
+                    setPreview(null);
+                    setRawRows([]);
+                  }}
+                >
+                  <Upload className="h-4 w-4 mr-1.5" />
+                  Importer un autre fichier
+                </Button>
+                <Link href="/dashboard/products">
+                  <Button variant="outline">
+                    <Eye className="h-4 w-4 mr-1.5" />
+                    Voir les produits
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          )}
+
           {/* Upload zone */}
-          {!importDone && (
+          {!importResult && (
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -358,6 +398,7 @@ export default function ImportProductsPage() {
                     </p>
                     <p className="text-sm text-gray-500">
                       {(selectedFile.size / 1024).toFixed(1)} Ko
+                      {preview && ` · ${preview.length} lignes`}
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-3">
@@ -367,14 +408,20 @@ export default function ImportProductsPage() {
                       onClick={() => {
                         setSelectedFile(null);
                         setPreview(null);
+                        setRawRows([]);
                       }}
                     >
                       <X className="h-4 w-4 mr-1.5" />
                       Changer
                     </Button>
-                    <Button size="sm" onClick={handleImport} isLoading={importing}>
+                    <Button
+                      size="sm"
+                      onClick={handleImport}
+                      isLoading={importing}
+                      disabled={!preview || totalPreviewValid === 0}
+                    >
                       <Upload className="h-4 w-4 mr-1.5" />
-                      Importer
+                      Importer ({totalPreviewValid} produits)
                     </Button>
                   </div>
                 </div>
@@ -385,11 +432,11 @@ export default function ImportProductsPage() {
                   </div>
                   <div>
                     <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      Glissez votre fichier ici
+                      Glissez votre fichier CSV ici
                     </p>
                     <p className="text-sm text-gray-500 mt-1">ou cliquez pour parcourir</p>
                   </div>
-                  <p className="text-xs text-gray-400">Formats supportés : CSV, XLSX, XLS</p>
+                  <p className="text-xs text-gray-400">Format supporté : CSV</p>
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                     <Upload className="h-4 w-4 mr-1.5" />
                     Sélectionner un fichier
@@ -397,7 +444,7 @@ export default function ImportProductsPage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv,.xlsx,.xls"
+                    accept=".csv"
                     className="hidden"
                     onChange={handleFileSelect}
                   />
@@ -406,41 +453,8 @@ export default function ImportProductsPage() {
             </div>
           )}
 
-          {/* Import success */}
-          {importDone && (
-            <Card className="text-center py-10">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                Import terminé !
-              </h2>
-              <p className="text-sm text-gray-500 mb-4">
-                23 produits importés avec succès, 2 erreurs
-              </p>
-              <div className="flex items-center justify-center gap-3">
-                <Button
-                  onClick={() => {
-                    setImportDone(false);
-                    setSelectedFile(null);
-                    setPreview(null);
-                  }}
-                >
-                  <Upload className="h-4 w-4 mr-1.5" />
-                  Importer un autre fichier
-                </Button>
-                <Link href="/dashboard/products">
-                  <Button variant="outline">
-                    <Eye className="h-4 w-4 mr-1.5" />
-                    Voir les produits
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          )}
-
           {/* Preview */}
-          {preview && !importDone && (
+          {preview && !importResult && (
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -466,6 +480,9 @@ export default function ImportProductsPage() {
                         Stock
                       </th>
                       <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Code-barres
+                      </th>
+                      <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">
                         Catégorie
                       </th>
                       <th className="p-2 text-left text-xs font-semibold text-gray-500 uppercase">
@@ -477,7 +494,7 @@ export default function ImportProductsPage() {
                     {preview.map((row) => (
                       <tr
                         key={row.row}
-                        className={cn(row.errors.length > 0 && 'bg-red-50/50 dark:bg-red-900/10')}
+                        className={cn(!row.valid && 'bg-red-50/50 dark:bg-red-900/10')}
                       >
                         <td className="p-2 text-xs text-gray-400">{row.row}</td>
                         <td
@@ -491,7 +508,7 @@ export default function ImportProductsPage() {
                         <td
                           className={cn(
                             'p-2 text-right',
-                            !isNaN(Number(row.price))
+                            row.price && !isNaN(Number(row.price))
                               ? 'text-gray-900 dark:text-gray-100'
                               : 'text-red-500'
                           )}
@@ -501,10 +518,13 @@ export default function ImportProductsPage() {
                         <td
                           className={cn(
                             'p-2 text-right',
-                            row.stock !== '' ? 'text-gray-900 dark:text-gray-100' : 'text-red-500'
+                            row.stock !== '' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'
                           )}
                         >
-                          {row.stock || '-'}
+                          {row.stock || '0'}
+                        </td>
+                        <td className="p-2 text-gray-600 dark:text-gray-300 font-mono text-xs">
+                          {row.barcode || '-'}
                         </td>
                         <td className="p-2 text-gray-600 dark:text-gray-300">
                           {row.category || '-'}
@@ -525,9 +545,14 @@ export default function ImportProductsPage() {
               <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <p className="text-xs text-gray-400">
                   <Info className="h-3.5 w-3.5 inline mr-1" />
-                  Les lignes en rouge seront ignorées lors de l'import
+                  Les lignes en rouge seront ignorées lors de l&apos;import
                 </p>
-                <Button size="sm" onClick={handleImport} isLoading={importing}>
+                <Button
+                  size="sm"
+                  onClick={handleImport}
+                  isLoading={importing}
+                  disabled={totalPreviewValid === 0}
+                >
                   <Upload className="h-4 w-4 mr-1.5" />
                   Importer ({totalPreviewValid} produits)
                 </Button>
@@ -552,10 +577,16 @@ export default function ImportProductsPage() {
               </p>
               <p>2. Remplissez les colonnes (les champs marqués * sont obligatoires)</p>
               <p>3. Glissez-déposez votre fichier ou cliquez pour sélectionner</p>
-              <p>4. Vérifiez l'aperçu avant d'importer</p>
+              <p>4. Vérifiez l&apos;aperçu avant d&apos;importer</p>
               <p className="text-xs text-gray-400 mt-2">
                 Colonnes obligatoires : <code className="text-brand">name</code>,{' '}
                 <code className="text-brand">price</code>, <code className="text-brand">stock</code>
+              </p>
+              <p className="text-xs text-gray-400">
+                Colonnes optionnelles : <code className="text-brand">barcode</code>,{' '}
+                <code className="text-brand">sku</code>,{' '}
+                <code className="text-brand">categoryId</code>,{' '}
+                <code className="text-brand">tags</code>
               </p>
             </div>
           </Card>
@@ -565,61 +596,13 @@ export default function ImportProductsPage() {
       {/* History Tab */}
       {activeTab === 'history' && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {IMPORT_HISTORY.length === 0 ? (
-            <div className="text-center py-12">
-              <Clock className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Aucun import
-              </h3>
-              <p className="text-sm text-gray-500">Vous n'avez pas encore importé de produits</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {IMPORT_HISTORY.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={cn(
-                        'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                        {
-                          'bg-emerald-50 text-emerald-600': item.status === 'success',
-                          'bg-amber-50 text-amber-600': item.status === 'partial',
-                          'bg-red-50 text-red-600': item.status === 'failed',
-                        }
-                      )}
-                    >
-                      {item.status === 'success' ? (
-                        <CheckCircle2 className="h-5 w-5" />
-                      ) : item.status === 'partial' ? (
-                        <AlertCircle className="h-5 w-5" />
-                      ) : (
-                        <X className="h-5 w-5" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {item.fileName}
-                      </p>
-                      <p className="text-xs text-gray-500">{item.date}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {item.imported}/{item.total} importés
-                    </p>
-                    {item.errors > 0 && (
-                      <p className="text-xs text-red-500">
-                        {item.errors} erreur{item.errors > 1 ? 's' : ''}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="text-center py-12">
+            <Clock className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Historique des imports
+            </h3>
+            <p className="text-sm text-gray-500">Les imports seront affichés ici après exécution</p>
+          </div>
         </div>
       )}
     </div>

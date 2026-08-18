@@ -58,4 +58,7 @@ export function injectProducts(api: ApiClientMethods) {
   api.bulkUpdateProductStock = function (items: { id: string; stock: number }[]) {
     return this.patch('/business/products/bulk/stock', { items });
   };
+  api.lookupBarcode = function (code: string) {
+    return this.get(`/business/products/barcode/${encodeURIComponent(code)}`);
+  };
 }
