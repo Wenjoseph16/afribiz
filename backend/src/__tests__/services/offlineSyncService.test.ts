@@ -1,89 +1,98 @@
-import { mockPrisma } from '../setup';
-import * as offlineSyncService from '../../services/offlineSyncService';
+jest.mock('../../services/orders', () => ({ createOrder: jest.fn() }));
+jest.mock('../../services/cashService', () => ({ addMovement: jest.fn() }));
+jest.mock('../../lib/db', () => ({ prisma: { negotiationOffer: {}, offlineSyncQueue: {} } }));
+
+const mockPrisma = {
+  negotiationOffer: { update: jest.fn() },
+  offlineSyncQueue: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    count: jest.fn(),
+    upsert: jest.fn(),
+  },
+};
 
 jest.mock('../../lib/db', () => ({ prisma: mockPrisma }));
 
-const mockItem = {
-  id: 'sync-1',
-  userId: 'user-1',
-  entityType: 'PRODUCT',
-  entityId: 'prod-1',
-  action: 'CREATE',
-  payload: {},
-  status: 'PENDING',
-  createdAt: new Date(),
-  syncedAt: null,
-};
+import { executeSyncAction } from '../../services/offlineSyncService';
+import { createOrder } from '../../services/orders';
+import { addMovement } from '../../services/cashService';
 
-describe('offlineSyncService', () => {
+describe('offlineSyncService — executeSyncAction (Chantier 9)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('listSyncItems', () => {
-    it('should list sync items for user', async () => {
-      (mockPrisma.offlineSyncQueue.findMany as jest.Mock).mockResolvedValue([mockItem]);
-      const result = await offlineSyncService.listSyncItems('user-1');
-      expect(result).toHaveLength(1);
-    });
-
-    it('should filter by status', async () => {
-      (mockPrisma.offlineSyncQueue.findMany as jest.Mock).mockResolvedValue([]);
-      await offlineSyncService.listSyncItems('user-1', 'PENDING');
-      expect(mockPrisma.offlineSyncQueue.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { userId: 'user-1', status: 'PENDING' } })
-      );
-    });
+  it('CREATE_BUSINESS_ORDER delegates to createOrder', async () => {
+    (createOrder as jest.Mock).mockResolvedValue({ id: 'order-1' });
+    const result = await executeSyncAction('CREATE_BUSINESS_ORDER', 'owner-1', { items: [] });
+    expect(createOrder).toHaveBeenCalledWith('owner-1', { items: [] });
+    expect(result).toHaveProperty('id', 'order-1');
   });
 
-  describe('createSyncItem', () => {
-    it('should create a sync item', async () => {
-      (mockPrisma.offlineSyncQueue.create as jest.Mock).mockResolvedValue(mockItem);
-      const result = await offlineSyncService.createSyncItem({
-        userId: 'user-1',
-        entityType: 'PRODUCT',
-        entityId: 'prod-1',
-        action: 'CREATE',
-        payload: {},
+  it('CREATE_CASH_MOVEMENT delegates to addMovement', async () => {
+    (addMovement as jest.Mock).mockResolvedValue({ id: 'mov-1' });
+    const result = await executeSyncAction('CREATE_CASH_MOVEMENT', 'owner-1', {
+      type: 'SALE',
+      amount: 5000,
+      method: 'CASH',
+    });
+    expect(addMovement).toHaveBeenCalled();
+    expect(result).toHaveProperty('id', 'mov-1');
+  });
+
+  describe('ACCEPT_NEGOTIATION (Chantier 9)', () => {
+    it('updates negotiation offer to ACCEPTED', async () => {
+      mockPrisma.negotiationOffer.update.mockResolvedValue({ id: 'neg-1', status: 'ACCEPTED' });
+      const result = await executeSyncAction('ACCEPT_NEGOTIATION', 'owner-1', {
+        negotiationId: 'neg-1',
       });
-      expect(result.status).toBe('PENDING');
-    });
-  });
-
-  describe('processSyncItem', () => {
-    it('should update status to SYNCED', async () => {
-      (mockPrisma.offlineSyncQueue.findUnique as jest.Mock).mockResolvedValue(mockItem);
-      (mockPrisma.offlineSyncQueue.update as jest.Mock).mockResolvedValue({
-        ...mockItem,
-        status: 'SYNCED',
-        syncedAt: new Date(),
+      expect(mockPrisma.negotiationOffer.update).toHaveBeenCalledWith({
+        where: { id: 'neg-1' },
+        data: { status: 'ACCEPTED' },
       });
-      const result = await offlineSyncService.processSyncItem('sync-1');
-      expect(result.status).toBe('SYNCED');
-    });
-
-    it('should throw if item not found', async () => {
-      (mockPrisma.offlineSyncQueue.findUnique as jest.Mock).mockResolvedValue(null);
-      await expect(offlineSyncService.processSyncItem('invalid')).rejects.toThrow('non trouvé');
+      expect(result).toHaveProperty('status', 'ACCEPTED');
     });
   });
 
-  describe('getPendingSyncCount', () => {
-    it('should return count of pending items', async () => {
-      (mockPrisma.offlineSyncQueue.count as jest.Mock).mockResolvedValue(5);
-      const result = await offlineSyncService.getPendingSyncCount('user-1');
-      expect(result).toBe(5);
+  describe('COUNTER_NEGOTIATION (Chantier 9)', () => {
+    it('updates offer to COUNTERED with counterPrice', async () => {
+      mockPrisma.negotiationOffer.update.mockResolvedValue({
+        id: 'neg-2',
+        status: 'COUNTERED',
+        counterPrice: 7500,
+      });
+      const result = await executeSyncAction('COUNTER_NEGOTIATION', 'owner-1', {
+        negotiationId: 'neg-2',
+        counterPrice: 7500,
+      });
+      expect(mockPrisma.negotiationOffer.update).toHaveBeenCalledWith({
+        where: { id: 'neg-2' },
+        data: { status: 'COUNTERED', counterPrice: 7500 },
+      });
+      expect(result).toHaveProperty('counterPrice', 7500);
     });
   });
 
-  describe('bulkSync', () => {
-    it('should create multiple items and return count', async () => {
-      (mockPrisma.offlineSyncQueue.createMany as jest.Mock).mockResolvedValue({ count: 2 });
-      const result = await offlineSyncService.bulkSync('user-1', [
-        { entityType: 'PRODUCT', entityId: 'p1', action: 'CREATE', payload: {} },
-        { entityType: 'PRODUCT', entityId: 'p2', action: 'UPDATE', payload: {} },
-      ]);
-      expect(result.synced).toBe(2);
+  describe('DECLINE_NEGOTIATION (Chantier 9)', () => {
+    it('updates offer to DECLINED', async () => {
+      mockPrisma.negotiationOffer.update.mockResolvedValue({ id: 'neg-3', status: 'DECLINED' });
+      const result = await executeSyncAction('DECLINE_NEGOTIATION', 'owner-1', {
+        negotiationId: 'neg-3',
+      });
+      expect(mockPrisma.negotiationOffer.update).toHaveBeenCalledWith({
+        where: { id: 'neg-3' },
+        data: { status: 'DECLINED' },
+      });
+      expect(result).toHaveProperty('status', 'DECLINED');
     });
+  });
+
+  it('throws 400 for unknown action', async () => {
+    await expect(
+      executeSyncAction('UNKNOWN_ACTION', 'owner-1', {})
+    ).rejects.toThrow('inconnue');
   });
 });
