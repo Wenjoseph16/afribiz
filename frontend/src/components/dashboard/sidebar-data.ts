@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Globe,
   PiggyBank,
+  Handshake,
   Users,
   MessageCircle,
   Star,
@@ -83,6 +84,7 @@ export const iconMap: Record<string, React.ComponentType<any>> = {
   LayoutDashboard,
   Globe,
   PiggyBank,
+  Handshake,
   Users,
   MessageCircle,
   Star,
@@ -381,6 +383,12 @@ export const BUSINESS_CORE_NAV: NavGroup[] = [
         href: '/dashboard/business/layaway',
         icon: 'PiggyBank',
         module: 'SAVINGS',
+      },
+      {
+        label: 'Négociations',
+        href: '/dashboard/business/negotiations',
+        icon: 'Handshake',
+        module: 'ORDERS',
       },
       {
         label: 'Réservations',

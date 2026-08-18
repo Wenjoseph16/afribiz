@@ -27,6 +27,7 @@ import { Footer } from '@/components/layout/Footer';
 import StarRating from '@/components/marketplace/cards/StarRating';
 import AdSlot from '@/components/ads/AdSlot';
 import { LayawayMiniCard } from '@/components/marketplace/LayawayMiniCard';
+import { NegotiationButton } from '@/components/negotiation/NegotiationButton';
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -351,6 +352,16 @@ export default function ProductDetailPage() {
                 Acheter maintenant
               </button>
             </div>
+
+            {product.negotiable && (
+              <NegotiationButton
+                itemType="PRODUCT"
+                itemId={product.id}
+                itemName={product.name}
+                basePrice={product.promotionalPrice || product.price}
+                className="w-full"
+              />
+            )}
 
             <div className="flex gap-3">
               <button

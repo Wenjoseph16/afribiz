@@ -128,6 +128,7 @@ import {
   africanUnitRoutes,
   agentNetworkRoutes,
   groupBuyRoutes,
+  negotiationRoutes,
   catalogAttachmentRoutes,
   supplierRoutes,
   affiliateRoutes,
@@ -400,6 +401,9 @@ app.use('/api', reactionsRoutes);
 
 // Offres Flash & Géolocalisation (Phase 4)
 app.use('/api', offerFlashRoutes);
+
+// Négociation & Prix Flash Client (Brique C) — public + business
+app.use('/api', negotiationRoutes);
 
 // Public business page (no auth required)
 app.use('/api', publicBusinessRoutes);

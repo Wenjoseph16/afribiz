@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { useAddToCart } from '@/features/hooks';
+import { NegotiationButton } from '@/components/negotiation/NegotiationButton';
 import type { ProductResult } from '@/components/marketplace/cards/types';
 
 interface ProductDetailModalProps {
@@ -302,6 +303,15 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
                   <Zap className="w-5 h-5" /> Commander
                 </button>
               </div>
+              {product.negotiable && (
+                <NegotiationButton
+                  itemType="PRODUCT"
+                  itemId={product.id}
+                  itemName={product.name}
+                  basePrice={product.promoPrice || product.price}
+                  className="w-full"
+                />
+              )}
               <button
                 onClick={handleContactBusiness}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-sm text-brand border border-brand/20 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-all duration-200"

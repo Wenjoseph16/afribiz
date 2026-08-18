@@ -156,6 +156,35 @@ export interface ApiClientMethods {
   addPaymentProof(paymentId: string, data: { imageUrl: string; notes?: string }): Promise<any>;
 
   // ============================================
+  // NÉGOCIATION & PRIX FLASH CLIENT (injectNegotiations)
+  // ============================================
+  createNegotiationOffer(data: {
+    itemType: string;
+    itemId: string;
+    proposedPrice: number;
+    message?: string;
+    clientName?: string;
+    clientPhone?: string;
+    clientEmail?: string;
+  }): Promise<any>;
+  resolveNegotiatedToken(token: string): Promise<any>;
+  createNegotiatedOrder(
+    token: string,
+    data: {
+      paymentMethod?: string;
+      contactName?: string;
+      contactPhone?: string;
+      deliveryAddress?: string;
+      notes?: string;
+    }
+  ): Promise<any>;
+  listNegotiations(params?: any): Promise<any>;
+  getNegotiation(id: string): Promise<any>;
+  acceptNegotiation(id: string): Promise<any>;
+  counterNegotiation(id: string, counterPrice: number, message?: string): Promise<any>;
+  declineNegotiation(id: string): Promise<any>;
+
+  // ============================================
   // NOTIFICATIONS (injectNotifications)
   // ============================================
   getNotifications(params?: any): Promise<any>;

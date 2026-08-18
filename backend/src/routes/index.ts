@@ -66,6 +66,7 @@ export { default as matchingRoutes } from './matchingRoutes';
 export { default as mediaCommerceRoutes } from './mediaCommerceRoutes';
 export { default as menuRoutes } from './menu';
 export { default as messagesRoutes } from './messages';
+export { default as negotiationRoutes } from './negotiation';
 export { default as notificationRoutes } from './notification';
 export { default as notificationTemplatesRoutes } from './notificationTemplates';
 export { default as offerFlashRoutes } from './offerFlashRoutes';

@@ -134,6 +134,7 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
           available: (item.stock ?? 0) > 0 || !!item.isAvailable,
           image: item.images?.[0] || '',
           description: item.shortDescription || item.description || '',
+          negotiable: !!item.negotiable,
           reviews: item.reviews?.slice(0, 1),
         } as ProductResult;
       case 'service':

@@ -1,6 +1,7 @@
 import { prisma } from '../lib/db';
 import { searchIdsByText } from '../lib/fulltext';
 import { trackAnalyticsEvent } from './analyticsService';
+import { computePrice } from './priceEngine';
 import type { MarketplaceSearchParams, MarketplaceResult } from '../types/service';
 
 // ============================================
@@ -719,6 +720,40 @@ export async function searchMarketplace(params: MarketplaceSearchParams) {
     if (t && offerMaps[t]?.[r.id]) (r as any).layawayOfferId = offerMaps[t][r.id];
   });
 
+  // ── Enrichissement négociation : badge « 🤝 Négociable » sur les items qui
+  //    ont un mécanisme NEGOTIATION actif. Même source que le PriceEngine
+  //    (config.enabled !== false) — le client ne voit jamais un toggle inventé.
+  const NEGO_TYPES = ['product', 'service', 'room', 'rental', 'event', 'training'];
+  const negotiableIds: Record<string, Set<string>> = {};
+  NEGO_TYPES.forEach((t) => (negotiableIds[t] = new Set()));
+  await Promise.all(
+    NEGO_TYPES.map(async (t) => {
+      const ids = results.filter((r) => (r as any)._type === t).map((r) => r.id);
+      if (ids.length === 0) return;
+      try {
+        const rows = await prisma.catalogAttachment.findMany({
+          where: {
+            itemType: t.toUpperCase(),
+            itemId: { in: ids },
+            sourceType: 'NEGOTIATION',
+            isActive: true,
+          },
+          select: { itemId: true, config: true },
+        });
+        rows.forEach((row) => {
+          const cfg = (row.config as any) || {};
+          if (cfg.enabled !== false) negotiableIds[t].add(row.itemId);
+        });
+      } catch {
+        /* batch non bloquant */
+      }
+    })
+  );
+  results.forEach((r) => {
+    const t = (r as any)._type;
+    if (t && negotiableIds[t]?.has(r.id)) (r as any).negotiable = true;
+  });
+
   return {
     data: results.slice(skip, skip + limit),
     total,
@@ -1118,5 +1153,23 @@ export async function getProductBySlug(slug: string) {
     }).catch(() => {});
   }
 
-  return product;
+  // Négociable ? Le toggle vient du PriceEngine (mécanisme NEGOTIATION ou
+  // champ allowsNegotiation) — même source que le checkout, jamais du frontend.
+  let negotiable = false;
+  let negotiationMinDiscount: number | null = null;
+  if (product && product.business?.id) {
+    try {
+      const price = await computePrice(product.business.id, {
+        itemType: 'PRODUCT',
+        itemId: product.id,
+        quantity: 1,
+      });
+      negotiable = !!price.negotiable;
+      negotiationMinDiscount = price.negotiationMinDiscount ?? null;
+    } catch {
+      // Pas de mécanisme négociation → non négociable, fiche intacte
+    }
+  }
+
+  return product ? { ...product, negotiable, negotiationMinDiscount } : product;
 }
