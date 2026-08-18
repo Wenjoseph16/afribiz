@@ -11,7 +11,11 @@ import { addMovement } from './cashService';
  * marqué PENDING. Chaque action reçoit `userId` (le propriétaire du business)
  * et `payload` (la copie exacte du payload envoyé au moment de l'action).
  */
-export async function executeSyncAction(action: string, userId: string, payload: any): Promise<any> {
+export async function executeSyncAction(
+  action: string,
+  userId: string,
+  payload: any
+): Promise<any> {
   switch (action) {
     case 'CREATE_BUSINESS_ORDER':
       // Vente POS hors-ligne : rejouée avec la vraie création de commande
@@ -35,6 +39,30 @@ export async function executeSyncAction(action: string, userId: string, payload:
         },
         userId
       );
+
+    case 'ACCEPT_NEGOTIATION':
+      // Acceptation d'offre hors-ligne : rejouée sur le serveur.
+      return prisma.negotiationOffer.update({
+        where: { id: payload.negotiationId },
+        data: { status: 'ACCEPTED' },
+      });
+
+    case 'COUNTER_NEGOTIATION':
+      // Contre-proposition hors-ligne.
+      return prisma.negotiationOffer.update({
+        where: { id: payload.negotiationId },
+        data: {
+          status: 'COUNTERED',
+          counterPrice: Number(payload.counterPrice),
+        },
+      });
+
+    case 'DECLINE_NEGOTIATION':
+      // Refus d'offre hors-ligne.
+      return prisma.negotiationOffer.update({
+        where: { id: payload.negotiationId },
+        data: { status: 'DECLINED' },
+      });
 
     default:
       throw new AppError(`Action de synchronisation inconnue: ${action}`, 400);

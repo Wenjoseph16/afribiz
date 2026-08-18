@@ -8,8 +8,8 @@
  */
 
 const DB_NAME = 'afribiz-offline';
-const DB_VERSION = 1;
-const STORES = ['syncQueue', 'kv'] as const;
+const DB_VERSION = 2;
+const STORES = ['syncQueue', 'kv', 'catalogProducts', 'catalogCategories', 'catalogMeta', 'negotiations', 'conflictLog'] as const;
 
 export type StoreName = (typeof STORES)[number];
 
