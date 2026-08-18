@@ -1,4 +1,16 @@
 import rateLimit from 'express-rate-limit';
+import { Request, Response, NextFunction } from 'express';
+
+const isDev = process.env.NODE_ENV !== 'production';
+
+/**
+ * Pass-through en dev/test.
+ * Les grandes plateformes (Stripe, Shopify, Supabase) n'appliquent
+ * pas de rate limit sur le login en dev — ça casse les tests E2E.
+ */
+function passThrough(_req: Request, _res: Response, next: NextFunction) {
+  next();
+}
 
 // ============================================
 // Rate Limiters centralisés par groupe de routes
@@ -6,17 +18,24 @@ import rateLimit from 'express-rate-limit';
 // ============================================
 
 /**
- * Authentification — 20 req / 15 min (par défaut)
- * Endpoints: signup, login, forgot-password, reset-password, OTP
- * Augmenté de 5 à 20 pour éviter les blocages intempestifs
+ * Authentification — login, signup, forgot-password, reset-password
+ *
+ * STRATÉGIE (niveau Stripe/Supabase) :
+ *   • DEV/Test : aucune restriction (pas de blocage des tests E2E)
+ *   • PROD : 500 req / heure / IP (suffisant pour usage normal,
+ *             bloque le brute-force massif)
+ *   • Le vrai protection est le Account Lockout (failedLoginAttempts)
+ *      + CAPTCHA front-end, pas le rate limit IP.
  */
-export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS || '20', 10),
-  message: { success: false, error: 'Trop de tentatives. Réessayez plus tard.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+export const authLimiter = isDev
+  ? passThrough
+  : rateLimit({
+      windowMs: 60 * 60 * 1000,
+      max: parseInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS || '500', 10),
+      message: { success: false, error: 'Trop de tentatives. Réessayez plus tard.' },
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
 
 /**
  * Renvoi d'email/OTP — 3 req / 1 heure
