@@ -42,6 +42,7 @@ import {
 import AdSlot from '@/components/ads/AdSlot';
 import { apiClient } from '@/services/apiClient';
 import { Loader } from '@/components/ui/Loader';
+import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { CopilotDashboardBrief } from '@/components/copilot/CopilotDashboardBrief';
 import { CashWidget } from '@/components/dashboard/CashWidget';
 import { buildDashboardWorkflowState } from '@/lib/dashboardWorkflow';
@@ -280,15 +281,10 @@ function ClientDashboardContent() {
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <Link href="/dashboard/explore">
-              <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white/15 backdrop-blur-sm text-white text-sm font-semibold rounded-xl hover:bg-white/25 border border-white/10 transition-all duration-200">
-                <ShoppingBag className="h-4 w-4" />
-                Marketplace
-              </button>
-            </Link>
-            <Link href="/dashboard/explore">
+            <LiveIndicator />
+            <Link href="/marketplace">
               <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white text-emerald-700 text-sm font-semibold rounded-xl hover:bg-emerald-50 shadow-lg shadow-black/10 transition-all duration-200 active:scale-[0.98]">
-                Explorer
+                Explorer le marketplace
                 <ArrowUpRight className="h-4 w-4" />
               </button>
             </Link>
@@ -594,7 +590,7 @@ function ClientDashboardContent() {
               title="Aucune commande"
               description="Vous n'avez pas encore passé de commande."
               action={
-                <Link href="/dashboard/explore">
+                <Link href="/marketplace">
                   <Button size="sm">Découvrir des produits</Button>
                 </Link>
               }
@@ -790,7 +786,7 @@ function ClientDashboardContent() {
               title="Aucune réservation"
               description="Réservez un service ou une table."
               action={
-                <Link href="/dashboard/explore">
+                <Link href="/marketplace">
                   <Button size="sm">Explorer</Button>
                 </Link>
               }

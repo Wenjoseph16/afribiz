@@ -13,6 +13,7 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { useUpdateBusinessOrderStatus } from '@/features/hooks';
+import { useToast } from '@/components/ui/ToastProvider';
 import { formatPrice } from '@/utils/helpers';
 
 interface OrderActionModalProps {
@@ -39,15 +40,20 @@ export default function OrderActionModal({
   const [action, setAction] = useState<'accept' | 'refuse' | null>(null);
   const [refuseReason, setRefuseReason] = useState('');
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateBusinessOrderStatus();
+  const { notify } = useToast();
 
   const handleAccept = () => {
     updateStatus(
       { id: order.id, status: 'ACCEPTED' },
       {
         onSuccess: () => {
+          notify({ title: 'Commande acceptée', description: 'Le client a été notifié.', variant: 'success' });
           onSuccess?.();
           onClose();
           setAction(null);
+        },
+        onError: (err: any) => {
+          notify({ title: 'Erreur', description: err?.message || 'Impossible d\'accepter la commande.', variant: 'error' });
         },
       }
     );
@@ -58,10 +64,14 @@ export default function OrderActionModal({
       { id: order.id, status: 'REFUSED', reason: refuseReason || undefined },
       {
         onSuccess: () => {
+          notify({ title: 'Commande refusée', description: 'Le client a été notifié avec le motif.', variant: 'info' });
           onSuccess?.();
           onClose();
           setAction(null);
           setRefuseReason('');
+        },
+        onError: (err: any) => {
+          notify({ title: 'Erreur', description: err?.message || 'Impossible de refuser la commande.', variant: 'error' });
         },
       }
     );

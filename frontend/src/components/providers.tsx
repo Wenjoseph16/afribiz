@@ -7,11 +7,13 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { SocketProvider } from '@/components/SocketProvider';
 import { OfflineProvider } from '@/components/OfflineProvider';
 import { useMessageNotifications } from '@/hooks/useMessageNotifications';
+import { useNotificationPolling } from '@/hooks/useNotificationPolling';
 
 const queryClient = new QueryClient();
 
 function MessageNotificationInit() {
   useMessageNotifications();
+  useNotificationPolling();
   return null;
 }
 
