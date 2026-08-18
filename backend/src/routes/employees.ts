@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireEmployeePermission } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
   listEmployees,
@@ -38,7 +38,7 @@ import {
 
 const router = Router();
 router.use(authMiddleware);
-router.use(requireRole(['BUSINESS', 'ADMIN']));
+router.use(requireEmployeePermission(['MANAGE_EMPLOYEES']));
 
 // ===== Static routes MUST come before /:id =====
 

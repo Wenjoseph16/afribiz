@@ -107,8 +107,9 @@ model Employee {
   hireDate       DateTime?
   salary         Decimal?              @db.Decimal(12, 2)
   salaryCurrency String                @default("FCFA")
-  pinCode        String?
-  isRegistered   Boolean               @default(false)
+  pinCode                 String?
+  maxDiscountPercentage   Decimal?              @db.Decimal(5, 2)
+  isRegistered            Boolean               @default(false)
   userId         String?
   user           User?                 @relation(fields: [userId], references: [id])
   status         EmployeeStatus        @default(ACTIVE)

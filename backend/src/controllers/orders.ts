@@ -5,6 +5,7 @@ import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import { prisma } from '../lib/db';
 import * as orderService from '../services/orders';
 import { logger } from '../lib/logger';
+import { auditEmployeeAction } from '../lib/auditEmployee';
 
 // ===================== BUSINESS ORDERS =====================
 
@@ -28,6 +29,19 @@ export const createBusinessOrder = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifi\u00e9', 401);
     const data = await orderService.createOrder(req.user.id, req.body);
+
+    // Audit trail : tracer la création de commande par employé
+    if (req.isEmployee && req.employeeId) {
+      auditEmployeeAction({
+        businessId: req.employeeBusinessId || '',
+        employeeId: req.employeeId,
+        action: 'ORDER_CREATED',
+        module: 'ORDERS',
+        description: `Commande ${data.orderNumber || data.id} créée`,
+        metadata: { orderId: data.id, orderNumber: data.orderNumber, totalAmount: data.totalAmount },
+        ipAddress: req.ip,
+      }).catch(() => {});
+    }
     res.status(201).json(successResponse(data));
   }
 );
@@ -69,8 +83,23 @@ export const updateBusinessOrderPayment = catchAsyncErrors(
 export const deleteBusinessOrder = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) throw new AppError('Non authentifi\u00e9', 401);
-    await orderService.deleteOrder(req.user.id, req.params.id);
-    res.json(successResponse({ message: 'Commande supprim\u00e9e' }));
+    const orderId = req.params.id;
+    await orderService.deleteOrder(req.user.id, orderId);
+
+    // Audit trail : tracer la suppression de commande par employé
+    if (req.isEmployee && req.employeeId) {
+      auditEmployeeAction({
+        businessId: req.employeeBusinessId || '',
+        employeeId: req.employeeId,
+        action: 'ORDER_DELETED',
+        module: 'ORDERS',
+        description: `Commande ${orderId} supprimée`,
+        metadata: { orderId },
+        ipAddress: req.ip,
+      }).catch(() => {});
+    }
+
+    res.json(successResponse({ message: 'Commande supprimée' }));
   }
 );
 

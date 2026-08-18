@@ -1,6 +1,8 @@
 export { default as accountingRoutes } from './accounting';
 export { default as accountingAdvancedRoutes } from './accountingAdvanced';
 export { default as cashRoutes } from './cash';
+export { default as employeeAuthRoutes } from './employeeAuth';
+export { default as myPermissionsRoutes } from './myPermissions';
 export { default as adminRoutes } from './admin';
 export { default as adminFinanceRoutes } from './adminFinance';
 export { default as adsRoutes } from './ads';
@@ -20,6 +22,7 @@ export { default as clientQuotesInvoicesRoutes } from './clientQuotesInvoices';
 export { default as clientEventsRoutes } from './client-events';
 export { default as clientIntelligenceRoutes } from './clientIntelligenceRoutes';
 export { default as clientOrdersRoutes } from './client-orders';
+export { default as clientTransactionsRoutes } from './client-transactions';
 export { default as clientPromotionsRoutes } from './clientPromotions';
 export { default as commentRoutes } from './commentRoutes';
 export { default as contentReportRoutes } from './contentReportRoutes';

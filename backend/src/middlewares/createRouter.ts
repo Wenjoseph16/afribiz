@@ -7,8 +7,7 @@
  *   router.get('/', listProducts, { cache: { ttl: 60000 } });
  */
 import { Router, Request, Response, NextFunction } from 'express';
-import { authMiddleware } from './auth';
-import { requireRole } from './auth';
+import { authMiddleware, requireRole, requireEmployeePermission } from './auth';
 import { cacheResponse } from './cacheMiddleware';
 import { validateBody, validateQuery } from './validators';
 import { catchAsyncErrors } from './errorHandler';
@@ -20,6 +19,8 @@ export interface RouteOptions {
   requireAuth?: boolean;
   /** Required roles (e.g., ['BUSINESS', 'ADMIN']) */
   roles?: string[];
+  /** Required permissions (Chantier 7) — au moins une permission requise */
+  permissions?: string[];
 }
 
 export interface HandlerOptions {
@@ -39,8 +40,10 @@ export function createRouter(options: RouteOptions = {}) {
     router.use(authMiddleware);
   }
 
-  // Apply role middleware if required
-  if (options.roles && options.roles.length > 0) {
+  // Apply permission or role middleware if required (Chantier 7)
+  if (options.permissions && options.permissions.length > 0) {
+    router.use(requireEmployeePermission(options.permissions));
+  } else if (options.roles && options.roles.length > 0) {
     router.use(requireRole(options.roles as any));
   }
 

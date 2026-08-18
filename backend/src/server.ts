@@ -28,9 +28,12 @@ import {
   authRoutes,
   usersRoutes,
   notificationRoutes,
+  employeeAuthRoutes,
+  myPermissionsRoutes,
   ordersRoutes,
   clientOrdersRoutes,
   clientBookingsRoutes,
+  clientTransactionsRoutes,
   paymentsRoutes,
   favoritesRoutes,
   followRoutes,
@@ -149,6 +152,7 @@ import { registerNotificationHandlers } from './events/handlers/notificationHand
 import { registerAdminEventHandlers } from './events/handlers/adminEventHandler';
 import { registerFeedHandlers } from './events/handlers/feedHandler';
 import { registerBusinessRoomHandlers } from './events/handlers/businessRoomHandler';
+import { registerTransactionTrackingHandlers } from './events/handlers/transactionTrackingHandler';
 import { registerAutomationHandlers } from './services/advancedTasks';
 import { registerLoyaltyAutomation } from './services/LoyaltyAutomation';
 import { CronService } from './services/CronService';
@@ -316,6 +320,7 @@ app.use('/api/notifications/templates', notificationTemplatesRoutes);
 app.use('/api/business/orders', ordersRoutes);
 app.use('/api/orders', clientOrdersRoutes);
 app.use('/api/bookings', clientBookingsRoutes);
+app.use('/api/transactions', clientTransactionsRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/payments/escrow/client', escrowClientRoutes);
 app.use('/api/favorites', favoritesRoutes);
@@ -365,6 +370,8 @@ app.use('/api/business/finance', sensitiveLimiter, debtsPaymentsRoutes);
 app.use('/api/business/finance/escrow', escrowBusinessRoutes);
 app.use('/api/business/planning', planningRoutes);
 app.use('/api/business/promotions', promotionsRoutes);
+app.use('/api/business', employeeAuthRoutes);
+app.use('/api/business', myPermissionsRoutes);
 app.use('/api/business/employees', employeesRoutes);
 app.use('/api/business/employees/leaves', employeeLeavesRoutes);
 app.use('/api/business/employees/payroll', payrollRoutes);
@@ -518,6 +525,9 @@ registerFeedHandlers();
 
 // Register realtime business dashboard push (socket room business:{id})
 registerBusinessRoomHandlers();
+
+// Register realtime transaction tracking push (socket room transaction:{type}:{id})
+registerTransactionTrackingHandlers();
 
 // Register task automation handlers
 registerAutomationHandlers();

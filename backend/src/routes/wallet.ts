@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireEmployeePermission } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import { z } from 'zod';
 import * as walletService from '../services/wallet';
 import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 
 const router = Router();
-router.use(authMiddleware, requireRole(['CLIENT', 'BUSINESS', 'ADMIN']));
+router.use(authMiddleware, requireEmployeePermission(['ACCESS_FINANCES']));
 
 const depositSchema = z.object({
   amount: z.number().positive(),
@@ -24,7 +24,7 @@ import { prisma } from '../lib/db';
 
 async function getBusinessIdFromUser(userId: string, optional = false) {
   const business = await prisma.business.findFirst({
-      where: { ownerId: userId, deletedAt: null },
+    where: { ownerId: userId, deletedAt: null },
     select: { id: true },
   });
   if (!business) {

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireEmployeePermission } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
   getCrmDashboardStats,
@@ -54,7 +54,7 @@ import {
 const router = Router();
 
 router.use(authMiddleware);
-router.use(requireRole(['BUSINESS', 'ADMIN']));
+router.use(requireEmployeePermission(['REPLY_CLIENTS']));
 
 router.get('/dashboard', getCrmDashboardStats);
 

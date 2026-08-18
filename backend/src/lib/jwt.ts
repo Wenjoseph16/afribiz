@@ -6,10 +6,35 @@ export interface JWTPayload extends JwtPayloadBase {
   email: string;
   primaryRole: string;
   roles: string[];
+  sessionId?: string;
   impersonating?: boolean;
   impersonatorId?: string;
   iat?: number;
   exp?: number;
+}
+
+/**
+ * Token employé (Chantier 7) : JWT séparé du boss, portant les permissions
+ * de l'employé pour CE business. Le champ `authType` permet au middleware
+ * de distinguer un token boss ( absent = backward-compatible ) d'un token
+ * employé.
+ */
+export interface EmployeeTokenPayload {
+  authType: 'employee';
+  employeeId: string;
+  businessId: string;
+  permissions: string[];
+  maxDiscountPercentage?: number;
+  iat?: number;
+  exp?: number;
+}
+
+/** Union : tout token JWT possible (boss OU employé). */
+export type AnyJWTPayload = JWTPayload | EmployeeTokenPayload;
+
+/** Type guard : vérifie si un payload est un token employé. */
+export function isEmployeeToken(payload: AnyJWTPayload): payload is EmployeeTokenPayload {
+  return (payload as EmployeeTokenPayload).authType === 'employee';
 }
 
 export interface TokenPair {
@@ -28,6 +53,7 @@ export const createAccessToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): str
     primaryRole: payload.primaryRole,
     roles: payload.roles,
   };
+  if (payload.sessionId) signPayload.sessionId = payload.sessionId;
 
   return jwt.sign(
     signPayload,
@@ -98,10 +124,39 @@ export const createTokenPair = (payload: Omit<JWTPayload, 'iat' | 'exp'>): Token
 };
 
 /**
- * Verify access token
+ * Create employee auth token (Chantier 7)
+ *
+ * JWT dédié aux employés — TTL 12h, portant employeeId, businessId,
+ * permissions et maxDiscountPercentage. Même SECRET que le boss pour
+ * simplifier le middleware (un seul verifyAccessToken).
  */
-export const verifyAccessToken = (token: string): JWTPayload => {
-  return jwt.verify(token, config.JWT_SECRET as jwt.Secret) as JWTPayload;
+export const createEmployeeToken = (payload: Omit<EmployeeTokenPayload, 'iat' | 'exp'>): string => {
+  return jwt.sign(
+    {
+      authType: 'employee' as const,
+      employeeId: payload.employeeId,
+      businessId: payload.businessId,
+      permissions: payload.permissions,
+      ...(payload.maxDiscountPercentage !== undefined
+        ? { maxDiscountPercentage: payload.maxDiscountPercentage }
+        : {}),
+    },
+    config.JWT_SECRET as jwt.Secret,
+    {
+      expiresIn: '12h',
+      algorithm: 'HS256',
+    } as SignOptions
+  );
+};
+
+/**
+ * Verify access token (boss OU employé)
+ *
+ * Retourne soit un JWTPayload (boss), soit un EmployeeTokenPayload
+ * (employé). Le champ `authType` permet de distinguer les deux cas.
+ */
+export const verifyAccessToken = (token: string): AnyJWTPayload => {
+  return jwt.verify(token, config.JWT_SECRET as jwt.Secret) as AnyJWTPayload;
 };
 
 /**

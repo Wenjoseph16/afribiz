@@ -5,6 +5,7 @@ import {
   createTokenPair,
   verifyAccessToken,
   verifyRefreshToken,
+  type JWTPayload,
 } from '../../lib/jwt';
 
 const mockPayload = {
@@ -73,7 +74,7 @@ describe('JWT Lib', () => {
   describe('verifyAccessToken', () => {
     it('should decode a valid access token', () => {
       const token = createAccessToken(mockPayload);
-      const decoded = verifyAccessToken(token);
+      const decoded = verifyAccessToken(token) as JWTPayload;
       expect(decoded.id).toBe('user-1');
       expect(decoded.email).toBe('test@example.com');
     });

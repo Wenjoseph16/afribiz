@@ -3,6 +3,7 @@ import { prisma } from '../lib/db';
 import { AppError } from '../middlewares/errorHandler';
 import { getBusinessByOwner } from '../lib/businessAccess';
 import { logger } from '../lib/logger';
+import { hashPassword } from '../lib/password';
 
 // ===================== EMPLOYEES =====================
 
@@ -67,6 +68,9 @@ export async function getEmployee(ownerId: string, employeeId: string) {
 export async function createEmployee(ownerId: string, data: any) {
   const business = await getBusinessByOwner(ownerId);
 
+  // Hasher le PIN si fourni (Chantier 7 : sécurité)
+  const hashedPin = data.pinCode ? await hashPassword(data.pinCode) : undefined;
+
   const employee = await prisma.employee.create({
     data: {
       businessId: business.id,
@@ -86,7 +90,8 @@ export async function createEmployee(ownerId: string, data: any) {
       hireDate: data.hireDate ? new Date(data.hireDate) : undefined,
       salary: data.salary,
       salaryCurrency: data.salaryCurrency || 'FCFA',
-      pinCode: data.pinCode,
+      pinCode: hashedPin,
+      maxDiscountPercentage: data.maxDiscountPercentage,
       status: data.status || 'ACTIVE',
     },
     include: { employeeRole: { select: { id: true, name: true, permissions: true } } },
@@ -117,7 +122,6 @@ export async function updateEmployee(ownerId: string, employeeId: string, data: 
     'position',
     'department',
     'employeeRoleId',
-    'pinCode',
     'status',
     'salaryCurrency',
   ];
@@ -127,6 +131,12 @@ export async function updateEmployee(ownerId: string, employeeId: string, data: 
   if (data.salary !== undefined) updateData.salary = data.salary;
   if (data.hireDate !== undefined) updateData.hireDate = new Date(data.hireDate);
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
+  if (data.maxDiscountPercentage !== undefined) updateData.maxDiscountPercentage = data.maxDiscountPercentage;
+
+  // Hasher le PIN si modifié (Chantier 7 : sécurité)
+  if (data.pinCode !== undefined) {
+    updateData.pinCode = data.pinCode ? await hashPassword(data.pinCode) : null;
+  }
 
   return prisma.employee.update({
     where: { id: employeeId },

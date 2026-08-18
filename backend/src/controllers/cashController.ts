@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 import * as cashService from '../services/cashService';
+import { auditEmployeeAction } from '../lib/auditEmployee';
 
 export const openCashSession = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -24,14 +25,12 @@ export const getTodayCashSession = catchAsyncErrors(
   }
 );
 
-export const getCashHistory = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) throw new AppError('Non authentifié', 401);
-    const limit = parseInt(req.query.limit as string) || 30;
-    const data = await cashService.getSessionHistory(req.user.id, limit);
-    res.json({ success: true, data });
-  }
-);
+export const getCashHistory = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new AppError('Non authentifié', 401);
+  const limit = parseInt(req.query.limit as string) || 30;
+  const data = await cashService.getSessionHistory(req.user.id, limit);
+  res.json({ success: true, data });
+});
 
 export const addCashMovement = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -51,14 +50,26 @@ export const closeCashSession = catchAsyncErrors(
       req.user.id,
       notes
     );
+
+    // Audit trail : tracer la clôture de caisse par employé
+    if (req.isEmployee && req.employeeId) {
+      auditEmployeeAction({
+        businessId: req.employeeBusinessId || '',
+        employeeId: req.employeeId,
+        action: 'CASH_SESSION_CLOSED',
+        module: 'CASH',
+        description: `Caisse clôturée (solde: ${actualBalance})`,
+        metadata: { sessionId: data?.id, actualBalance, notes },
+        ipAddress: req.ip,
+      }).catch(() => {});
+    }
+
     res.json({ success: true, data });
   }
 );
 
-export const getCashWidget = catchAsyncErrors(
-  async (req: AuthenticatedRequest, res: Response) => {
-    if (!req.user) throw new AppError('Non authentifié', 401);
-    const data = await cashService.getCashWidget(req.user.id);
-    res.json({ success: true, data });
-  }
-);
+export const getCashWidget = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) throw new AppError('Non authentifié', 401);
+  const data = await cashService.getCashWidget(req.user.id);
+  res.json({ success: true, data });
+});

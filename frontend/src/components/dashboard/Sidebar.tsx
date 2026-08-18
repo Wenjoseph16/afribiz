@@ -21,6 +21,7 @@ import { useUiStore } from '@/stores/index';
 import { useAuthStore } from '@/stores/authStore';
 import { useBusinessStore } from '@/stores/businessStore';
 import { useMyBusiness } from '@/features/hooks';
+import { useDeveloperProfile } from '@/features/developerHooks';
 import { useSidebarUnreadCount } from '@/hooks/useSidebarUnreadCount';
 import { APP_NAME, NAV_GROUPS } from '@/constants/index';
 import { iconMap, MODULE_SUB_ITEMS } from './sidebar-data';
@@ -32,11 +33,12 @@ import { InstalledModulesSection } from './InstalledModulesSection';
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarOpen, sidebarCollapsed, closeSidebar, toggleSidebarCollapsed } = useUiStore();
-  const { user, selectedSpace, setSelectedSpace } = useAuthStore();
+  const { user, selectedSpace, setSelectedSpace, hasPermission } = useAuthStore();
   const { business, setBusiness } = useBusinessStore();
   const { data: myBusiness } = useMyBusiness({
     enabled: !!user?.roles?.includes('BUSINESS') || !!business,
   });
+  const { data: devProfile } = useDeveloperProfile();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -86,7 +88,10 @@ export function Sidebar() {
     onExplicitClientPath || (!inBusinessSpace && !inDeveloperSpace && !inAdminSpace);
 
   // ⭐ Rôles ACCESSIBLES (pour afficher/masquer les boutons dans 'Mes espaces')
-  const canAccessDeveloper = user?.roles?.includes('DEVELOPER');
+  // L'espace Développeur n'est accessible QUE si l'onboarding dev est terminé
+  // (profil développeur existant). Un rôle DEVELOPER sans profil = onboarding
+  // non terminé → on masque l'entrée pour éviter le conflit d'espace.
+  const canAccessDeveloper = !!user?.roles?.includes('DEVELOPER') && !!devProfile;
   const canAccessBusiness = user?.roles?.includes('BUSINESS') || !!business;
   const canAccessAdmin = user?.roles?.includes('ADMIN');
 
@@ -122,48 +127,50 @@ export function Sidebar() {
   };
 
   const renderNavItems = (
-    items: { label: string; href: string; icon: string; badge?: number }[],
+    items: { label: string; href: string; icon: string; badge?: number; roles?: string[] }[],
     collapsed: boolean
   ) =>
-    items.map((item) => {
-      const Icon = iconMap[item.icon];
-      const active = isActive(item.href);
-      return (
-        <Link
-          key={item.href}
-          href={item.href}
-          onClick={closeSidebar}
-          title={collapsed ? item.label : undefined}
-          className={cn(
-            'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
-            collapsed ? 'justify-center p-2.5 mx-auto w-10 h-10' : 'px-3 py-2.5',
-            active
-              ? 'bg-emerald-500/15 text-white shadow-sm shadow-emerald-500/5 border border-emerald-400/10'
-              : 'text-white/60 hover:text-white hover:bg-white/5'
-          )}
-        >
-          {active && !collapsed && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-400 rounded-r-full shadow-glow shadow-emerald-400/50" />
-          )}
-          {Icon && <Icon className={cn('shrink-0', collapsed ? 'h-5 w-5' : 'h-4 w-4')} />}
-          {!collapsed && <span className="truncate">{item.label}</span>}
-          {/* Badge messages non lus */}
-          {!collapsed && unreadTotal > 0 && item.href === '/dashboard/messages' && (
-            <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm shadow-red-500/30">
-              {unreadTotal > 99 ? '99+' : unreadTotal}
-            </span>
-          )}
-          {collapsed && unreadTotal > 0 && item.href === '/dashboard/messages' && (
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-950" />
-          )}
-          {item.badge !== undefined && !collapsed && item.href !== '/dashboard/messages' && (
-            <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-              {item.badge}
-            </span>
-          )}
-        </Link>
-      );
-    });
+    items
+      .filter((item) => !item.roles || item.roles.some((r) => user?.roles?.includes(r)))
+      .map((item) => {
+        const Icon = iconMap[item.icon];
+        const active = isActive(item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={closeSidebar}
+            title={collapsed ? item.label : undefined}
+            className={cn(
+              'relative flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
+              collapsed ? 'justify-center p-2.5 mx-auto w-10 h-10' : 'px-3 py-2.5',
+              active
+                ? 'bg-emerald-500/15 text-white shadow-sm shadow-emerald-500/5 border border-emerald-400/10'
+                : 'text-white/60 hover:text-white hover:bg-white/5'
+            )}
+          >
+            {active && !collapsed && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-400 rounded-r-full shadow-glow shadow-emerald-400/50" />
+            )}
+            {Icon && <Icon className={cn('shrink-0', collapsed ? 'h-5 w-5' : 'h-4 w-4')} />}
+            {!collapsed && <span className="truncate">{item.label}</span>}
+            {/* Badge messages non lus */}
+            {!collapsed && unreadTotal > 0 && item.href === '/dashboard/messages' && (
+              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm shadow-red-500/30">
+                {unreadTotal > 99 ? '99+' : unreadTotal}
+              </span>
+            )}
+            {collapsed && unreadTotal > 0 && item.href === '/dashboard/messages' && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-emerald-950" />
+            )}
+            {item.badge !== undefined && !collapsed && item.href !== '/dashboard/messages' && (
+              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                {item.badge}
+              </span>
+            )}
+          </Link>
+        );
+      });
 
   const coreNavGroups = inBusinessSpace
     ? BUSINESS_CORE_NAV
@@ -301,12 +308,16 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* Core sections — espace business : 10 pôles filtrés par modules actifs */}
+        {/* Core sections — espace business : 10 pôles filtrés par modules actifs ET permissions */}
         {inBusinessSpace
           ? BUSINESS_CORE_NAV.map((group) => {
-              // Un item portant `module` n'apparaît que si le business a activé ce module
+              // Un item n'apparaît que si :
+              //  1. Le module est activé (ou pas de module requis)
+              //  2. L'utilisateur a la permission requise (ou pas de permission requise)
               const visibleItems = (group.items as any[]).filter(
-                (item) => !item.module || business?.modules?.includes(item.module)
+                (item) =>
+                  (!item.module || business?.modules?.includes(item.module)) &&
+                  (!item.permission || hasPermission(item.permission))
               );
               if (visibleItems.length === 0) return null;
               const isExpanded = expandedGroups[group.label] !== false;

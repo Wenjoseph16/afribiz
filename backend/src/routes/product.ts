@@ -29,7 +29,7 @@ import {
   updateStockSchema,
 } from '../validators/product';
 
-const router = createRouter({ requireAuth: true, roles: ['BUSINESS', 'ADMIN'] });
+const router = createRouter({ requireAuth: true, permissions: ['VIEW_ORDERS'] });
 
 router.get('/', listProducts);
 router.get('/stats', getProductStats);

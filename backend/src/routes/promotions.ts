@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireEmployeePermission } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import {
   createPromotionSchema,
@@ -47,46 +47,46 @@ router.get('/stats', getPromoStats);
 router.get('/:id', getPromotion);
 
 // ─── Routes protégées (écriture) ───
-// Réservé aux BUSINESS et ADMIN
+// Permission VIEW_ORDERS pour les opérations promo (le boss a toujours accès)
 router.post(
   '/',
-  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmployeePermission(['VIEW_ORDERS']),
   validateBody(createPromotionSchema),
   createPromotion
 );
 router.patch(
   '/:id',
-  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmployeePermission(['VIEW_ORDERS']),
   validateBody(updatePromotionSchema),
   updatePromotion
 );
-router.delete('/:id', requireRole(['BUSINESS', 'ADMIN']), deletePromotion);
+router.delete('/:id', requireEmployeePermission(['VIEW_ORDERS']), deletePromotion);
 router.post(
   '/coupons',
-  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmployeePermission(['VIEW_ORDERS']),
   validateBody(createCouponSchema),
   createCoupon
 );
 router.post(
   '/bundles',
-  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmployeePermission(['VIEW_ORDERS']),
   validateBody(createBundleSchema),
   createBundle
 );
 router.post(
   '/campaigns',
-  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmployeePermission(['VIEW_ORDERS']),
   validateBody(createCampaignSchema),
   createCampaign
 );
 router.post(
   '/campaigns/:id/send-whatsapp',
-  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmployeePermission(['VIEW_ORDERS']),
   sendCampaignWhatsApp
 );
 router.put(
   '/loyalty/program',
-  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmployeePermission(['VIEW_ORDERS']),
   validateBody(updateLoyaltySchema),
   updateLoyaltyProgram
 );

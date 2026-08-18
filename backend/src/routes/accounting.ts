@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireEmployeePermission } from '../middlewares/auth';
 import {
   listExpenses,
   getExpense,
@@ -13,7 +13,7 @@ import {
 } from '../controllers/accounting';
 
 const router = Router();
-router.use(authMiddleware, requireRole(['BUSINESS', 'ADMIN']));
+router.use(authMiddleware, requireEmployeePermission(['ACCESS_FINANCES']));
 
 router.get('/summary', getAccountingSummaryCtrl);
 router.get('/transactions', getRecentTransactionsCtrl);

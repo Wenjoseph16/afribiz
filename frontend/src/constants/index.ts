@@ -8,6 +8,8 @@ export type NavItem = {
   icon: string;
   roles?: string[];
   module?: string;
+  /** Chantier 7 : permission requise pour voir cet item (null = tout le monde) */
+  permission?: string;
 };
 
 export type NavGroup = {
@@ -46,7 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Découverte',
     items: [
-      { label: 'Marketplace', href: '/dashboard/explore', icon: 'Store' },
+      { label: 'Marketplace', href: '/marketplace', icon: 'Store' },
       { label: 'Recherche intelligente', href: '/dashboard/smart-search', icon: 'Search' },
       { label: 'Matching', href: '/dashboard/matching', icon: 'Layers' },
       { label: 'Favoris', href: '/dashboard/favorites', icon: 'Heart' },
@@ -82,7 +84,12 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Évoluer',
     items: [
       { label: 'Devenir Business', href: '/dashboard/become-business', icon: 'Briefcase' },
-      { label: 'Devenir Développeur', href: '/dashboard/become-developer', icon: 'Code' },
+      {
+        label: 'Devenir Développeur',
+        href: '/dashboard/become-developer',
+        icon: 'Code',
+        roles: ['CLIENT', 'BUSINESS'],
+      },
     ],
   },
 ];

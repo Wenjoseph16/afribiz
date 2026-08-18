@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireRole, requireEmployeePermission } from '../middlewares/auth';
 import { cacheResponse } from '../middlewares/cacheMiddleware';
 import {
   getClientDashboard,
@@ -19,7 +19,7 @@ router.get(
 router.get(
   '/business',
   authMiddleware,
-  requireRole(['BUSINESS', 'ADMIN']),
+  requireEmployeePermission(['VIEW_ORDERS', 'VIEW_STATS']),
   cacheResponse({ prefix: 'dashboard-business', ttl: 60_000 }),
   getBusinessDashboard
 );

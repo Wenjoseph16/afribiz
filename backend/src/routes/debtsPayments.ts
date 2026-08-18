@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireEmployeePermission } from '../middlewares/auth';
 import { validateBody } from '../middlewares/validators';
 import { attachDebtSchema, updateReminderConfigSchema } from '../validators/debtsPayments';
 import {
@@ -44,7 +44,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-const businessGuard = requireRole(['BUSINESS', 'ADMIN']);
+const businessGuard = requireEmployeePermission(['ACCESS_FINANCES']);
 
 // Auto-scoring & escalation
 router.post('/auto-score', businessGuard, autoScoreClientRisk);
@@ -52,12 +52,7 @@ router.post('/escalate', businessGuard, escalateOverdueDebts);
 router.post('/auto-remind', businessGuard, autoSendDebtReminders);
 
 // Debts
-router.post(
-  '/debts/attach',
-  businessGuard,
-  validateBody(attachDebtSchema),
-  attachDebt
-);
+router.post('/debts/attach', businessGuard, validateBody(attachDebtSchema), attachDebt);
 router.get('/debts', businessGuard, listDebts);
 router.get('/debts/:id', businessGuard, getDebt);
 router.patch('/debts/:id', businessGuard, validateBody(updateDebtSchema), updateDebt);

@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middlewares/auth';
+import { authMiddleware, requireEmployeePermission } from '../middlewares/auth';
 import * as ctrl from '../controllers/cashController';
 
 const router = Router();
 
 router.use(authMiddleware);
-router.use(requireRole(['BUSINESS', 'ADMIN']));
+router.use(requireEmployeePermission(['VIEW_ORDERS']));
 
 router.get('/widget', ctrl.getCashWidget);
 router.get('/today', ctrl.getTodayCashSession);
