@@ -176,7 +176,7 @@ export default function SubscribersPage() {
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
                 statusFilter === tab.key
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-gray-900 dark:text-white'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               )}
             >
@@ -344,7 +344,7 @@ export default function SubscribersPage() {
                 <button
                   onClick={handleCreate}
                   disabled={creating || !createForm.planId || !createForm.clientName}
-                  className="flex-1 py-2 bg-brand text-white rounded-xl text-sm font-medium hover:bg-brand/90 disabled:opacity-50"
+                  className="flex-1 py-2 bg-brand text-gray-900 dark:text-white rounded-xl text-sm font-medium hover:bg-brand/90 disabled:opacity-50"
                 >
                   {creating ? 'Création...' : 'Créer'}
                 </button>

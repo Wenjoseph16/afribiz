@@ -2,7 +2,15 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUpRight, Banknote, Lock, LockOpen, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Banknote,
+  Lock,
+  LockOpen,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { apiClient } from '@/services/apiClient';
 import { formatPrice } from '@/utils/helpers';
@@ -74,7 +82,7 @@ export function CashWidget() {
       <div className="mt-4 flex items-center gap-2">
         <Link
           href="/dashboard/business/caisse"
-          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-slate-700 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-white transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-slate-700 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
         >
           {widget?.open ? (
             <>
@@ -90,7 +98,7 @@ export function CashWidget() {
         {widget?.open && (
           <Link
             href="/dashboard/business/caisse"
-            className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-gray-700 dark:text-slate-300 dark:hover:border-gray-600 dark:hover:text-white"
+            className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-gray-700 dark:text-slate-300 dark:hover:border-gray-600 dark:hover:text-gray-900 dark:text-white"
           >
             <Lock className="h-4 w-4" />
           </Link>

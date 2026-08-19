@@ -286,7 +286,7 @@ export default function SubscriptionPaymentsPage() {
                 <button
                   onClick={handleRecord}
                   disabled={recording || !form.amount}
-                  className="flex-1 py-2 bg-brand text-white rounded-xl text-sm font-medium hover:bg-brand/90 disabled:opacity-50"
+                  className="flex-1 py-2 bg-brand text-gray-900 dark:text-white rounded-xl text-sm font-medium hover:bg-brand/90 disabled:opacity-50"
                 >
                   {recording ? 'Enregistrement...' : 'Enregistrer'}
                 </button>

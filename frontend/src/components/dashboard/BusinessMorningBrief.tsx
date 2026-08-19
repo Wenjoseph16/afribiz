@@ -132,7 +132,7 @@ export default function BusinessMorningBrief() {
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
-            <Sunrise className="h-5 w-5 text-white" />
+            <Sunrise className="h-5 w-5 text-gray-900 dark:text-white" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Brief du matin</h3>

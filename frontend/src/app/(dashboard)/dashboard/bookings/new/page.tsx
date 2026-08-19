@@ -44,15 +44,15 @@ const PAYMENT_METHODS = [
 function GlassInput({ label, icon: Icon, required, ...props }: { label: string; icon: any; required?: boolean; [key: string]: any }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">
+      <label className="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
         {label} {required && <span className="text-emerald-400">*</span>}
       </label>
       <div className="relative">
-        {Icon && <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20"><Icon className="w-4 h-4" /></div>}
+        {Icon && <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/20"><Icon className="w-4 h-4" /></div>}
         <input
           className={cn(
-            'w-full py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-white/20',
-            'focus:border-emerald-500/40 focus:bg-white/[0.06] focus:ring-0 outline-none transition-all duration-200 text-sm',
+            'w-full py-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] text-gray-900 dark:text-white placeholder:text-gray-400 dark:text-white/20',
+            'focus:border-emerald-500/40 focus:bg-gray-100 dark:bg-white/[0.06] focus:ring-0 outline-none transition-all duration-200 text-sm',
             Icon ? 'pl-10 pr-4' : 'px-4'
           )}
           {...props}
@@ -76,7 +76,7 @@ function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
       <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
         <Icon className="w-4 h-4 text-emerald-400" />
       </div>
-      <h2 className="text-sm font-bold text-white">{title}</h2>
+      <h2 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h2>
     </div>
   );
 }
@@ -176,12 +176,12 @@ export default function NewBookingPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
-        <Link href="/dashboard/bookings" className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all duration-200">
+        <Link href="/dashboard/bookings" className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-white/40 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-white/10 transition-all duration-200">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-display font-bold text-white tracking-tight">Nouvelle réservation</h1>
-          <p className="text-white/30 text-sm mt-0.5">Créez une réservation en quelques clics</p>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">Nouvelle réservation</h1>
+          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">Créez une réservation en quelques clics</p>
         </div>
       </motion.div>
 
@@ -194,14 +194,14 @@ export default function NewBookingPage() {
               className={cn(
                 'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300',
                 i <= currentIdx
-                  ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]'
-                  : 'bg-white/5 text-white/30 border border-white/10'
+                  ? 'bg-emerald-500 text-gray-900 dark:text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+                  : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-white/30 border border-gray-200 dark:border-white/10'
               )}
             >
               {i < currentIdx ? <Check className="w-4 h-4" /> : i + 1}
             </button>
             {i < steps.length - 1 && (
-              <div className={cn('w-8 h-0.5 rounded-full transition-all duration-500', i < currentIdx ? 'bg-emerald-500' : 'bg-white/10')} />
+              <div className={cn('w-8 h-0.5 rounded-full transition-all duration-500', i < currentIdx ? 'bg-emerald-500' : 'bg-gray-100 dark:bg-white/10')} />
             )}
           </div>
         ))}
@@ -218,7 +218,7 @@ export default function NewBookingPage() {
                 <div className="space-y-4">
                   <GlassInput label="Titre" icon={Package} required placeholder="Ex: Coupe + Barbe, Consultation..." value={title} onChange={(e: any) => setTitle(e.target.value)} />
                   <div>
-                    <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">Type</label>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">Type</label>
                     <div className="grid grid-cols-3 gap-2">
                       {BOOKING_TYPES.slice(0, 6).map((t) => (
                         <button
@@ -228,7 +228,7 @@ export default function NewBookingPage() {
                             'p-2.5 rounded-xl border text-xs font-medium transition-all duration-200',
                             type === t
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                              : 'bg-white/10 border-white/[0.06] text-white/40 hover:border-white/15'
+                              : 'bg-gray-100 dark:bg-white/10 border-gray-100 dark:border-white/[0.06] text-gray-500 dark:text-white/40 hover:border-gray-200 dark:border-white/15'
                           )}
                         >
                           {TYPE_LABELS[t]}
@@ -238,7 +238,7 @@ export default function NewBookingPage() {
                   </div>
                   {type === 'SERVICE' && services.length > 0 && (
                     <div>
-                      <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-1.5">Service</label>
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">Service</label>
                       <div className="space-y-2">
                         {services.map((s: any) => (
                           <button
@@ -248,12 +248,12 @@ export default function NewBookingPage() {
                               'w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all duration-200',
                               serviceId === s.id
                                 ? 'bg-emerald-500/10 border-emerald-500/30'
-                                : 'bg-white/10 border-white/[0.06] hover:border-white/15'
+                                : 'bg-gray-100 dark:bg-white/10 border-gray-100 dark:border-white/[0.06] hover:border-gray-200 dark:border-white/15'
                             )}
                           >
                             <div>
-                              <p className="text-sm font-medium text-white">{s.name}</p>
-                              <p className="text-xs text-white/30">{s.duration ? `${s.duration} min` : ''}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">{s.name}</p>
+                              <p className="text-xs text-gray-400 dark:text-white/30">{s.duration ? `${s.duration} min` : ''}</p>
                             </div>
                             <span className="text-sm font-bold text-emerald-400">{formatPrice(Number(s.price || 0))}</span>
                           </button>
@@ -300,7 +300,7 @@ export default function NewBookingPage() {
                   </div>
                   {deposit > 0 && (
                     <>
-                      <p className="text-xs text-white/40">Mode de paiement de l&apos;acompte</p>
+                      <p className="text-xs text-gray-500 dark:text-white/40">Mode de paiement de l&apos;acompte</p>
                       <div className="grid grid-cols-3 gap-2">
                         {PAYMENT_METHODS.map((m) => (
                           <button
@@ -310,11 +310,11 @@ export default function NewBookingPage() {
                               'p-3 rounded-xl border text-center transition-all duration-200',
                               paymentMethod === m.id
                                 ? 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.08)]'
-                                : 'bg-white/10 border-white/[0.06] hover:border-white/15'
+                                : 'bg-gray-100 dark:bg-white/10 border-gray-100 dark:border-white/[0.06] hover:border-gray-200 dark:border-white/15'
                             )}
                           >
-                            <m.icon className={cn('w-5 h-5 mx-auto mb-1.5', paymentMethod === m.id ? 'text-emerald-400' : 'text-white/30')} />
-                            <p className={cn('text-xs font-medium', paymentMethod === m.id ? 'text-emerald-400' : 'text-white/40')}>{m.label}</p>
+                            <m.icon className={cn('w-5 h-5 mx-auto mb-1.5', paymentMethod === m.id ? 'text-emerald-400' : 'text-gray-400 dark:text-white/30')} />
+                            <p className={cn('text-xs font-medium', paymentMethod === m.id ? 'text-emerald-400' : 'text-gray-500 dark:text-white/40')}>{m.label}</p>
                           </button>
                         ))}
                       </div>
@@ -322,9 +322,9 @@ export default function NewBookingPage() {
                   )}
                   {deposit === 0 && (
                     <div className="text-center py-6">
-                      <ShieldCheck className="w-10 h-10 text-white/15 mx-auto mb-3" />
-                      <p className="text-sm text-white/40">Pas d&apos;acompte requis</p>
-                      <p className="text-xs text-white/20 mt-1">Le paiement se fera sur place</p>
+                      <ShieldCheck className="w-10 h-10 text-gray-300 dark:text-white/15 mx-auto mb-3" />
+                      <p className="text-sm text-gray-500 dark:text-white/40">Pas d&apos;acompte requis</p>
+                      <p className="text-xs text-gray-400 dark:text-white/20 mt-1">Le paiement se fera sur place</p>
                     </div>
                   )}
                 </div>
@@ -347,9 +347,9 @@ export default function NewBookingPage() {
                     ['Acompte', deposit > 0 ? formatPrice(deposit) : 'Aucun'],
                     ['Paiement', deposit > 0 ? PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label : 'Sur place'],
                   ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between items-center py-2 border-b border-white/5">
-                      <span className="text-xs text-white/40">{label}</span>
-                      <span className="text-sm font-medium text-white">{value}</span>
+                    <div key={label} className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-white/5">
+                      <span className="text-xs text-gray-500 dark:text-white/40">{label}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{value}</span>
                     </div>
                   ))}
                 </div>
@@ -362,32 +362,32 @@ export default function NewBookingPage() {
         <div className="lg:col-span-2 space-y-4">
           {/* Summary */}
           <GlassCard>
-            <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">Résumé</h3>
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-3">Résumé</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-white/40">Service</span>
-                <span className="text-white font-medium">{title || TYPE_LABELS[type]}</span>
+                <span className="text-gray-500 dark:text-white/40">Service</span>
+                <span className="text-gray-900 dark:text-white font-medium">{title || TYPE_LABELS[type]}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white/40">Date</span>
-                <span className="text-white font-medium">{selectedDate}</span>
+                <span className="text-gray-500 dark:text-white/40">Date</span>
+                <span className="text-gray-900 dark:text-white font-medium">{selectedDate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white/40">Créneau</span>
-                <span className="text-white font-medium">{selectedTime || '—'}</span>
+                <span className="text-gray-500 dark:text-white/40">Créneau</span>
+                <span className="text-gray-900 dark:text-white font-medium">{selectedTime || '—'}</span>
               </div>
               {effectivePrice > 0 && (
-                <div className="h-px bg-white/5 my-1" />
+                <div className="h-px bg-gray-100 dark:bg-white/5 my-1" />
               )}
               {effectivePrice > 0 && (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-white/40">Total</span>
-                    <span className="text-white font-bold tabular-nums">{formatPrice(effectivePrice)}</span>
+                    <span className="text-gray-500 dark:text-white/40">Total</span>
+                    <span className="text-gray-900 dark:text-white font-bold tabular-nums">{formatPrice(effectivePrice)}</span>
                   </div>
                   {deposit > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-white/40">Acompte</span>
+                      <span className="text-gray-500 dark:text-white/40">Acompte</span>
                       <span className="text-emerald-400 font-bold tabular-nums">{formatPrice(deposit)}</span>
                     </div>
                   )}
@@ -404,7 +404,7 @@ export default function NewBookingPage() {
                   const idx = steps.findIndex((s) => s.key === step);
                   if (idx > 0) setStep(steps[idx - 1].key);
                 }}
-                className="flex-1 h-12 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                className="flex-1 h-12 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 text-sm font-medium hover:bg-gray-100 dark:bg-white/10 transition-all duration-200"
               >
                 Retour
               </button>
@@ -413,7 +413,7 @@ export default function NewBookingPage() {
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-bold text-sm disabled:opacity-40 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2"
+                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-gray-900 dark:text-white font-bold text-sm disabled:opacity-40 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Création...</> : <><Check className="w-4 h-4" /> Créer la réservation</>}
               </button>
@@ -424,7 +424,7 @@ export default function NewBookingPage() {
                   if (idx < steps.length - 1) setStep(steps[idx + 1].key);
                 }}
                 disabled={!canProceed()}
-                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-bold text-sm disabled:opacity-40 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98]"
+                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-gray-900 dark:text-white font-bold text-sm disabled:opacity-40 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98]"
               >
                 Continuer
               </button>

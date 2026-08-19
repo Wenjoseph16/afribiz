@@ -114,7 +114,7 @@ export function FaqSection() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleUpdate(faq.id)}
-                      className="px-3 py-1 text-xs font-medium bg-brand text-white rounded-lg"
+                      className="px-3 py-1 text-xs font-medium bg-brand text-gray-900 dark:text-white rounded-lg"
                     >
                       <CheckIcon className="h-3 w-3" /> Enregistrer
                     </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Calendar,
@@ -10,65 +10,113 @@ import {
   CheckCircle,
   XCircle,
   Loader,
-  History,
-  TrendingUp,
-  Activity,
+  MessageCircle,
+  Share2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { PageHeader } from '@/components/dashboard/PageHeader';
 import { cn } from '@/lib/utils';
 import { useBooking } from '@/features/hooks';
+import { useTransactionDetail, useTransactionSocket } from '@/features/hooks/transactions';
 import { apiClient } from '@/services/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatPrice } from '@/utils/helpers';
+import { TransactionProgress } from '@/components/transactions';
+import { downloadICS } from '@/lib/calendarSync';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; banner: string; icon: any }> = {
   PENDING: {
     label: 'En attente',
-    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    color: 'bg-amber-100 text-amber-700',
+    banner:
+      'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300',
+    icon: Clock,
   },
   CONFIRMED: {
     label: 'Confirmée',
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    color: 'bg-blue-100 text-blue-700',
+    banner:
+      'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50 text-blue-800 dark:text-blue-300',
+    icon: CheckCircle,
   },
   ARRIVED: {
     label: 'Arrivé',
-    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    color: 'bg-emerald-100 text-emerald-700',
+    banner:
+      'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300',
+    icon: CheckCircle,
   },
   IN_PROGRESS: {
     label: 'En cours',
-    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    color: 'bg-purple-100 text-purple-700',
+    banner:
+      'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/50 text-purple-800 dark:text-purple-300',
+    icon: Clock,
   },
   COMPLETED: {
     label: 'Terminée',
-    color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+    color: 'bg-gray-100 text-gray-600',
+    banner:
+      'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400',
+    icon: CheckCircle,
   },
   CANCELLED: {
     label: 'Annulée',
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    color: 'bg-red-100 text-red-700',
+    banner:
+      'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300',
+    icon: XCircle,
   },
   NO_SHOW: {
     label: 'No-show',
-    color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+    color: 'bg-rose-100 text-rose-700',
+    banner:
+      'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 text-rose-800 dark:text-rose-300',
+    icon: XCircle,
   },
   RESCHEDULED: {
     label: 'Reportée',
-    color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+    color: 'bg-indigo-100 text-indigo-700',
+    banner:
+      'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800/50 text-indigo-800 dark:text-indigo-300',
+    icon: Calendar,
   },
+};
+
+const STATUS_MESSAGES: Record<string, { title: string; description: string }> = {
+  PENDING: {
+    title: 'En attente de confirmation',
+    description: "L'établissement va confirmer votre réservation",
+  },
+  CONFIRMED: {
+    title: 'Réservation confirmée',
+    description: 'Votre réservation est confirmée, à bientôt !',
+  },
+  ARRIVED: { title: 'Arrivé sur place', description: 'Votre réservation est en cours' },
+  IN_PROGRESS: { title: 'Service en cours', description: 'Vous profitez de votre réservation' },
+  COMPLETED: { title: 'Réservation terminée', description: 'Merci de votre visite !' },
+  CANCELLED: { title: 'Réservation annulée', description: 'Cette réservation a été annulée' },
+  NO_SHOW: { title: 'Non présenté', description: 'Vous ne vous êtes pas présenté(e)' },
+  RESCHEDULED: { title: 'Réservation reportée', description: 'Votre réservation a été reportée' },
 };
 
 export default function BookingDetailPage() {
   const params = useParams();
   const qc = useQueryClient();
   const id = params?.id as string;
-  const { data: bookingData, isLoading } = useBooking(id);
+  const { data: bookingData, isLoading, refetch } = useBooking(id);
+  const { data: transaction } = useTransactionDetail('BOOKING', id);
   const [actionLoading, setActionLoading] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
   const b: any = bookingData?.booking || bookingData || {};
+
+  const handleSocketUpdate = useCallback(() => {
+    refetch();
+  }, [refetch]);
+  useTransactionSocket('BOOKING', id, handleSocketUpdate);
 
   const handleCancel = async () => {
     if (!b.id) return;
@@ -97,108 +145,187 @@ export default function BookingDetailPage() {
     );
 
   const status = STATUS_CONFIG[b.status] || STATUS_CONFIG.PENDING;
+  const StatusIcon = status.icon;
   const startDate = new Date(b.startDate || b.date);
   const endDate = b.endDate ? new Date(b.endDate) : null;
   const canCancel = ['PENDING', 'CONFIRMED'].includes(b.status);
   const businessName = b.business?.name || b.businessName || '—';
+  const statusMsg = STATUS_MESSAGES[b.status] || STATUS_MESSAGES.PENDING;
 
   return (
-    <div className="animate-fade-in space-y-6 max-w-4xl">
-      {/* Header */}
-        <PageHeader
-          title={b.bookingNumber || `#${b.id.slice(0, 8)}`}
-          description={b.title}
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Réservations', href: '/dashboard/bookings' },
-            { label: b.bookingNumber || 'Détail' },
-          ]}
-          actions={
-            <div className="flex items-center gap-2">
-              <span className={cn('text-xs font-medium px-2 py-1 rounded-full', status.color)}>
-                {status.label}
-              </span>
-              {canCancel && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setCancelModalOpen(true)}
-                  className="text-red-500 hover:text-red-600"
-                >
-                    <XCircle className="w-4 h-4 mr-1.5" />
-                    Annuler
-                  </Button>
-              )}
+    <div className="animate-fade-in space-y-6 max-w-5xl mx-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-700/50">
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              ←
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3">
+                <div className={cn('p-2.5 rounded-xl', status.color)}>
+                  <Calendar className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
+                      {b.title || b.bookingNumber || `#${id.slice(0, 8)}`}
+                    </h1>
+                    <span
+                      className={cn('text-xs font-medium px-2 py-1 rounded-full', status.color)}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {startDate.toLocaleDateString('fr-FR', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                    {endDate && (
+                      <>
+                        {' '}
+                        ·{' '}
+                        {startDate.toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}{' '}
+                        -{' '}
+                        {endDate.toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </>
+                    )}
+                    {businessName !== '—' && <> · {businessName}</>}
+                  </p>
+                </div>
+              </div>
             </div>
-          }
-        />
+          </div>
 
-      {/* KPI */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand/10">
-              <DollarSign className="w-4 h-4 text-brand" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Montant</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {formatPrice(Number(b.price || 0))}
-              </p>
-            </div>
+          {transaction && (
+            <TransactionProgress
+              type="BOOKING"
+              progress={transaction.progress || 0}
+              label="Progression"
+              size="lg"
+            />
+          )}
+        </div>
+
+        <div className={cn('flex items-center gap-3 p-4 border', status.banner)}>
+          <StatusIcon className="h-5 w-5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold">{statusMsg.title}</p>
+            <p className="text-xs opacity-80">{statusMsg.description}</p>
           </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-              <Calendar className="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Date</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white text-sm">
-                {startDate.toLocaleDateString('fr-FR', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-              <Clock className="w-4 h-4 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Horaire</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white text-sm">
-                {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                {endDate &&
-                  ` - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
-              </p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-              <Store className="w-4 h-4 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Entreprise</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white text-sm truncate">
-                {businessName}
-              </p>
-            </div>
-          </div>
-        </Card>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() =>
+            downloadICS(
+              {
+                title: b.title || b.bookingNumber || 'Réservation',
+                description: b.specialRequests || undefined,
+                location: b.business?.address || undefined,
+                startDate: startDate,
+                endDate: endDate || undefined,
+                businessName: businessName !== '—' ? businessName : undefined,
+              },
+              `booking_${id}.ics`
+            )
+          }
+        >
+          <Calendar className="h-4 w-4 mr-1.5" />
+          Calendrier
+        </Button>
+        <Button variant="secondary" size="sm">
+          <MessageCircle className="h-4 w-4 mr-1.5" />
+          Contacter
+        </Button>
+        {canCancel && (
+          <Button variant="danger" size="sm" onClick={() => setCancelModalOpen(true)}>
+            <XCircle className="h-4 w-4 mr-1.5" />
+            Annuler
+          </Button>
+        )}
+        <Button variant="ghost" size="sm">
+          <Share2 className="h-4 w-4" />
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          {/* Details */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-brand/10">
+                  <DollarSign className="w-4 h-4 text-brand" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Montant</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {formatPrice(Number(b.price || 0))}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Date</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    {startDate.toLocaleDateString('fr-FR', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                  <Clock className="w-4 h-4 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Horaire</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    {endDate &&
+                      ` - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+                  </p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <Store className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Entreprise</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                    {businessName}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
           <Card className="p-6">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Détails</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -238,7 +365,6 @@ export default function BookingDetailPage() {
             )}
           </Card>
 
-          {/* Payment */}
           <Card className="p-6">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Paiement</h3>
             <div className="space-y-3">
@@ -265,62 +391,34 @@ export default function BookingDetailPage() {
             </div>
           </Card>
 
-          {/* Timeline & Historique */}
           <Card className="p-6">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Historique</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-              <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <History className="h-4 w-4 text-gray-400 mx-auto mb-1" />
-                <p className="text-xs text-gray-500">Créée le</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">
-                  {b.createdAt ? new Date(b.createdAt).toLocaleDateString('fr-FR') : '—'}
-                </p>
-              </div>
-              <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <Activity className="h-4 w-4 text-gray-400 mx-auto mb-1" />
-                <p className="text-xs text-gray-500">Dernière act.</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">
-                  {b.updatedAt ? new Date(b.updatedAt).toLocaleDateString('fr-FR') : '—'}
-                </p>
-              </div>
-              <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <TrendingUp className="h-4 w-4 text-gray-400 mx-auto mb-1" />
-                <p className="text-xs text-gray-500">Source</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">
-                  {b.source || 'Dashboard'}
-                </p>
-              </div>
-              <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                <Clock className="h-4 w-4 text-gray-400 mx-auto mb-1" />
-                <p className="text-xs text-gray-500">Durée</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">
-                  {endDate
-                    ? `${Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60))}h`
-                    : '—'}
-                </p>
-              </div>
-            </div>
-
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-              Chronologie
-            </h4>
             <div className="space-y-3 text-sm">
-              {[
-                { label: 'Réservation créée', time: b.createdAt },
-                { label: 'Statut actuel: ' + status.label, time: b.updatedAt },
-              ]
-                .filter((x) => x.time)
-                .map((e, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-2 h-2 mt-1.5 rounded-full bg-brand shrink-0" />
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{e.label}</p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(e.time).toLocaleString('fr-FR')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 mt-1.5 rounded-full bg-brand shrink-0" />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">Réservation créée</p>
+                  <p className="text-xs text-gray-400">
+                    {b.createdAt ? new Date(b.createdAt).toLocaleString('fr-FR') : '—'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div
+                  className={cn(
+                    'w-2 h-2 mt-1.5 rounded-full shrink-0',
+                    b.status === 'CANCELLED' ? 'bg-red-500' : 'bg-emerald-500'
+                  )}
+                />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    Statut: {status.label}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {b.updatedAt ? new Date(b.updatedAt).toLocaleString('fr-FR') : '—'}
+                  </p>
+                </div>
+              </div>
               {b.checkedInAt && (
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 mt-1.5 rounded-full bg-emerald-500 shrink-0" />
@@ -360,9 +458,7 @@ export default function BookingDetailPage() {
           </Card>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Business Info */}
           <Card className="p-6">
             <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Entreprise</h3>
             <div className="flex items-center gap-2 text-sm">
@@ -398,7 +494,6 @@ export default function BookingDetailPage() {
         </div>
       </div>
 
-      {/* Cancel Modal */}
       <Modal
         open={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
@@ -410,7 +505,7 @@ export default function BookingDetailPage() {
             Voulez-vous vraiment annuler cette réservation ?
           </p>
           <div>
-            <label className="block text-sm font-medium mb-1">Motif d'annulation</label>
+            <label className="block text-sm font-medium mb-1">Motif d&apos;annulation</label>
             <textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
@@ -428,7 +523,7 @@ export default function BookingDetailPage() {
               isLoading={actionLoading}
               className="bg-red-500 hover:bg-red-600"
             >
-              Confirmer l'annulation
+              Confirmer l&apos;annulation
             </Button>
           </div>
         </div>

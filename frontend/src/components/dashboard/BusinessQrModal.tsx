@@ -17,13 +17,7 @@ interface BusinessQrModalProps {
  * QR code de la vitrine publique, depuis le dashboard business.
  * Téléchargement du QR en PNG (à imprimer / afficher en boutique).
  */
-export function BusinessQrModal({
-  open,
-  onClose,
-  businessName,
-  slug,
-  logo,
-}: BusinessQrModalProps) {
+export function BusinessQrModal({ open, onClose, businessName, slug, logo }: BusinessQrModalProps) {
   const [copied, setCopied] = useState(false);
   const [dlError, setDlError] = useState(false);
 
@@ -135,15 +129,13 @@ export function BusinessQrModal({
           {/* Lien public */}
           <div className="w-full flex items-center gap-2 p-2 pl-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <Link2 className="w-4 h-4 text-gray-400 shrink-0" />
-            <span className="flex-1 text-xs text-gray-600 dark:text-gray-300 truncate">
-              {url}
-            </span>
+            <span className="flex-1 text-xs text-gray-600 dark:text-gray-300 truncate">{url}</span>
             <button
               onClick={copyLink}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 copied
                   ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                  : 'bg-brand text-white hover:bg-brand-700'
+                  : 'bg-brand text-gray-900 dark:text-white hover:bg-brand-700'
               }`}
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Link2 className="w-3.5 h-3.5" />}

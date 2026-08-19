@@ -69,7 +69,7 @@ const itemVariants = {
 export function QuickActions() {
   return (
     <div>
-      <h3 className="text-xs font-semibold text-white/30 uppercase tracking-[0.15em] mb-3">
+      <h3 className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-[0.15em] mb-3">
         Actions rapides
       </h3>
       <motion.div
@@ -90,8 +90,8 @@ export function QuickActions() {
                   <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200', action.color)}>
                     <action.icon className={cn('w-5 h-5', action.iconColor)} />
                   </div>
-                  <p className="text-xs font-semibold text-white/70 group-hover:text-white transition-colors">{action.label}</p>
-                  <p className="text-[10px] text-white/25 mt-0.5 hidden sm:block">{action.description}</p>
+                  <p className="text-xs font-semibold text-gray-700 dark:text-white/70 group-hover:text-gray-900 dark:text-white transition-colors">{action.label}</p>
+                  <p className="text-[10px] text-gray-400 dark:text-white/25 mt-0.5 hidden sm:block">{action.description}</p>
                 </div>
               </div>
             </Link>

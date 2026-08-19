@@ -19,7 +19,7 @@ export function CartIcon({
     <Link href="/dashboard/cart" className={linkClassName}>
       <ShoppingCart className={'h-4 w-4 ' + className} />
       {itemCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-brand rounded-full ring-2 ring-background">
+        <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-gray-900 dark:text-white bg-brand rounded-full ring-2 ring-background">
           {itemCount > 99 ? '99+' : itemCount}
         </span>
       )}

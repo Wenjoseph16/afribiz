@@ -32,7 +32,7 @@ export function InstalledModulesSection({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="mb-1">
       {!collapsed && (
-        <p className="px-3 pt-3 pb-1 text-[10px] font-semibold text-white/30 uppercase tracking-[0.15em]">
+        <p className="px-3 pt-3 pb-1 text-[10px] font-semibold text-gray-400 dark:text-white/30 uppercase tracking-[0.15em]">
           Modules installés
         </p>
       )}
@@ -51,16 +51,14 @@ export function InstalledModulesSection({ collapsed }: { collapsed: boolean }) {
                 collapsed ? 'justify-center p-2.5 mx-auto w-10 h-10' : 'px-3 py-2',
                 active
                   ? 'bg-indigo-500/20 text-indigo-200 shadow-sm'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  : 'text-gray-500 dark:text-white/50 hover:text-gray-900 dark:text-white hover:bg-white/5'
               )}
             >
               {active && !collapsed && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-indigo-400 rounded-r-full" />
               )}
               <Icon className={cn('shrink-0', collapsed ? 'h-5 w-5' : 'h-4 w-4')} />
-              {!collapsed && (
-                <span className="truncate">{mod.sidebarLabel || mod.name}</span>
-              )}
+              {!collapsed && <span className="truncate">{mod.sidebarLabel || mod.name}</span>}
             </Link>
           );
         })}

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-[#0a0f1a] dark:bg-[#0a0f1a]">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0a0f1a]">
         {/* Subtle background pattern */}
         <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(16,185,129,0.08)_0%,_transparent_50%)] pointer-events-none" />
         <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(16,185,129,0.05)_0%,_transparent_50%)] pointer-events-none" />

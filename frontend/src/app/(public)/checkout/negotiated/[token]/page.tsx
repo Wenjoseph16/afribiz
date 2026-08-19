@@ -193,7 +193,7 @@ function NegotiatedCheckoutInner() {
         <main className="max-w-lg mx-auto px-4 py-24">
           <Card padding="lg" className="text-center">
             <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/30">
-              <CheckCircle2 className="h-10 w-10 text-white" />
+              <CheckCircle2 className="h-10 w-10 text-gray-900 dark:text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               Commande confirmée !

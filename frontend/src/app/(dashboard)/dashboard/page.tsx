@@ -49,7 +49,7 @@ export default function DashboardPage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand border-t-transparent" />
-          <p className="text-sm text-white/40">Chargement...</p>
+          <p className="text-sm text-gray-500 dark:text-white/40">Chargement...</p>
         </div>
       </div>
     );
@@ -77,8 +77,8 @@ function GlassLink({ href, children, className }: { href: string; children: Reac
 function SectionTitle({ children, icon: Icon }: { children: React.ReactNode; icon?: any }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      {Icon && <Icon className="w-3.5 h-3.5 text-white/30" />}
-      <h3 className="text-xs font-semibold text-white/30 uppercase tracking-[0.15em]">{children}</h3>
+      {Icon && <Icon className="w-3.5 h-3.5 text-gray-400 dark:text-white/30" />}
+      <h3 className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-[0.15em]">{children}</h3>
     </div>
   );
 }
@@ -147,7 +147,7 @@ function ClientDashboardContent() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
         <div className="relative flex flex-col sm:flex-row items-start justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-emerald-100 text-[10px] font-semibold uppercase tracking-[0.15em] mb-3 border border-white/10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-sm rounded-full text-emerald-100 text-[10px] font-semibold uppercase tracking-[0.15em] mb-3 border border-white/20">
               <Sparkles className="h-3 w-3" />
               Tableau de bord
             </div>
@@ -230,24 +230,24 @@ function ClientDashboardContent() {
                     key={order.id}
                     type="button"
                     onClick={() => router.push(`/dashboard/orders/${order.id}`)}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200 group cursor-pointer text-left"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/[0.06] border border-gray-200 dark:border-white/[0.06] hover:border-emerald-300 dark:hover:border-emerald-500/20 transition-all duration-200 group cursor-pointer text-left"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
                         <ShoppingBag className="h-4 w-4 text-emerald-400" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
                           Commande #{order.orderNumber?.slice(-6) || order.id?.slice(0, 8)}
                         </p>
-                        <p className="text-xs text-white/30">
+                        <p className="text-xs text-gray-400 dark:text-white/30">
                           {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : ''}
                         </p>
                       </div>
                     </div>
                     <div className="text-right flex items-center gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-white tabular-nums">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white tabular-nums">
                           {Number(order.totalAmount || 0).toLocaleString()} FCFA
                         </p>
                         <span className={cn(
@@ -260,7 +260,7 @@ function ClientDashboardContent() {
                           {s.label}
                         </span>
                       </div>
-                      <ArrowUpRight className="h-4 h-4 text-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ArrowUpRight className="h-4 h-4 text-gray-400 dark:text-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </button>
                 );
@@ -268,8 +268,8 @@ function ClientDashboardContent() {
             </div>
           ) : (
             <div className="text-center py-10">
-              <ShoppingBag className="w-10 h-10 text-white/15 mx-auto mb-3" />
-              <p className="text-sm text-white/40">Aucune commande</p>
+              <ShoppingBag className="w-10 h-10 text-gray-300 dark:text-white/15 mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-white/40">Aucune commande</p>
               <Link href="/marketplace" className="inline-flex items-center gap-1 mt-3 text-xs text-emerald-400 hover:text-emerald-300">
                 Explorer le marketplace <ArrowUpRight className="w-3 h-3" />
               </Link>
@@ -293,7 +293,7 @@ function ClientDashboardContent() {
                   key={notif.id}
                   onClick={() => notif.link && router.push(notif.link)}
                   className={cn(
-                    'flex items-start gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200',
+                    'flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/[0.06] border border-gray-200 dark:border-white/[0.06] hover:border-emerald-300 dark:hover:border-emerald-500/20 transition-all duration-200',
                     notif.link ? 'cursor-pointer' : ''
                   )}
                 >
@@ -307,9 +307,9 @@ function ClientDashboardContent() {
                     <Bell className="h-3 w-3" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-white truncate">{notif.title}</p>
-                    {notif.description && <p className="text-[11px] text-white/30 truncate">{notif.description}</p>}
-                    <p className="text-[10px] text-white/20 mt-0.5">
+                    <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{notif.title}</p>
+                    {notif.description && <p className="text-[11px] text-gray-400 dark:text-white/30 truncate">{notif.description}</p>}
+                    <p className="text-[10px] text-gray-400 dark:text-white/20 mt-0.5">
                       {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
                     </p>
                   </div>
@@ -319,8 +319,8 @@ function ClientDashboardContent() {
             </div>
           ) : (
             <div className="text-center py-10">
-              <Bell className="w-10 h-10 text-white/15 mx-auto mb-3" />
-              <p className="text-sm text-white/40">Aucune notification</p>
+              <Bell className="w-10 h-10 text-gray-300 dark:text-white/15 mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-white/40">Aucune notification</p>
             </div>
           )}
         </GlassCard>
@@ -343,8 +343,8 @@ function ClientDashboardContent() {
                       <Clock className="h-4 w-4 text-amber-400" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-white">{p.description || 'Paiement'}</p>
-                      <p className="text-[10px] text-white/30">{p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : ''}</p>
+                      <p className="text-xs font-medium text-gray-900 dark:text-white">{p.description || 'Paiement'}</p>
+                      <p className="text-[10px] text-gray-400 dark:text-white/30">{p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : ''}</p>
                     </div>
                   </div>
                   <span className="text-sm font-semibold text-amber-400 tabular-nums">{Number(p.amount || 0).toLocaleString()} FCFA</span>
@@ -352,7 +352,7 @@ function ClientDashboardContent() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-white/20 text-center py-6">Aucun paiement en attente</p>
+            <p className="text-sm text-gray-400 dark:text-white/20 text-center py-6">Aucun paiement en attente</p>
           )}
         </GlassCard>
 
@@ -369,19 +369,19 @@ function ClientDashboardContent() {
                   key={b.id}
                   type="button"
                   onClick={() => router.push(`/dashboard/bookings/${b.id}`)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200 group cursor-pointer text-left"
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/[0.06] border border-gray-200 dark:border-white/[0.06] hover:border-emerald-300 dark:hover:border-emerald-500/20 transition-all duration-200 group cursor-pointer text-left"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                       <Calendar className="h-4 w-4 text-amber-400" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-white">{b.serviceName || b.type || 'Réservation'}</p>
-                      <p className="text-[10px] text-white/30">{b.businessName || b.business || ''}</p>
+                      <p className="text-xs font-medium text-gray-900 dark:text-white">{b.serviceName || b.type || 'Réservation'}</p>
+                      <p className="text-[10px] text-gray-400 dark:text-white/30">{b.businessName || b.business || ''}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-semibold text-white tabular-nums">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white tabular-nums">
                       {b.date ? new Date(b.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
                     </p>
                     <span className={cn(
@@ -396,8 +396,8 @@ function ClientDashboardContent() {
             </div>
           ) : (
             <div className="text-center py-10">
-              <Calendar className="w-10 h-10 text-white/15 mx-auto mb-3" />
-              <p className="text-sm text-white/40">Aucune réservation</p>
+              <Calendar className="w-10 h-10 text-gray-300 dark:text-white/15 mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-white/40">Aucune réservation</p>
               <Link href="/marketplace" className="inline-flex items-center gap-1 mt-3 text-xs text-emerald-400 hover:text-emerald-300">
                 Explorer <ArrowUpRight className="w-3 h-3" />
               </Link>
@@ -419,10 +419,10 @@ function ClientDashboardContent() {
                     <Percent className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-white">{promo.title || 'Promotion'}</p>
-                    {promo.description && <p className="text-[10px] text-white/30 truncate">{promo.description}</p>}
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">{promo.title || 'Promotion'}</p>
+                    {promo.description && <p className="text-[10px] text-gray-400 dark:text-white/30 truncate">{promo.description}</p>}
                     {promo.code && (
-                      <div className="inline-flex items-center mt-1 px-1.5 py-0.5 rounded bg-white/5 border border-dashed border-white/10">
+                      <div className="inline-flex items-center mt-1 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/5 border border-dashed border-gray-200 dark:border-white/10">
                         <span className="text-[10px] font-mono font-bold text-emerald-400">{promo.code}</span>
                       </div>
                     )}
@@ -433,8 +433,8 @@ function ClientDashboardContent() {
             </div>
           ) : (
             <div className="text-center py-10">
-              <Percent className="w-10 h-10 text-white/15 mx-auto mb-3" />
-              <p className="text-sm text-white/40">Aucune promotion</p>
+              <Percent className="w-10 h-10 text-gray-300 dark:text-white/15 mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-white/40">Aucune promotion</p>
             </div>
           )}
         </GlassCard>
@@ -446,7 +446,7 @@ function ClientDashboardContent() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Star className="h-3.5 w-3.5 text-amber-400" />
-              <h3 className="text-xs font-semibold text-white/30 uppercase tracking-[0.15em]">Recommandé pour vous</h3>
+              <h3 className="text-xs font-semibold text-gray-400 dark:text-white/30 uppercase tracking-[0.15em]">Recommandé pour vous</h3>
             </div>
           </div>
           {promotions.length > 0 ? (
@@ -456,13 +456,13 @@ function ClientDashboardContent() {
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2">
                     <Gift className="h-4 w-4" />
                   </div>
-                  <p className="text-sm font-semibold text-white">{promo.title || `Offre #${i + 1}`}</p>
-                  <p className="text-xs text-white/30 mt-0.5">{promo.businessName || promo.description || 'Découvrez cette offre'}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{promo.title || `Offre #${i + 1}`}</p>
+                  <p className="text-xs text-gray-400 dark:text-white/30 mt-0.5">{promo.businessName || promo.description || 'Découvrez cette offre'}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-white/20 text-center py-6">Pas encore de recommandations.</p>
+            <p className="text-sm text-gray-400 dark:text-white/20 text-center py-6">Pas encore de recommandations.</p>
           )}
         </GlassCard>
       </motion.div>

@@ -121,7 +121,7 @@ export default function SubscriptionLogsPage() {
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
               actionFilter === 'all'
-                ? 'bg-brand text-white'
+                ? 'bg-brand text-gray-900 dark:text-white'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             )}
           >
@@ -134,7 +134,7 @@ export default function SubscriptionLogsPage() {
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
                 actionFilter === action
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-gray-900 dark:text-white'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               )}
             >

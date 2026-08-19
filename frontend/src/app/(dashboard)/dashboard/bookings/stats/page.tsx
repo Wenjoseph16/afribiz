@@ -313,7 +313,7 @@ export default function BookingStatsPage() {
                 className="flex-1 flex flex-col items-center justify-end h-full group relative"
               >
                 {day.revenue > 0 && (
-                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-100 text-gray-900 dark:text-white dark:text-gray-900 text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                     {formatPrice(day.revenue)}
                   </div>
                 )}
@@ -449,7 +449,7 @@ export default function BookingStatsPage() {
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
-                      'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white',
+                      'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-900 dark:text-white',
                       i === 0
                         ? 'bg-amber-500'
                         : i === 1

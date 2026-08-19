@@ -128,7 +128,9 @@ export default function BusinessDebtsCard() {
               <Users className="h-4 w-4 text-amber-600" />
               <span className="text-sm text-gray-600 dark:text-gray-300">
                 Rappels automatiques{' '}
-                <strong className="text-gray-900 dark:text-gray-100">J+3 · J+7 · J+15 · J+30</strong>
+                <strong className="text-gray-900 dark:text-gray-100">
+                  J+3 · J+7 · J+15 · J+30
+                </strong>
               </span>
             </div>
             <Link
@@ -141,7 +143,7 @@ export default function BusinessDebtsCard() {
 
           <Link
             href="/dashboard/business/pos"
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-gray-900 dark:text-white text-sm font-semibold transition-colors"
           >
             <Banknote className="h-4 w-4" />
             Encaisser une dette au comptoir

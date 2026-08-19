@@ -149,7 +149,7 @@ export default function SlotsPage() {
             className={cn(
               'px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
               selectedDay === i
-                ? 'bg-brand text-white'
+                ? 'bg-brand text-gray-900 dark:text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
             )}
           >

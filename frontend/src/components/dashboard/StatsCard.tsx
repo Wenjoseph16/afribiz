@@ -69,10 +69,10 @@ export function StatsCard({
                 </span>
               )}
             </div>
-            <p className="text-2xl font-display font-bold text-white mt-3 tracking-tight tabular-nums">
+            <p className="text-2xl font-display font-bold text-gray-900 dark:text-white mt-3 tracking-tight tabular-nums">
               {value}
             </p>
-            <p className="text-xs text-white/40 mt-0.5 font-medium">{label}</p>
+            <p className="text-xs text-gray-500 dark:text-white/40 mt-0.5 font-medium">{label}</p>
           </div>
         </div>
       </div>

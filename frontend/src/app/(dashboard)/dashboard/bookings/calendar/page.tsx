@@ -131,7 +131,7 @@ export default function CalendarPage() {
               className={cn(
                 'p-2 rounded-lg text-center transition-all',
                 isSelected
-                  ? 'bg-brand text-white'
+                  ? 'bg-brand text-gray-900 dark:text-white'
                   : isToday
                     ? 'bg-brand/10 text-brand'
                     : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700'

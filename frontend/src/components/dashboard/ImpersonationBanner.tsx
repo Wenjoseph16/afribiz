@@ -37,7 +37,7 @@ export function ImpersonationBanner() {
   };
 
   return (
-    <div className="bg-sky-600 text-white text-sm px-4 py-2 flex items-center justify-between gap-3">
+    <div className="bg-sky-600 text-gray-900 dark:text-white text-sm px-4 py-2 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2 min-w-0">
         <Eye className="h-4 w-4 shrink-0" />
         <p className="truncate">
@@ -51,7 +51,7 @@ export function ImpersonationBanner() {
         size="sm"
         variant="ghost"
         onClick={handleExit}
-        className="text-white hover:bg-sky-700 shrink-0 border border-white/30"
+        className="text-gray-900 dark:text-white hover:bg-sky-700 shrink-0 border border-white/30"
       >
         <LogOut className="h-4 w-4" />
         Quitter et revenir admin

@@ -1,17 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  User,
-  DoorOpen,
-  Car,
-  Table2,
-  Loader,
-  Save,
-} from 'lucide-react';
+import { Plus, Edit2, Trash2, User, DoorOpen, Car, Table2, Loader, Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -168,7 +158,7 @@ export default function ResourcesPage() {
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap',
               filter === t
-                ? 'bg-brand text-white'
+                ? 'bg-brand text-gray-900 dark:text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
             )}
           >

@@ -122,18 +122,18 @@ export default function RentalDetailPage() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-brand-700 to-emerald-800 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-br from-brand-700 to-emerald-800 rounded-2xl p-8 text-gray-900 dark:text-white">
         <div className="flex items-start justify-between">
           <div className="space-y-3">
             <h1 className="text-3xl font-bold">{r.name}</h1>
             {r.isActive && r.availableQty < r.quantity / 2 && (
-              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/30 text-white">
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/30 text-gray-900 dark:text-white">
                 📈 Haute demande
               </span>
             )}
             {r.createdAt &&
               new Date(r.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) && (
-                <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/30 text-white">
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/30 text-gray-900 dark:text-white">
                   🆕 Nouveau
                 </span>
               )}
@@ -156,8 +156,8 @@ export default function RentalDetailPage() {
           </div>
           <span
             className={cn('px-3 py-1 rounded-full text-xs font-medium', {
-              'bg-emerald-500/30 text-white': r.isActive,
-              'bg-gray-500/30 text-white': !r.isActive,
+              'bg-emerald-500/30 text-gray-900 dark:text-white': r.isActive,
+              'bg-gray-500/30 text-gray-900 dark:text-white': !r.isActive,
             })}
           >
             {r.isActive ? 'Disponible' : 'Indisponible'}
@@ -179,7 +179,7 @@ export default function RentalDetailPage() {
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all',
               activeTab === tab.key
-                ? 'bg-brand text-white shadow-sm'
+                ? 'bg-brand text-gray-900 dark:text-white shadow-sm'
                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             )}
           >

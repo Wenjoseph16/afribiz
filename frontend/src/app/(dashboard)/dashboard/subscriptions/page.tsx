@@ -56,11 +56,11 @@ export default function SubscriptionsPage() {
             <Repeat className="w-3 h-3" />
             Abonnements
           </div>
-          <h1 className="text-2xl font-display font-bold text-white tracking-tight">Plans d&apos;abonnement</h1>
-          <p className="text-white/30 text-sm mt-0.5">{plans.length} plan{plans.length > 1 ? 's' : ''} — {stats.activeSubscribers} abonné{stats.activeSubscribers > 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">Plans d&apos;abonnement</h1>
+          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">{plans.length} plan{plans.length > 1 ? 's' : ''} — {stats.activeSubscribers} abonné{stats.activeSubscribers > 1 ? 's' : ''}</p>
         </div>
         <Link href="/dashboard/subscriptions/new">
-          <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white text-sm font-bold rounded-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98]">
+          <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-gray-900 dark:text-white text-sm font-bold rounded-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98]">
             <Plus className="w-4 h-4" /> Nouveau plan
           </button>
         </Link>
@@ -80,8 +80,8 @@ export default function SubscriptionsPage() {
                 <kpi.icon className={cn('w-4 h-4', `text-${kpi.color}-400`)} />
               </div>
               <div>
-                <p className="text-xl font-bold text-white tabular-nums">{kpi.value}</p>
-                <p className="text-[10px] text-white/30 font-medium">{kpi.label}</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{kpi.value}</p>
+                <p className="text-[10px] text-gray-400 dark:text-white/30 font-medium">{kpi.label}</p>
               </div>
             </div>
           </GlassCard>
@@ -90,13 +90,13 @@ export default function SubscriptionsPage() {
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-white/20" />
         <input
           type="text"
           placeholder="Rechercher un plan..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-white/20 focus:border-emerald-500/40 focus:ring-0 outline-none transition-all"
+          className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] rounded-xl text-gray-900 dark:text-white placeholder:text-gray-400 dark:text-white/20 focus:border-emerald-500/40 focus:ring-0 outline-none transition-all"
         />
       </div>
 
@@ -104,8 +104,8 @@ export default function SubscriptionsPage() {
       {filtered.length === 0 ? (
         <GlassCard>
           <div className="text-center py-12">
-            <Repeat className="w-12 h-12 text-white/15 mx-auto mb-4" />
-            <p className="text-sm text-white/40 mb-4">Aucun plan trouvé</p>
+            <Repeat className="w-12 h-12 text-gray-300 dark:text-white/15 mx-auto mb-4" />
+            <p className="text-sm text-gray-500 dark:text-white/40 mb-4">Aucun plan trouvé</p>
             <Link href="/dashboard/subscriptions/new">
               <button className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium rounded-xl hover:bg-emerald-500/20 transition-all">
                 <Plus className="w-4 h-4" /> Nouveau plan
@@ -130,50 +130,50 @@ export default function SubscriptionsPage() {
                   <div className="absolute inset-0 rounded-[calc(1rem-0.1875rem)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
                   <div className="relative">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-bold text-white truncate">{plan.name}</h3>
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{plan.name}</h3>
                       <span className={cn(
                         'text-[10px] font-semibold px-2 py-0.5 rounded-full border',
                         plan.status === 'ACTIVE'
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          : 'bg-white/5 text-white/30 border-white/10'
+                          : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-white/30 border-gray-200 dark:border-white/10'
                       )}>
                         {plan.status === 'ACTIVE' ? 'Actif' : 'Inactif'}
                       </span>
                     </div>
 
                     <div className="flex items-baseline gap-1 mb-3">
-                      <span className="text-2xl font-bold text-white tabular-nums">
+                      <span className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
                         {formatPrice(plan.price)}
                       </span>
-                      <span className="text-xs text-white/30">
+                      <span className="text-xs text-gray-400 dark:text-white/30">
                         /{DURATION_LABELS[plan.duration]?.toLowerCase() || ''}
                       </span>
                     </div>
 
                     {plan.description && (
-                      <p className="text-xs text-white/30 line-clamp-2 mb-3">{plan.description}</p>
+                      <p className="text-xs text-gray-400 dark:text-white/30 line-clamp-2 mb-3">{plan.description}</p>
                     )}
 
                     {plan.features && plan.features.length > 0 && (
                       <div className="space-y-1 mb-3">
                         {plan.features.slice(0, 3).map((f: string, i: number) => (
-                          <div key={i} className="flex items-center gap-1.5 text-xs text-white/40">
+                          <div key={i} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/40">
                             <CheckCircle className="h-3 w-3 text-emerald-400/60 shrink-0" />
                             <span className="truncate">{f}</span>
                           </div>
                         ))}
                         {plan.features.length > 3 && (
-                          <p className="text-[10px] text-white/20 pl-4">+{plan.features.length - 3} autres</p>
+                          <p className="text-[10px] text-gray-400 dark:text-white/20 pl-4">+{plan.features.length - 3} autres</p>
                         )}
                       </div>
                     )}
 
                     <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                      <div className="flex items-center gap-1 text-xs text-white/30">
+                      <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-white/30">
                         <Users className="h-3 w-3" />
                         {plan.subscriberCount || 0} abonné{(plan.subscriberCount || 0) !== 1 ? 's' : ''}
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-white/30">
+                      <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-white/30">
                         <Clock className="h-3 w-3" />
                         {DURATION_LABELS[plan.duration] || ''}
                       </div>

@@ -19,7 +19,7 @@ export default function BookingsError({ error, reset }: { error: Error; reset: (
       </p>
       <button
         onClick={reset}
-        className="rounded-lg bg-emerald-600 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+        className="rounded-lg bg-emerald-600 px-6 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-emerald-700"
       >
         Réessayer
       </button>

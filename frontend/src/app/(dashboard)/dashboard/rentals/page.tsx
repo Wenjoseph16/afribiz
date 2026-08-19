@@ -60,9 +60,9 @@ export default function RentalsPage() {
         <div className="space-y-6 max-w-7xl mx-auto">
           <GlassCard>
             <div className="text-center py-14">
-              <Sparkles className="w-12 h-12 text-white/15 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">Module Locations non activé</h3>
-              <p className="text-sm text-white/40 mb-5 max-w-md mx-auto">Activez ce module pour mettre vos articles en location.</p>
+              <Sparkles className="w-12 h-12 text-gray-300 dark:text-white/15 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Module Locations non activé</h3>
+              <p className="text-sm text-gray-500 dark:text-white/40 mb-5 max-w-md mx-auto">Activez ce module pour mettre vos articles en location.</p>
               <Link href="/dashboard/modules-analysis">
                 <button className="px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium rounded-xl hover:bg-emerald-500/20 transition-all">
                   <Sparkles className="w-4 h-4 inline mr-1.5" /> Voir mes modules
@@ -91,11 +91,11 @@ export default function RentalsPage() {
             <Car className="w-3 h-3" />
             Locations
           </div>
-          <h1 className="text-2xl font-display font-bold text-white tracking-tight">Articles en location</h1>
-          <p className="text-white/30 text-sm mt-0.5">{stats.total} article{stats.total > 1 ? 's' : ''} — {stats.active} disponible{stats.active > 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">Articles en location</h1>
+          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">{stats.total} article{stats.total > 1 ? 's' : ''} — {stats.active} disponible{stats.active > 1 ? 's' : ''}</p>
         </div>
         <Link href="/dashboard/rentals/new">
-          <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white text-sm font-bold rounded-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98]">
+          <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-gray-900 dark:text-white text-sm font-bold rounded-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98]">
             <Plus className="w-4 h-4" /> Nouvel article
           </button>
         </Link>
@@ -114,8 +114,8 @@ export default function RentalsPage() {
                 <kpi.icon className={cn('w-4 h-4', `text-${kpi.color}-400`)} />
               </div>
               <div>
-                <p className="text-xl font-bold text-white tabular-nums">{kpi.value}</p>
-                <p className="text-[10px] text-white/30 font-medium">{kpi.label}</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{kpi.value}</p>
+                <p className="text-[10px] text-gray-400 dark:text-white/30 font-medium">{kpi.label}</p>
               </div>
             </div>
           </GlassCard>
@@ -133,7 +133,7 @@ export default function RentalsPage() {
                 'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200',
                 activeTab === tab
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-white/10 text-white/40 border border-white/[0.06] hover:border-white/15'
+                  : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/40 border border-gray-100 dark:border-white/[0.06] hover:border-gray-200 dark:border-white/15'
               )}
             >
               {tab === 'all' ? 'Tous' : tab === 'active' ? 'Disponibles' : 'Indisponibles'}
@@ -141,13 +141,13 @@ export default function RentalsPage() {
           ))}
         </div>
         <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-white/20" />
           <input
             type="text"
             placeholder="Rechercher..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-white/20 focus:border-emerald-500/40 focus:ring-0 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] rounded-xl text-gray-900 dark:text-white placeholder:text-gray-400 dark:text-white/20 focus:border-emerald-500/40 focus:ring-0 outline-none transition-all"
           />
         </div>
       </div>
@@ -156,8 +156,8 @@ export default function RentalsPage() {
       {filtered.length === 0 ? (
         <GlassCard>
           <div className="text-center py-12">
-            <Car className="w-12 h-12 text-white/15 mx-auto mb-4" />
-            <p className="text-sm text-white/40 mb-4">Aucun article trouvé</p>
+            <Car className="w-12 h-12 text-gray-300 dark:text-white/15 mx-auto mb-4" />
+            <p className="text-sm text-gray-500 dark:text-white/40 mb-4">Aucun article trouvé</p>
             <Link href="/dashboard/rentals/new">
               <button className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium rounded-xl hover:bg-emerald-500/20 transition-all">
                 <Plus className="w-4 h-4" /> Ajouter un article
@@ -184,7 +184,7 @@ export default function RentalsPage() {
                     <Image src={rental.images[0]} alt="" fill className="object-cover" sizes="300px" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Car className="w-10 h-10 text-white/10" />
+                      <Car className="w-10 h-10 text-gray-900 dark:text-white/10" />
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
@@ -192,31 +192,31 @@ export default function RentalsPage() {
                     'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
                     rental.isActive
                       ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                      : 'bg-white/10 text-white/40 border-white/10'
+                      : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/40 border-gray-200 dark:border-white/10'
                   )}>
                     {rental.isActive ? 'Disponible' : 'Indisponible'}
                   </span>
                 </div>
 
                 <div className="relative rounded-[calc(1rem-0.1875rem)] p-4">
-                  <h3 className="text-sm font-bold text-white line-clamp-1 mb-2">{rental.name}</h3>
-                  <div className="flex items-center gap-2 text-xs text-white/40 mb-1">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 mb-2">{rental.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-white/40 mb-1">
                     <DollarSign className="w-3 h-3" />
                     <span className="font-semibold text-emerald-400">{formatPrice(rental.price, rental.currency)}</span>
                     <span>/ {rental.priceUnit}</span>
                   </div>
                   {rental.deposit && (
-                    <div className="flex items-center gap-2 text-xs text-white/30 mb-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-white/30 mb-2">
                       <Package className="w-3 h-3" />
                       Caution : {formatPrice(rental.deposit, rental.currency)}
                     </div>
                   )}
                   <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                    <span className="text-xs text-white/30">
+                    <span className="text-xs text-gray-400 dark:text-white/30">
                       {rental.availableQty}/{rental.quantity} dispo.
                     </span>
                     <div className="flex items-center gap-1">
-                      <Eye className="w-3 h-3 text-white/20 group-hover:text-emerald-400 transition-colors" />
+                      <Eye className="w-3 h-3 text-gray-400 dark:text-white/20 group-hover:text-emerald-400 transition-colors" />
                     </div>
                   </div>
                 </div>

@@ -97,7 +97,7 @@ export default function BusinessReputationCard() {
       <div className="flex items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-sm">
-            <MessageSquareHeart className="h-5 w-5 text-white" />
+            <MessageSquareHeart className="h-5 w-5 text-gray-900 dark:text-white" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
@@ -126,8 +126,8 @@ export default function BusinessReputationCard() {
             Aucune note pour le moment
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
-            Les enquêtes partent automatiquement après chaque livraison et séjour terminé. Les
-            avis publics de vos clients apparaîtront ici.
+            Les enquêtes partent automatiquement après chaque livraison et séjour terminé. Les avis
+            publics de vos clients apparaîtront ici.
           </p>
           <Link
             href="/dashboard/orders"

@@ -139,7 +139,9 @@ export default function SubscriptionStatsPage() {
             </div>
             <div>
               <p className="text-[10px] text-gray-500 uppercase font-semibold">Revenu du mois</p>
-              <p className="text-lg font-bold">{Number(stats.monthRevenue ?? 0).toLocaleString()} FCFA</p>
+              <p className="text-lg font-bold">
+                {Number(stats.monthRevenue ?? 0).toLocaleString()} FCFA
+              </p>
             </div>
           </div>
         </Card>
