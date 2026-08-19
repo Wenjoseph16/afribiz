@@ -2,7 +2,8 @@
 
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface StatsCardProps {
   icon: ReactNode;
@@ -29,53 +30,52 @@ export function StatsCard({
     <button
       onClick={onClick}
       className={cn(
-        'group relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 text-left w-full overflow-hidden',
-        'hover:border-brand/20 dark:hover:border-brand/30 hover:shadow-card-hover dark:hover:shadow-lg dark:hover:shadow-brand/5',
-        'transition-all duration-300 card-hover',
+        'group relative text-left w-full overflow-hidden',
         className
       )}
     >
-      {/* Accent bar */}
-      <div className="absolute top-0 left-4 right-4 h-0.5 bg-gradient-to-r from-brand/40 via-brand to-brand/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Outer shell — double-bezel */}
+      <div className="relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5 hover:border-emerald-500/20 transition-all duration-300">
+        <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-5">
+          {/* Hover glow */}
+          <div className="absolute inset-0 rounded-[calc(1rem-0.1875rem)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
 
-      <div className="flex items-start justify-between">
-        <div
-          className={cn(
-            'p-2.5 rounded-xl group-hover:scale-105 transition-transform duration-200',
-            iconBg || 'bg-brand-50 dark:bg-brand-900/30',
-            iconColor || 'text-brand dark:text-brand-400'
-          )}
-        >
-          {icon}
+          <div className="relative">
+            <div className="flex items-start justify-between">
+              <div
+                className={cn(
+                  'p-2.5 rounded-xl group-hover:scale-105 transition-transform duration-200',
+                  iconBg || 'bg-emerald-500/10',
+                  iconColor || 'text-emerald-400'
+                )}
+              >
+                {icon}
+              </div>
+              {trend && (
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                    trend.positive
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                  )}
+                >
+                  {trend.positive ? (
+                    <TrendingUp className="h-2.5 w-2.5" />
+                  ) : (
+                    <TrendingDown className="h-2.5 w-2.5" />
+                  )}
+                  {trend.value}
+                </span>
+              )}
+            </div>
+            <p className="text-2xl font-display font-bold text-white mt-3 tracking-tight tabular-nums">
+              {value}
+            </p>
+            <p className="text-xs text-white/40 mt-0.5 font-medium">{label}</p>
+          </div>
         </div>
-        {trend && (
-          <span
-            className={cn(
-              'inline-flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-full transition-colors',
-              trend.positive
-                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-            )}
-          >
-            {trend.positive ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            {trend.value}
-          </span>
-        )}
       </div>
-      <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mt-3 tracking-tight">
-        {value}
-      </p>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
-
-      {onClick && (
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <ArrowUpRight className="h-4 w-4 text-gray-300 dark:text-gray-600" />
-        </div>
-      )}
     </button>
   );
 }

@@ -23,7 +23,7 @@ describe('useNotificationPolling (V1)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset to default authenticated state
-    (useAuthStore as jest.Mock).mockImplementation((selector: any) => {
+    (useAuthStore as unknown as jest.Mock).mockImplementation((selector: any) => {
       const state = { isAuthenticated: () => true };
       return selector ? selector(state) : state;
     });
@@ -35,7 +35,7 @@ describe('useNotificationPolling (V1)', () => {
   });
 
   it('does not fetch when not authenticated', () => {
-    (useAuthStore as jest.Mock).mockImplementation((selector: any) => {
+    (useAuthStore as unknown as jest.Mock).mockImplementation((selector: any) => {
       const state = { isAuthenticated: () => false };
       return selector ? selector(state) : state;
     });

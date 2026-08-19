@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   hoverable?: boolean;
   bordered?: boolean;
-  variant?: 'default' | 'elevated' | 'glass';
+  variant?: 'default' | 'elevated' | 'glass' | 'premium';
   padding?: 'none' | 'sm' | 'md' | 'lg';
   title?: string;
   titleIcon?: ReactNode;
@@ -14,10 +14,13 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
+  default:
+    'bg-white dark:bg-gray-800/90 border border-slate-200/70 dark:border-gray-700/80 shadow-card dark:shadow-none',
   elevated:
-    'bg-white dark:bg-gray-800 shadow-card hover:shadow-card-hover border border-gray-100 dark:border-gray-700',
-  glass: 'glass border border-white/20 dark:border-white/5',
+    'bg-white dark:bg-gray-800/90 shadow-card hover:shadow-card-lg border border-slate-200/70 dark:border-gray-700/80',
+  glass: 'glass',
+  premium:
+    'bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.06] rounded-2xl',
 };
 
 const paddingStyles = {
@@ -61,7 +64,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
             <div className="flex items-center gap-2">
               {titleIcon && <span className="text-gray-400">{titleIcon}</span>}
               {title && (
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+                <h3 className="text-base font-display font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+                  {title}
+                </h3>
               )}
             </div>
             {action && <div>{action}</div>}
