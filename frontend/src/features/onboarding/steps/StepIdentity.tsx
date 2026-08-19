@@ -1,415 +1,141 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import {
-  BUSINESS_CATEGORIES,
-  BUSINESS_TYPE_LABELS,
-  BUSINESS_TYPE_ICONS,
-} from '@/constants/business';
+import { motion } from 'framer-motion';
+import { Check } from 'lucide-react';
+import { BUSINESS_CATEGORIES, BUSINESS_TYPE_LABELS, BUSINESS_TYPE_ICONS } from '@/constants/business';
 import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
-import { LocationSelect } from '@/components/auth/LocationSelect';
-import { apiClient } from '@/services/apiClient';
-import Image from 'next/image';
-import { ImagePlus, X, Loader2 } from 'lucide-react';
+import { DragDropUpload } from '@/components/onboarding/DragDropUpload';
+import { cn } from '@/lib/utils';
 import type { OnboardingData } from '@/types/business';
-
-const LANGUAGES = [
-  { value: 'fr', label: 'Français' },
-  { value: 'en', label: 'Anglais' },
-  { value: 'bilingual', label: 'Français & Anglais' },
-];
 
 interface Props {
   data: OnboardingData;
   onChange: (partial: Partial<OnboardingData>) => void;
 }
 
-export function StepIdentity({ data, onChange }: Props) {
-  const [uploading, setUploading] = useState<{ logo?: boolean; coverImage?: boolean }>({});
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
-  const uploadFile = useCallback(
-    async (file: File, field: 'logo' | 'coverImage') => {
-      setUploading((prev) => ({ ...prev, [field]: true }));
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await apiClient.post('/upload/media', formData);
-        onChange({ [field]: res.data.data.url });
-      } catch {
-        // silent
-      } finally {
-        setUploading((prev) => ({ ...prev, [field]: false }));
-      }
-    },
-    [onChange]
-  );
+export function StepIdentity({ data, onChange }: Props) {
+  const liveSlug = data.name ? slugify(data.name) : '';
 
   return (
     <div className="space-y-8">
-      {/* Logo & Cover Image */}
-      <div className="space-y-4">
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Image de marque</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              Logo
-            </label>
-            <div className="relative w-28 h-28 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand/50 transition-colors flex items-center justify-center bg-gray-50 dark:bg-gray-800 overflow-hidden group cursor-pointer">
-              {data.logo ? (
-                <>
-                  <Image
-                    src={data.logo ?? ''}
-                    alt="Logo"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onChange({ logo: '' })}
-                    className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </>
-              ) : (
-                <label className="flex flex-col items-center gap-1 cursor-pointer p-4">
-                  {uploading.logo ? (
-                    <Loader2 className="h-6 w-6 text-brand animate-spin" />
-                  ) : (
-                    <ImagePlus className="h-6 w-6 text-gray-400" />
-                  )}
-                  <span className="text-[10px] text-gray-400 text-center">Ajouter un logo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploading.logo}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) uploadFile(file, 'logo');
-                    }}
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-              Bannière / Image de couverture
-            </label>
-            <div className="relative w-full h-28 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand/50 transition-colors flex items-center justify-center bg-gray-50 dark:bg-gray-800 overflow-hidden group cursor-pointer">
-              {data.coverImage ? (
-                <>
-                  <Image
-                    src={data.coverImage ?? ''}
-                    alt="Bannière"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onChange({ coverImage: '' })}
-                    className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </>
-              ) : (
-                <label className="flex flex-col items-center gap-1 cursor-pointer p-4">
-                  {uploading.coverImage ? (
-                    <Loader2 className="h-6 w-6 text-brand animate-spin" />
-                  ) : (
-                    <ImagePlus className="h-6 w-6 text-gray-400" />
-                  )}
-                  <span className="text-[10px] text-gray-400 text-center">
-                    Ajouter une bannière
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploading.coverImage}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) uploadFile(file, 'coverImage');
-                    }}
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Name & Category */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2">
-          <Input
-            label="Nom du business *"
-            placeholder="Ex: Chez Alice Resto"
-            value={data.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium mb-2">Catégorie *</label>
-          <div className="max-h-64 overflow-y-auto space-y-1">
-            {BUSINESS_CATEGORIES.map((cat) => (
-              <div key={cat.label}>
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2 pt-3 pb-1">
-                  {cat.label}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                  {cat.types.map((type) => {
-                    const Icon = BUSINESS_TYPE_ICONS[type];
-                    const selected = data.type === type;
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => onChange({ type: type as any })}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-all ${
-                          selected
-                            ? 'bg-brand text-white shadow-sm'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {Icon && <Icon className="h-4 w-4 shrink-0" />}
-                        <span>{BUSINESS_TYPE_LABELS[type]}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Description */}
+      {/* Nom + slug live */}
       <div>
-        <label className="block text-sm font-medium mb-2">
-          Brève description *
-          <span className="text-gray-400 font-normal ml-1">
-            ({150 - (data.shortDescription?.length || 0)} caractères restants)
+        <Input
+          label="Nom de votre business *"
+          placeholder="Ex : Chez Alice Resto"
+          value={data.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+        />
+        <div
+          className={cn(
+            'mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all',
+            liveSlug
+              ? 'bg-emerald-50 dark:bg-emerald-900/25 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40'
+              : 'bg-gray-50 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700'
+          )}
+        >
+          <span className="text-gray-400">afribiz.app/</span>
+          <span className="font-medium">{liveSlug || 'votre-slug'}</span>
+          <span className="flex items-center gap-0.5 text-emerald-500">
+            <Check className="h-3 w-3" />
+            en direct
           </span>
-        </label>
-        <textarea
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-          rows={3}
-          maxLength={150}
-          placeholder="Décrivez votre activité en quelques mots..."
-          value={data.shortDescription}
-          onChange={(e) => onChange({ shortDescription: e.target.value })}
-        />
+        </div>
       </div>
 
-      {/* Location (Pays → Région → Ville → Quartier) + Phone */}
-      <LocationSelect
-        country={data.country}
-        region={data.region || ''}
-        city={data.city}
-        neighborhood={data.neighborhood || ''}
-        onCountryChange={(v) => {
-          const prefix = '+228';
-          onChange({
-            country: v,
-            region: '',
-            city: '',
-            phone: data.phone ? data.phone.replace(/^\+\d{1,4}/, prefix) : prefix,
-            whatsapp: data.whatsapp ? data.whatsapp.replace(/^\+\d{1,4}/, prefix) : prefix,
-          });
-        }}
-        onRegionChange={(v) => onChange({ region: v, city: '' })}
-        onCityChange={(v) => onChange({ city: v })}
-        onNeighborhoodChange={(v) => onChange({ neighborhood: v })}
-        onCountryCodeChange={(code) => {
-          const prefix = `+${code}`;
-          onChange({
-            phone: data.phone ? data.phone.replace(/^\+\d{1,4}/, prefix) : prefix,
-            whatsapp: data.whatsapp ? data.whatsapp.replace(/^\+\d{1,4}/, prefix) : prefix,
-          });
-        }}
-        showFields="all"
-      />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input
-          label="Téléphone *"
-          placeholder="+228 XX XX XX XX"
-          value={data.phone}
-          onChange={(e) => onChange({ phone: e.target.value })}
-        />
-        <Input
-          label="WhatsApp"
-          placeholder="+228 XX XX XX XX"
-          value={data.whatsapp || ''}
-          onChange={(e) => onChange({ whatsapp: e.target.value || undefined })}
-        />
-      </div>
-
-      {/* GPS */}
+      {/* Type */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Localisation GPS (optionnel)
-          </label>
-          <button
-            type="button"
-            onClick={() => {
-              if ('geolocation' in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                  (pos) =>
-                    onChange({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-                  () => {}
-                );
-              }
-            }}
-            className="text-xs font-medium text-brand hover:text-brand-700 transition-colors"
-          >
-            Détecter ma position
-          </button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Latitude"
-            type="number"
-            step="any"
-            placeholder="6.1319"
-            value={data.latitude?.toString() || ''}
-            onChange={(e) => onChange({ latitude: parseFloat(e.target.value) || undefined })}
-          />
-          <Input
-            label="Longitude"
-            type="number"
-            step="any"
-            placeholder="1.2228"
-            value={data.longitude?.toString() || ''}
-            onChange={(e) => onChange({ longitude: parseFloat(e.target.value) || undefined })}
-          />
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Quel type d'activité ? <span className="text-red-500">*</span>
+        </p>
+        <div className="max-h-[340px] overflow-y-auto pr-1 space-y-4">
+          {BUSINESS_CATEGORIES.map((cat) => (
+            <div key={cat.label}>
+              <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                {cat.label}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {cat.types.map((type) => {
+                  const Icon = BUSINESS_TYPE_ICONS[type];
+                  const selected = data.type === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => onChange({ type: type as any })}
+                      className={cn(
+                        'relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm text-left transition-all',
+                        selected
+                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 ring-2 ring-emerald-500/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'p-1.5 rounded-lg transition-colors',
+                          selected
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                        )}
+                      >
+                        {Icon && <Icon className="h-4 w-4" />}
+                      </span>
+                      <span
+                        className={cn(
+                          'font-medium text-sm',
+                          selected
+                            ? 'text-emerald-800 dark:text-emerald-200'
+                            : 'text-gray-700 dark:text-gray-300'
+                        )}
+                      >
+                        {BUSINESS_TYPE_LABELS[type]}
+                      </span>
+                      {selected && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center"
+                        >
+                          <Check className="h-2.5 w-2.5" />
+                        </motion.span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Professional Info */}
-      <Card className="space-y-4 !p-5 !bg-gray-50 dark:!bg-gray-800 !border-dashed dark:!border-gray-600">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Informations professionnelles (optionnel)
-          </p>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500 dark:text-gray-400">Langue d'activité</label>
-            <select
-              className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-              value={data.language || 'fr'}
-              onChange={(e) => onChange({ language: e.target.value })}
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l.value} value={l.value}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Nom du gérant"
-            placeholder="Nom du responsable"
-            value={data.managerName || ''}
-            onChange={(e) => onChange({ managerName: e.target.value || undefined })}
-          />
-          <Input
-            label="Années d'expérience"
-            type="number"
-            min={0}
-            placeholder="5"
-            value={data.experience?.toString() || ''}
-            onChange={(e) => onChange({ experience: parseInt(e.target.value) || undefined })}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-2">Bio du gérant</label>
-          <textarea
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-            rows={2}
-            placeholder="Parlez-nous du gérant..."
-            value={data.managerBio || ''}
-            onChange={(e) => onChange({ managerBio: e.target.value || undefined })}
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Compétences (séparées par des virgules)"
-            placeholder="Gestion, Marketing,..."
-            value={(data.skills || []).join(', ')}
-            onChange={(e) =>
-              onChange({
-                skills: e.target.value ? e.target.value.split(',').map((s) => s.trim()) : [],
-              })
-            }
-          />
-          <Input
-            label="Certifications"
-            placeholder="Certificat 1, Certificat 2,..."
-            value={(data.certifications || []).join(', ')}
-            onChange={(e) =>
-              onChange({
-                certifications: e.target.value
-                  ? e.target.value.split(',').map((s) => s.trim())
-                  : [],
-              })
-            }
-          />
-        </div>
-      </Card>
-
-      {/* Online Presence */}
-      <Card className="space-y-4 !p-5 !bg-gray-50 dark:!bg-gray-800 !border-dashed dark:!border-gray-600">
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Présence en ligne (optionnel)
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Site web"
-            placeholder="https://..."
-            value={data.website || ''}
-            onChange={(e) => onChange({ website: e.target.value || undefined })}
-          />
-          <Input
-            label="Facebook"
-            placeholder="URL Facebook"
-            value={data.facebook || ''}
-            onChange={(e) => onChange({ facebook: e.target.value || undefined })}
-          />
-          <Input
-            label="Instagram"
-            placeholder="URL Instagram"
-            value={data.instagram || ''}
-            onChange={(e) => onChange({ instagram: e.target.value || undefined })}
-          />
-          <Input
-            label="TikTok"
-            placeholder="URL TikTok"
-            value={data.tiktok || ''}
-            onChange={(e) => onChange({ tiktok: e.target.value || undefined })}
-          />
-          <Input
-            label="YouTube"
-            placeholder="URL YouTube"
-            value={data.youtube || ''}
-            onChange={(e) => onChange({ youtube: e.target.value || undefined })}
-          />
-          <Input
-            label="LinkedIn"
-            placeholder="URL LinkedIn"
-            value={data.linkedin || ''}
-            onChange={(e) => onChange({ linkedin: e.target.value || undefined })}
-          />
-        </div>
-      </Card>
+      {/* Logo + Cover */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <DragDropUpload
+          label="Logo"
+          value={data.logo || ''}
+          onChange={(v) => onChange({ logo: v as string })}
+          aspect="square"
+          hint="Format carré, fond transparent de préférence."
+          uploadingLabel="Chargement du logo..."
+        />
+        <DragDropUpload
+          label="Bannière de couverture"
+          value={data.coverImage || ''}
+          onChange={(v) => onChange({ coverImage: v as string })}
+          aspect="wide"
+          hint="Grande image, 16:7 — elle habille le haut de votre page."
+          uploadingLabel="Chargement de la bannière..."
+        />
+      </div>
     </div>
   );
 }
