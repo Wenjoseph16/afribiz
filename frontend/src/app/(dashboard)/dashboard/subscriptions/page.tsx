@@ -2,403 +2,192 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
-  Repeat,
-  CreditCard,
-  Users,
-  TrendingUp,
-  Plus,
-  Search,
-  CheckCircle,
-  Clock,
-  Loader,
-  Award,
-  AlertTriangle,
+  Repeat, CreditCard, Users, TrendingUp, Plus, Search,
+  CheckCircle, Clock, ArrowUpRight, Loader, AlertTriangle, ShieldCheck,
 } from 'lucide-react';
-import { StatsCard } from '@/components/dashboard/StatsCard';
-import { PageHeader } from '@/components/dashboard/PageHeader';
-import { LiveBadge } from '@/components/ui/LiveBadge';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { ErrorState } from '@/components/ui/ErrorState';
 import { cn } from '@/lib/utils';
-import ModuleCharts from '@/components/dashboard/ModuleCharts';
-import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
-import { CopilotTips } from '@/components/copilot/CopilotTips';
 import { useSubscriptionPlans, useSubscriptionStats } from '@/features/hooks';
-
-interface SubscriptionPlan {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: 'MONTHLY' | 'QUARTERLY' | 'BIANNUAL' | 'ANNUAL';
-  features: string[];
-  maxEmployees: number;
-  maxStorage: number;
-  subscriberCount: number;
-  status: 'ACTIVE' | 'INACTIVE';
-  createdAt: string;
-}
+import { formatPrice } from '@/utils/helpers';
 
 const DURATION_LABELS: Record<string, string> = {
-  MONTHLY: 'Mensuel',
-  QUARTERLY: 'Trimestriel',
-  BIANNUAL: 'Semestriel',
-  ANNUAL: 'Annuel',
+  MONTHLY: 'Mensuel', QUARTERLY: 'Trimestriel', BIANNUAL: 'Semestriel', ANNUAL: 'Annuel',
 };
 
-export default function SubscriptionsPage() {
-  const { data: plansData, isLoading, error, refetch } = useSubscriptionPlans();
-  const { data: statsData } = useSubscriptionStats();
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const plans: SubscriptionPlan[] = Array.isArray(plansData)
-    ? plansData
-    : plansData?.plans || plansData?.data || [];
-
-  // Charts data
-  const chartData: ModuleChartData = useMemo(
-    () => ({
-      distribution: [
-        {
-          name: 'Mensuel',
-          value: plans.filter((p) => p.duration === 'MONTHLY' && p.status === 'ACTIVE').length,
-          color: '#3b82f6',
-        },
-        {
-          name: 'Trimestriel',
-          value: plans.filter((p) => p.duration === 'QUARTERLY' && p.status === 'ACTIVE').length,
-          color: '#8b5cf6',
-        },
-        {
-          name: 'Semestriel',
-          value: plans.filter((p) => p.duration === 'BIANNUAL' && p.status === 'ACTIVE').length,
-          color: '#f59e0b',
-        },
-        {
-          name: 'Annuel',
-          value: plans.filter((p) => p.duration === 'ANNUAL' && p.status === 'ACTIVE').length,
-          color: '#10b981',
-        },
-        {
-          name: 'Inactifs',
-          value: plans.filter((p) => p.status === 'INACTIVE').length,
-          color: '#6b7280',
-        },
-      ].filter((d) => d.value > 0),
-      daily: [
-        { label: 'Plans', value: plans.length },
-        { label: 'Abonnés', value: plans.reduce((a, p) => a + (p.subscriberCount || 0), 0) },
-        {
-          label: 'Revenu',
-          value: Math.round(
-            plans.reduce((a, p) => a + (p.price || 0) * (p.subscriberCount || 0), 0) / 1000
-          ),
-        },
-      ],
-    }),
-    [plans]
-  );
-
-  const stats = statsData || {
-    totalPlans: plans.length,
-    activeSubscribers: plans.reduce((a, p) => a + (p.subscriberCount || 0), 0),
-    monthlyRevenue: plans.reduce((a, p) => a + (p.price || 0) * (p.subscriberCount || 0), 0),
-    churnRate: 0,
-  };
-
-  const filtered = useMemo(() => {
-    if (!searchQuery) return plans;
-    const q = searchQuery.toLowerCase();
-    return plans.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)
-    );
-  }, [plans, searchQuery]);
-
-  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader className="h-8 w-8 animate-spin text-brand" />
-      </div>
-    );
-  }
-
+function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="space-y-6 animate-fade-in">
-      <PageHeader
-        title="Centre des abonnements"
-        description="Gérez vos plans d&apos;abonnement et vos abonnés"
-        breadcrumbs={[{ label: 'Config' }, { label: 'Abonnements' }]}
-        actions={
-          <>
-            <LiveBadge label="Temps réel" />
-            <Link href="/dashboard/subscriptions/new">
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1.5" />
-                Nouveau plan
-              </Button>
-            </Link>
-          </>
-        }
-      />
-
-      <CopilotTips moduleKey="SUBSCRIPTIONS" />
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatsCard
-          icon={<Repeat className="h-5 w-5" />}
-          iconBg="bg-brand-50"
-          iconColor="text-brand"
-          label="Total plans"
-          value={stats.totalPlans}
-        />
-        <StatsCard
-          icon={<Users className="h-5 w-5" />}
-          iconBg="bg-purple-50"
-          iconColor="text-purple-600"
-          label="Abonnés actifs"
-          value={stats.activeSubscribers}
-        />
-        <StatsCard
-          icon={<CreditCard className="h-5 w-5" />}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-600"
-          label="Revenu mensuel"
-          value={`${Number(stats.monthlyRevenue).toLocaleString()} FCFA`}
-        />
-        <StatsCard
-          icon={<TrendingUp className="h-5 w-5" />}
-          iconBg="bg-amber-50"
-          iconColor="text-amber-600"
-          label="Taux d'attrition"
-          value={`${stats.churnRate}%`}
-        />
+    <div className={cn('relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5', className)}>
+      <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-5">
+        {children}
       </div>
-
-      {/* Charts */}
-      {plans.length > 0 && (
-        <ModuleCharts
-          data={chartData}
-          title="ANALYTICS ABONNEMENTS"
-          distributionLabel="Durée des plans"
-          dailyLabel="Vue d'ensemble"
-          variant="services"
-        />
-      )}
-
-      {/* Suggestions intelligentes */}
-      {plans.length > 0 &&
-        (() => {
-          const active = plans.filter((p) => p.status === 'ACTIVE');
-          const inactive = plans.filter((p) => p.status === 'INACTIVE');
-          const popular = plans.filter((p) => (p.subscriberCount || 0) >= 50);
-          const totalRevenue = plans.reduce(
-            (a, p) => a + (p.price || 0) * (p.subscriberCount || 0),
-            0
-          );
-
-          const suggestions = [
-            active.length > 0 && {
-              type: 'active',
-              icon: CheckCircle,
-              title: `${active.length} plan${active.length > 1 ? 's' : ''} actif${active.length > 1 ? 's' : ''}`,
-              desc: `${stats.activeSubscribers} abonné${stats.activeSubscribers !== 1 ? 's' : ''} au total`,
-              color: 'emerald',
-            },
-            popular.length > 0 && {
-              type: 'popular',
-              icon: Award,
-              title: `${popular.length} plan${popular.length > 1 ? 's' : ''} populaire${popular.length > 1 ? 's' : ''}`,
-              desc: 'Plus de 50 abonnés chacun — forte demande',
-              color: 'purple',
-            },
-            inactive.length > 0 && {
-              type: 'inactive',
-              icon: AlertTriangle,
-              title: `${inactive.length} plan${inactive.length > 1 ? 's' : ''} inactif${inactive.length > 1 ? 's' : ''}`,
-              desc: 'Réactivez ou remplacez les plans inactifs',
-              color: 'amber',
-            },
-            stats.monthlyRevenue > 0 && {
-              type: 'revenue',
-              icon: CreditCard,
-              title: `${Number(totalRevenue).toLocaleString()} FCFA/mois`,
-              desc: 'Revenu récurrent mensuel estimé',
-              color: 'blue',
-            },
-          ].filter(Boolean);
-
-          if (suggestions.length === 0) return null;
-
-          const colorMap: Record<string, string> = {
-            emerald: 'border-l-emerald-500 bg-emerald-50 dark:bg-emerald-900/10',
-            purple: 'border-l-purple-500 bg-purple-50 dark:bg-purple-900/10',
-            amber: 'border-l-amber-500 bg-amber-50 dark:bg-amber-900/10',
-            blue: 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/10',
-          };
-
-          return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {suggestions.map((s: any, i) => (
-                <Link
-                  key={i}
-                  href={s.link || '/dashboard/subscriptions'}
-                  className={`flex items-start gap-3 p-4 rounded-xl border-l-4 ${colorMap[s.color]} border border-gray-200 dark:border-gray-700 hover:shadow-sm transition-all duration-200`}
-                >
-                  <div className="p-2 rounded-lg bg-white dark:bg-gray-800 shadow-sm shrink-0">
-                    <s.icon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {s.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{s.desc}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          );
-        })()}
-
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher un plan..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none bg-transparent dark:text-gray-100"
-          />
-        </div>
-      </div>
-
-      {filtered.length === 0 ? (
-        <Card className="text-center py-12">
-          <Repeat className="h-12 w-12 text-gray-200 dark:text-gray-700 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-            Aucun plan trouvé
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            {searchQuery ? 'Essayez une autre recherche' : "Créez votre premier plan d'abonnement"}
-          </p>
-          <Link href="/dashboard/subscriptions/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nouveau plan
-            </Button>
-          </Link>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
-function getBadge(plan: SubscriptionPlan): { label: string; class: string } | null {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  if ((plan.subscriberCount || 0) >= 50) {
-    return {
-      label: '🔥 Populaire',
-      class: 'text-rose-600 bg-rose-50 dark:bg-rose-900/20 dark:text-rose-300',
-    };
-  }
-  if (plan.createdAt && new Date(plan.createdAt) > thirtyDaysAgo) {
-    return {
-      label: '🆕 Nouveau',
-      class: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-300',
-    };
-  }
-  return null;
-}
+export default function SubscriptionsPage() {
+  const { data: plansData, isLoading, error, refetch } = useSubscriptionPlans();
+  const { data: statsData } = useSubscriptionStats();
+  const [search, setSearch] = useState('');
 
-function PlanCard({ plan }: { plan: SubscriptionPlan }) {
-  const badge = getBadge(plan);
+  const plans = Array.isArray(plansData) ? plansData : plansData?.plans || plansData?.data || [];
+  const stats = statsData || {
+    totalPlans: plans.length,
+    activeSubscribers: plans.reduce((a: number, p: any) => a + (p.subscriberCount || 0), 0),
+    monthlyRevenue: plans.reduce((a: number, p: any) => a + (p.price || 0) * (p.subscriberCount || 0), 0),
+    churnRate: 0,
+  };
+
+  const filtered = useMemo(() => {
+    if (!search) return plans;
+    const q = search.toLowerCase();
+    return plans.filter((p: any) => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
+  }, [plans, search]);
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <Loader className="h-8 w-8 animate-spin text-emerald-400" />
+    </div>
+  );
+
   return (
-    <Link
-      href={`/dashboard/subscriptions/${plan.id}`}
-      className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-brand/30 hover:shadow-sm transition-all duration-200"
-    >
-      <div className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
-              {plan.name}
-            </h3>
-            {badge && (
-              <span
-                className={cn(
-                  'text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0',
-                  badge.class
-                )}
-              >
-                {badge.label}
-              </span>
-            )}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-[10px] font-semibold uppercase tracking-[0.15em] mb-3">
+            <Repeat className="w-3 h-3" />
+            Abonnements
           </div>
-          <span
-            className={cn('text-xs font-medium px-2 py-0.5 rounded-full shrink-0', {
-              'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20': plan.status === 'ACTIVE',
-              'text-gray-500 bg-gray-100 dark:bg-gray-800': plan.status === 'INACTIVE',
-            })}
-          >
-            {plan.status === 'ACTIVE' ? 'Actif' : 'Inactif'}
-          </span>
+          <h1 className="text-2xl font-display font-bold text-white tracking-tight">Plans d&apos;abonnement</h1>
+          <p className="text-white/30 text-sm mt-0.5">{plans.length} plan{plans.length > 1 ? 's' : ''} — {stats.activeSubscribers} abonné{stats.activeSubscribers > 1 ? 's' : ''}</p>
         </div>
-
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {Number(plan.price).toLocaleString()} FCFA
-          </span>
-          <span className="text-xs text-gray-500">
-            /{DURATION_LABELS[plan.duration]?.toLowerCase() || plan.duration.toLowerCase()}
-          </span>
-        </div>
-
-        {plan.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-            {plan.description}
-          </p>
-        )}
-
-        {plan.features && plan.features.length > 0 && (
-          <div className="space-y-1">
-            {plan.features.slice(0, 3).map((f, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300"
-              >
-                <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
-                <span className="truncate">{f}</span>
-              </div>
-            ))}
-            {plan.features.length > 3 && (
-              <p className="text-xs text-gray-400 pl-5">
-                +{plan.features.length - 3} fonctionnalités
-              </p>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <Users className="h-3.5 w-3.5" />
-            {plan.subscriberCount || 0} abonné{(plan.subscriberCount || 0) !== 1 ? 's' : ''}
-          </div>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <Clock className="h-3.5 w-3.5" />
-            {DURATION_LABELS[plan.duration] || plan.duration}
-          </div>
-        </div>
+        <Link href="/dashboard/subscriptions/new">
+          <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white text-sm font-bold rounded-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98]">
+            <Plus className="w-4 h-4" /> Nouveau plan
+          </button>
+        </Link>
       </div>
-    </Link>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Plans', value: stats.totalPlans, icon: Repeat, color: 'emerald' },
+          { label: 'Abonnés', value: stats.activeSubscribers, icon: Users, color: 'blue' },
+          { label: 'Revenu/mois', value: `${stats.monthlyRevenue.toLocaleString()} FCFA`, icon: CreditCard, color: 'emerald' },
+          { label: 'Attrition', value: `${stats.churnRate}%`, icon: TrendingUp, color: 'amber' },
+        ].map((kpi) => (
+          <GlassCard key={kpi.label}>
+            <div className="flex items-center gap-3">
+              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center border', `bg-${kpi.color}-500/10 border-${kpi.color}-500/20`)}>
+                <kpi.icon className={cn('w-4 h-4', `text-${kpi.color}-400`)} />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-white tabular-nums">{kpi.value}</p>
+                <p className="text-[10px] text-white/30 font-medium">{kpi.label}</p>
+              </div>
+            </div>
+          </GlassCard>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+        <input
+          type="text"
+          placeholder="Rechercher un plan..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder:text-white/20 focus:border-emerald-500/40 focus:ring-0 outline-none transition-all"
+        />
+      </div>
+
+      {/* Plans grid */}
+      {filtered.length === 0 ? (
+        <GlassCard>
+          <div className="text-center py-12">
+            <Repeat className="w-12 h-12 text-white/15 mx-auto mb-4" />
+            <p className="text-sm text-white/40 mb-4">Aucun plan trouvé</p>
+            <Link href="/dashboard/subscriptions/new">
+              <button className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium rounded-xl hover:bg-emerald-500/20 transition-all">
+                <Plus className="w-4 h-4" /> Nouveau plan
+              </button>
+            </Link>
+          </div>
+        </GlassCard>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map((plan: any, idx: number) => (
+            <motion.div
+              key={plan.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04 }}
+            >
+              <Link
+                href={`/dashboard/subscriptions/${plan.id}`}
+                className="group block relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5 hover:border-emerald-500/20 transition-all duration-300"
+              >
+                <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-5">
+                  <div className="absolute inset-0 rounded-[calc(1rem-0.1875rem)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-white truncate">{plan.name}</h3>
+                      <span className={cn(
+                        'text-[10px] font-semibold px-2 py-0.5 rounded-full border',
+                        plan.status === 'ACTIVE'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-white/5 text-white/30 border-white/10'
+                      )}>
+                        {plan.status === 'ACTIVE' ? 'Actif' : 'Inactif'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-baseline gap-1 mb-3">
+                      <span className="text-2xl font-bold text-white tabular-nums">
+                        {formatPrice(plan.price)}
+                      </span>
+                      <span className="text-xs text-white/30">
+                        /{DURATION_LABELS[plan.duration]?.toLowerCase() || ''}
+                      </span>
+                    </div>
+
+                    {plan.description && (
+                      <p className="text-xs text-white/30 line-clamp-2 mb-3">{plan.description}</p>
+                    )}
+
+                    {plan.features && plan.features.length > 0 && (
+                      <div className="space-y-1 mb-3">
+                        {plan.features.slice(0, 3).map((f: string, i: number) => (
+                          <div key={i} className="flex items-center gap-1.5 text-xs text-white/40">
+                            <CheckCircle className="h-3 w-3 text-emerald-400/60 shrink-0" />
+                            <span className="truncate">{f}</span>
+                          </div>
+                        ))}
+                        {plan.features.length > 3 && (
+                          <p className="text-[10px] text-white/20 pl-4">+{plan.features.length - 3} autres</p>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                      <div className="flex items-center gap-1 text-xs text-white/30">
+                        <Users className="h-3 w-3" />
+                        {plan.subscriberCount || 0} abonné{(plan.subscriberCount || 0) !== 1 ? 's' : ''}
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-white/30">
+                        <Clock className="h-3 w-3" />
+                        {DURATION_LABELS[plan.duration] || ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
   );
 }
