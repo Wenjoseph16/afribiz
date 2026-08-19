@@ -1,4 +1,4 @@
-# 🏗️ AFRIBIZ — DOCUMENT DE REPRISE OFFICIEL (état au 18 août 2026)
+# 🏗️ AFRIBIZ — DOCUMENT DE REPRISE OFFICIEL (état au 19 août 2026)
 
 > **Ce document est le point de reprise unique.** Chaque nouvelle conversation commence par le lire.
 > Il contient : l'état du projet, la méthode de travail, les skills, et le chantier suivant.
@@ -45,6 +45,14 @@ shared). Mobile-first, réalité africaine (Mobile Money, WhatsApp, offline, FCF
 | **6** | **Négociation & Prix Flash** | **`c873281`** | **Boucle complète : offre → lien éphémère → paiement → caisse → alerte boss** |
 | **7** | **Rôles & permissions** | **`ae5a2bc`** | **RBAC employés : login PIN + permissions + audit trail** |
 | **8** | **Inventaire Express 📸** | **`86411fb`** | **5 modes d'entrée : CSV (PapaParse) + barcode (BarcodeDetector) + voix (Web Speech) + lots (Repeater) + photo (~800px, pHash)** |
+| **9** | **Offline-First étendu** | **`ed5089c`** | **Cache catalogue local + cache négociation + conflits horodatage + retry exponentiel** |
+| **10** | **Affiliation** | **`d489f27`** | **Dashboard affiliation + partage WhatsApp + commission récurrente** |
+| **V1** | **Notifications live** | **`03ac8cc`** | **Toast feedback + polling notifications + LiveIndicator + OrderTimeline** |
+| **V2** | **Refonte UI 2027 — Cart/Checkout/Dashboard** | **`b63b78c`** | **Glass premium, double-bezel, framer-motion, bento layout** |
+| **V3** | **Réservations dynamiques** | **`ab805e2`** | **SlotPicker créneaux + step flow 4 étapes + paiement acompte inline** |
+| **V4** | **Abonnements + Locations glass** | **`13191b3`** | **Glass premium subscriptions + rentals list** |
+| **Fix** | **Dashboard invisible** | **`56898ed`** | **Glass CSS class + dark background #0a0f1a** |
+| **V5** | **Polish UI** | **`584a24b`** | **Loading skeletons + glass-hover + micro-interactions + scroll-fade-in** |
 
 ### Chantier 2 en détail (6 commits)
 - `26fd16e` — Étape A : PriceEngine + résolveur `GET /catalog/attachments` + table `CatalogAttachment`
@@ -67,6 +75,32 @@ shared). Mobile-first, réalité africaine (Mobile Money, WhatsApp, offline, FCF
 - Permissions par rôle (BOSS, GERANT, CAISSIER, VENDEUR, EMPLOYE) + middleware backend ✅
 - Audit trail : chaque action signée (userId, timestamp, action) ✅
 - Masquage frontend selon le rôle ✅
+
+### Chantier 9 en détail (offline-First étendu)
+- `catalogCache.ts` : cache catalogue local (produits + catégories en IndexedDB) ✅
+- `negotiationCache.ts` : cache négociation hors-ligne + actions offline ✅
+- `conflictResolver.ts` : résolution de conflits par horodatage ✅
+- `retryStrategy.ts` : retry exponentiel (5s → 30min, max 5 retries) ✅
+- `offlineCatalog.ts` : React hooks pour catalogue + statut offline ✅
+- `offlineSyncService.ts` : 3 nouvelles actions backend ✅
+- TSC BE + FE 0 erreur ✅
+
+### Chantier 10 en détail (affiliation)
+- Dashboard affiliation : stats (clics, commandes, gains, taux conversion) ✅
+- Liste liens avec copier/partager/supprimer ✅
+- Bouton partage WhatsApp `AffiliateShareButton.tsx` ✅
+- Commission récurrente sur chaque commande payée ✅
+- TSC BE + FE 0 erreur ✅
+
+### Refonte UI 2027 (V1-V5)
+- **V1** — Notifications live : `useNotificationPolling` (auto-refresh 30s) + toast sur actions clés + `LiveIndicator` + `OrderTimeline` ✅
+- **V2** — Glass premium : Cart/Checkout/Dashboard refonte avec `bg-white/[0.03]` → CSS `.glass` + double-bezel + framer-motion ✅
+- **V3** — Réservations dynamiques : `SlotPicker` (créneaux par date) + step flow 4 étapes + paiement acompte inline ✅
+- **V4** — Abonnements/Locations : glass premium list + grid cards ✅
+- **Fix** — Dashboard invisible : fond dark `#0a0f1a` + glass CSS class + noise overlay réduit ✅
+- **V5** — Polish : `DashboardSkeleton`/`BookingsSkeleton` (shimmer) + `glass-hover` CSS + `scroll-fade-in` ✅
+- **Tests** : 28 tests (Chantiers 8, 9, 10, V1, V4) ✅
+- **TSC** : BE + FE 0 erreur sur tous les chantiers ✅
 
 ### Chantier 8 en détail (inventaire express)
 - Import CSV : vrai parsing PapaParse + preview validation + backend `POST /products/import` ✅
@@ -96,40 +130,38 @@ Idempotence (2e confirmation refusée) + fausses refs refusées (403).
 
 ---
 
-## 4. 📐 LE CHANTIER SUIVANT : 9 — OFFLINE-FIRST ÉTENDU
+## 4. 📐 LE CHANTIER SUIVANT : 11 — TRAÇABILITÉ / LOT / PÉREMPTION
 
 ### Objectif
-Sync complète : POS hors-ligne, négociation hors-ligne, conflits par horodatage, badges état.
+Gestion des lots, dates de péremption, alerts de péremption, traçabilité complète du stock.
 
-### Ce qui existe déjà (Chantier 3)
-- PWA + Service Worker ✅
-- File de sync IndexedDB ✅
-- Modèle `OfflineSync` en base ✅
+### Ce qui existe déjà
+- Modèle `Product` avec champ `batchNumber` potentiel
+- Service `product.ts` avec CRUD complet
+- Caisse journalière (CashSession) avec `recordOrderSale`
 
 ### Ce qu'il reste à faire
-1. **Sync POS hors-ligne** : créer des commandes hors-ligne, file de retry, résolution de conflits
-2. **Sync négociation hors-ligne** : offres/cache de négociation en local, sync au retour
-3. **Conflits par horodatage** : `updatedAt` comme source de vérité, stratégie last-write-wins
-4. **Badges état** : indicateur visuel de l'état de sync (syncé / en attente / erreur)
-5. **Sync catégories + produits** : cache local pour lecture hors-ligne du catalogue
+1. **Modèle Lot** : `Batch` avec `productId`, `quantity`, `expiryDate`, `supplier`
+2. **Alertes péremption** : notification auto N jours avant expiry
+3. **Décrément lot** : FIFO (prestentré, première sortie) sur les ventes
+4. **Dashboard lots** : vue par produit avec dates de péremption
+5. **Export traçabilité** : QR code par lot, historique mouvements
 
 ### Points d'ancrage dans le code
-- `frontend/src/lib/offline/orderSync.ts` — sync existante
-- `frontend/src/components/OfflineProvider.tsx` — provider
-- `backend/src/services/offlineSyncService.ts` — service backend
-- `backend/prisma/models/system.prisma` — modèle `OfflineSync`
+- `backend/src/services/product.ts` — CRUD produits
+- `backend/src/services/cashService.ts` — encaissements
+- `frontend/src/app/(dashboard)/dashboard/products/` — pages produits
 
 ---
 
-## 5. 📋 CHANTIERS APRÈS LE 9
+## 5. 📋 CHANTIERS APRÈS LE 11
 
 | # | Chantier | Objectif |
 |---|----------|----------|
-| 9 | Offline-First étendu | Sync complète : POS hors-ligne, négociation hors-ligne, conflits par horodatage, badges état |
-| 10 | Affiliation | Programme de parrainage complet (le socle du chantier 2F est posé) |
 | 11 | Traçabilité / lot / péremption | Gestion des lots, dates de péremption, alerts de péremption |
 | 12 | Stock multi-dépôts | Répartition dans plusieurs boutiques/dépôts |
 | 13 | **QA globale** | Test complet avec `webapp-testing` (Playwright) — l'utilisateur a trouvé des bugs partout |
+| 14 | Espace client final | Parcours client complet : marketplace → panier → checkout → suivi → avis |
 
 ---
 
@@ -302,9 +334,9 @@ Avant de coder quoi que ce soit, maîtrise le code :
 2. Vérifie l'état réel avec code_search, read_files, glob
 3. Ne suppose JAMAIS, lis TOUJOURS
 
-On commence le Chantier 9 : Offline-First étendu
-- Objectif : sync complète hors-ligne (POS, négociation, conflits, badges)
-- Vérifier l'existant (Chantier 3 : PWA + Service Worker + IndexedDB)
+On commence le Chantier 11 : Traçabilité / lot / péremption
+- Objectif : gestion des lots, péremption, traçabilité FIFO
+- Vérifier l'existant (product.ts, cashService.ts)
 - Ordre : audit → plan → code backend → code frontend → TSC → tests → review → commit
 - Standard : TSC BE + FE 0 erreur, tests API, commit propres
 
