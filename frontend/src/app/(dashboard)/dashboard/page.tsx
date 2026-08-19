@@ -36,20 +36,14 @@ import {
   useNotifications,
 } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
-import { Loader } from '@/components/ui/Loader';
+import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import { SpendingChart } from '@/components/dashboard/SpendingChart';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
 
 export default function DashboardPage() {
   const { user, isLoading, isAuthenticated } = useAuthStore();
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader />
-      </div>
-    );
-  }
+  if (isLoading) return <DashboardSkeleton />;
   if (!isAuthenticated() || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -66,7 +60,7 @@ export default function DashboardPage() {
 
 function GlassCard({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('glass rounded-2xl', className)} {...props}>
+    <div className={cn('glass rounded-2xl glass-hover', className)} {...props}>
       {children}
     </div>
   );

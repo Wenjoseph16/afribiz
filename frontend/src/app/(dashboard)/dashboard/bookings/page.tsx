@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { formatPrice } from '@/utils/helpers';
+import { BookingsSkeleton } from '@/components/ui/Skeleton';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
 
 const STATUS_CONFIG: Record<string, { label: string; tone: string; dot: string }> = {
@@ -33,7 +34,7 @@ const TABS = [
 
 function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('glass rounded-2xl', className)}>
+    <div className={cn('glass rounded-2xl glass-hover', className)}>
       {children}
     </div>
   );
@@ -79,11 +80,7 @@ export default function BookingsPage() {
     return true;
   });
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <Loader className="h-8 w-8 animate-spin text-emerald-400" />
-    </div>
-  );
+  if (isLoading) return <BookingsSkeleton />;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-7xl mx-auto">

@@ -19,7 +19,7 @@ interface RentalItem {
   images: string[]; quantity: number; availableQty: number; isActive: boolean;
   sortOrder: number; createdAt: string;
 }function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (    <div className={cn('glass rounded-2xl', className)}>
+  return (    <div className={cn('glass rounded-2xl glass-hover', className)}>
       {children}
     </div>
   );

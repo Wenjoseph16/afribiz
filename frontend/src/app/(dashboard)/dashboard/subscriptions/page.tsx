@@ -14,7 +14,7 @@ import { formatPrice } from '@/utils/helpers';
 const DURATION_LABELS: Record<string, string> = {
   MONTHLY: 'Mensuel', QUARTERLY: 'Trimestriel', BIANNUAL: 'Semestriel', ANNUAL: 'Annuel',
 };function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (    <div className={cn('glass rounded-2xl', className)}>
+  return (    <div className={cn('glass rounded-2xl glass-hover', className)}>
       {children}
     </div>
   );
