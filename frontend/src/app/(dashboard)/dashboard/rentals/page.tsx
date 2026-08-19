@@ -18,17 +18,14 @@ interface RentalItem {
   unit: string | null; deposit: number | null; priceUnit: string; currency: string;
   images: string[]; quantity: number; availableQty: number; isActive: boolean;
   sortOrder: number; createdAt: string;
-}
-
-function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn('relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5', className)}>
-      <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-5">
-        {children}
-      </div>
+}function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (    <div className={cn('glass rounded-2xl', className)}>
+      {children}
     </div>
   );
 }
+
+
 
 export default function RentalsPage() {
   const { data: rentalsData, isLoading, error, refetch } = useMyRentals();
@@ -136,7 +133,7 @@ export default function RentalsPage() {
                 'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-200',
                 activeTab === tab
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-white/[0.03] text-white/40 border border-white/[0.06] hover:border-white/15'
+                  : 'bg-white/10 text-white/40 border border-white/[0.06] hover:border-white/15'
               )}
             >
               {tab === 'all' ? 'Tous' : tab === 'active' ? 'Disponibles' : 'Indisponibles'}
@@ -179,7 +176,7 @@ export default function RentalsPage() {
             >
               <Link
                 href={`/dashboard/rentals/${rental.id}`}
-                className="group block relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5 hover:border-emerald-500/20 transition-all duration-300 overflow-hidden"
+                className="group block relative rounded-2xl glass p-1.5 hover:border-emerald-500/20 transition-all duration-300 overflow-hidden"
               >
                 {/* Image */}
                 <div className="relative h-36 rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-emerald-500/5 to-transparent overflow-hidden">

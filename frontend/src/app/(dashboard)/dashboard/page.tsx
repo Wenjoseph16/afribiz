@@ -66,10 +66,8 @@ export default function DashboardPage() {
 
 function GlassCard({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5', className)} {...props}>
-      <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-5">
-        {children}
-      </div>
+    <div className={cn('glass rounded-2xl', className)} {...props}>
+      {children}
     </div>
   );
 }
@@ -238,7 +236,7 @@ function ClientDashboardContent() {
                     key={order.id}
                     type="button"
                     onClick={() => router.push(`/dashboard/orders/${order.id}`)}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200 group cursor-pointer text-left"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200 group cursor-pointer text-left"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -301,7 +299,7 @@ function ClientDashboardContent() {
                   key={notif.id}
                   onClick={() => notif.link && router.push(notif.link)}
                   className={cn(
-                    'flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200',
+                    'flex items-start gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200',
                     notif.link ? 'cursor-pointer' : ''
                   )}
                 >
@@ -377,7 +375,7 @@ function ClientDashboardContent() {
                   key={b.id}
                   type="button"
                   onClick={() => router.push(`/dashboard/bookings/${b.id}`)}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200 group cursor-pointer text-left"
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/[0.06] border border-white/[0.04] hover:border-emerald-500/20 transition-all duration-200 group cursor-pointer text-left"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
@@ -460,7 +458,7 @@ function ClientDashboardContent() {
           {promotions.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {promotions.slice(0, 4).map((promo: any, i: number) => (
-                <div key={promo.id || i} className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-emerald-500/20 transition-all duration-200 cursor-pointer">
+                <div key={promo.id || i} className="p-4 rounded-xl glass hover:border-emerald-500/20 transition-all duration-200 cursor-pointer">
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2">
                     <Gift className="h-4 w-4" />
                   </div>

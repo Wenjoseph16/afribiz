@@ -64,10 +64,8 @@ function GlassInput({ label, icon: Icon, required, ...props }: { label: string; 
 
 function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5', className)}>
-      <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-5">
-        {children}
-      </div>
+    <div className={cn('glass rounded-2xl', className)}>
+      {children}
     </div>
   );
 }
@@ -230,7 +228,7 @@ export default function NewBookingPage() {
                             'p-2.5 rounded-xl border text-xs font-medium transition-all duration-200',
                             type === t
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                              : 'bg-white/[0.03] border-white/[0.06] text-white/40 hover:border-white/15'
+                              : 'bg-white/10 border-white/[0.06] text-white/40 hover:border-white/15'
                           )}
                         >
                           {TYPE_LABELS[t]}
@@ -250,7 +248,7 @@ export default function NewBookingPage() {
                               'w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all duration-200',
                               serviceId === s.id
                                 ? 'bg-emerald-500/10 border-emerald-500/30'
-                                : 'bg-white/[0.03] border-white/[0.06] hover:border-white/15'
+                                : 'bg-white/10 border-white/[0.06] hover:border-white/15'
                             )}
                           >
                             <div>
@@ -312,7 +310,7 @@ export default function NewBookingPage() {
                               'p-3 rounded-xl border text-center transition-all duration-200',
                               paymentMethod === m.id
                                 ? 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.08)]'
-                                : 'bg-white/[0.03] border-white/[0.06] hover:border-white/15'
+                                : 'bg-white/10 border-white/[0.06] hover:border-white/15'
                             )}
                           >
                             <m.icon className={cn('w-5 h-5 mx-auto mb-1.5', paymentMethod === m.id ? 'text-emerald-400' : 'text-white/30')} />

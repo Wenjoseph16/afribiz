@@ -82,7 +82,7 @@ export function QuickActions() {
           <motion.div key={action.label} variants={itemVariants}>
             <Link
               href={action.href}
-              className="group block relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5 hover:border-emerald-500/20 transition-all duration-300"
+              className="group block glass rounded-2xl hover:border-emerald-500/20 transition-all duration-300"
             >
               <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-4 text-center">
                 <div className="absolute inset-0 rounded-[calc(1rem-0.1875rem)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none" />

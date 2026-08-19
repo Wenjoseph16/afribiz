@@ -333,7 +333,7 @@ export default function CheckoutPage() {
             Votre commande a été transmise avec succès. Vous recevrez une notification dès qu&apos;elle sera traitée.
           </p>
           {order.orderNumber && (
-            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] divide-y divide-white/5 text-left mb-8">
+            <div className="glass rounded-2xl divide-y divide-white/5 text-left mb-8">
               {[
                 ['Numéro', order.orderNumber],
                 ['Marchand', order.business?.name || '—'],
@@ -392,8 +392,8 @@ export default function CheckoutPage() {
             {/* STEP 1: Delivery */}
             {step === 'info' && (
               <motion.div key="info" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-                <div className="relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5">
-                  <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-6">
+                <div className="glass rounded-2xl">
+                  <div className="p-6">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                         <Package className="w-4 h-4 text-emerald-400" />
@@ -518,8 +518,8 @@ export default function CheckoutPage() {
             {/* STEP 2: Payment */}
             {step === 'payment' && (
               <motion.div key="payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }}>
-                <div className="relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5">
-                  <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-6">
+                <div className="glass rounded-2xl">
+                  <div className="p-6">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                         <CreditCard className="w-4 h-4 text-emerald-400" />
@@ -598,7 +598,7 @@ export default function CheckoutPage() {
         {/* Right — Live Summary */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-2">
           <div className="sticky top-24 space-y-4">
-            <div className="relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5">
+            <div className="glass rounded-2xl">
               <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-5">
                 <h3 className="text-sm font-semibold text-white mb-4 tracking-tight">Récapitulatif</h3>
 

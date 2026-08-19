@@ -161,7 +161,7 @@ export function SlotPicker({
                 'relative p-2 rounded-xl text-center transition-all duration-200',
                 isSelected
                   ? 'bg-emerald-500/20 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
-                  : 'bg-white/[0.03] border border-white/[0.06] hover:border-white/15',
+                  : 'glass hover:border-white/15',
                 isToday && !isSelected && 'border-emerald-500/15'
               )}
             >
@@ -200,7 +200,7 @@ export function SlotPicker({
                     'relative p-3 rounded-xl text-center transition-all duration-200',
                     isSelected
                       ? 'bg-emerald-500/20 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
-                      : 'bg-white/[0.03] border border-white/[0.06] hover:border-white/15 hover:bg-white/[0.06]'
+                      : 'glass hover:border-white/15 hover:bg-white/10'
                   )}
                 >
                   <div className="flex items-center justify-center gap-1.5">
