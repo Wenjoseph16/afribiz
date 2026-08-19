@@ -87,7 +87,7 @@ export const publishSetupIncomplete = def<{
 }>(
   DomainEventType.SETUP_INCOMPLETE,
   (p) => ({ missingSteps: p.missingSteps }),
-  (p) => ({ businessId: p.businessId, link: '/dashboard/onboarding' })
+  (p) => ({ businessId: p.businessId, link: '/dashboard/business/onboarding' })
 );
 export const publishOnboardingCompleted = def<{
   userId: string;
