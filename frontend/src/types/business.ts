@@ -10,6 +10,9 @@ export type {
   BusinessReview,
   OnboardingPaymentMethod,
   OnboardingData,
+  OnboardingCertificate,
+  OnboardingPortfolioItem,
+  OnboardingOpeningHours,
   PaymentMethod,
   DeliveryZone,
 } from '@afribiz/shared';

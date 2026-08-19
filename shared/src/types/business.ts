@@ -179,6 +179,9 @@ export interface Business {
   onboardedAt: string | null;
   settings: BusinessSettings | null;
   hours: BusinessHour[];
+  portfolioImages?: string[];
+  setup?: Record<string, { configured: boolean; missing: string[] }>;
+  setupComplete?: boolean;
   owner: {
     id: string;
     firstName: string;
@@ -246,33 +249,48 @@ export interface OnboardingPaymentMethod {
   isActive: boolean;
 }
 
-export interface OnboardingData {
+export interface OnboardingCertificate {
   name: string;
-  type: string;
-  shortDescription?: string;
-  phone: string;
-  whatsapp?: string;
-  address: string;
+  issuer: string;
+  fileUrl: string;
+}
+
+export interface OnboardingPortfolioItem {
+  title: string;
+  description: string;
+  imageUrl: string;
+  linkUrl: string;
+}
+
+export interface OnboardingOpeningHours {
+  [day: string]: { open: string; close: string; closed: boolean };
+}
+
+export interface OnboardingData {
+  // Step 1 — Identite
+  name: string;
+  typeId: string;
+  description: string;
+  logo: string | null;
+  banner: string | null;
+  // Step 2 — Competences
+  competencies: string[];
+  experienceDescription: string;
+  experienceYears: string;
+  certificates: OnboardingCertificate[];
+  // Step 3 — Portfolio
+  portfolio: OnboardingPortfolioItem[];
+  // Step 4 — Localisation
   country: string;
-  region?: string;
+  region: string;
   city: string;
-  neighborhood?: string;
+  quarter: string;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string;
+  whatsapp: string | null;
+  openingHours: OnboardingOpeningHours;
+  // Step 5 — Modules
   modules: string[];
-  logo?: string;
-  coverImage?: string;
-  latitude?: number;
-  longitude?: number;
-  managerName?: string;
-  experience?: number;
-  managerBio?: string;
-  skills?: string[];
-  certifications?: string[];
-  website?: string;
-  facebook?: string;
-  instagram?: string;
-  tiktok?: string;
-  youtube?: string;
-  linkedin?: string;
-  language?: string;
-  paymentMethods?: OnboardingPaymentMethod[];
 }
