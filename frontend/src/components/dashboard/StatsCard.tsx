@@ -29,14 +29,11 @@ export function StatsCard({
   return (
     <button
       onClick={onClick}
-      className={cn(
-        'group relative text-left w-full overflow-hidden',
-        className
-      )}
+      className={cn('group relative text-left w-full overflow-hidden', className)}
     >
       {/* Outer shell — double-bezel */}
-      <div className="glass rounded-2xl hover:border-emerald-500/20 transition-all duration-300">
-        <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-5">
+      <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm hover:border-emerald-300/40 hover:shadow-md transition-all duration-300">
+        <div className="relative rounded-[calc(1rem-0.1875rem)] p-5">
           {/* Hover glow */}
           <div className="absolute inset-0 rounded-[calc(1rem-0.1875rem)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
 

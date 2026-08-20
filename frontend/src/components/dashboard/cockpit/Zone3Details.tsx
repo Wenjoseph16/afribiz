@@ -35,6 +35,7 @@ interface ReviewItem {
   rating?: number | null;
   comment?: string | null;
   authorName?: string | null;
+  user?: { firstName?: string; lastName?: string } | null;
   createdAt?: string | null;
 }
 
@@ -261,7 +262,7 @@ export function Zone3Details({ orders, bookings, reviews, modules }: Zone3Props)
               <div key={r.id} className="p-3 rounded-xl bg-slate-50">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm font-medium text-slate-800">
-                    {r.authorName || 'Client'}
+                    {r.authorName || (r.user?.firstName ? `${r.user.firstName} ${r.user.lastName || ''}`.trim() : 'Client')}
                   </p>
                   <div className="flex items-center gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
