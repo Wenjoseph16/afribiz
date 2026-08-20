@@ -1,4 +1,4 @@
-# 🏗️ AFRIBIZ — DOCUMENT DE REPRISE OFFICIEL (état au 19 août 2026)
+# 🏗️ AFRIBIZ — DOCUMENT DE REPRISE OFFICIEL (état au 20 août 2026)
 
 > **Ce document est le point de reprise unique.** Chaque nouvelle conversation commence par le lire.
 > Il contient : l'état du projet, la méthode de travail, les skills, et le chantier suivant.
@@ -53,6 +53,10 @@ shared). Mobile-first, réalité africaine (Mobile Money, WhatsApp, offline, FCF
 | **V4** | **Abonnements + Locations glass** | **`13191b3`** | **Glass premium subscriptions + rentals list** |
 | **Fix** | **Dashboard invisible** | **`56898ed`** | **Glass CSS class + dark background #0a0f1a** |
 | **V5** | **Polish UI** | **`584a24b`** | **Loading skeletons + glass-hover + micro-interactions + scroll-fade-in** |
+| **V6** | **Onboarding Business** | **`6f3e427`** | **Refonte 5 étapes : identité → compétences → portfolio → localisation → modules + preview live + succès QR** |
+| **V6-fix** | **Onboarding bugs** | **`137206e`** + **`a1089d9`** | **Upload File direct + 5 bugs fixes (submit mapping, modules valides, GPS, upload feedback, certificats)** |
+| **V7** | **Page publique données** | **`e245265`** + **`a65e514`** | **Backend sauvegarde openingHours + portfolio + seed complet Saveur d'Abidjan** |
+| **V8** | **Page publique premium** | **`43d14df`** + **`434f596`** + **`9ec335e`** | **Design premium 2027 : Banner cinematic, Accueil double-bezel, Products bento, Portfolio masonry+lightbox, Footer editorial, Nav dynamique, fix clé doublée** |
 
 ### Chantier 2 en détail (6 commits)
 - `26fd16e` — Étape A : PriceEngine + résolveur `GET /catalog/attachments` + table `CatalogAttachment`
@@ -92,14 +96,18 @@ shared). Mobile-first, réalité africaine (Mobile Money, WhatsApp, offline, FCF
 - Commission récurrente sur chaque commande payée ✅
 - TSC BE + FE 0 erreur ✅
 
-### Refonte UI 2027 (V1-V5)
+### Refonte UI 2027 (V1-V8)
 - **V1** — Notifications live : `useNotificationPolling` (auto-refresh 30s) + toast sur actions clés + `LiveIndicator` + `OrderTimeline` ✅
 - **V2** — Glass premium : Cart/Checkout/Dashboard refonte avec `bg-white/[0.03]` → CSS `.glass` + double-bezel + framer-motion ✅
 - **V3** — Réservations dynamiques : `SlotPicker` (créneaux par date) + step flow 4 étapes + paiement acompte inline ✅
 - **V4** — Abonnements/Locations : glass premium list + grid cards ✅
 - **Fix** — Dashboard invisible : fond dark `#0a0f1a` + glass CSS class + noise overlay réduit ✅
 - **V5** — Polish : `DashboardSkeleton`/`BookingsSkeleton` (shimmer) + `glass-hover` CSS + `scroll-fade-in` ✅
-- **Tests** : 28 tests (Chantiers 8, 9, 10, V1, V4) ✅
+- **V6** — Onboarding Business : 5 étapes (Identité → Compétences → Portfolio → Localisation → Modules) + preview live page publique + écran succès QR code ✅
+- **V6-fix** — Onboarding bugs : upload File direct (pas FormData) + submit mapping (typeId→type) + 22 modules valides + GPS feedback + certificat display ✅
+- **V7** — Page publique données : backend `createBusiness` sauvegarde `openingHours` (BusinessHour) + `portfolio` (PortfolioItem) + nav dynamique par modules cochés + stories max 3 ✅
+- **V8** — Page publique premium : Banner cinematic gradient + Accueil double-bezel + Products asymmetrical bento + Portfolio masonry+lightbox + Sidebar glass + Nav floating pill + Footer editorial ✅
+- **Tests** : 279 fichiers de tests backend ✅
 - **TSC** : BE + FE 0 erreur sur tous les chantiers ✅
 
 ### Chantier 8 en détail (inventaire express)
@@ -110,6 +118,30 @@ shared). Mobile-first, réalité africaine (Mobile Money, WhatsApp, offline, FCF
 - PhotoReference : compression ~800px, anti-doublon pHash, grille photos au POS ✅
 - TSC BE + FE 0 erreur ✅
 - Dépendance : `papaparse` + `@types/papaparse` ✅
+
+### Onboarding Business en détail (V6 + V6-fix)
+- **Étape 1 — Identité** : name, typeId, description, logo upload, bannière upload ✅
+- **Étape 2 — Compétences** : multi-tags (3-10) + suggestions par catégorie, textarea 500, select années, certificats upload ✅
+- **Étape 3 — Portfolio** : galerie projets (titre, desc, photo upload, lien) ✅
+- **Étape 4 — Localisation** : pays prioritaire Afrique, région, ville, quartier, adresse, GPS auto, WhatsApp toggle, horaires toggle jour par jour ✅
+- **Étape 5 — Modules** : 22 modules toggleables avec icônes, couleurs, descriptions ✅
+- **Preview live** : page publique qui se construit en temps réel ✅
+- **Écran succès** : QR code + lien copiable + partage WhatsApp ✅
+- **Backend** : `createBusiness` sauvegarde `openingHours` (BusinessHour) + `portfolio` (PortfolioItem) + skills ✅
+- **Fix upload** : passer File directement (pas FormData) ✅
+- **Fix submit** : transformation champs (typeId→type, description→shortDescription, etc.) ✅
+- **Fix modules** : uniquement les `BusinessModule` valides de l'enum ✅
+
+### Page publique en détail (V7 + V8)
+- **Banner** : cinematic gradient overlay + KenBurn animation + badges glass pill ✅
+- **Accueil** : eyebrow tags, stat cards double-bezel, manager card gradient, skills/certs badges ✅
+- **Nav interne** : floating pill design, filtre par modules cochés (pas static) ✅
+- **Products** : asymmetrical bento, premier item hero 2 cols, double-bezel cards ✅
+- **Portfolio** : masonry alternée, hover gradient slide-up, lightbox plein écran ✅
+- **Sidebar** : glass cards, section titles avec icon boxes, pulse animation ✅
+- **Footer** : editorial dark, newsletter glass card, colonnes minimales ✅
+- **Stories/Shorts** : max 3 visibles + badge KYC + lien "Voir tout" ✅
+- **Seed** : Saveur d'Abidjan complet (6 skills, 2 certs, 7 ans, 7 jours horaires, 13 modules, 3 portfolio) ✅
 
 ---
 
@@ -131,6 +163,22 @@ Idempotence (2e confirmation refusée) + fausses refs refusées (403).
 ---
 
 ## 4. 📐 LE CHANTIER SUIVANT : 11 — TRAÇABILITÉ / LOT / PÉREMPTION
+
+### État des tests (20 août 2026)
+- **279 fichiers de tests backend** couvrant : auth, orders, business, groupBuy, paymentProcessor, employeeAuth, offlineSync, affiliation, afriScore, advancedTasks, live, story, short, room, copilot, search, upload, imageProcessing, rateLimiter, correlationId, validators, socket, disputes, wallet, presenceService, platformSettings, etc.
+- **28 tests frontend** (Chantiers 8, 9, 10, V1, V4)
+- **Tests exécutés avant chaque commit** selon la méthode de travail (§7)
+- **Aucun test spécifique onboarding/page publique** — à ajouter dans le prochain chantier
+
+### Ce qui a été validé en production (test utilisateur)
+- ✅ Onboarding 5 étapes : identité, compétences, portfolio, localisation, modules
+- ✅ Upload photos (logo, bannière, portfolio, certificats)
+- ✅ GPS géolocalisation
+- ✅ Soumission création business
+- ✅ Page publique Saveur d'Abidjan : horaires, compétences, portfolio, modules, stories
+- ✅ Login joseph@gmail.com + josh@gmail.com (Test1234!)
+- ⚠️ Bug clé doublée InternalNav corrigé (`9ec335e`)
+- ⚠️ Seed purgé les comptes existants → restaurés
 
 ### Objectif
 Gestion des lots, dates de péremption, alerts de péremption, traçabilité complète du stock.
@@ -293,8 +341,10 @@ Nouveau feature → chercher ce qui existe déjà
 |---------|------|
 | `components/formkit/` | Socle formulaires (ScopePicker, MoneyInput, ImageDropzone, VoiceInput, BarcodeScanner, PhotoReference…) |
 | `components/negotiation/` | Bouton 🤝 client |
+| `components/business-public/` | Page publique : Banner, Accueil, InternalNav, Footer, Sidebar, Products, Portfolio, MediaStories, MediaShorts |
+| `features/onboarding/` | Onboarding wizard 5 étapes : StepIdentity, StepExpertise, StepPortfolio, StepLocation, StepModules + OnboardingWizard + OnboardingSuccess |
 | `services/api/` | Un module par domaine → injecté dans `apiClient.ts` |
-| `app/(public)/` | Vitrines publiques (fiche produit, checkout) |
+| `app/(public)/business/[slug]/` | Page publique dynamique par business |
 | `app/(dashboard)/dashboard/products/express/` | Inventaire express (Chantier 8) — mode lots, scan, voix |
 | `app/(dashboard)/` | Dashboard business (cockpit, pages par module) |
 
@@ -314,6 +364,10 @@ Nouveau feature → chercher ce qui existe déjà
 4. **Le cockpit ≠ nouvelle page** : le dashboard est transformé en cockpit (centre les infos), toutes les autres fonctionnalités restent dans leurs menus
 5. **AfriScore** : corrigé dans le 5.5. Ne plus toucher sans test de preuve
 6. **Bugs signalés par l'utilisateur** : test client trouvé des bugs « partout » → passe QA globale nécessaire (Chantier 13)
+7. **Seed = reset** : `npx tsx prisma/seedRealistic.ts` réécrit TOUS les comptes business. Ne lancer qu'en dev.
+8. **Comptes de test** : `joseph@gmail.com` / `josh@gmail.com` (Test1234!) — vérifier après chaque seed.
+9. **Page publique lit `business.skills`** (pas `business.owner.skills`). L'onboarding doit sauver au bon endroit.
+10. **Upload = File direct** : `apiClient.uploadMedia(file)` PAS `uploadMedia(formData)`. Le client crée son propre FormData.
 
 ---
 
@@ -339,6 +393,7 @@ On commence le Chantier 11 : Traçabilité / lot / péremption
 - Vérifier l'existant (product.ts, cashService.ts)
 - Ordre : audit → plan → code backend → code frontend → TSC → tests → review → commit
 - Standard : TSC BE + FE 0 erreur, tests API, commit propres
+- Rappel : 279 fichiers de tests backend existants, 28 tests frontend
 
 GO.
 ```
