@@ -2066,6 +2066,9 @@ async function purgeLegacyData() {
     await prisma.order.deleteMany({ where: { buyerId: { in: legacyUserIds } } });
     await prisma.booking.deleteMany({ where: { clientId: { in: legacyUserIds } } });
     await prisma.userRoleAssignment.deleteMany({ where: { userId: { in: legacyUserIds } } });
+    // LoyaltyPoints (FK Restrict sur clientId)
+    await prisma.loyaltyTransaction.deleteMany({ where: { loyalty: { clientId: { in: legacyUserIds } } } });
+    await prisma.loyaltyPoints.deleteMany({ where: { clientId: { in: legacyUserIds } } });
     await prisma.user.deleteMany({ where: { id: { in: legacyUserIds } } });
   }
 
