@@ -23,6 +23,27 @@ interface SidebarProps {
   business: Business;
 }
 
+function SidebarCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`p-1.5 rounded-2xl ring-1 ring-gray-200/50 dark:ring-white/5 ${className}`}>
+      <div className="p-5 rounded-xl bg-white dark:bg-gray-800/80">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2 text-sm">
+      <span className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+        {icon}
+      </span>
+      {children}
+    </h3>
+  );
+}
+
 export function Sidebar({ business }: SidebarProps) {
   const hasHours = business.hours?.length > 0;
   const hasPayments = business.paymentMethods?.length > 0;
@@ -48,110 +69,86 @@ export function Sidebar({ business }: SidebarProps) {
 
     if (nowMin >= openMin && nowMin <= closeMin) {
       if (closeMin - nowMin <= 60)
-        return {
-          label: 'Ferme bientôt',
-          className: 'text-orange-500 bg-orange-50 dark:bg-orange-900/20',
-        };
-      return { label: 'Ouvert', className: 'text-green-500 bg-green-50 dark:bg-green-900/20' };
+        return { label: 'Ferme bientôt', className: 'text-orange-500 bg-orange-50 dark:bg-orange-900/20' };
+      return { label: 'Ouvert', className: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' };
     }
     if (nowMin < openMin && openMin - nowMin <= 60)
-      return {
-        label: 'Ouvre bientôt',
-        className: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20',
-      };
+      return { label: 'Ouvre bientôt', className: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' };
     return { label: 'Fermé', className: 'text-red-500 bg-red-50 dark:bg-red-900/20' };
   };
 
   const status = getStatus();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Statut */}
       {hasHours && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-          <div
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${status.className}`}
-          >
-            <span className="w-2 h-2 rounded-full bg-current" />
-            {status.label}
+        <SidebarCard>
+          <div className="flex items-center justify-between">
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${status.className}`}>
+              <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+              {status.label}
+            </div>
+            {todayHours && !todayHours.isClosed && todayHours.open && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {todayHours.open} — {todayHours.close}
+              </span>
+            )}
           </div>
-        </div>
+        </SidebarCard>
       )}
 
       {/* Coordonnées */}
       {hasInfo && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Informations</h3>
+        <SidebarCard>
+          <SectionTitle icon={<MapPin className="w-4 h-4" />}>Informations</SectionTitle>
           <div className="space-y-3">
             {business.address && (
               <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <MapPin className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-300">{business.address}</p>
                   {business.city && (
-                    <p className="text-xs text-gray-400">
-                      {business.city}
-                      {business.country ? `, ${business.country}` : ''}
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {business.city}{business.country ? `, ${business.country}` : ''}
                     </p>
                   )}
                 </div>
               </div>
             )}
             {business.phone && (
-              <a
-                href={`tel:${business.phone}`}
-                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-brand transition-colors"
-              >
-                <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" /> {business.phone}
+              <a href={`tel:${business.phone}`} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors">
+                <Phone className="w-4 h-4 text-gray-400 shrink-0" /> {business.phone}
               </a>
             )}
             {business.whatsapp && (
-              <a
-                href={`https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors"
-              >
-                <MessageCircle className="w-4 h-4 flex-shrink-0" /> {business.whatsapp}
+              <a href={`https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors">
+                <MessageCircle className="w-4 h-4 shrink-0" /> WhatsApp
               </a>
             )}
             {business.email && (
-              <a
-                href={`mailto:${business.email}`}
-                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-brand transition-colors"
-              >
-                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" /> {business.email}
+              <a href={`mailto:${business.email}`} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors">
+                <Mail className="w-4 h-4 text-gray-400 shrink-0" /> {business.email}
               </a>
             )}
             {business.website && (
-              <a
-                href={
-                  business.website.startsWith('http')
-                    ? business.website
-                    : `https://${business.website}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-brand transition-colors"
-              >
-                <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" /> Site web
+              <a href={business.website.startsWith('http') ? business.website : `https://${business.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors">
+                <Globe className="w-4 h-4 text-gray-400 shrink-0" /> Site web
               </a>
             )}
           </div>
-        </div>
+        </SidebarCard>
       )}
 
       {/* Carte GPS */}
       {business.latitude && business.longitude && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-brand" /> Localisation
-          </h3>
+        <SidebarCard>
+          <SectionTitle icon={<Navigation className="w-4 h-4" />}>Localisation</SectionTitle>
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${business.latitude},${business.longitude}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="block aspect-video rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden group relative"
+            className="block aspect-video rounded-xl overflow-hidden group relative ring-1 ring-gray-200 dark:ring-gray-700"
           >
             <iframe
               title="GPS"
@@ -162,7 +159,7 @@ export function Sidebar({ business }: SidebarProps) {
               loading="lazy"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-              <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-medium bg-black/60 px-3 py-1.5 rounded-lg transition-opacity">
+              <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium bg-black/60 px-3 py-1.5 rounded-lg transition-opacity">
                 Ouvrir dans Google Maps
               </span>
             </div>
@@ -172,136 +169,105 @@ export function Sidebar({ business }: SidebarProps) {
               href={`https://www.google.com/maps/dir/?api=1&destination=${business.latitude},${business.longitude}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-brand rounded-lg hover:bg-brand-700 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all duration-300 active:scale-[0.98]"
             >
-              <Navigation className="w-3.5 h-3.5" /> Google Maps
+              <Navigation className="w-3.5 h-3.5" /> Maps
             </a>
             <a
               href={`https://waze.com/ul?ll=${business.latitude},${business.longitude}&navigate=yes`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all duration-300 active:scale-[0.98]"
             >
               <Navigation className="w-3.5 h-3.5" /> Waze
             </a>
           </div>
-        </div>
+        </SidebarCard>
       )}
 
       {/* Horaires */}
       {hasHours && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-brand" /> Horaires
-          </h3>
+        <SidebarCard>
+          <SectionTitle icon={<Clock className="w-4 h-4" />}>Horaires</SectionTitle>
           <div className="space-y-2">
             {business.hours.map((h) => (
               <div
                 key={h.day}
-                className={`flex justify-between text-sm ${h.day === today ? 'font-medium text-brand' : 'text-gray-600 dark:text-gray-300'}`}
+                className={`flex justify-between text-sm py-1 ${h.day === today ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-300'}`}
               >
                 <span>{getDayLabel(h.day)}</span>
-                <span>{h.isClosed ? 'Fermé' : `${h.open} - ${h.close}`}</span>
+                <span>{h.isClosed ? 'Fermé' : `${h.open} — ${h.close}`}</span>
               </div>
             ))}
           </div>
-          {todayHours && !todayHours.isClosed && (
-            <p className="mt-3 text-xs text-green-600 dark:text-green-400">
-              Ouvert aujourd&apos;hui de {todayHours.open} à {todayHours.close}
-            </p>
-          )}
-          {todayHours?.isClosed && (
-            <p className="mt-3 text-xs text-red-500">Fermé aujourd&apos;hui</p>
-          )}
-        </div>
+        </SidebarCard>
       )}
 
-      {/* QR Code Business */}
+      {/* QR Code */}
       {typeof window !== 'undefined' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <QrCode className="w-4 h-4 text-brand" /> QR Code
-          </h3>
+        <SidebarCard>
+          <SectionTitle icon={<QrCode className="w-4 h-4" />}>QR Code</SectionTitle>
           <div className="flex justify-center">
             <QRCode
               value={window.location.href}
               size={120}
               level="M"
               includeMargin={true}
-              className="rounded-lg"
+              className="rounded-xl"
             />
           </div>
-        </div>
+        </SidebarCard>
       )}
 
       {/* Moyens de paiement */}
       {hasPayments && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-brand" /> Paiements acceptés
-          </h3>
+        <SidebarCard>
+          <SectionTitle icon={<CreditCard className="w-4 h-4" />}>Paiements</SectionTitle>
           <div className="space-y-2">
             {business.paymentMethods.map((pm) => (
-              <div
-                key={pm.id}
-                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300"
-              >
-                <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand text-xs font-bold">
-                  {pm.method === 'MOBILE_MONEY'
-                    ? 'M'
-                    : pm.method === 'BANK_TRANSFER'
-                      ? 'B'
-                      : pm.method === 'CREDIT_CARD'
-                        ? 'C'
-                        : '€'}
+              <div key={pm.id} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 text-xs font-bold">
+                  {pm.method === 'MOBILE_MONEY' ? 'M' : pm.method === 'BANK_TRANSFER' ? 'B' : pm.method === 'CREDIT_CARD' ? 'C' : '€'}
                 </div>
                 <div>
-                  <p>{pm.name || pm.method}</p>
+                  <p className="font-medium">{pm.name || pm.method}</p>
                   {pm.number && <p className="text-xs text-gray-400">{pm.number}</p>}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </SidebarCard>
       )}
 
       {/* Zones de livraison */}
       {hasZones && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Truck className="w-4 h-4 text-brand" /> Zones de livraison
-          </h3>
+        <SidebarCard>
+          <SectionTitle icon={<Truck className="w-4 h-4" />}>Livraison</SectionTitle>
           <div className="space-y-2">
             {business.deliveryZones.map((zone) => (
               <div key={zone.id} className="flex justify-between items-center text-sm">
                 <span className="text-gray-600 dark:text-gray-300">{zone.name}</span>
                 <div className="text-right">
-                  <span className="text-gray-600 dark:text-gray-300">
-                    {formatPrice(Number(zone.fee))}
-                  </span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatPrice(Number(zone.fee))}</span>
                   {zone.minOrder && (
-                    <span className="text-xs text-gray-400 ml-1">
-                      (min. {formatPrice(Number(zone.minOrder))})
-                    </span>
+                    <span className="text-xs text-gray-400 ml-1">(min. {formatPrice(Number(zone.minOrder))})</span>
                   )}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </SidebarCard>
       )}
 
       {/* Actions */}
       <div className="flex gap-2">
         <button
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-          }}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          onClick={() => navigator.clipboard.writeText(window.location.href)}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 active:scale-[0.98]"
         >
           <Share2 className="w-4 h-4" /> Partager
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors">
+        <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all duration-300 active:scale-[0.98]">
           <Heart className="w-4 h-4" /> Enregistrer
         </button>
       </div>
