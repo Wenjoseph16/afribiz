@@ -17,13 +17,24 @@ export default function StepPortfolio({ data, onChange }: Props) {
   const [imageUrl, setImageUrl] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
   const handleImageUpload = async (file: File) => {
+    setUploadError('');
+    setUploading(true);
     try {
       const res = await apiClient.uploadMedia(file);
       if (res.data?.success) {
         setImageUrl(res.data.data.url || res.data.data.path);
+      } else {
+        setUploadError('Échec de l\'upload');
       }
-    } catch { /* skip */ }
+    } catch (e: any) {
+      setUploadError(e?.response?.data?.error || 'Erreur lors de l\'upload');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const addItem = () => {
@@ -123,6 +134,7 @@ export default function StepPortfolio({ data, onChange }: Props) {
             maxLength={100}
             className="w-full px-3 py-2 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           />
+          {uploadError && <p className="text-[11px] text-red-500">{uploadError}</p>}
           <div className="flex items-center gap-3">
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
               const file = e.target.files?.[0];
@@ -130,10 +142,11 @@ export default function StepPortfolio({ data, onChange }: Props) {
             }} />
             <button
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
+              disabled={uploading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-all disabled:opacity-50"
             >
               <Upload className="h-3 w-3" />
-              {imageUrl ? 'Photo ajoutée ✓' : 'Ajouter une photo'}
+              {uploading ? 'Upload…' : imageUrl ? 'Photo ajoutée ✓' : 'Ajouter une photo'}
             </button>
             <button
               onClick={addItem}

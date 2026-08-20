@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
-import { Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Upload, X, Loader2 } from 'lucide-react';
 import { BUSINESS_CATEGORIES, BUSINESS_TYPE_LABELS } from '@/constants/business';
 import type { OnboardingData } from '@/types/business';
 import { apiClient } from '@/services/apiClient';
@@ -14,15 +14,26 @@ interface Props {
 export default function StepIdentity({ data, onChange }: Props) {
   const logoRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const handleImageUpload = async (file: File, field: 'logo' | 'banner') => {
+    setUploadError('');
+    const setUploading = field === 'logo' ? setUploadingLogo : setUploadingBanner;
+    setUploading(true);
     try {
       const res = await apiClient.uploadMedia(file);
       if (res.data?.success) {
         onChange({ [field]: res.data.data.url || res.data.data.path });
+      } else {
+        setUploadError(`Échec de l'upload: ${res.data?.error || 'Erreur inconnue'}`);
       }
-    } catch {
-      // Upload failed silently
+    } catch (e: any) {
+      const msg = e?.response?.data?.error || e?.message || 'Erreur lors de l\'upload';
+      setUploadError(msg);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -84,6 +95,13 @@ export default function StepIdentity({ data, onChange }: Props) {
         <p className="text-xs text-gray-400 mt-1 text-right">{data.description.length}/300</p>
       </div>
 
+      {/* Upload error */}
+      {uploadError && (
+        <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 text-xs">
+          {uploadError}
+        </div>
+      )}
+
       {/* Logo + Bannière */}
       <div className="grid grid-cols-2 gap-4">
         {/* Logo */}
@@ -105,10 +123,15 @@ export default function StepIdentity({ data, onChange }: Props) {
           ) : (
             <button
               onClick={() => logoRef.current?.click()}
-              className="w-full aspect-square rounded-xl border-2 border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-emerald-400 hover:text-emerald-500 transition-all"
+              disabled={uploadingLogo}
+              className="w-full aspect-square rounded-xl border-2 border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-emerald-400 hover:text-emerald-500 transition-all disabled:opacity-50"
             >
-              <Upload className="h-5 w-5" />
-              <span className="text-xs font-medium">Logo</span>
+              {uploadingLogo ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Upload className="h-5 w-5" />
+              )}
+              <span className="text-xs font-medium">{uploadingLogo ? 'Upload…' : 'Logo'}</span>
             </button>
           )}
         </div>
@@ -132,10 +155,15 @@ export default function StepIdentity({ data, onChange }: Props) {
           ) : (
             <button
               onClick={() => bannerRef.current?.click()}
-              className="w-full aspect-[2/1] rounded-xl border-2 border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-emerald-400 hover:text-emerald-500 transition-all"
+              disabled={uploadingBanner}
+              className="w-full aspect-[2/1] rounded-xl border-2 border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-emerald-400 hover:text-emerald-500 transition-all disabled:opacity-50"
             >
-              <Upload className="h-5 w-5" />
-              <span className="text-xs font-medium">Bannière</span>
+              {uploadingBanner ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Upload className="h-5 w-5" />
+              )}
+              <span className="text-xs font-medium">{uploadingBanner ? 'Upload…' : 'Bannière'}</span>
             </button>
           )}
         </div>

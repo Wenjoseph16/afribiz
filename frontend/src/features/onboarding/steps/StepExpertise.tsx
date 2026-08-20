@@ -32,6 +32,7 @@ export default function StepExpertise({ data, onChange }: Props) {
   const [tagInput, setTagInput] = useState('');
   const [certName, setCertName] = useState('');
   const [certIssuer, setCertIssuer] = useState('');
+  const [certFileName, setCertFileName] = useState('');
   const certFileRef = useRef<HTMLInputElement>(null);
 
   const availableTags = SKILLS_BY_TYPE[data.typeId] || SKILLS_BY_TYPE.default;
@@ -47,22 +48,29 @@ export default function StepExpertise({ data, onChange }: Props) {
     onChange({ competencies: data.competencies.filter((t) => t !== tag) });
   };
 
+  const [certUploadError, setCertUploadError] = useState('');
+
   const addCertificate = async () => {
     const file = certFileRef.current?.files?.[0];
     if (!certName.trim()) return;
 
     let fileUrl = '';
+    setCertUploadError('');
     if (file) {
       try {
         const res = await apiClient.uploadMedia(file);
         if (res.data?.success) fileUrl = res.data.data.url || res.data.data.path;
-      } catch { /* skip */ }
+        else setCertUploadError('Échec de l\'upload du certificat');
+      } catch (e: any) {
+        setCertUploadError(e?.response?.data?.error || 'Erreur upload');
+      }
     }
 
     const cert: OnboardingCertificate = { name: certName.trim(), issuer: certIssuer.trim(), fileUrl };
     onChange({ certificates: [...data.certificates, cert] });
     setCertName('');
     setCertIssuer('');
+    setCertFileName('');
     if (certFileRef.current) certFileRef.current.value = '';
   };
 
@@ -211,15 +219,21 @@ export default function StepExpertise({ data, onChange }: Props) {
             placeholder="Organisme émetteur (optionnel)"
             className="w-full px-3 py-2 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           />
-          <div className="flex gap-2">
-            <input ref={certFileRef} type="file" accept="image/*,.pdf" className="hidden" />
+          <div className="flex gap-2 items-center">
+            <input ref={certFileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) setCertFileName(f.name);
+            }} />
             <button
               onClick={() => certFileRef.current?.click()}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
             >
               <Upload className="h-3 w-3" />
-              Joindre un fichier
+              {certFileName ? certFileName : 'Joindre un fichier'}
             </button>
+            {certFileName && (
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">✓</span>
+            )}
             <button
               onClick={addCertificate}
               disabled={!certName.trim()}

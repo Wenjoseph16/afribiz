@@ -1,21 +1,36 @@
 'use client';
 
 import {
-  Package, CreditCard, Truck, CalendarCheck, Car, Users,
-  Megaphone, Star, BarChart3,
+  Package, Wrench, BookOpen, Bed, CalendarCheck, ShoppingCart,
+  FileText, CreditCard, Percent, Clock, Users, Briefcase,
+  Repeat, Truck, Calendar, Key, Folder, Handshake,
+  AlertTriangle, Globe, Layers, GraduationCap,
 } from 'lucide-react';
 import type { OnboardingData } from '@/types/business';
 
 const ONBOARDING_MODULES = [
-  { key: 'PRODUCTS', label: 'Catalogue', desc: 'Produits & services', icon: Package, color: 'emerald', defaultOn: true },
-  { key: 'PAYMENT', label: 'Paiement', desc: 'Mobile Money, Cash, Escrow', icon: CreditCard, color: 'blue', defaultOn: true },
-  { key: 'DELIVERIES', label: 'Livraison', desc: 'Zones & frais de livraison', icon: Truck, color: 'amber', defaultOn: false },
-  { key: 'BOOKINGS', label: 'Réservations', desc: 'Créneaux & calendrier', icon: CalendarCheck, color: 'purple', defaultOn: false },
-  { key: 'RENTALS', label: 'Locations', desc: 'Véhicules & équipements', icon: Car, color: 'cyan', defaultOn: false },
-  { key: 'AFFILIATE', label: 'Affiliation', desc: 'Parrainage clients', icon: Users, color: 'rose', defaultOn: false },
-  { key: 'MARKETING', label: 'Marketing', desc: 'Campagnes & promos', icon: Megaphone, color: 'orange', defaultOn: false },
-  { key: 'LOYALTY', label: 'Fidélité', desc: 'Points & récompenses', icon: Star, color: 'yellow', defaultOn: false },
-  { key: 'CRM', label: 'CRM', desc: 'Clients & segmentation', icon: BarChart3, color: 'indigo', defaultOn: false },
+  { key: 'PRODUCTS',          label: 'Produits',            desc: 'Catalogue produits',            icon: Package,         color: 'emerald', defaultOn: true },
+  { key: 'SERVICES',          label: 'Services',            desc: 'Prestations & devis',           icon: Wrench,          color: 'blue',   defaultOn: false },
+  { key: 'MENU',              label: 'Menu / Carte',        desc: 'Carte restaurant / bar',        icon: BookOpen,        color: 'orange', defaultOn: false },
+  { key: 'ROOMS',             label: 'Chambres',            desc: 'Hébergement & réservation',     icon: Bed,             color: 'purple', defaultOn: false },
+  { key: 'BOOKINGS',          label: 'Réservations',        desc: 'Créneaux & calendrier',         icon: CalendarCheck,   color: 'indigo', defaultOn: false },
+  { key: 'ORDERS',            label: 'Commandes',           desc: 'Suivi des ventes',              icon: ShoppingCart,    color: 'emerald', defaultOn: true },
+  { key: 'QUOTES_INVOICES',   label: 'Devis & Factures',    desc: 'Facturation pro',               icon: FileText,        color: 'blue',   defaultOn: false },
+  { key: 'DEBTS_PAYMENTS',    label: 'Dettes & Paiements',  desc: 'Crédit & encaissements',        icon: CreditCard,      color: 'amber',  defaultOn: false },
+  { key: 'PROMOTIONS',        label: 'Promotions',          desc: 'Offres & réductions',           icon: Percent,         color: 'rose',   defaultOn: true },
+  { key: 'PLANNING',          label: 'Planning',            desc: 'Emploi du temps & équipe',      icon: Clock,           color: 'cyan',   defaultOn: false },
+  { key: 'EMPLOYEES',         label: 'Employés',            desc: 'Gestion & permissions',         icon: Users,           color: 'violet', defaultOn: false },
+  { key: 'PORTFOLIO',         label: 'Portfolio',           desc: 'Réalisations & projets',        icon: Briefcase,       color: 'teal',   defaultOn: false },
+  { key: 'SUBSCRIPTIONS',     label: 'Abonnements',         desc: 'Offres récurrentes',            icon: Repeat,          color: 'blue',   defaultOn: false },
+  { key: 'DELIVERIES',        label: 'Livraisons',          desc: 'Zones & frais de livraison',    icon: Truck,           color: 'amber',  defaultOn: false },
+  { key: 'EVENTS',            label: 'Événements',          desc: 'Événements & billetterie',      icon: Calendar,        color: 'pink',   defaultOn: false },
+  { key: 'RENTALS',           label: 'Locations',           desc: 'Véhicules & équipements',       icon: Key,             color: 'cyan',   defaultOn: false },
+  { key: 'DOCUMENTS',         label: 'Documents',           desc: 'Contrats & fichiers',           icon: Folder,          color: 'gray',   defaultOn: false },
+  { key: 'PARTNERS',          label: 'Partenaires',         desc: 'Fournisseurs & alliances',      icon: Handshake,       color: 'emerald', defaultOn: false },
+  { key: 'DISPUTES',          label: 'Litiges',             desc: 'Gestion des réclamations',      icon: AlertTriangle,   color: 'red',    defaultOn: false },
+  { key: 'MODULE_MARKETPLACE', label: 'Marketplace',        desc: 'Vente multi-vendeurs',          icon: Globe,           color: 'indigo', defaultOn: false },
+  { key: 'ADVANCED_TASKS',    label: 'Tâches avancées',     desc: 'Kanban & projet',               icon: Layers,          color: 'slate',  defaultOn: false },
+  { key: 'TRAINING',          label: 'Formations',          desc: 'Cours & certifications',        icon: GraduationCap,   color: 'violet', defaultOn: false },
 ];
 
 const COLOR_MAP: Record<string, { bg: string; border: string; text: string; activeBg: string; activeBorder: string; activeText: string }> = {
@@ -28,6 +43,12 @@ const COLOR_MAP: Record<string, { bg: string; border: string; text: string; acti
   orange: { bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-800/30', text: 'text-orange-600 dark:text-orange-400', activeBg: 'bg-orange-100 dark:bg-orange-900/40', activeBorder: 'border-orange-400 dark:border-orange-600', activeText: 'text-orange-700 dark:text-orange-300' },
   yellow: { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-800/30', text: 'text-yellow-600 dark:text-yellow-400', activeBg: 'bg-yellow-100 dark:bg-yellow-900/40', activeBorder: 'border-yellow-400 dark:border-yellow-600', activeText: 'text-yellow-700 dark:text-yellow-300' },
   indigo: { bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-indigo-200 dark:border-indigo-800/30', text: 'text-indigo-600 dark:text-indigo-400', activeBg: 'bg-indigo-100 dark:bg-indigo-900/40', activeBorder: 'border-indigo-400 dark:border-indigo-600', activeText: 'text-indigo-700 dark:text-indigo-300' },
+  violet: { bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-violet-200 dark:border-violet-800/30', text: 'text-violet-600 dark:text-violet-400', activeBg: 'bg-violet-100 dark:bg-violet-900/40', activeBorder: 'border-violet-400 dark:border-violet-600', activeText: 'text-violet-700 dark:text-violet-300' },
+  teal: { bg: 'bg-teal-50 dark:bg-teal-900/20', border: 'border-teal-200 dark:border-teal-800/30', text: 'text-teal-600 dark:text-teal-400', activeBg: 'bg-teal-100 dark:bg-teal-900/40', activeBorder: 'border-teal-400 dark:border-teal-600', activeText: 'text-teal-700 dark:text-teal-300' },
+  pink: { bg: 'bg-pink-50 dark:bg-pink-900/20', border: 'border-pink-200 dark:border-pink-800/30', text: 'text-pink-600 dark:text-pink-400', activeBg: 'bg-pink-100 dark:bg-pink-900/40', activeBorder: 'border-pink-400 dark:border-pink-600', activeText: 'text-pink-700 dark:text-pink-300' },
+  red: { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800/30', text: 'text-red-600 dark:text-red-400', activeBg: 'bg-red-100 dark:bg-red-900/40', activeBorder: 'border-red-400 dark:border-red-600', activeText: 'text-red-700 dark:text-red-300' },
+  gray: { bg: 'bg-gray-50 dark:bg-gray-900/20', border: 'border-gray-200 dark:border-gray-800/30', text: 'text-gray-600 dark:text-gray-400', activeBg: 'bg-gray-100 dark:bg-gray-900/40', activeBorder: 'border-gray-400 dark:border-gray-600', activeText: 'text-gray-700 dark:text-gray-300' },
+  slate: { bg: 'bg-slate-50 dark:bg-slate-900/20', border: 'border-slate-200 dark:border-slate-800/30', text: 'text-slate-600 dark:text-slate-400', activeBg: 'bg-slate-100 dark:bg-slate-900/40', activeBorder: 'border-slate-400 dark:border-slate-600', activeText: 'text-slate-700 dark:text-slate-300' },
 };
 
 interface Props {
@@ -49,7 +70,7 @@ export default function StepModules({ data, onChange }: Props) {
         Sélectionnez les outils dont vous avez besoin. Vous pourrez en ajouter ou retirer plus tard.
       </p>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {ONBOARDING_MODULES.map((mod) => {
           const active = data.modules.includes(mod.key);
           const Icon = mod.icon;
@@ -79,7 +100,7 @@ export default function StepModules({ data, onChange }: Props) {
               </div>
 
               <div className={`p-2.5 rounded-xl ${active ? colors.activeBg : colors.bg}`}>
-                <Icon className={`h-5 w-5 ${active ? colors.text : colors.text}`} />
+                <Icon className={`h-5 w-5 ${colors.text}`} />
               </div>
               <div>
                 <p className="text-sm font-semibold">{mod.label}</p>

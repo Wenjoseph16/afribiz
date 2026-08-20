@@ -34,6 +34,7 @@ interface Props {
 export default function StepLocation({ data, onChange }: Props) {
   const { user } = useAuthStore();
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState('');
   const [whatsappSame, setWhatsappSame] = useState(true);
 
   // Pré-remplir le téléphone depuis le compte
@@ -69,15 +70,29 @@ export default function StepLocation({ data, onChange }: Props) {
   };
 
   const detectGPS = () => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setGpsError('La géolocalisation n\'est pas supportée par votre navigateur.');
+      return;
+    }
     setGpsLoading(true);
+    setGpsError('');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         onChange({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
         setGpsLoading(false);
+        setGpsError('');
       },
-      () => setGpsLoading(false),
-      { timeout: 10000 }
+      (error) => {
+        setGpsLoading(false);
+        if (error.code === 1) {
+          setGpsError('Permission refusée. Autorisez la géolocalisation dans les paramètres du navigateur.');
+        } else if (error.code === 2) {
+          setGpsError('Position indisponible. Essayez de entrer les coordonnées manuellement.');
+        } else {
+          setGpsError('Délai dépassé. Vérifiez votre connexion et réessayez.');
+        }
+      },
+      { timeout: 10000, enableHighAccuracy: true }
     );
   };
 
@@ -158,6 +173,14 @@ export default function StepLocation({ data, onChange }: Props) {
           <MapPin className="h-4 w-4" />
           {gpsLoading ? 'Détection en cours…' : data.latitude ? `GPS activé (${data.latitude?.toFixed(4)}, ${data.longitude?.toFixed(4)})` : 'Utiliser ma position GPS'}
         </button>
+        {gpsError && (
+          <p className="mt-2 text-xs text-red-500 dark:text-red-400">{gpsError}</p>
+        )}
+        {data.latitude && data.longitude && (
+          <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+            ✓ Position enregistrée : {data.latitude?.toFixed(6)}, {data.longitude?.toFixed(6)}
+          </p>
+        )}
       </div>
 
       {/* Téléphone + WhatsApp */}

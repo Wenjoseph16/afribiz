@@ -48,7 +48,7 @@ const initialData: OnboardingData = {
   phone: '',
   whatsapp: null,
   openingHours: {},
-  modules: ['PRODUCTS', 'PAYMENT'],
+  modules: ['PRODUCTS', 'ORDERS', 'PROMOTIONS'],
 };
 
 export function OnboardingWizard() {
@@ -116,7 +116,33 @@ export function OnboardingWizard() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await apiClient.createBusiness(data);
+      // Transformer les champs frontend → backend (onboardingSchema)
+      const payload = {
+        name: data.name,
+        type: data.typeId,
+        shortDescription: data.description,
+        phone: data.phone,
+        whatsapp: data.whatsapp || undefined,
+        address: [data.quarter, data.address].filter(Boolean).join(', ') || data.city,
+        region: data.region || undefined,
+        city: data.city,
+        country: data.country,
+        latitude: data.latitude || undefined,
+        longitude: data.longitude || undefined,
+        logo: data.logo || undefined,
+        coverImage: data.banner || undefined,
+        managerBio: data.experienceDescription || undefined,
+        experience: data.experienceYears ? parseInt(data.experienceYears) || undefined : undefined,
+        skills: data.competencies,
+        certifications: data.certificates.map((c) => c.name + (c.issuer ? ` — ${c.issuer}` : '')),
+        modules: data.modules.filter((m) =>
+          ['PRODUCTS','SERVICES','MENU','ROOMS','BOOKINGS','ORDERS','QUOTES_INVOICES',
+           'DEBTS_PAYMENTS','PROMOTIONS','PLANNING','EMPLOYEES','PORTFOLIO',
+           'SUBSCRIPTIONS','DELIVERIES','EVENTS','RENTALS','DOCUMENTS','PARTNERS',
+           'DISPUTES','MODULE_MARKETPLACE','ADVANCED_TASKS','TRAINING'].includes(m)
+        ),
+      };
+      const res = await apiClient.createBusiness(payload);
       if (res.data.success) {
         const slug = res.data.data?.slug || data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
         setCreatedSlug(slug);
