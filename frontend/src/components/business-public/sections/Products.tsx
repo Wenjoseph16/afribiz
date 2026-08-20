@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -31,6 +31,30 @@ interface ProductsProps {
 
 type ProductFilter = 'all' | 'featured' | 'popular' | 'recent' | 'sale';
 
+/* ─── Stagger entry observer hook ─── */
+function useStaggerReveal(itemCount: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.08 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return { ref, visible, itemCount };
+}
+
 export function Products({ businessId, businessName, products }: ProductsProps) {
   const router = useRouter();
   const trackClick = useProductClick();
@@ -42,7 +66,6 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [layawayStarting, setLayawayStarting] = useState<string | null>(null);
 
-  // Badge 🔒 Épargne — offres actives sur les produits de ce business (1 seul appel)
   const productIds = useMemo(() => products.map((p) => p.id), [products]);
   const { data: layawayMap } = useQuery({
     queryKey: ['layaway-offers', businessId, productIds],
@@ -71,7 +94,6 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
       await apiClient.createLayawayPlan(offer.id);
       router.push('/dashboard/my-layaway');
     } catch {
-      // Plan déjà existant → on y va quand même
       router.push('/dashboard/my-layaway');
     } finally {
       setLayawayStarting(null);
@@ -80,7 +102,6 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
 
   if (!products?.length) return null;
 
-  // Extract unique categories with product counts
   const categories = useMemo(() => {
     const catMap = new Map<string, number>();
     products.forEach((p) => {
@@ -90,16 +111,11 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
     return Array.from(catMap.entries()).map(([name, count]) => ({ name, count }));
   }, [products]);
 
-  // Filter products
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
-
-    // Category filter
     if (activeCategory !== 'all') {
       filtered = filtered.filter((p) => (p.category?.name || 'Autres') === activeCategory);
     }
-
-    // Sort/filter by type
     switch (activeFilter) {
       case 'featured':
         filtered = filtered.filter((p) => p.featured);
@@ -115,28 +131,23 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
       case 'sale':
         filtered = filtered.filter((p) => p.isPromotional);
         break;
-      default:
-        // 'all' — keep as-is
-        break;
     }
-
     return filtered;
   }, [products, activeCategory, activeFilter]);
 
   const filterTabs: { key: ProductFilter; label: string; icon: React.ReactNode }[] = [
-    { key: 'all', label: 'Tous', icon: <Grid3X3 className="w-4 h-4" /> },
-    { key: 'featured', label: 'Vedettes', icon: <Sparkles className="w-4 h-4" /> },
-    { key: 'popular', label: 'Populaires', icon: <TrendingUp className="w-4 h-4" /> },
-    { key: 'recent', label: 'Récents', icon: <Clock className="w-4 h-4" /> },
+    { key: 'all', label: 'Tous', icon: <Grid3X3 className="w-3.5 h-3.5" /> },
+    { key: 'featured', label: 'Vedettes', icon: <Sparkles className="w-3.5 h-3.5" /> },
+    { key: 'popular', label: 'Populaires', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+    { key: 'recent', label: 'Récents', icon: <Clock className="w-3.5 h-3.5" /> },
     ...(products.some((p) => p.isPromotional)
-      ? [{ key: 'sale' as ProductFilter, label: 'Promos', icon: <Star className="w-4 h-4" /> }]
+      ? [{ key: 'sale' as ProductFilter, label: 'Promos', icon: <Star className="w-3.5 h-3.5" /> }]
       : []),
   ];
 
   const handleAddToCart = async (product: Product) => {
     setAddingId(product.id);
     await trackClick(businessId, product.id, 'public-page');
-
     addItem({
       id: `${product.id}-${Date.now()}`,
       productId: product.id,
@@ -148,35 +159,45 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
       businessId,
       businessName,
     });
-
     setAddingId(null);
     setJustAddedId(product.id);
     setTimeout(() => setJustAddedId(null), 2000);
     openDrawer();
   };
 
-  return (
-    <section id="section-products" className="scroll-mt-32 bg-gray-50 dark:bg-gray-800/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Nos Produits
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          {products.length} produit{products.length > 1 ? 's' : ''} disponible
-          {products.length > 1 ? 's' : ''}
-        </p>
+  const stagger = useStaggerReveal(filteredProducts.length);
 
-        {/* Filter tabs */}
-        <div className="flex flex-wrap items-center gap-2 mb-6">
+  return (
+    <section id="section-products" className="scroll-mt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        {/* ─── Eyebrow + Title ─── */}
+        <div className="mb-10 md:mb-14">
+          <span className="inline-block rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100 mb-4">
+            Catalogue
+          </span>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900">
+                Nos Produits
+              </h2>
+              <p className="mt-2 text-gray-500 text-sm">
+                {products.length} produit{products.length > 1 ? 's' : ''} disponible{products.length > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Filters — floating pill ─── */}
+        <div className="flex flex-wrap items-center gap-2 mb-8">
           {filterTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveFilter(tab.key)}
               className={cn(
-                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all',
+                'flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]',
                 activeFilter === tab.key
-                  ? 'bg-brand text-white shadow-sm shadow-brand/20'
-                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-brand/30 hover:text-brand'
+                  ? 'bg-gray-900 text-white shadow-lg shadow-gray-900/20'
+                  : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-200 hover:text-gray-900'
               )}
             >
               {tab.icon}
@@ -185,16 +206,16 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
           ))}
         </div>
 
-        {/* Category filter */}
+        {/* ─── Category chips ─── */}
         {categories.length > 1 && (
-          <div className="flex flex-wrap items-center gap-1.5 mb-6">
+          <div className="flex flex-wrap items-center gap-1.5 mb-10">
             <button
               onClick={() => setActiveCategory('all')}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                'px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-300',
                 activeCategory === 'all'
-                  ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
               )}
             >
               Tout ({products.length})
@@ -204,10 +225,10 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
                 key={cat.name}
                 onClick={() => setActiveCategory(cat.name)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  'px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-300',
                   activeCategory === cat.name
-                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                 )}
               >
                 {cat.name} ({cat.count})
@@ -216,158 +237,194 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
           </div>
         )}
 
-        {/* Product grid */}
+        {/* ─── Asymmetrical Bento Grid ─── */}
         {filteredProducts.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group"
-              >
-                <ProductViewTracker
-                  businessId={businessId}
-                  productId={product.id}
-                  source="public-page"
-                />
-                <div className="aspect-square bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
-                  {product.images?.[0] ? (
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <ShoppingCart className="w-12 h-12" />
-                    </div>
+          <div
+            ref={stagger.ref}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
+          >
+            {filteredProducts.map((product, idx) => {
+              /* First item spans 2 cols on large screens for visual break */
+              const isHero = idx === 0 && filteredProducts.length > 2;
+              return (
+                <div
+                  key={product.id}
+                  className={cn(
+                    'group relative transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                    isHero && 'sm:col-span-2 lg:col-span-2',
+                    stagger.visible
+                      ? 'opacity-100 translate-y-0 blur-0'
+                      : 'opacity-0 translate-y-8 blur-[2px]'
                   )}
+                  style={{ transitionDelay: `${Math.min(idx * 80, 400)}ms` }}
+                >
+                  <ProductViewTracker
+                    businessId={businessId}
+                    productId={product.id}
+                    source="public-page"
+                  />
+                  {/* ─── Double-Bezel Card ─── */}
+                  <div className="p-[1px] rounded-[1.25rem] bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100">
+                    <div className="bg-white rounded-[calc(1.25rem-1px)] overflow-hidden">
+                      {/* Image Zone */}
+                      <div
+                        className={cn(
+                          'relative overflow-hidden bg-gray-50',
+                          isHero ? 'aspect-[16/10]' : 'aspect-square'
+                        )}
+                      >
+                        {product.images?.[0] ? (
+                          <Image
+                            src={product.images[0]}
+                            alt={product.name}
+                            fill
+                            sizes={isHero ? '(max-width: 768px) 100vw, 66vw' : '(max-width: 768px) 100vw, 33vw'}
+                            className="object-cover group-hover:scale-[1.04] transition-transform duration-[800ms] ease-[cubic-bezier(0.32,0.72,0,1)]"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ShoppingCart className="w-10 h-10 text-gray-200" />
+                          </div>
+                        )}
 
-                  {/* Badges */}
-                  <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    {product.featured && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-400 text-amber-900 rounded-full shadow-sm">
-                        Vedette
-                      </span>
-                    )}
-                    {product.isPromotional && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full shadow-sm">
-                        -{product.discountPercent || ''}%
-                      </span>
-                    )}
-                    {(layawayMap || {})[product.id] && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded-full shadow-sm flex items-center gap-0.5">
-                        <Lock className="w-2.5 h-2.5" /> Épargne dispo
-                      </span>
-                    )}
-                  </div>
+                        {/* Gradient overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                  <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 hover:scale-110">
-                    <Heart className="w-4 h-4" />
-                  </button>
+                        {/* Badges — top left */}
+                        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                          {product.featured && (
+                            <span className="px-2.5 py-1 text-[10px] font-bold bg-amber-400/90 text-amber-900 rounded-full backdrop-blur-sm">
+                              ★ Vedette
+                            </span>
+                          )}
+                          {product.isPromotional && (
+                            <span className="px-2.5 py-1 text-[10px] font-bold bg-red-500/90 text-white rounded-full backdrop-blur-sm">
+                              -{product.discountPercent || ''}%
+                            </span>
+                          )}
+                          {(layawayMap || {})[product.id] && (
+                            <span className="px-2.5 py-1 text-[10px] font-bold bg-emerald-500/90 text-white rounded-full backdrop-blur-sm flex items-center gap-0.5">
+                              <Lock className="w-2.5 h-2.5" /> Épargne
+                            </span>
+                          )}
+                        </div>
 
-                  {product.stock <= 0 && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center">
-                      <span className="px-3 py-1 bg-white/90 dark:bg-gray-900/90 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg">
-                        Rupture de stock
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  {product.category && (
-                    <p className="text-[10px] font-medium text-brand uppercase tracking-wider mb-1">
-                      {product.category.name}
-                    </p>
-                  )}
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1 truncate">
-                    {product.name}
-                  </h3>
-                  {product.description && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
-                      {product.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      {product.isPromotional && product.promotionalPrice ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-lg font-bold text-red-500">
-                            {formatPrice(Number(product.promotionalPrice), product.currency)}
-                          </span>
-                          <span className="text-xs text-gray-400 line-through">
-                            {formatPrice(Number(product.price), product.currency)}
+                        {/* Heart — magnetic on hover */}
+                        <button className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-red-500 transition-all duration-300 opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 hover:scale-110 active:scale-95">
+                          <Heart className="w-4 h-4" />
+                        </button>
+
+                        {/* Stock overlay */}
+                        {product.stock <= 0 && (
+                          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+                            <span className="px-4 py-2 bg-gray-900 text-white text-xs font-semibold rounded-full">
+                              Rupture de stock
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content Zone */}
+                      <div className="p-4 md:p-5">
+                        {product.category && (
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-emerald-600 mb-2">
+                            {product.category.name}
+                          </p>
+                        )}
+                        <h3 className="font-semibold text-gray-900 text-[15px] leading-tight mb-1 line-clamp-1">
+                          {product.name}
+                        </h3>
+                        {product.description && (
+                          <p className="text-[13px] text-gray-400 line-clamp-2 mb-3 leading-relaxed">
+                            {product.description}
+                          </p>
+                        )}
+
+                        {/* Price + Rating */}
+                        <div className="flex items-center justify-between mb-3">
+                          {product.isPromotional && product.promotionalPrice ? (
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-xl font-bold text-red-500 tracking-tight">
+                                {formatPrice(Number(product.promotionalPrice), product.currency)}
+                              </span>
+                              <span className="text-xs text-gray-300 line-through">
+                                {formatPrice(Number(product.price), product.currency)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xl font-bold text-gray-900 tracking-tight">
+                              {formatPrice(Number(product.price), product.currency)}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            {product.rating.toFixed(1)}
                           </span>
                         </div>
-                      ) : (
-                        <span className="text-lg font-bold text-brand">
-                          {formatPrice(Number(product.price), product.currency)}
-                        </span>
-                      )}
-                    </div>
-                    <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      {product.rating.toFixed(1)}
-                    </span>
-                  </div>
 
-                  {/* Stock indicator */}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                    {product.stock > 0 ? (
-                      <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        {product.stock <= 5 ? `Plus que ${product.stock} en stock` : 'En stock'}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-xs text-red-500">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                        Rupture
-                      </span>
-                    )}
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      disabled={product.stock <= 0 || addingId === product.id}
-                      className={cn(
-                        'flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
-                        justAddedId === product.id
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-brand text-white hover:bg-brand-600',
-                        (product.stock <= 0 || addingId === product.id) &&
-                          'opacity-50 cursor-not-allowed'
-                      )}
-                    >
-                      {addingId === product.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : justAddedId === product.id ? (
-                        <Check className="w-3 h-3" />
-                      ) : (
-                        <ShoppingCart className="w-3 h-3" />
-                      )}
-                      {justAddedId === product.id ? 'Ajouté' : 'Commander'}
-                    </button>
-                    {(layawayMap || {})[product.id] && (
-                      <button
-                        onClick={() => handleLayaway(product)}
-                        disabled={layawayStarting === product.id}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
-                      >
-                        {layawayStarting === product.id ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Lock className="w-3 h-3" />
-                        )}
-                        Épargner
-                      </button>
-                    )}
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-50">
+                          <div className="flex-1">
+                            {product.stock > 0 ? (
+                              <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                {product.stock <= 5 ? `${product.stock} en stock` : 'En stock'}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1.5 text-[11px] text-red-400">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                                Indisponible
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleAddToCart(product)}
+                            disabled={product.stock <= 0 || addingId === product.id}
+                            className={cn(
+                              'flex items-center gap-1.5 px-4 py-2 text-[12px] font-semibold rounded-full transition-all duration-300 active:scale-[0.97]',
+                              justAddedId === product.id
+                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                                : 'bg-gray-900 text-white hover:bg-gray-800 shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20',
+                              (product.stock <= 0 || addingId === product.id) && 'opacity-40 cursor-not-allowed'
+                            )}
+                          >
+                            {addingId === product.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : justAddedId === product.id ? (
+                              <Check className="w-3.5 h-3.5" />
+                            ) : (
+                              <ShoppingCart className="w-3.5 h-3.5" />
+                            )}
+                            {justAddedId === product.id ? 'Ajouté' : 'Commander'}
+                          </button>
+                          {(layawayMap || {})[product.id] && (
+                            <button
+                              onClick={() => handleLayaway(product)}
+                              disabled={layawayStarting === product.id}
+                              className="flex items-center gap-1 px-3 py-2 text-[12px] font-semibold rounded-full border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-all duration-300 active:scale-[0.97]"
+                            >
+                              {layawayStarting === product.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Lock className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-            <ShoppingCart className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
+          /* ─── Empty State ─── */
+          <div className="text-center py-20 rounded-[1.5rem] border border-dashed border-gray-200 bg-gray-50/50">
+            <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <ShoppingCart className="w-7 h-7 text-gray-300" />
+            </div>
+            <p className="text-gray-400 text-sm font-medium">
               Aucun produit ne correspond à ce filtre.
             </p>
           </div>
