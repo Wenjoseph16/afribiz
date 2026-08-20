@@ -308,7 +308,21 @@ const BIZ_DEFS: any[] = [
 
 async function seedBusinesses() {
   const days = [1, 2, 3, 4, 5, 6, 0];
+  // Récupérer les slugs existants appartenant à de vrais utilisateurs (pas du seed)
+  const existingBySlug = new Map<string, string>(); // slug → ownerId
+  const existingBiz = await prisma.business.findMany({ select: { slug: true, ownerId: true } });
+  for (const b of existingBiz) {
+    if (b.slug) existingBySlug.set(b.slug, b.ownerId);
+  }
+  const seedOwnerIds = new Set(Object.values(U));
+
   for (const d of BIZ_DEFS) {
+    // GARDE : ne pas écraser un business dont l'owner est un vrai utilisateur
+    const existingOwner = existingBySlug.get(d.slug);
+    if (existingOwner && !seedOwnerIds.has(existingOwner)) {
+      console.log(`  ⏭ Skip ${d.name} (slug ${d.slug} belongs to real user ${existingOwner})`);
+      continue;
+    }
     await prisma.business.upsert({
       where: { id: d.id },
       // update appliqué : GPS, réseaux sociaux et googleMapsLink suivent le seed
