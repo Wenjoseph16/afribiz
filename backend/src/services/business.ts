@@ -745,6 +745,8 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
     latitude,
     longitude,
     modules: inputModules,
+    openingHours,
+    portfolio,
     ...rest
   } = data;
 
@@ -828,8 +830,8 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
     lundi: 1, mardi: 2, mercredi: 3, jeudi: 4,
     vendredi: 5, samedi: 6, dimanche: 0,
   };
-  if (data.openingHours && typeof data.openingHours === 'object') {
-    const hourEntries = Object.entries(data.openingHours).filter(
+  if (openingHours && typeof openingHours === 'object') {
+    const hourEntries = Object.entries(openingHours).filter(
       ([, v]) => v && typeof v === 'object'
     );
     if (hourEntries.length > 0) {
@@ -847,9 +849,9 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
   }
 
   // ── Sauver les items portfolio ──
-  if (data.portfolio && Array.isArray(data.portfolio) && data.portfolio.length > 0) {
+  if (portfolio && Array.isArray(portfolio) && portfolio.length > 0) {
     await (prisma as any).portfolioItem.createMany({
-      data: data.portfolio.map((item, idx) => ({
+      data: portfolio.map((item, idx) => ({
         businessId: business.id,
         title: item.title,
         description: item.description || null,
