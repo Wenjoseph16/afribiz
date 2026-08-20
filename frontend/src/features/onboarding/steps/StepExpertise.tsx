@@ -53,10 +53,8 @@ export default function StepExpertise({ data, onChange }: Props) {
 
     let fileUrl = '';
     if (file) {
-      const formData = new FormData();
-      formData.append('file', file);
       try {
-        const res = await apiClient.uploadMedia(formData);
+        const res = await apiClient.uploadMedia(file);
         if (res.data?.success) fileUrl = res.data.data.url || res.data.data.path;
       } catch { /* skip */ }
     }

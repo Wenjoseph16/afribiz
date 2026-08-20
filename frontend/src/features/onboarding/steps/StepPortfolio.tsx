@@ -18,10 +18,8 @@ export default function StepPortfolio({ data, onChange }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
     try {
-      const res = await apiClient.uploadMedia(formData);
+      const res = await apiClient.uploadMedia(file);
       if (res.data?.success) {
         setImageUrl(res.data.data.url || res.data.data.path);
       }

@@ -16,10 +16,8 @@ export default function StepIdentity({ data, onChange }: Props) {
   const bannerRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File, field: 'logo' | 'banner') => {
-    const formData = new FormData();
-    formData.append('file', file);
     try {
-      const res = await apiClient.uploadMedia(formData);
+      const res = await apiClient.uploadMedia(file);
       if (res.data?.success) {
         onChange({ [field]: res.data.data.url || res.data.data.path });
       }
