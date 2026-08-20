@@ -307,8 +307,8 @@ export interface OnboardingInput {
 
 export async function getMyBusiness(ownerId: string, businessId?: string | null) {
   const where = businessId
-    ? { id: businessId, ownerId, deletedAt: null }
-    : { ownerId, deletedAt: null };
+    ? { id: businessId, ownerId, deletedAt: null, isActive: true }
+    : { ownerId, deletedAt: null, isActive: true };
   const business = await prisma.business.findFirst({
     where,
     orderBy: { createdAt: 'asc' },
@@ -470,7 +470,7 @@ function computeModuleSetup(
 /** Liste des business du boss (bascule multi-activité). */
 export async function getMyBusinesses(ownerId: string) {
   return prisma.business.findMany({
-    where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null, isActive: true },
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,
@@ -488,7 +488,7 @@ export async function getMyBusinesses(ownerId: string) {
 
 export async function getMyBusinessStats(ownerId: string) {
   const business = await prisma.business.findFirst({
-    where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null, isActive: true },
     select: {
       id: true,
       _count: { select: { orders: true, reviews: true, products: true, services: true } },
@@ -530,7 +530,7 @@ export async function getMyBusinessStats(ownerId: string) {
 
 export async function getAggregatedDashboardStats(ownerId: string) {
   const business = await prisma.business.findFirst({
-    where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null, isActive: true },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -912,7 +912,7 @@ export async function respondToBusinessReview(
   ownerId: string,
   response: string
 ) {
-  const business = await prisma.business.findFirst({ where: { slug, ownerId, deletedAt: null } });
+  const business = await prisma.business.findFirst({ where: { slug, ownerId, deletedAt: null, isActive: true } });
   if (!business) throw new AppError('Business non trouvé ou accès refusé', 404);
 
   const review = await prisma.businessReview.findUnique({
