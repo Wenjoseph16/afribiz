@@ -293,6 +293,7 @@ export interface OnboardingInput {
   experience?: number;
   skills?: string[];
   certifications?: string[];
+  certificationImages?: string[];
   portfolioImages?: string[];
   tagline?: string;
   website?: string;
@@ -783,6 +784,7 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
       experience: rest.experience || undefined,
       skills: rest.skills || [],
       certifications: rest.certifications || [],
+      certificationImages: rest.certificationImages || [],
       portfolioImages: rest.portfolioImages || [],
       tagline: rest.tagline || undefined,
       facebook: rest.facebook || undefined,

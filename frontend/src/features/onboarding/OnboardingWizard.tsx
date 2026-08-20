@@ -144,6 +144,7 @@ export function OnboardingWizard() {
         experience: data.experienceYears ? parseInt(data.experienceYears) || undefined : undefined,
         skills: data.competencies,
         certifications: data.certificates.map((c) => c.name + (c.issuer ? ` — ${c.issuer}` : '')),
+        certificationImages: data.certificates.map((c) => c.fileUrl || ''),
         modules: data.modules.filter((m) =>
           [
             'PRODUCTS',

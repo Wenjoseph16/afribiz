@@ -41,7 +41,7 @@ export function Portfolio({ items }: PortfolioProps) {
   return (
     <>
       <section id="section-portfolio" className="scroll-mt-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
           {/* ─── Eyebrow + Title ─── */}
           <div className="mb-10 md:mb-14">
             <span className="inline-block rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium bg-amber-50 text-amber-700 border border-amber-100 mb-4">

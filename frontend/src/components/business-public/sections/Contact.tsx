@@ -5,14 +5,12 @@ import {
   Mail,
   Phone,
   MapPin,
-  Clock,
   Send,
   MessageSquare,
   CheckCircle,
   AlertCircle,
   Loader2,
   ChevronDown,
-  ChevronUp,
   Star,
   Share2,
 } from 'lucide-react';
@@ -51,7 +49,6 @@ export function Contact({ business }: ContactProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
-  const [showAllHours, setShowAllHours] = useState(false);
 
   const validate = useCallback((): FormErrors => {
     const errs: FormErrors = {};
@@ -93,31 +90,6 @@ export function Contact({ business }: ContactProps) {
     }
   };
 
-  const sortedHours = [...(business.hours || [])].sort((a, b) => a.day - b.day);
-  const displayHours = showAllHours ? sortedHours : sortedHours.slice(0, 4);
-
-  const today = new Date().getDay();
-  const todayHours = sortedHours.find((h) => h.day === today);
-
-  const getTodayStatus = () => {
-    if (!todayHours || todayHours.isClosed)
-      return { label: 'Fermé aujourd\u0027hui', color: 'text-red-500' };
-    if (!todayHours.open || !todayHours.close)
-      return { label: 'Fermé aujourd\u0027hui', color: 'text-red-500' };
-    const now = new Date();
-    const [oh, om] = todayHours.open.split(':').map(Number);
-    const [ch, cm] = todayHours.close.split(':').map(Number);
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    const openMin = oh * 60 + om;
-    const closeMin = ch * 60 + cm;
-    if (nowMin >= openMin && nowMin <= closeMin) {
-      if (closeMin - nowMin <= 60) return { label: 'Ferme bientôt', color: 'text-orange-500' };
-      return { label: 'Ouvert aujourd\u0027hui', color: 'text-green-500' };
-    }
-    return { label: 'Fermé maintenant', color: 'text-red-500' };
-  };
-
-  const todayStatus = getTodayStatus();
 
   // Réseaux sociaux renseignés (handle court ou URL complète)
   const socials = SOCIALS.filter((s) => (business as any)[s.key]).map((s) => {
@@ -155,7 +127,11 @@ export function Contact({ business }: ContactProps) {
         );
       case 'tiktok':
         return (
-          <svg viewBox="0 0 24 24" className={`${cls} fill-gray-900 dark:fill-gray-100`} aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            className={`${cls} fill-gray-900 dark:fill-gray-100`}
+            aria-hidden="true"
+          >
             <path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-2.59-2.59c.27 0 .53.04.78.12V9.77a5.76 5.76 0 0 0-.78-.05 5.66 5.66 0 1 0 5.66 5.66V9.9a7.32 7.32 0 0 0 4.28 1.37V8.18a4.28 4.28 0 0 1-3.2-2.36z" />
           </svg>
         );
@@ -383,59 +359,7 @@ export function Contact({ business }: ContactProps) {
               </div>
             </a>
           )}
-          <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600">
-                  <Clock className="h-4 w-4" />
-                </div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Horaires</p>
-              </div>
-              {todayStatus && (
-                <span className={cn('text-xs font-medium', todayStatus.color)}>
-                  {todayStatus.label}
-                </span>
-              )}
-            </div>
-            {sortedHours.length > 0 ? (
-              <>
-                <div className="space-y-1">
-                  {displayHours.map((h: BusinessHour) => (
-                    <div
-                      key={h.day}
-                      className={cn(
-                        'flex justify-between text-sm py-0.5',
-                        h.day === today
-                          ? 'font-medium text-brand'
-                          : 'text-gray-500 dark:text-gray-400'
-                      )}
-                    >
-                      <span>{DAY_LABELS[h.day]}</span>
-                      <span>{h.isClosed ? 'Fermé' : `${h.open || '?'} - ${h.close || '?'}`}</span>
-                    </div>
-                  ))}
-                </div>
-                {sortedHours.length > 4 && (
-                  <button
-                    onClick={() => setShowAllHours(!showAllHours)}
-                    className="flex items-center gap-1 text-xs text-brand font-medium mt-2 hover:underline"
-                  >
-                    {showAllHours ? (
-                      <>
-                        <ChevronUp className="w-3 h-3" /> Voir moins
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-3 h-3" /> Voir tout ({sortedHours.length} jours)
-                      </>
-                    )}
-                  </button>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-gray-400">Non renseignés</p>
-            )}
-          </div>
+
           {socials.length > 0 && (
             <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2 mb-3">
