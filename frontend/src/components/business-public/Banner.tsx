@@ -76,6 +76,7 @@ export function Banner({ business, slug }: BannerProps) {
             src={business.coverImage}
             alt={`Couverture ${business.name}`}
             fill
+            sizes="100vw"
             priority
             className="object-cover"
           />
@@ -84,12 +85,13 @@ export function Banner({ business, slug }: BannerProps) {
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative -mt-20 sm:-mt-24 flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6 pb-6">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-800 shadow-lg overflow-hidden flex-shrink-0">
+          <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-xl border-4 border-white dark:border-gray-800 bg-white dark:bg-gray-800 shadow-lg overflow-hidden flex-shrink-0">
             {business.logo ? (
               <Image
                 src={business.logo}
                 alt={`Logo ${business.name}`}
                 fill
+                sizes="(max-width: 640px) 96px, 128px"
                 priority
                 className="object-cover"
               />

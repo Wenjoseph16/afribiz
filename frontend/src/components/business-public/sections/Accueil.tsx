@@ -232,6 +232,7 @@ export function Accueil({ business }: AccueilProps) {
                         src={business.owner.avatar}
                         alt={`${business.owner.firstName} ${business.owner.lastName}`}
                         fill
+                        sizes="96px"
                         className="object-cover rounded-2xl"
                       />
                     ) : (

@@ -247,7 +247,7 @@ const BIZ_DEFS: any[] = [
     googleMapsLink: 'https://maps.google.com/?q=5.348,-3.9777',
     facebook: 'https://facebook.com/saveurdabidjan', instagram: 'https://instagram.com/saveurdabidjan', tiktok: 'https://tiktok.com/@saveurdabidjan',
     foundedYear: 2019, employeeCount: 14, rating: 4.6, reviewCount: 96,
-    modules: ['PRODUCTS', 'MENU', 'ORDERS', 'BOOKINGS', 'DELIVERIES', 'PROMOTIONS', 'EMPLOYEES', 'PLANNING', 'CRM', 'MARKETING', 'DEBTS_PAYMENTS', 'QUOTES_INVOICES', 'AFRISCORE', 'DOCUMENTS'],
+    modules: ['PRODUCTS', 'MENU', 'ORDERS', 'BOOKINGS', 'DELIVERIES', 'PROMOTIONS', 'EMPLOYEES', 'PLANNING', 'PORTFOLIO', 'DEBTS_PAYMENTS', 'QUOTES_INVOICES', 'DOCUMENTS', 'PARTNERS'],
   },
   {
     id: B.SALON, ownerId: U.OWNER_SALON, name: 'Kenza Beauté', slug: 'kenza-beaute', type: BusinessType.SALON_BEAUTE,
@@ -258,7 +258,7 @@ const BIZ_DEFS: any[] = [
     googleMapsLink: 'https://maps.google.com/?q=14.7459,-17.4847',
     facebook: 'https://facebook.com/kenzabeaute', instagram: 'https://instagram.com/kenzabeaute', tiktok: 'https://tiktok.com/@kenzabeaute',
     foundedYear: 2020, employeeCount: 6, rating: 4.8, reviewCount: 54,
-    modules: ['SERVICES', 'BOOKINGS', 'CRM', 'PROMOTIONS', 'PORTFOLIO', 'EMPLOYEES', 'PLANNING', 'MARKETING', 'AFRISCORE', 'SAVINGS', 'SUBSCRIPTIONS'],
+    modules: ['SERVICES', 'BOOKINGS', 'PROMOTIONS', 'PORTFOLIO', 'EMPLOYEES', 'PLANNING', 'DELIVERIES', 'DOCUMENTS', 'PARTNERS', 'SUBSCRIPTIONS'],
   },
   {
     id: B.HOTEL, ownerId: U.OWNER_HOTEL, name: 'Hôtel Palmier', slug: 'hotel-palmier', type: BusinessType.HOTEL,
@@ -269,7 +269,7 @@ const BIZ_DEFS: any[] = [
     googleMapsLink: 'https://maps.google.com/?q=5.3224,-4.0181',
     facebook: 'https://facebook.com/hotelpalmier', instagram: 'https://instagram.com/hotelpalmier', linkedin: 'https://linkedin.com/company/hotelpalmier',
     foundedYear: 2015, employeeCount: 32, rating: 4.4, reviewCount: 140,
-    modules: ['ROOMS', 'BOOKINGS', 'SERVICES', 'QUOTES_INVOICES', 'EVENTS', 'EMPLOYEES', 'CRM', 'PROMOTIONS', 'DOCUMENTS'],
+    modules: ['ROOMS', 'BOOKINGS', 'SERVICES', 'QUOTES_INVOICES', 'EVENTS', 'EMPLOYEES', 'PROMOTIONS', 'DOCUMENTS', 'DELIVERIES'],
   },
   {
     id: B.BOUTIQUE, ownerId: U.OWNER_BOUTIQUE, name: 'TechStore Afrique', slug: 'techstore-afrique', type: BusinessType.BOUTIQUE_TELEPHONIQUE,
@@ -280,7 +280,7 @@ const BIZ_DEFS: any[] = [
     googleMapsLink: 'https://maps.google.com/?q=5.56,-0.1755',
     facebook: 'https://facebook.com/techstoreafrique', instagram: 'https://instagram.com/techstoreafrique', twitter: 'https://twitter.com/techstoreafrique',
     foundedYear: 2021, employeeCount: 8, rating: 4.5, reviewCount: 78,
-    modules: ['PRODUCTS', 'ORDERS', 'DELIVERIES', 'DEBTS_PAYMENTS', 'PROMOTIONS', 'CRM', 'MARKETING', 'DOCUMENTS', 'QUOTES_INVOICES', 'SAVINGS'],
+    modules: ['PRODUCTS', 'ORDERS', 'DELIVERIES', 'DEBTS_PAYMENTS', 'PROMOTIONS', 'DOCUMENTS', 'QUOTES_INVOICES', 'PARTNERS'],
   },
   {
     id: B.BTP, ownerId: U.OWNER_BTP, name: 'BuildPro BTP', slug: 'buildpro-btp', type: BusinessType.ARTISAN,
@@ -291,7 +291,7 @@ const BIZ_DEFS: any[] = [
     googleMapsLink: 'https://maps.google.com/?q=5.3279,-4.109',
     facebook: 'https://facebook.com/buildproci', instagram: 'https://instagram.com/buildproci', linkedin: 'https://linkedin.com/company/buildpro',
     foundedYear: 2017, employeeCount: 22, rating: 4.7, reviewCount: 41,
-    modules: ['PORTFOLIO', 'QUOTES_INVOICES', 'ADVANCED_TASKS', 'PLANNING', 'EMPLOYEES', 'DOCUMENTS', 'PARTNERS', 'CRM', 'TRAINING'],
+    modules: ['PORTFOLIO', 'QUOTES_INVOICES', 'ADVANCED_TASKS', 'PLANNING', 'EMPLOYEES', 'DOCUMENTS', 'PARTNERS', 'TRAINING'],
   },
   {
     id: B.EVENTS, ownerId: U.OWNER_EVENTS, name: 'Événements Plus', slug: 'evenements-plus', type: BusinessType.LOCATION_SAISONNIERE,
@@ -302,7 +302,7 @@ const BIZ_DEFS: any[] = [
     googleMapsLink: 'https://maps.google.com/?q=6.3654,2.4254',
     facebook: 'https://facebook.com/evenementsplus', instagram: 'https://instagram.com/evenementsplus', tiktok: 'https://tiktok.com/@evenementsplus',
     foundedYear: 2018, employeeCount: 10, rating: 4.3, reviewCount: 33,
-    modules: ['PRODUCTS', 'EVENTS', 'RENTALS', 'BOOKINGS', 'ORDERS', 'PROMOTIONS', 'CRM', 'MARKETING', 'PLANNING', 'EMPLOYEES'],
+    modules: ['PRODUCTS', 'EVENTS', 'RENTALS', 'BOOKINGS', 'ORDERS', 'PROMOTIONS', 'PLANNING', 'EMPLOYEES', 'DELIVERIES', 'DOCUMENTS'],
   },
 ];
 
@@ -381,6 +381,57 @@ async function seedBusinesses() {
     });
   }
   console.log(`✓ ${BIZ_DEFS.length} business créés + modules métier activés`);
+}
+
+
+// ============================================================
+// 2b. IDENTITÉ + COMPÉTENCES + PORTFOLIO (onboarding data)
+// ============================================================
+async function seedBusinessIdentity() {
+  // ── Saveur d'Abidjan : identité complète ──
+  await prisma.business.update({
+    where: { id: B.RESTO },
+    data: {
+      skills: ['Cuisine ivoirienne', 'Poulet braisé', 'Traiteur', 'Attiéké', 'Mafé', 'Brochettes'],
+      certifications: ['Certificat hygiène alimentaire — CIRREA', 'Diplôme de cuisinier — EHTCI Abidjan'],
+      experience: 7,
+      managerBio: "Ismaël Bamba, cuisinier passionné depuis 2014. Spécialiste de la cuisine ivoirienne traditionnelle, il a ouvert Saveur d'Abidjan pour partager les saveurs du terroir.",
+      managerName: 'Ismaël Bamba',
+    },
+  });
+
+  // ── Kenza Beauté : identité complète ──
+  await prisma.business.update({
+    where: { id: B.SALON },
+    data: {
+      skills: ['Coiffure femme', 'Tresses', 'Locks', 'Coloration', 'Manucure', 'Soins visage'],
+      certifications: ['Diplôme — École de Beauté Dakar', 'Certificat Haircare International'],
+      experience: 5,
+      managerBio: 'Kenza, spécialiste en coiffure africaine depuis 2020. Son salon est réputé pour les tresses et les soins naturels.',
+      managerName: 'Fatou Diallo',
+    },
+  });
+
+  // ── Portfolio items : Saveur d'Abidjan ──
+  const portfolioResto = [
+    { id: 'pf-resto-1', businessId: B.RESTO, title: 'Attiéké Poisson Braisé', description: 'Notre plat signature servi avec sauce graine', coverImage: '/images/products/attieke.svg', sortOrder: 1 },
+    { id: 'pf-resto-2', businessId: B.RESTO, title: 'Mafé Poulet maison', description: 'Poulet mijoté dans une sauce cacahuète onctueuse', coverImage: '/images/products/mafe.svg', sortOrder: 2 },
+    { id: 'pf-resto-3', businessId: B.RESTO, title: 'Brochettes spéciales', description: 'Brochettes de bœuf et poulet marinées', coverImage: '/images/products/bissap.svg', sortOrder: 3 },
+  ];
+  for (const item of portfolioResto) {
+    await prisma.portfolioItem.upsert({ where: { id: item.id }, update: {}, create: item });
+  }
+
+  // ── Portfolio items : Kenza Beauté ──
+  const portfolioSalon = [
+    { id: 'pf-salon-1', businessId: B.SALON, title: 'Tresses Box Braids', description: 'Box braids longues avec éclats colorés', coverImage: '/images/portfolio/mariage-awa.svg', sortOrder: 1 },
+    { id: 'pf-salon-2', businessId: B.SALON, title: 'Locks naturals', description: 'Dreadlocks naturelles sans produits chimiques', coverImage: '/images/portfolio/mariage-awa.svg', sortOrder: 2 },
+  ];
+  for (const item of portfolioSalon) {
+    await prisma.portfolioItem.upsert({ where: { id: item.id }, update: {}, create: item });
+  }
+
+  console.log('✓ Identité + Compétences + Portfolio seedés');
 }
 
 // ============================================================
@@ -2176,6 +2227,7 @@ export async function seedRealistic() {
   await seedUsers();
   await seedPlatformPlans();
   await seedBusinesses();
+  await seedBusinessIdentity();
   await seedCatalogs();
   await seedMenuOps();
   await seedOrders();
