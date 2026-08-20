@@ -48,22 +48,41 @@ function StatCard({
   color?: string;
 }) {
   const colorMap: Record<string, { outer: string; inner: string; text: string }> = {
-    brand: { outer: 'ring-emerald-500/10', inner: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400' },
-    blue: { outer: 'ring-blue-500/10', inner: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400' },
-    purple: { outer: 'ring-purple-500/10', inner: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600 dark:text-purple-400' },
-    amber: { outer: 'ring-amber-500/10', inner: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400' },
-    emerald: { outer: 'ring-emerald-500/10', inner: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400' },
+    brand: {
+      outer: 'ring-emerald-500/10',
+      inner: 'bg-emerald-50 dark:bg-emerald-900/20',
+      text: 'text-emerald-600 dark:text-emerald-400',
+    },
+    blue: {
+      outer: 'ring-blue-500/10',
+      inner: 'bg-blue-50 dark:bg-blue-900/20',
+      text: 'text-blue-600 dark:text-blue-400',
+    },
+    purple: {
+      outer: 'ring-purple-500/10',
+      inner: 'bg-purple-50 dark:bg-purple-900/20',
+      text: 'text-purple-600 dark:text-purple-400',
+    },
+    amber: {
+      outer: 'ring-amber-500/10',
+      inner: 'bg-amber-50 dark:bg-amber-900/20',
+      text: 'text-amber-600 dark:text-amber-400',
+    },
+    emerald: {
+      outer: 'ring-emerald-500/10',
+      inner: 'bg-emerald-50 dark:bg-emerald-900/20',
+      text: 'text-emerald-600 dark:text-emerald-400',
+    },
   };
   const c = colorMap[color] || colorMap.brand;
 
   return (
-    <motion.div
-      variants={fadeUp}
-      className="group"
-    >
+    <motion.div variants={fadeUp} className="group">
       <div className={cn('p-1.5 rounded-2xl ring-1', c.outer)}>
         <div className="p-4 rounded-xl bg-white dark:bg-gray-800/80 backdrop-blur-sm hover:shadow-lg transition-all duration-500">
-          <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', c.inner)}>
+          <div
+            className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', c.inner)}
+          >
             <span className={c.text}>{icon}</span>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{value}</p>
@@ -150,7 +169,7 @@ export function Accueil({ business }: AccueilProps) {
             <span className="text-emerald-600 dark:text-emerald-400">{business.name}</span>
           </h2>
           {business.shortDescription && (
-            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium uppercase tracking-wider">
+            <p className="text-gray-600 dark:text-gray-300 text-base leading-relaxed max-w-2xl">
               {business.shortDescription}
             </p>
           )}
@@ -195,7 +214,9 @@ export function Accueil({ business }: AccueilProps) {
                   <Target className="w-6 h-6 text-emerald-600" />
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Notre Mission</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{business.mission}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  {business.mission}
+                </p>
               </div>
             )}
             {business.vision && (
@@ -204,7 +225,9 @@ export function Accueil({ business }: AccueilProps) {
                   <Eye className="w-6 h-6 text-blue-600" />
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Notre Vision</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{business.vision}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  {business.vision}
+                </p>
               </div>
             )}
             {business.values && (
@@ -213,7 +236,9 @@ export function Accueil({ business }: AccueilProps) {
                   <Heart className="w-6 h-6 text-purple-600" />
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Nos Valeurs</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{business.values}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  {business.values}
+                </p>
               </div>
             )}
           </motion.div>
@@ -221,11 +246,7 @@ export function Accueil({ business }: AccueilProps) {
 
         {/* Manager Card — Double Bezel */}
         {(business.owner || managerBio) && (
-          <motion.div
-            {...fadeUp}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="mt-12"
-          >
+          <motion.div {...fadeUp} transition={{ duration: 0.7, delay: 0.3 }} className="mt-12">
             <div className="p-1.5 rounded-2xl ring-1 ring-gray-200 dark:ring-white/10">
               <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/80 dark:to-gray-900/80 p-6 sm:p-8">
                 {/* Decorative accent */}
@@ -245,9 +266,17 @@ export function Accueil({ business }: AccueilProps) {
                             className="object-cover rounded-xl"
                           />
                         ) : managerName ? (
-                          <span>{managerName.split(' ').map((n: string) => n[0]).join('')}</span>
+                          <span>
+                            {managerName
+                              .split(' ')
+                              .map((n: string) => n[0])
+                              .join('')}
+                          </span>
                         ) : business.owner ? (
-                          <span>{business.owner.firstName?.[0]}{business.owner.lastName?.[0]}</span>
+                          <span>
+                            {business.owner.firstName?.[0]}
+                            {business.owner.lastName?.[0]}
+                          </span>
                         ) : null}
                       </div>
                     </div>
@@ -262,7 +291,10 @@ export function Accueil({ business }: AccueilProps) {
                     <div className="flex items-center gap-2 mb-1">
                       <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                        {managerName || (business.owner ? `${business.owner.firstName} ${business.owner.lastName}` : '')}
+                        {managerName ||
+                          (business.owner
+                            ? `${business.owner.firstName} ${business.owner.lastName}`
+                            : '')}
                       </h3>
                     </div>
                     {experienceYears && (

@@ -9,7 +9,10 @@ import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useBusinessStore } from '@/stores/businessStore';
 import { useToast } from '@/components/ui/ToastProvider';
-import { OnboardingStepper, type OnboardingStepDef } from '@/components/onboarding/OnboardingStepper';
+import {
+  OnboardingStepper,
+  type OnboardingStepDef,
+} from '@/components/onboarding/OnboardingStepper';
 import { OnboardingLivePreview } from '@/components/onboarding/OnboardingLivePreview';
 import { OnboardingSuccess } from '@/components/onboarding/OnboardingSuccess';
 import type { OnboardingData } from '@/types/business';
@@ -48,7 +51,7 @@ const initialData: OnboardingData = {
   phone: '',
   whatsapp: null,
   openingHours: {},
-  modules: ['PRODUCTS', 'ORDERS', 'PROMOTIONS'],
+  modules: [],
 };
 
 export function OnboardingWizard() {
@@ -77,7 +80,7 @@ export function OnboardingWizard() {
         return null;
       case 2:
         if (data.competencies.length < 3) return 'Ajoutez au moins 3 compétences.';
-        if (!data.experienceYears) return 'Sélectionnez vos années d\'expérience.';
+        if (!data.experienceYears) return "Sélectionnez vos années d'expérience.";
         return null;
       case 4:
         if (!data.city.trim()) return 'Indiquez la ville de votre business.';
@@ -93,7 +96,10 @@ export function OnboardingWizard() {
 
   const nextStep = () => {
     const err = validateStep(currentStep);
-    if (err) { setError(err); return; }
+    if (err) {
+      setError(err);
+      return;
+    }
     setError(null);
     setCurrentStep((s) => Math.min(s + 1, STEPS.length));
   };
@@ -112,7 +118,10 @@ export function OnboardingWizard() {
 
   const handleSubmit = async () => {
     const err = validateStep(5);
-    if (err) { setError(err); return; }
+    if (err) {
+      setError(err);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -136,10 +145,30 @@ export function OnboardingWizard() {
         skills: data.competencies,
         certifications: data.certificates.map((c) => c.name + (c.issuer ? ` — ${c.issuer}` : '')),
         modules: data.modules.filter((m) =>
-          ['PRODUCTS','SERVICES','MENU','ROOMS','BOOKINGS','ORDERS','QUOTES_INVOICES',
-           'DEBTS_PAYMENTS','PROMOTIONS','PLANNING','EMPLOYEES','PORTFOLIO',
-           'SUBSCRIPTIONS','DELIVERIES','EVENTS','RENTALS','DOCUMENTS','PARTNERS',
-           'DISPUTES','MODULE_MARKETPLACE','ADVANCED_TASKS','TRAINING'].includes(m)
+          [
+            'PRODUCTS',
+            'SERVICES',
+            'MENU',
+            'ROOMS',
+            'BOOKINGS',
+            'ORDERS',
+            'QUOTES_INVOICES',
+            'DEBTS_PAYMENTS',
+            'PROMOTIONS',
+            'PLANNING',
+            'EMPLOYEES',
+            'PORTFOLIO',
+            'SUBSCRIPTIONS',
+            'DELIVERIES',
+            'EVENTS',
+            'RENTALS',
+            'DOCUMENTS',
+            'PARTNERS',
+            'DISPUTES',
+            'MODULE_MARKETPLACE',
+            'ADVANCED_TASKS',
+            'TRAINING',
+          ].includes(m)
         ),
         // Horaires d'ouverture (Step 4)
         openingHours: data.openingHours || {},
@@ -153,7 +182,14 @@ export function OnboardingWizard() {
       };
       const res = await apiClient.createBusiness(payload);
       if (res.data.success) {
-        const slug = res.data.data?.slug || data.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        const slug =
+          res.data.data?.slug ||
+          data.name
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
         setCreatedSlug(slug);
         if (user) {
           setUser({
@@ -167,14 +203,20 @@ export function OnboardingWizard() {
           if (refreshToken) {
             const rr = await apiClient.post('/auth/refresh', { refreshToken });
             if (rr.data?.success && rr.data?.data?.accessToken) {
-              useAuthStore.getState().setTokens(rr.data.data.accessToken, rr.data.data.refreshToken);
+              useAuthStore
+                .getState()
+                .setTokens(rr.data.data.accessToken, rr.data.data.refreshToken);
             }
           }
-        } catch { /* non-blocking */ }
+        } catch {
+          /* non-blocking */
+        }
         try {
           const myBiz = await apiClient.getMyBusiness();
           if (myBiz.data?.data) setBusiness(myBiz.data.data);
-        } catch { /* non-blocking */ }
+        } catch {
+          /* non-blocking */
+        }
         setCompleted(true);
         return;
       }
@@ -188,12 +230,18 @@ export function OnboardingWizard() {
 
   const renderStep = () => {
     switch (currentStep) {
-      case 1: return <StepIdentity data={data} onChange={updateData} />;
-      case 2: return <StepExpertise data={data} onChange={updateData} />;
-      case 3: return <StepPortfolio data={data} onChange={updateData} />;
-      case 4: return <StepLocation data={data} onChange={updateData} />;
-      case 5: return <StepModules data={data} onChange={updateData} />;
-      default: return null;
+      case 1:
+        return <StepIdentity data={data} onChange={updateData} />;
+      case 2:
+        return <StepExpertise data={data} onChange={updateData} />;
+      case 3:
+        return <StepPortfolio data={data} onChange={updateData} />;
+      case 4:
+        return <StepLocation data={data} onChange={updateData} />;
+      case 5:
+        return <StepModules data={data} onChange={updateData} />;
+      default:
+        return null;
     }
   };
 
@@ -209,8 +257,8 @@ export function OnboardingWizard() {
           Lancez votre business
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xl">
-          Configurez votre page publique et vos outils en 5 étapes. La prévisualisation à droite
-          se met à jour en temps réel.
+          Configurez votre page publique et vos outils en 5 étapes. La prévisualisation à droite se
+          met à jour en temps réel.
         </p>
       </div>
 

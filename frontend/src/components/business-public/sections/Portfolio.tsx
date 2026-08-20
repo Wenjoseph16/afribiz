@@ -34,7 +34,8 @@ export function Portfolio({ items }: PortfolioProps) {
 
   const open = (idx: number) => setLightboxIdx(idx);
   const close = () => setLightboxIdx(null);
-  const prev = () => lightboxIdx !== null && setLightboxIdx((lightboxIdx - 1 + items.length) % items.length);
+  const prev = () =>
+    lightboxIdx !== null && setLightboxIdx((lightboxIdx - 1 + items.length) % items.length);
   const next = () => lightboxIdx !== null && setLightboxIdx((lightboxIdx + 1) % items.length);
 
   return (
@@ -75,10 +76,15 @@ export function Portfolio({ items }: PortfolioProps) {
                   {/* ─── Double-Bezel ─── */}
                   <div className="p-[1px] rounded-[1.25rem] bg-gradient-to-br from-gray-100 via-white to-gray-100 h-full">
                     <div className="bg-white rounded-[calc(1.25rem-1px)] overflow-hidden h-full">
-                      <div className={cn('relative overflow-hidden bg-gray-50', isTall ? 'aspect-[3/4]' : 'aspect-square')}>
-                        {item.images?.[0] ? (
+                      <div
+                        className={cn(
+                          'relative overflow-hidden bg-gray-50',
+                          isTall ? 'aspect-[3/4]' : 'aspect-square'
+                        )}
+                      >
+                        {(item as any).coverImage || item.images?.[0] ? (
                           <Image
-                            src={item.images[0]}
+                            src={(item as any).coverImage || item.images?.[0] || ''}
                             alt={item.title}
                             fill
                             sizes="(max-width: 768px) 50vw, 33vw"
@@ -109,8 +115,8 @@ export function Portfolio({ items }: PortfolioProps) {
                             </span>
                           )}
                           {item.url && (
-                              <a
-                                href={item.url}
+                            <a
+                              href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
@@ -124,8 +130,19 @@ export function Portfolio({ items }: PortfolioProps) {
 
                         {/* Expand icon — top right */}
                         <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300">
-                          <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+                          <svg
+                            className="w-3.5 h-3.5 text-white"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="15 3 21 3 21 9" />
+                            <polyline points="9 21 3 21 3 15" />
+                            <line x1="21" y1="3" x2="14" y2="10" />
+                            <line x1="3" y1="21" x2="10" y2="14" />
                           </svg>
                         </div>
                       </div>
@@ -154,7 +171,10 @@ export function Portfolio({ items }: PortfolioProps) {
 
           {/* Prev */}
           <button
-            onClick={(e) => { e.stopPropagation(); prev(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              prev();
+            }}
             className="absolute left-4 md:left-8 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors z-10"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -165,9 +185,9 @@ export function Portfolio({ items }: PortfolioProps) {
             className="relative max-w-4xl max-h-[80vh] w-full aspect-[4/3]"
             onClick={(e) => e.stopPropagation()}
           >
-            {items[lightboxIdx].images?.[0] ? (
+            {(items[lightboxIdx] as any).coverImage || items[lightboxIdx].images?.[0] ? (
               <Image
-                src={items[lightboxIdx].images[0]}
+                src={(items[lightboxIdx] as any).coverImage || items[lightboxIdx].images?.[0] || ''}
                 alt={items[lightboxIdx].title}
                 fill
                 className="object-contain rounded-2xl"
@@ -181,7 +201,10 @@ export function Portfolio({ items }: PortfolioProps) {
 
           {/* Next */}
           <button
-            onClick={(e) => { e.stopPropagation(); next(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              next();
+            }}
             className="absolute right-4 md:right-8 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors z-10"
           >
             <ChevronRight className="w-5 h-5" />
@@ -193,7 +216,9 @@ export function Portfolio({ items }: PortfolioProps) {
             {items[lightboxIdx].description && (
               <p className="text-white/60 text-sm mt-1">{items[lightboxIdx].description}</p>
             )}
-            <p className="text-white/40 text-xs mt-2">{lightboxIdx + 1} / {items.length}</p>
+            <p className="text-white/40 text-xs mt-2">
+              {lightboxIdx + 1} / {items.length}
+            </p>
           </div>
         </div>
       )}

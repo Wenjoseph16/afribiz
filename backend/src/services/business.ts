@@ -856,6 +856,7 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
         title: item.title,
         description: item.description || null,
         coverImage: item.imageUrl || null,
+        images: item.imageUrl ? [item.imageUrl] : [],
         sortOrder: idx,
       })),
     });
