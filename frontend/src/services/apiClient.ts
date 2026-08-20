@@ -171,7 +171,7 @@ export class ApiClient {
   }
 
   async activateDeveloperRole() {
-    return this.instance.post<ApiResponse>('/auth/activate-developer');
+    return this.instance.post<ApiResponse>('/developer/activate');
   }
   // Dashboard endpoints
   async getClientDashboard() {
@@ -453,28 +453,28 @@ export class ApiClient {
 
   // Public Business
   async getPublicBusiness(slug: string) {
-    return this.instance.get<ApiResponse>(`/business/public/${slug}`);
+    return this.instance.get<ApiResponse>(`/business/${slug}/public`);
   }
   async getBusinessProducts(slug: string) {
-    return this.instance.get<ApiResponse>(`/business/public/${slug}/products`);
+    return this.instance.get<ApiResponse>(`/business/${slug}/products`);
   }
   async getBusinessServices(slug: string) {
-    return this.instance.get<ApiResponse>(`/business/public/${slug}/services`);
+    return this.instance.get<ApiResponse>(`/business/${slug}/services`);
   }
   async getBusinessMenu(slug: string) {
-    return this.instance.get<ApiResponse>(`/business/public/${slug}/menu`);
+    return this.instance.get<ApiResponse>(`/business/${slug}/menu`);
   }
   async getBusinessRooms(slug: string) {
-    return this.instance.get<ApiResponse>(`/business/public/${slug}/rooms`);
+    return this.instance.get<ApiResponse>(`/business/${slug}/rooms`);
   }
   async getBusinessEvents(slug: string) {
-    return this.instance.get<ApiResponse>(`/business/public/${slug}/events`);
+    return this.instance.get<ApiResponse>(`/business/${slug}/events`);
   }
   async getBusinessRentals(slug: string) {
-    return this.instance.get<ApiResponse>(`/business/public/${slug}/rentals`);
+    return this.instance.get<ApiResponse>(`/business/${slug}/rentals`);
   }
   async getBusinessPortfolio(slug: string) {
-    return this.instance.get<ApiResponse>(`/business/public/${slug}/portfolio`);
+    return this.instance.get<ApiResponse>(`/business/${slug}/portfolio`);
   }
 
   // Bookings
