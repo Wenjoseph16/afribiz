@@ -36,7 +36,6 @@ import { LiveBanner } from './sections/LiveBanner';
 import { BusinessModule } from '@/types/business';
 import { PageViewTracker } from '@/components/customer360/PageViewTracker';
 
-
 const Products = dynamic(
   () => import('./sections/Products').then((m) => ({ default: m.Products })),
   { ssr: false }
@@ -247,8 +246,6 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
         slug={slug}
       />
 
-
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className={`flex flex-col lg:flex-row gap-8`}>
           <div className={`flex-1 min-w-0 ${hasSidebar ? '' : 'max-w-4xl mx-auto'}`}>
@@ -256,8 +253,6 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               <section id="section-accueil">
                 <Accueil business={business} />
               </section>
-
-
             </ErrorBoundary>
             <ErrorBoundary>
               <MediaStories
@@ -349,13 +344,11 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
             </ErrorBoundary>
           </div>
           {hasSidebar && (
-            <div className="w-full lg:w-80 xl:w-96 flex-shrink-0">
-              <div className="lg:sticky lg:top-32">
+            <div className="w-full lg:w-80 xl:w-96">
+              <div className="lg:sticky lg:top-28">
                 <ErrorBoundary>
                   <Sidebar business={business} />
                 </ErrorBoundary>
-
-
               </div>
             </div>
           )}
@@ -363,7 +356,6 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
       </div>
 
       <Footer business={business} />
-
     </div>
   );
 }
