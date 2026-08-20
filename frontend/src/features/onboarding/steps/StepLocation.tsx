@@ -1,21 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MapPin, Phone, Clock } from 'lucide-react';
 import type { OnboardingData, OnboardingOpeningHours } from '@/types/business';
 import { useAuthStore } from '@/stores/authStore';
+import { Country, State, City } from 'country-state-city';
 
-const AFRICAN_COUNTRIES = [
-  'Togo', 'Bénin', 'Côte d\'Ivoire', 'Ghana', 'Nigeria', 'Sénégal',
-  'Cameroun', 'Mali', 'Burkina Faso', 'Niger', 'Guinée', 'Congo',
-  'République démocratique du Congo', 'Gabon', 'Tchad', 'Centrafrique',
-  'Autre',
+// Codes ISO des pays africains prioritaires
+const AFRICAN_ISO = [
+  'TG', 'BJ', 'CI', 'GH', 'NG', 'SN', 'CM', 'ML', 'BF', 'NE',
+  'GN', 'CG', 'CD', 'GA', 'TD', 'CF', 'CG', 'TG', 'RW', 'UG',
+  'KE', 'ET', 'ZA', 'TZ', 'MZ', 'MG', 'DZ', 'MA', 'TN', 'EG',
 ];
+
+const AFRIQUE = Country.getAllCountries().filter(
+  (c) => AFRICAN_ISO.includes(c.isoCode)
+);
+
+function findCountryCode(name: string): string | undefined {
+  return AFRIQUE.find((c) => c.name === name)?.isoCode ||
+    Country.getAllCountries().find((c) => c.name === name)?.isoCode;
+}
 
 const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 const DAY_LABELS: Record<string, string> = {
-  lundi: 'Lun', mardi: 'Mar', mercredi: 'Mer', jeudi: 'Jeu',
-  vendredi: 'Ven', samedi: 'Sam', dimanche: 'Dim',
+  lundi: 'Lun',
+  mardi: 'Mar',
+  mercredi: 'Mer',
+  jeudi: 'Jeu',
+  vendredi: 'Ven',
+  samedi: 'Sam',
+  dimanche: 'Dim',
 };
 
 function getDefaultHours(): OnboardingOpeningHours {
@@ -36,6 +51,21 @@ export default function StepLocation({ data, onChange }: Props) {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
   const [whatsappSame, setWhatsappSame] = useState(true);
+  const [manualCity, setManualCity] = useState(false);
+
+  // Resolve country code for cascade
+  const countryCode = useMemo(() => findCountryCode(data.country), [data.country]);
+  const states = useMemo(() => {
+    if (!countryCode) return [];
+    return State.getStatesOfCountry(countryCode);
+  }, [countryCode]);
+  const cities = useMemo(() => {
+    if (!countryCode) return [];
+    const stateObj = states.find((s) => s.name === data.region);
+    if (stateObj) return City.getCitiesOfState(countryCode, stateObj.isoCode) || [];
+    // If no region selected, get all cities for country
+    return [];
+  }, [countryCode, states, data.region]);
 
   // Pré-remplir le téléphone depuis le compte
   useEffect(() => {
@@ -71,7 +101,7 @@ export default function StepLocation({ data, onChange }: Props) {
 
   const detectGPS = () => {
     if (!navigator.geolocation) {
-      setGpsError('La géolocalisation n\'est pas supportée par votre navigateur.');
+      setGpsError("La géolocalisation n'est pas supportée par votre navigateur.");
       return;
     }
     setGpsLoading(true);
@@ -85,7 +115,9 @@ export default function StepLocation({ data, onChange }: Props) {
       (error) => {
         setGpsLoading(false);
         if (error.code === 1) {
-          setGpsError('Permission refusée. Autorisez la géolocalisation dans les paramètres du navigateur.');
+          setGpsError(
+            'Permission refusée. Autorisez la géolocalisation dans les paramètres du navigateur.'
+          );
         } else if (error.code === 2) {
           setGpsError('Position indisponible. Essayez de entrer les coordonnées manuellement.');
         } else {
@@ -105,44 +137,114 @@ export default function StepLocation({ data, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Pays + Région + Ville */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Pays + Région + Ville — Cascade select */}
+      <div className="space-y-3">
         <div>
-          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Pays *</label>
+          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+            Pays *
+          </label>
           <select
             value={data.country}
-            onChange={(e) => onChange({ country: e.target.value })}
+            onChange={(e) => {
+              // Reset region and city when country changes
+              onChange({ country: e.target.value, region: '', city: '' });
+            }}
             className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 appearance-none"
           >
-            {AFRICAN_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            {AFRIQUE.map((c) => (
+              <option key={c.isoCode} value={c.name}>
+                {c.flag} {c.name}
+              </option>
+            ))}
           </select>
         </div>
-        <div>
-          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Région</label>
-          <input
-            type="text"
-            value={data.region}
-            onChange={(e) => onChange({ region: e.target.value })}
-            placeholder="Région / État"
-            className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Ville *</label>
-          <input
-            type="text"
-            value={data.city}
-            onChange={(e) => onChange({ city: e.target.value })}
-            placeholder="Ex: Lomé, Abidjan"
-            className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-          />
-        </div>
+
+        {states.length > 0 && (
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+              Région / État
+            </label>
+            <select
+              value={data.region}
+              onChange={(e) => {
+                onChange({ region: e.target.value, city: '' });
+              }}
+              className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 appearance-none"
+            >
+              <option value="">— Sélectionnez une région —</option>
+              {states.map((s) => (
+                <option key={s.isoCode} value={s.name}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {cities.length > 0 && !manualCity && (
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+              Ville *
+            </label>
+            <select
+              value={data.city}
+              onChange={(e) => {
+                const cityObj = cities.find((c) => c.name === e.target.value);
+                const updates: Partial<OnboardingData> = { city: e.target.value };
+                if (cityObj?.latitude) updates.latitude = parseFloat(cityObj.latitude);
+                if (cityObj?.longitude) updates.longitude = parseFloat(cityObj.longitude);
+                onChange(updates);
+              }}
+              className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 appearance-none"
+            >
+              <option value="">— Sélectionnez une ville —</option>
+              {cities.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setManualCity(true)}
+              className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              Ville non listée ? Saisir manuellement
+            </button>
+          </div>
+        )}
+
+        {(cities.length === 0 || manualCity) && (
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+              Ville *
+            </label>
+            <input
+              type="text"
+              value={data.city}
+              onChange={(e) => onChange({ city: e.target.value })}
+              placeholder="Ex: Lomé, Abidjan"
+              className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            />
+            {states.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setManualCity(false)}
+                className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                ← Retour à la liste des villes
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Quartier + Adresse */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Quartier</label>
+          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+            Quartier
+          </label>
           <input
             type="text"
             value={data.quarter}
@@ -152,7 +254,9 @@ export default function StepLocation({ data, onChange }: Props) {
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">Adresse détaillée</label>
+          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+            Adresse détaillée
+          </label>
           <input
             type="text"
             value={data.address}
@@ -171,11 +275,13 @@ export default function StepLocation({ data, onChange }: Props) {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 text-emerald-700 dark:text-emerald-300 text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all"
         >
           <MapPin className="h-4 w-4" />
-          {gpsLoading ? 'Détection en cours…' : data.latitude ? `GPS activé (${data.latitude?.toFixed(4)}, ${data.longitude?.toFixed(4)})` : 'Utiliser ma position GPS'}
+          {gpsLoading
+            ? 'Détection en cours…'
+            : data.latitude
+              ? `GPS activé (${data.latitude?.toFixed(4)}, ${data.longitude?.toFixed(4)})`
+              : 'Utiliser ma position GPS'}
         </button>
-        {gpsError && (
-          <p className="mt-2 text-xs text-red-500 dark:text-red-400">{gpsError}</p>
-        )}
+        {gpsError && <p className="mt-2 text-xs text-red-500 dark:text-red-400">{gpsError}</p>}
         {data.latitude && data.longitude && (
           <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
             ✓ Position enregistrée : {data.latitude?.toFixed(6)}, {data.longitude?.toFixed(6)}
@@ -199,7 +305,9 @@ export default function StepLocation({ data, onChange }: Props) {
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">WhatsApp</label>
+          <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+            WhatsApp
+          </label>
           <div className="flex items-center gap-2 mb-1.5">
             <button
               onClick={() => handleWhatsappToggle(true)}

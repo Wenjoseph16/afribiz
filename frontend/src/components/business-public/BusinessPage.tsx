@@ -35,12 +35,7 @@ import { ErrorState } from './ErrorState';
 import { LiveBanner } from './sections/LiveBanner';
 import { BusinessModule } from '@/types/business';
 import { PageViewTracker } from '@/components/customer360/PageViewTracker';
-import { MobileOrderBar } from './MobileOrderBar';
-import { AdBannerCarousel } from '@/components/ads/AdBannerCarousel';
-import AdSlot from '@/components/ads/AdSlot';
-import { BusinessStats } from './BusinessStats';
-import { TrustBadges } from './TrustBadges';
-import { usePublicScore } from '@/features/afriScoreHooks';
+
 
 const Products = dynamic(
   () => import('./sections/Products').then((m) => ({ default: m.Products })),
@@ -85,9 +80,6 @@ const Trainings = dynamic(
   () => import('./sections/Trainings').then((m) => ({ default: m.Trainings })),
   { ssr: false }
 );
-const FAQ = dynamic(() => import('./sections/FAQ').then((m) => ({ default: m.FAQ })), {
-  ssr: false,
-});
 const Contact = dynamic(() => import('./sections/Contact').then((m) => ({ default: m.Contact })), {
   ssr: false,
 });
@@ -117,8 +109,6 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
   } = useBusinessPublic(slug, {
     initialData,
   } as Partial<UseQueryOptions<Business>>);
-  const { data: publicScoreData } = usePublicScore(business?.id || '');
-
   const modules: BusinessModule[] = business?.modules || [];
 
   const { data: products } = useBusinessProducts(slug, {
@@ -257,10 +247,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
         slug={slug}
       />
 
-      {/* Ad Banner Carousel - scrollable ads */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <AdBannerCarousel country={business.country || undefined} />
-      </div>
+
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className={`flex flex-col lg:flex-row gap-8`}>
@@ -270,37 +257,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
                 <Accueil business={business} />
               </section>
 
-              {/* Trust Badges + AfriScore */}
-              {publicScoreData && (
-                <div className="my-6">
-                  <TrustBadges
-                    badges={publicScoreData.badges || []}
-                    afriScore={publicScoreData.score}
-                    satisfactionScore={(publicScoreData.score as any)?.satisfactionScore ?? null}
-                    variant="compact"
-                  />
-                </div>
-              )}
 
-              {/* Live Social Proof - handled by LiveVisitorCounter in Banner */}
-
-              {/* Business Stats - animated counters */}
-              <div className="my-6">
-                <BusinessStats
-                  business={business}
-                  productsCount={products?.length || 0}
-                  servicesCount={services?.length || 0}
-                />
-              </div>
-
-              {/* Inline Ad placement */}
-              <div className="my-6">
-                <AdSlot
-                  page="BUSINESS_PUBLIC_PAGE"
-                  position="PROMO_WIDGET"
-                  country={business.country || undefined}
-                />
-              </div>
             </ErrorBoundary>
             <ErrorBoundary>
               <MediaStories
@@ -381,11 +338,6 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              <section id="section-faq">
-                <FAQ slug={slug} />
-              </section>
-            </ErrorBoundary>
-            <ErrorBoundary>
               <section id="section-contact">
                 <Contact business={business} />
               </section>
@@ -403,15 +355,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
                   <Sidebar business={business} />
                 </ErrorBoundary>
 
-                {/* Sidebar Ad */}
-                <div className="mt-6">
-                  <AdSlot
-                    page="BUSINESS_PUBLIC_PAGE"
-                    position="SIDEBAR"
-                    country={business.country || undefined}
-                    dismissible
-                  />
-                </div>
+
               </div>
             </div>
           )}
@@ -419,7 +363,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
       </div>
 
       <Footer business={business} />
-      <MobileOrderBar business={business} slug={slug} />
+
     </div>
   );
 }
