@@ -230,7 +230,9 @@ export function useBusinessPortfolio(
     queryKey: businessKeys.portfolio(slug),
     queryFn: async () => {
       const res = await apiClient.getBusinessPortfolio(slug);
-      return res.data.data as PortfolioItem[];
+      const raw = res.data.data;
+      // L'API peut retourner { items: [...] } ou un array direct
+      return (Array.isArray(raw) ? raw : raw?.items || []) as PortfolioItem[];
     },
     enabled: !!slug,
     ...options,
