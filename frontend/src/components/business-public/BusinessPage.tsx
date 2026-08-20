@@ -24,9 +24,9 @@ import { useShorts } from '@/hooks/features/useShorts';
 import { useActiveLives } from '@/hooks/features/useLives';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { Navbar } from './Navbar';
+import { Header as GlobalHeader } from '@/components/layout/Header';
 import { Banner } from './Banner';
-import { Header } from './Header';
+import { Header as BusinessActions } from './Header';
 import { InternalNav } from './InternalNav';
 import { Accueil } from './sections/Accueil';
 import { Sidebar } from './sections/Sidebar';
@@ -224,9 +224,11 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <PageViewTracker businessId={business.id} />
-      <Navbar />
-      <Banner business={business} slug={slug} />
-      <Header
+      <GlobalHeader />
+      <div className="pt-16">
+        <Banner business={business} slug={slug} />
+      </div>
+      <BusinessActions
         business={business}
         slug={slug}
         hasProducts={hasProducts}
@@ -274,9 +276,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
                   <TrustBadges
                     badges={publicScoreData.badges || []}
                     afriScore={publicScoreData.score}
-                    satisfactionScore={
-                      (publicScoreData.score as any)?.satisfactionScore ?? null
-                    }
+                    satisfactionScore={(publicScoreData.score as any)?.satisfactionScore ?? null}
                     variant="compact"
                   />
                 </div>
@@ -308,6 +308,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
                 businessName={business.name}
                 businessSlug={slug}
                 businessLogo={business.logo}
+                isVerified={business.isVerified}
               />
             </ErrorBoundary>
             <ErrorBoundary>
@@ -355,7 +356,9 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               {modules.includes('RENTALS') && hasRentals && <Rentals rentals={rentals || []} />}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PORTFOLIO') && hasPortfolio && <Portfolio items={portfolio || []} />}
+              {modules.includes('PORTFOLIO') && hasPortfolio && (
+                <Portfolio items={portfolio || []} />
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
               {modules.includes('PROMOTIONS') && hasPromotions && (
@@ -363,7 +366,9 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PARTNERS') && hasPartners && <Partners partners={partners || []} />}
+              {modules.includes('PARTNERS') && hasPartners && (
+                <Partners partners={partners || []} />
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
               {modules.includes('TRAINING') && hasTrainings && (

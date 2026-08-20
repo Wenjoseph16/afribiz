@@ -13,6 +13,7 @@ import {
   BookOpen,
   Building2,
   ShieldCheck,
+  Star,
   Users,
   ChevronRight,
   ArrowRight,
@@ -69,13 +70,19 @@ function StatCard({
 }
 
 export function Accueil({ business }: AccueilProps) {
+  // Skills depuis le business OU le owner (fallback)
+  const businessSkills = (business as any).skills || business.owner?.skills || [];
+  const businessCerts = (business as any).certifications || business.owner?.certifications || [];
+  const experienceYears = (business as any).experience || business.owner?.yearsOfExperience || null;
   const hasContent =
     business.description ||
     business.shortDescription ||
     business.mission ||
     business.vision ||
     business.values ||
-    business.foundedYear;
+    business.foundedYear ||
+    businessSkills.length > 0 ||
+    businessCerts.length > 0;
 
   if (!hasContent)
     return (
@@ -83,23 +90,18 @@ export function Accueil({ business }: AccueilProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center py-10 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/30 dark:to-gray-900/30 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
             <Building2 className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4"></p>
-            <Link
-              href="/dashboard/public-page"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
-            >
-              Compléter mon profil public
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+              Ce business prépare sa vitrine. Revenez bientôt !
+            </p>
           </div>
         </div>
       </section>
     );
 
   const stats = [
-    business.foundedYear && {
+    experienceYears && {
       icon: <Clock className="w-5 h-5" />,
-      value: `${new Date().getFullYear() - business.foundedYear}+`,
+      value: `${experienceYears}+`,
       label: "Années d'expérience",
       color: 'brand' as const,
     },
@@ -109,11 +111,17 @@ export function Accueil({ business }: AccueilProps) {
       label: 'Employés',
       color: 'blue' as const,
     },
-    business.owner?.skills?.length && {
+    businessSkills.length > 0 && {
       icon: <Award className="w-5 h-5" />,
-      value: business.owner.skills.length,
+      value: businessSkills.length,
       label: 'Compétences',
       color: 'purple' as const,
+    },
+    businessCerts.length > 0 && {
+      icon: <BookOpen className="w-5 h-5" />,
+      value: businessCerts.length,
+      label: 'Certificats',
+      color: 'amber' as const,
     },
     business.reviewCount && {
       icon: <ShieldCheck className="w-5 h-5" />,
@@ -234,7 +242,7 @@ export function Accueil({ business }: AccueilProps) {
                     )}
                   </div>
                 </div>
-                {business.owner.yearsOfExperience && (
+                {experienceYears && (
                   <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber-400 border-2 border-white dark:border-gray-900 flex items-center justify-center shadow-sm">
                     <Award className="w-4 h-4 text-white" />
                   </div>
@@ -247,17 +255,17 @@ export function Accueil({ business }: AccueilProps) {
                     {business.owner.firstName} {business.owner.lastName}
                   </h3>
                 </div>
-                {business.owner.yearsOfExperience && (
+                {experienceYears && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                     <Award className="w-4 h-4 text-amber-500" />
                     <span className="font-medium text-amber-600 dark:text-amber-400">
-                      {business.owner.yearsOfExperience} ans
+                      {experienceYears} ans
                     </span>{' '}
                     d&apos;expérience
                   </p>
                 )}
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {(business.owner.skills ?? []).slice(0, 6).map((skill) => (
+                  {businessSkills.slice(0, 6).map((skill: string) => (
                     <span
                       key={skill}
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 rounded-full border border-brand-100 dark:border-brand-800"
@@ -266,15 +274,15 @@ export function Accueil({ business }: AccueilProps) {
                       {skill}
                     </span>
                   ))}
-                  {(business.owner.skills?.length ?? 0) > 6 && (
+                  {businessSkills.length > 6 && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-gray-400">
-                      +{business.owner.skills!.length - 6} <ChevronRight className="w-3 h-3" />
+                      +{businessSkills.length - 6} <ChevronRight className="w-3 h-3" />
                     </span>
                   )}
                 </div>
-                {(business.owner.certifications?.length ?? 0) > 0 && (
+                {businessCerts.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {(business.owner.certifications ?? []).map((cert) => (
+                    {businessCerts.map((cert: string) => (
                       <span
                         key={cert}
                         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 rounded-full border border-amber-100 dark:border-amber-800"

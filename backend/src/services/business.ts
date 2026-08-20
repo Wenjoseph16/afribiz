@@ -293,18 +293,16 @@ export interface OnboardingInput {
   experience?: number;
   skills?: string[];
   certifications?: string[];
+  portfolioImages?: string[];
+  tagline?: string;
   website?: string;
   facebook?: string;
   instagram?: string;
   tiktok?: string;
   linkedin?: string;
   modules: BusinessModule[];
-  paymentMethods?: {
-    method: string;
-    name: string;
-    number: string;
-    isActive: boolean;
-  }[];
+  openingHours?: Record<string, { open?: string; close?: string; closed?: boolean }>;
+  portfolio?: { title: string; description?: string; imageUrl?: string; linkUrl?: string }[];
 }
 
 export async function getMyBusiness(ownerId: string, businessId?: string | null) {
@@ -312,8 +310,8 @@ export async function getMyBusiness(ownerId: string, businessId?: string | null)
     ? { id: businessId, ownerId, deletedAt: null }
     : { ownerId, deletedAt: null };
   const business = await prisma.business.findFirst({
-      where,
-      orderBy: { createdAt: 'asc' },
+    where,
+    orderBy: { createdAt: 'asc' },
     include: {
       settings: true,
       plan: { select: { id: true, name: true, price: true, currency: true, badge: true } },
@@ -331,14 +329,142 @@ export async function getMyBusiness(ownerId: string, businessId?: string | null)
         where: { status: 'ACTIVE' },
         select: { module: true },
       },
+      hours: { orderBy: { day: 'asc' } },
+      paymentMethods: { where: { isActive: true } },
+      deliveryZones: { where: { isActive: true } },
+      _count: {
+        select: {
+          products: true,
+          services: true,
+          menuItems: true,
+          rooms: true,
+          events: true,
+          rentals: true,
+          portfolioItems: true,
+          employees: true,
+          trainings: true,
+          businessClients: true,
+          partners: true,
+          promotions: true,
+        },
+      },
     },
   });
   if (!business) return null;
   // Source de vérité des modules = assignments ACTIVE (champ Business.modules déprécié)
+  const modules = resolveBusinessModules(business) as BusinessModule[];
+  const { _count, hours, paymentMethods, deliveryZones, ...businessRest } = business;
+  const setup = computeModuleSetup(modules, _count, paymentMethods.length, deliveryZones.length);
   return {
-    ...business,
-    modules: resolveBusinessModules(business),
+    ...businessRest,
+    hours,
+    paymentMethods,
+    deliveryZones,
+    modules,
+    setup,
+    setupComplete: Object.values(setup).every((s) => s.configured),
   };
+}
+
+interface SetupCounts {
+  products: number;
+  services: number;
+  menuItems: number;
+  rooms: number;
+  events: number;
+  rentals: number;
+  portfolioItems: number;
+  employees: number;
+  trainings: number;
+  businessClients: number;
+  partners: number;
+  promotions: number;
+}
+
+const MODULE_SETUP_HINTS: Partial<Record<BusinessModule, string>> = {
+  PRODUCTS: 'Ajoutez au moins un produit au catalogue',
+  SERVICES: 'Ajoutez au moins un service',
+  MENU: 'Créez votre menu ou votre carte',
+  ROOMS: 'Ajoutez au moins une chambre',
+  BOOKINGS: 'Activez un moyen de paiement pour encaisser les réservations',
+  ORDERS: 'Activez un moyen de paiement pour encaisser les commandes',
+  QUOTES_INVOICES: 'Activez un moyen de paiement pour encaisser devis et factures',
+  DEBTS_PAYMENTS: 'Activez un moyen de paiement pour encaisser les créances',
+  PLANNING: 'Ajoutez au moins un employé',
+  EMPLOYEES: 'Ajoutez au moins un employé',
+  PORTFOLIO: 'Ajoutez au moins une réalisation au portfolio',
+  SUBSCRIPTIONS: 'Activez un moyen de paiement pour encaisser les abonnements',
+  DELIVERIES: 'Définissez au moins une zone de livraison',
+  EVENTS: 'Publiez au moins un événement',
+  RENTALS: 'Ajoutez au moins un bien en location',
+  PARTNERS: 'Invitez au moins un partenaire',
+  TRAINING: 'Ajoutez au moins une formation',
+  SAVINGS: 'Activez un moyen de paiement pour encaisser l’épargne',
+  CRM: 'Ajoutez au moins un client',
+  MARKETING: 'Lancez au moins une campagne ou une promotion',
+};
+
+function isModuleConfigured(
+  mod: BusinessModule,
+  counts: SetupCounts,
+  paymentCount: number,
+  deliveryCount: number
+): boolean {
+  switch (mod) {
+    case 'PRODUCTS':
+      return counts.products > 0;
+    case 'SERVICES':
+      return counts.services > 0;
+    case 'MENU':
+      return counts.menuItems > 0;
+    case 'ROOMS':
+      return counts.rooms > 0;
+    case 'BOOKINGS':
+    case 'ORDERS':
+    case 'QUOTES_INVOICES':
+    case 'DEBTS_PAYMENTS':
+    case 'SUBSCRIPTIONS':
+    case 'SAVINGS':
+      return paymentCount > 0;
+    case 'PLANNING':
+    case 'EMPLOYEES':
+      return counts.employees > 0;
+    case 'PORTFOLIO':
+      return counts.portfolioItems > 0;
+    case 'DELIVERIES':
+      return deliveryCount > 0;
+    case 'EVENTS':
+      return counts.events > 0;
+    case 'RENTALS':
+      return counts.rentals > 0;
+    case 'PARTNERS':
+      return counts.partners > 0;
+    case 'TRAINING':
+      return counts.trainings > 0;
+    case 'CRM':
+      return counts.businessClients > 0;
+    case 'MARKETING':
+      return counts.promotions > 0;
+    default:
+      return true;
+  }
+}
+
+function computeModuleSetup(
+  modules: BusinessModule[],
+  counts: SetupCounts,
+  paymentCount: number,
+  deliveryCount: number
+): Record<string, { configured: boolean; missing: string[] }> {
+  const setup: Record<string, { configured: boolean; missing: string[] }> = {};
+  for (const mod of modules) {
+    const configured = isModuleConfigured(mod, counts, paymentCount, deliveryCount);
+    setup[mod] = {
+      configured,
+      missing: configured ? [] : MODULE_SETUP_HINTS[mod] ? [MODULE_SETUP_HINTS[mod]!] : [],
+    };
+  }
+  return setup;
 }
 
 /** Liste des business du boss (bascule multi-activité). */
@@ -362,7 +488,7 @@ export async function getMyBusinesses(ownerId: string) {
 
 export async function getMyBusinessStats(ownerId: string) {
   const business = await prisma.business.findFirst({
-      where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null },
     select: {
       id: true,
       _count: { select: { orders: true, reviews: true, products: true, services: true } },
@@ -404,7 +530,7 @@ export async function getMyBusinessStats(ownerId: string) {
 
 export async function getAggregatedDashboardStats(ownerId: string) {
   const business = await prisma.business.findFirst({
-      where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -619,7 +745,6 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
     latitude,
     longitude,
     modules: inputModules,
-    paymentMethods: inputPaymentMethods,
     ...rest
   } = data;
 
@@ -656,6 +781,8 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
       experience: rest.experience || undefined,
       skills: rest.skills || [],
       certifications: rest.certifications || [],
+      portfolioImages: rest.portfolioImages || [],
+      tagline: rest.tagline || undefined,
       facebook: rest.facebook || undefined,
       instagram: rest.instagram || undefined,
       tiktok: rest.tiktok || undefined,
@@ -680,19 +807,6 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
       },
     });
 
-    // Create payment methods if provided
-    if (inputPaymentMethods && inputPaymentMethods.length > 0) {
-      await tx.businessPaymentMethod.createMany({
-        data: inputPaymentMethods.map((pm) => ({
-          businessId: created.id,
-          method: pm.method,
-          name: pm.name || null,
-          number: pm.number || null,
-          isActive: pm.isActive ?? true,
-        })),
-      });
-    }
-
     // Create moduleAssignments for the new migration system
     if (allModules.length > 0) {
       await tx.businessModuleAssignment.createMany({
@@ -708,6 +822,42 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
 
     return created;
   });
+
+  // ── Sauver les horaires d'ouverture dans BusinessHour ──
+  const dayMap: Record<string, number> = {
+    lundi: 1, mardi: 2, mercredi: 3, jeudi: 4,
+    vendredi: 5, samedi: 6, dimanche: 0,
+  };
+  if (data.openingHours && typeof data.openingHours === 'object') {
+    const hourEntries = Object.entries(data.openingHours).filter(
+      ([, v]) => v && typeof v === 'object'
+    );
+    if (hourEntries.length > 0) {
+      await prisma.businessHour.createMany({
+        data: hourEntries.map(([day, hours]) => ({
+          businessId: business.id,
+          day: dayMap[day] ?? 0,
+          open: (hours as any).open || '08:00',
+          close: (hours as any).close || '18:00',
+          isClosed: !!(hours as any).closed,
+        })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  // ── Sauver les items portfolio ──
+  if (data.portfolio && Array.isArray(data.portfolio) && data.portfolio.length > 0) {
+    await (prisma as any).portfolioItem.createMany({
+      data: data.portfolio.map((item, idx) => ({
+        businessId: business.id,
+        title: item.title,
+        description: item.description || null,
+        coverImage: item.imageUrl || null,
+        sortOrder: idx,
+      })),
+    });
+  }
 
   const currentUser = await prisma.user.findUnique({
     where: { id: ownerId },

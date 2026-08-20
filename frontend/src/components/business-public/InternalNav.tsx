@@ -143,11 +143,8 @@ export function InternalNav({
   };
   const clientSections = modules
     .filter((m) => CLIENT_MODULE_CONFIG[m])
-    .filter((m) => {
-      const gate = DATA_GATED[m];
-      // BOOKINGS = formulaire de demande → toujours affiché si module actif
-      return gate ? flagMap[gate as string] : true;
-    })
+    // Afficher TOUS les modules cochés, même sans données
+    // Les sections gèrent elles-mêmes leur état vide
     .map((m) => ({
       id: `section-${m.toLowerCase()}`,
       label: CLIENT_MODULE_CONFIG[m]?.label || m,
@@ -238,7 +235,7 @@ export function InternalNav({
           'border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm transition-shadow duration-200',
           isSticking ? 'shadow-md' : 'shadow-none'
         )}
-        style={{ position: 'sticky', top: '4.5rem', zIndex: 30 }}
+        style={{ position: 'sticky', top: '4rem', zIndex: 30 }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-0.5 overflow-x-auto scrollbar-hide py-2.5" role="tablist">

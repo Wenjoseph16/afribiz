@@ -141,6 +141,15 @@ export function OnboardingWizard() {
            'SUBSCRIPTIONS','DELIVERIES','EVENTS','RENTALS','DOCUMENTS','PARTNERS',
            'DISPUTES','MODULE_MARKETPLACE','ADVANCED_TASKS','TRAINING'].includes(m)
         ),
+        // Horaires d'ouverture (Step 4)
+        openingHours: data.openingHours || {},
+        // Portfolio (Step 3)
+        portfolio: data.portfolio.map((item) => ({
+          title: item.title,
+          description: item.description || undefined,
+          imageUrl: item.imageUrl || undefined,
+          linkUrl: item.linkUrl || undefined,
+        })),
       };
       const res = await apiClient.createBusiness(payload);
       if (res.data.success) {

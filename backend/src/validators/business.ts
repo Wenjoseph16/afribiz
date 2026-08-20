@@ -37,6 +37,28 @@ export const onboardingSchema = z.object({
   linkedin: z.string().optional(),
   language: z.string().optional(),
   modules: z.array(businessModuleEnum).min(1, 'Sélectionnez au moins un module'),
+  // Onboarding Steps 2-4
+  openingHours: z
+    .record(
+      z.object({
+        open: z.string().optional(),
+        close: z.string().optional(),
+        closed: z.boolean().optional(),
+      })
+    )
+    .optional()
+    .default({}),
+  portfolio: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string().optional(),
+        imageUrl: z.string().optional(),
+        linkUrl: z.string().optional(),
+      })
+    )
+    .optional()
+    .default([]),
 });
 
 export const publicPageSchema = z.object({

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Play } from 'lucide-react';
+import Link from 'next/link';
+import { Play, ChevronRight, ShieldCheck, Star } from 'lucide-react';
 import { useBusinessStories } from '@/hooks/features/useStories';
 import { StoryViewerDynamic as StoryViewer } from '@/components/stories/StoryViewerDynamic';
 
@@ -11,6 +12,7 @@ interface MediaStoriesProps {
   businessName: string;
   businessSlug: string;
   businessLogo?: string | null;
+  isVerified?: boolean;
 }
 
 export function MediaStories({
@@ -18,11 +20,16 @@ export function MediaStories({
   businessName,
   businessSlug,
   businessLogo,
+  isVerified,
 }: MediaStoriesProps) {
   const { data: stories, isLoading } = useBusinessStories(businessId);
   const [viewingStory, setViewingStory] = useState<any>(null);
 
   if (isLoading || !stories?.length) return null;
+
+  // Max 3 sur la page publique
+  const displayStories = stories.slice(0, 3);
+  const hasMore = stories.length > 3;
 
   const storyGroup = {
     business: {
@@ -39,9 +46,26 @@ export function MediaStories({
   return (
     <section id="section-media-stories" className="scroll-mt-32">
       <div className="py-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">Stories</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Stories</h2>
+            {isVerified && (
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-medium">
+                <ShieldCheck className="w-3 h-3" /> KYC
+              </span>
+            )}
+          </div>
+          {hasMore && (
+            <Link
+              href={`/business/${businessSlug}/stories`}
+              className="flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-700 transition-colors"
+            >
+              Tout voir ({stories.length}) <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
+        </div>
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-          {stories.map((story: any, idx: number) => (
+          {displayStories.map((story: any, idx: number) => (
             <button
               key={story.id}
               onClick={() => setViewingStory(storyGroup)}

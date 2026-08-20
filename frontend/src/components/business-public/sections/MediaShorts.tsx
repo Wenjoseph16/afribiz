@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Play, Eye, Heart } from 'lucide-react';
+import { Play, Eye, Heart, ChevronRight } from 'lucide-react';
 import { useShorts } from '@/hooks/features/useShorts';
 
 interface MediaShortsProps {
@@ -10,19 +10,33 @@ interface MediaShortsProps {
   businessSlug: string;
 }
 
-export function MediaShorts({ businessId }: MediaShortsProps) {
+export function MediaShorts({ businessId, businessSlug }: MediaShortsProps) {
   const { data, isLoading } = useShorts({ businessId, limit: 8 });
 
   const shorts = data?.items || [];
 
   if (isLoading || shorts.length === 0) return null;
 
+  // Max 3 sur la page publique
+  const displayShorts = shorts.slice(0, 3);
+  const hasMore = shorts.length > 3;
+
   return (
     <section id="section-media-shorts" className="scroll-mt-32">
       <div className="py-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">Shorts</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {shorts.map((short: any) => (
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Shorts</h2>
+          {hasMore && (
+            <Link
+              href={`/business/${businessSlug}/shorts`}
+              className="flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-700 transition-colors"
+            >
+              Tout voir ({shorts.length}) <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {displayShorts.map((short: any) => (
             <Link
               key={short.id}
               href={`/shorts/${short.id}`}
