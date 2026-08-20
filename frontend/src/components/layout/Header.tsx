@@ -30,6 +30,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { apiClient } from '@/services/apiClient';
 import { CartIconPublic } from '@/components/CartIconPublic';
 import { CartDrawer } from '@/components/cart/CartDrawer';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useCartStore } from '@/stores/cartStore';
 
 export function Header() {
@@ -40,6 +41,9 @@ export function Header() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Rehydrate le store auth depuis localStorage (skipHydration: true)
+    // Nécessaire sur les pages publiques où AuthGuard n'est pas chargé
+    useAuthStore.persist.rehydrate();
     setMounted(true);
   }, []);
 
@@ -271,6 +275,9 @@ export function Header() {
           {/* Cart icon — pour tout le monde (panier local) */}
           {mounted && <CartIconPublic />}
 
+          {/* Notifications — uniquement pour les utilisateurs connectés */}
+          {mounted && isAuthenticated() && <NotificationBell variant="header" />}
+
           {/* Messages — uniquement pour les utilisateurs connectés */}
           {mounted && isAuthenticated() && (
             <Link
@@ -347,15 +354,17 @@ export function Header() {
                 Ouvrir mon espace
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <button
-                onClick={() => setMobileMenu(!mobileMenu)}
-                className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors"
-                aria-label={mobileMenu ? 'Fermer' : 'Menu'}
-              >
-                {mobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
             </div>
           )}
+
+          {/* Hamburger mobile — TOUJOURS visible (connecté ou non) */}
+          <button
+            onClick={() => setMobileMenu(!mobileMenu)}
+            className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 transition-colors ml-1"
+            aria-label={mobileMenu ? 'Fermer' : 'Menu'}
+          >
+            {mobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </nav>
 
@@ -423,20 +432,42 @@ export function Header() {
                 );
               })}
               <hr className="my-2 border-gray-100 dark:border-gray-800" />
-              <Link
-                href="/login"
-                onClick={() => setMobileMenu(false)}
-                className="block px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                Connexion
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setMobileMenu(false)}
-                className="block px-3 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand to-emerald-400 text-white text-center hover:shadow-lg transition-all"
-              >
-                S'inscrire
-              </Link>
+              {mounted && isAuthenticated() && user ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileMenu(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Tableau de bord
+                  </Link>
+                  <button
+                    onClick={() => { handleLogout(); setMobileMenu(false); }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Déconnexion
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenu(false)}
+                    className="block px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    Connexion
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setMobileMenu(false)}
+                    className="block px-3 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-brand to-emerald-400 text-white text-center hover:shadow-lg transition-all"
+                  >
+                    S'inscrire
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
