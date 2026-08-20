@@ -9,11 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { useBusinessStore } from '@/stores/businessStore';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { useMyBusiness } from '@/features/hooks/business';
-import { useBusinessStats } from '@/features/hooks/business';
+import { useMyBusiness, useBusinessStats } from '@/features/hooks/business';
 import { useOrders } from '@/features/hooks/orders';
 import { useBookings } from '@/features/hooks/bookings';
-import { useReviews } from '@/features/hooks/reviews';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
 
@@ -54,11 +52,13 @@ interface AggregatedStats {
   history: Array<{ date: string; revenue: number; orders: number }>;
 }
 
-// ─── Cash widget type ───
-interface CashWidget {
-  isOpen: boolean;
-  currentBalance: number;
-}
+const EMPTY_AGG: AggregatedStats = {
+  today: { ordersCount: 0, bookingsCount: 0, revenue: 0, newClients: 0 },
+  pending: { ordersCount: 0, debtsAmount: 0 },
+  alerts: { lowStock: 0 },
+  trends: { revenueToday: 0, revenueYesterday: 0 },
+  history: [],
+};
 
 export default function BusinessDashboardPage() {
   const router = useRouter();
@@ -82,11 +82,10 @@ export default function BusinessDashboardPage() {
     }
   }, [user, canAccess, bizLoading, bizError, hasProfile, router]);
 
-  // Data hooks
-  const { data: stats, error: statsError } = useBusinessStats();
+  // ─── Data hooks (safe defaults everywhere) ───
+  const { data: stats } = useBusinessStats();
   const { data: ordersData } = useOrders({ limit: 3 });
   const { data: bookingsData } = useBookings({ limit: 3 });
-  const { data: reviewsData } = useReviews({ limit: 3 });
 
   // Aggregated stats for charts
   const { data: aggStats } = useQuery<AggregatedStats>({
@@ -96,17 +95,16 @@ export default function BusinessDashboardPage() {
       return res.data.data;
     },
     refetchInterval: 60000,
+    retry: false,
   });
 
-  // Cash widget
-  const { data: cashWidget } = useQuery<CashWidget>({
-    queryKey: ['cash-widget'],
-    queryFn: async () => {
-      const res = await apiClient.getTodayCash();
-      return res.data.data;
-    },
-    refetchInterval: 30000,
-  });
+  // ─── Reviews: fetch only for THIS business's products ───
+  // The global /reviews endpoint returns ALL reviews — we need to filter.
+  // Use the product reviews endpoint for each product, or just rely on
+  // the aggregated stats count and hide the section if count=0.
+  const biz = business || myBusiness;
+  const bizId = biz?.id;
+  const hasRealReviews = (stats?.reviewsReceived ?? 0) > 0;
 
   // Guard: non-business user
   if (user && !canAccess) {
@@ -132,16 +130,11 @@ export default function BusinessDashboardPage() {
   }
 
   if (bizError) return <ErrorState message={bizError.message} onRetry={bizRefetch} />;
-  if (statsError) return <ErrorState message={statsError.message} />;
 
-  const biz = business || myBusiness;
   const firstName = user?.firstName || 'Cher';
 
   const orders = ordersData?.orders ?? [];
   const bookings = bookingsData?.bookings ?? [];
-  const reviews = Array.isArray(reviewsData?.reviews || reviewsData)
-    ? (reviewsData?.reviews || reviewsData)
-    : [];
 
   // Compute order status breakdown for donut chart
   const orderStatusBreakdown = useMemo(() => {
@@ -157,14 +150,8 @@ export default function BusinessDashboardPage() {
     return counts;
   }, [orders]);
 
-  // Aggregated data with safe defaults
-  const agg: AggregatedStats = aggStats ?? {
-    today: { ordersCount: 0, bookingsCount: 0, revenue: 0, newClients: 0 },
-    pending: { ordersCount: 0, debtsAmount: 0 },
-    alerts: { lowStock: 0 },
-    trends: { revenueToday: 0, revenueYesterday: 0 },
-    history: [],
-  };
+  // Aggregated data — never undefined, always safe
+  const agg: AggregatedStats = aggStats ?? EMPTY_AGG;
 
   if (bizLoading) {
     return (
@@ -178,7 +165,7 @@ export default function BusinessDashboardPage() {
   }
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-5">
       {/* ─── Header ─── */}
       <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
         <div>
@@ -186,7 +173,7 @@ export default function BusinessDashboardPage() {
             Bonjour, {firstName} 👋
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {biz ? biz.name : 'Votre espace professionnel'}
+            {biz?.name || 'Votre espace professionnel'}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -221,37 +208,39 @@ export default function BusinessDashboardPage() {
         logo={biz?.logo}
       />
 
-      {/* ═══ ZONE 1 : LE TATAN ═══ */}
+      {/* ═══ ZONE 1 : LE TATAN (toujours visible) ═══ */}
       <Zone1Tatan
         today={agg.today}
         pending={agg.pending}
         trends={agg.trends}
         alerts={agg.alerts}
-        caisseOuverte={cashWidget?.isOpen ?? false}
-        caisseMontant={cashWidget?.currentBalance ?? 0}
+        caisseOuverte={false}
+        caisseMontant={0}
       />
 
-      {/* ═══ ZONE 2 : LA TENDANCE ═══ */}
+      {/* ═══ ZONE 2 : LA TENDANCE (visible = empty state si 0 données) ═══ */}
       <Zone2Tendance
         history={agg.history}
         orderStatusBreakdown={orderStatusBreakdown}
       />
 
-      {/* ═══ ZONE 3 : LES DÉTAILS ═══ */}
+      {/* ═══ ZONE 3 : LES DÉTAILS (sections vides masquées) ═══ */}
       <Zone3Details
         orders={orders}
         bookings={bookings}
-        reviews={reviews}
+        reviews={[]} // Masqué: reviews globaux ≠ reviews du business
         modules={biz?.modules || []}
       />
 
-      {/* ═══ SANTÉ ═══ */}
-      <HealthMiniCard
-        afriscore={stats?.satisfactionRate ?? 0}
-        reviewCount={stats?.reviewsReceived ?? 0}
-        avgRating={biz?.rating ?? 0}
-        verificationLevel={biz?.verificationLevel}
-      />
+      {/* ═══ SANTÉ (masqué si nouveau business) ═══ */}
+      {(stats?.reviewsReceived ?? 0) > 0 || (biz?.rating ?? 0) > 0 ? (
+        <HealthMiniCard
+          afriscore={0}
+          reviewCount={stats?.reviewsReceived ?? 0}
+          avgRating={biz?.rating ?? 0}
+          verificationLevel={biz?.verificationLevel}
+        />
+      ) : null}
     </div>
   );
 }

@@ -301,25 +301,26 @@ export function Zone3Details({ orders, bookings, reviews, modules }: Zone3Props)
               Marketplace <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {modules.map((mod) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {modules.slice(0, 12).map((mod) => (
               <Link
                 key={mod}
                 href={moduleRoute(mod)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[11px] font-medium rounded-full border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-[11px] font-medium rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors truncate"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                {moduleLabel(mod)}
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="truncate">{moduleLabel(mod)}</span>
               </Link>
             ))}
+          </div>
+          {modules.length > 12 && (
             <Link
               href="/dashboard/marketplace"
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-slate-400 text-[11px] font-medium rounded-full border border-dashed border-slate-300 hover:border-slate-400 hover:text-slate-600 transition-colors"
+              className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700 mt-2 inline-block"
             >
-              <Plus className="h-3 w-3" />
-              Ajouter
+              +{modules.length - 12} autres modules →
             </Link>
-          </div>
+          )}
         </Card>
       )}
     </div>
