@@ -37,9 +37,7 @@ export default function StepExpertise({ data, update, disabled }: Props) {
 
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const pool = q
-      ? TECH_CATALOG.filter((t) => t.name.toLowerCase().includes(q))
-      : TECH_CATALOG;
+    const pool = q ? TECH_CATALOG.filter((t) => t.name.toLowerCase().includes(q)) : TECH_CATALOG;
     return pool.filter((t) => !stackNames.has(t.name.toLowerCase()));
   }, [search, stackNames]);
 

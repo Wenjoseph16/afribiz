@@ -65,7 +65,16 @@ export default function DeveloperLayout({ children }: { children: React.ReactNod
     if (!isOnboardingPage && profile && !profileLoading && !isVerified) {
       router.replace('/dashboard/developer/onboarding');
     }
-  }, [hydrated, user, hasDeveloperRole, isOnboardingPage, profile, profileLoading, isVerified, router]);
+  }, [
+    hydrated,
+    user,
+    hasDeveloperRole,
+    isOnboardingPage,
+    profile,
+    profileLoading,
+    isVerified,
+    router,
+  ]);
 
   // Rendu : pages de garde pendant les transitions
   if (!user) {

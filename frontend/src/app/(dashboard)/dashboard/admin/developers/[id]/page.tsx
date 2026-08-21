@@ -226,9 +226,11 @@ export default function AdminDeveloperDetailPage() {
                     <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-brand" />
                   </a>
                 ))}
-              {!developer.identityDocument && !developer.companyDocument && !developer.responsiblePhoto && (
-                <p className="text-sm text-gray-400">Aucun document KYC soumis</p>
-              )}
+              {!developer.identityDocument &&
+                !developer.companyDocument &&
+                !developer.responsiblePhoto && (
+                  <p className="text-sm text-gray-400">Aucun document KYC soumis</p>
+                )}
             </div>
           </div>
 
@@ -249,7 +251,11 @@ export default function AdminDeveloperDetailPage() {
                   <BadgeCheck className="h-4 w-4" />
                   Valider le KYC
                 </Button>
-                <Button variant="danger" onClick={() => setRejectOpen(true)} disabled={statusMutation.isPending}>
+                <Button
+                  variant="danger"
+                  onClick={() => setRejectOpen(true)}
+                  disabled={statusMutation.isPending}
+                >
                   <XCircle className="h-4 w-4" />
                   Refuser avec motif
                 </Button>
@@ -310,7 +316,12 @@ export default function AdminDeveloperDetailPage() {
                 >
                   Annuler
                 </Button>
-                <Button variant="danger" size="sm" onClick={handleReject} disabled={statusMutation.isPending}>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={handleReject}
+                  disabled={statusMutation.isPending}
+                >
                   Confirmer le refus
                 </Button>
               </div>
