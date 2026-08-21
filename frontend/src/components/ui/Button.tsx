@@ -6,16 +6,16 @@ import { cn } from '@/lib/utils';
 
 const variantStyles = {
   primary:
-    'bg-brand text-white hover:bg-brand-700 active:bg-brand-800 shadow-md hover:shadow-lg hover:shadow-brand/20',
+    'bg-brand text-white hover:bg-brand-700 active:bg-brand-800 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_12px_-2px_rgba(5,150,105,0.28)] hover:shadow-[0_2px_4px_rgba(15,23,42,0.08),0_8px_20px_-4px_rgba(5,150,105,0.35)]',
   secondary:
-    'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100',
+    'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100 shadow-soft',
   ghost: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200',
   danger:
-    'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg hover:shadow-red-600/20',
+    'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_12px_-2px_rgba(239,68,68,0.28)]',
   outline:
     'bg-transparent border-2 border-brand text-brand hover:bg-brand hover:text-white active:bg-brand-700',
   gradient:
-    'bg-gradient-to-r from-brand to-emerald-400 text-white hover:from-brand-700 hover:to-emerald-500 shadow-md hover:shadow-lg hover:shadow-brand/20',
+    'bg-gradient-to-r from-brand to-emerald-400 text-white hover:from-brand-700 hover:to-emerald-500 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_12px_-2px_rgba(5,150,105,0.3)]',
 };
 
 const sizeStyles = {
@@ -52,7 +52,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || isLoading}
         className={cn(
-          'inline-flex items-center justify-center font-semibold transition-all duration-200 focus-ring disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none',
+          'inline-flex items-center justify-center font-semibold transition-all duration-200 active:scale-[0.98] focus-ring disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none',
           variantStyles[variant],
           sizeStyles[size],
           fullWidth && 'w-full',

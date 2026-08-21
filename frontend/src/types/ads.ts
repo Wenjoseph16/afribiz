@@ -74,7 +74,7 @@ export const AD_PLACEMENT_PAGE_LABELS: Record<AdPlacementPage, string> = {
   MEDIA: 'Média',
   BLOG_ARTICLE: 'Article blog',
   LEGAL: 'Mentions légales',
-  FEED: 'Fil d\'actualités',
+  FEED: "Fil d'actualités",
 };
 
 export const AD_FORMAT_LABELS: Record<AdFormat, string> = {

@@ -69,7 +69,10 @@ export function getBusinessTypeLabel(type: string): string {
   return labels[type] || type;
 }
 
-export function formatPrice(price: number | string | null | undefined, currency: string = 'FCFA'): string {
+export function formatPrice(
+  price: number | string | null | undefined,
+  currency: string = 'FCFA'
+): string {
   const n = Number(price);
   if (price === undefined || price === null || Number.isNaN(n)) {
     return `0 ${currency}`;

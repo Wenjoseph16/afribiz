@@ -19,8 +19,7 @@ const variantStyles = {
   elevated:
     'bg-white dark:bg-gray-800/90 shadow-card hover:shadow-card-lg border border-slate-200/70 dark:border-gray-700/80',
   glass: 'glass',
-  premium:
-    'bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.06] rounded-2xl',
+  premium: 'bg-white/[0.03] dark:bg-white/[0.03] border border-white/[0.06] rounded-2xl',
 };
 
 const paddingStyles = {

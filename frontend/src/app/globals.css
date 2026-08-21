@@ -193,7 +193,10 @@ select:-webkit-autofill {
 
   /* === Glass hover — micro-interaction subtile === */
   .glass-hover {
-    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+    transition:
+      transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
   }
   .glass-hover:hover {
     transform: translateY(-2px);
@@ -259,7 +262,9 @@ select:-webkit-autofill {
   .scroll-fade-in {
     opacity: 0;
     transform: translateY(16px);
-    transition: opacity 0.6s cubic-bezier(0.32, 0.72, 0, 1), transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+    transition:
+      opacity 0.6s cubic-bezier(0.32, 0.72, 0, 1),
+      transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
   }
   .scroll-fade-in.is-visible {
     opacity: 1;
