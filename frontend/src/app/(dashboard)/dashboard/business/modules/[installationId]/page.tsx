@@ -36,7 +36,7 @@ export default function BusinessModuleRuntimePage() {
   const installation = Array.isArray(installations)
     ? (installations as any[]).find((i: any) => i.id === installationId)
     : null;
-  const module = installation?.module || null;
+  const mod = installation?.module || null;
 
   const uninstallMutation = useMutation({
     mutationFn: () => apiClient.uninstallCoreModule(installationId),
@@ -49,9 +49,9 @@ export default function BusinessModuleRuntimePage() {
 
   const reinstallMutation = useReinstallModule();
   const handleReinstall = async () => {
-    if (!module?.id) return;
+    if (!mod?.id) return;
     try {
-      await reinstallMutation.mutateAsync(module.id);
+      await reinstallMutation.mutateAsync(mod.id);
       qc.invalidateQueries({ queryKey: ['business-installed-modules'] });
       router.push('/dashboard/business/modules');
     } catch {
@@ -61,7 +61,7 @@ export default function BusinessModuleRuntimePage() {
 
   if (isLoading) return <Loader variant="spinner" size="md" fullScreen />;
 
-  if (!installation || !module) {
+  if (!installation || !mod) {
     return (
       <div className="space-y-6">
         <PageHeader
@@ -108,21 +108,21 @@ export default function BusinessModuleRuntimePage() {
   const appOrigin =
     typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const safeDashboardUrl =
-    module.dashboardUrl && /^https:\/\//.test(module.dashboardUrl)
-      ? new URL(module.dashboardUrl).origin !== appOrigin
-        ? module.dashboardUrl
+    mod.dashboardUrl && /^https:\/\//.test(mod.dashboardUrl)
+      ? new URL(mod.dashboardUrl).origin !== appOrigin
+        ? mod.dashboardUrl
         : null
       : null;
 
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title={module.sidebarLabel || module.name}
+        title={mod.sidebarLabel || mod.name}
         badge={statusBadge()}
         breadcrumbs={[
           { label: 'Business', href: '/dashboard/business' },
           { label: 'Modules', href: '/dashboard/business/modules' },
-          { label: module.name },
+          { label: mod.name },
         ]}
         actions={
           <div className="flex items-center gap-2">
@@ -160,18 +160,18 @@ export default function BusinessModuleRuntimePage() {
           <div className="p-5 space-y-4">
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 border border-indigo-400/20 flex items-center justify-center shrink-0">
-                {module.logo ? (
+                {mod.logo ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={module.logo} alt={module.name} className="w-10 h-10 object-contain" />
+                  <img src={mod.logo} alt={mod.name} className="w-10 h-10 object-contain" />
                 ) : (
                   <Package className="w-6 h-6 text-indigo-400" />
                 )}
               </div>
               <div className="min-w-0">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
-                  {module.name}
+                  {mod.name}
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{module.category}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{mod.category}</p>
               </div>
             </div>
 
@@ -182,7 +182,7 @@ export default function BusinessModuleRuntimePage() {
                   Développeur
                 </span>
                 <span className="font-medium text-gray-800 dark:text-gray-200 truncate ml-3">
-                  {module.developer?.companyName || 'Indépendant'}
+                  {mod.developer?.companyName || 'Indépendant'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -191,7 +191,7 @@ export default function BusinessModuleRuntimePage() {
                   Version
                 </span>
                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                  v{module.version || '1.0'}
+                  v{mod.version || '1.0'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -200,8 +200,8 @@ export default function BusinessModuleRuntimePage() {
                   Note
                 </span>
                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                  {module.rating ? `${module.rating.toFixed(1)} / 5` : '—'}
-                  {module.reviewCount ? ` (${module.reviewCount})` : ''}
+                  {mod.rating ? `${mod.rating.toFixed(1)} / 5` : '—'}
+                  {mod.reviewCount ? ` (${mod.reviewCount})` : ''}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -210,15 +210,15 @@ export default function BusinessModuleRuntimePage() {
                   Prix
                 </span>
                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                  {module.isFree
+                  {mod.isFree
                     ? 'Gratuit'
-                    : `${module.price?.toLocaleString('fr-FR')} ${module.currency || 'FCFA'}`}
+                    : `${mod.price?.toLocaleString('fr-FR')} ${mod.currency || 'FCFA'}`}
                 </span>
               </div>
             </div>
 
             <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-              {module.description}
+              {mod.description}
             </p>
 
             <div className="pt-2">
@@ -255,7 +255,7 @@ export default function BusinessModuleRuntimePage() {
             <div className="relative">
               <iframe
                 src={safeDashboardUrl}
-                title={`${module.name} - interface intégrée`}
+                title={`${mod.name} - interface intégrée`}
                 className="w-full h-[560px] border-0 bg-white dark:bg-gray-900"
                 sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
                 referrerPolicy="no-referrer"
@@ -284,7 +284,7 @@ export default function BusinessModuleRuntimePage() {
         onClose={() => setConfirmUninstall(false)}
         onConfirm={() => uninstallMutation.mutate()}
         title="Désinstaller ce module ?"
-        description={`Vous perdrez l'accès à « ${module.name} » et ses données associées sur votre business. Cette action peut être annulée en réinstallant le module.`}
+        description={`Vous perdrez l'accès à « ${mod.name} » et ses données associées sur votre business. Cette action peut être annulée en réinstallant le module.`}
         confirmLabel={uninstallMutation.isPending ? 'Désinstallation…' : 'Désinstaller'}
         variant="danger"
         icon={<AlertTriangle className="h-5 w-5" />}

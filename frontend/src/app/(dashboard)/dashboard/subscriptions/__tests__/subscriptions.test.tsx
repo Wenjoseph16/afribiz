@@ -6,11 +6,15 @@ jest.mock('@/features/hooks', () => ({
   useSubscriptionStats: jest.fn(),
 }));
 
-jest.mock('next/link', () => ({ children, href, ...props }: any) => (
-  <a href={href} {...props}>
-    {children}
-  </a>
-));
+jest.mock('next/link', () => {
+  const MockLink = ({ children, href, ...props }: any) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  );
+  MockLink.displayName = 'MockLink';
+  return MockLink;
+});
 
 describe('SubscriptionsPage — glass premium', () => {
   const mockUseSubscriptionPlans = require('@/features/hooks').useSubscriptionPlans;
