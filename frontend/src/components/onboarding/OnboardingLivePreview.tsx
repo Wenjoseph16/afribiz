@@ -2,7 +2,18 @@
 
 import { BUSINESS_TYPE_LABELS } from '@/constants/business';
 import type { OnboardingData } from '@/types/business';
-import { MapPin, Phone, Clock, Award, ExternalLink, Package, CreditCard, Truck, CalendarCheck, Star } from 'lucide-react';
+import {
+  MapPin,
+  Phone,
+  Clock,
+  Award,
+  ExternalLink,
+  Package,
+  CreditCard,
+  Truck,
+  CalendarCheck,
+  Star,
+} from 'lucide-react';
 
 const MODULE_ICONS: Record<string, { icon: any; label: string }> = {
   PRODUCTS: { icon: Package, label: 'Catalogue' },
@@ -17,8 +28,13 @@ const MODULE_ICONS: Record<string, { icon: any; label: string }> = {
 };
 
 const DAYS_SHORT: Record<string, string> = {
-  lundi: 'Lun', mardi: 'Mar', mercredi: 'Mer', jeudi: 'Jeu',
-  vendredi: 'Ven', samedi: 'Sam', dimanche: 'Dim',
+  lundi: 'Lun',
+  mardi: 'Mar',
+  mercredi: 'Mer',
+  jeudi: 'Jeu',
+  vendredi: 'Ven',
+  samedi: 'Sam',
+  dimanche: 'Dim',
 };
 
 interface Props {
@@ -32,9 +48,7 @@ export function OnboardingLivePreview({ data }: Props) {
     <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-sm overflow-hidden text-sm">
       {/* Bannière */}
       <div className="relative h-32 bg-gradient-to-br from-emerald-400 to-emerald-700">
-        {data.banner && (
-          <img src={data.banner} alt="" className="w-full h-full object-cover" />
-        )}
+        {data.banner && <img src={data.banner} alt="" className="w-full h-full object-cover" />}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         {/* Logo */}
         <div className="absolute -bottom-6 left-4">
@@ -59,17 +73,24 @@ export function OnboardingLivePreview({ data }: Props) {
           </span>
         )}
         {data.description && (
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{data.description}</p>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+            {data.description}
+          </p>
         )}
       </div>
 
       {/* Compétences */}
       {data.competencies.length > 0 && (
         <div className="px-4 pb-3">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Compétences</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+            Compétences
+          </p>
           <div className="flex flex-wrap gap-1">
             {data.competencies.map((tag) => (
-              <span key={tag} className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-full text-[10px] font-medium">
+              <span
+                key={tag}
+                className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-full text-[10px] font-medium"
+              >
                 {tag}
               </span>
             ))}
@@ -81,7 +102,8 @@ export function OnboardingLivePreview({ data }: Props) {
       {data.experienceYears && (
         <div className="px-4 pb-3">
           <p className="text-[10px] text-gray-400">
-            {data.experienceYears === '<1' ? '< 1 an' : `${data.experienceYears} ans`} d&apos;expérience
+            {data.experienceYears === '<1' ? '< 1 an' : `${data.experienceYears} ans`}{' '}
+            d&apos;expérience
           </p>
         </div>
       )}
@@ -89,9 +111,14 @@ export function OnboardingLivePreview({ data }: Props) {
       {/* Certificats */}
       {data.certificates.length > 0 && (
         <div className="px-4 pb-3">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Certificats</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+            Certificats
+          </p>
           {data.certificates.map((cert, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
+            <div
+              key={i}
+              className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400"
+            >
               <Award className="h-3 w-3 text-emerald-500" />
               {cert.name}
               {cert.issuer && <span className="text-gray-400">— {cert.issuer}</span>}
@@ -103,11 +130,22 @@ export function OnboardingLivePreview({ data }: Props) {
       {/* Portfolio */}
       {data.portfolio.length > 0 && (
         <div className="px-4 pb-3">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Réalisations</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+            Réalisations
+          </p>
           <div className="grid grid-cols-2 gap-1.5">
             {data.portfolio.slice(0, 4).map((item, i) => (
-              <div key={i} className="relative rounded-lg overflow-hidden aspect-[4/3] bg-gray-100 dark:bg-white/5">
-                {item.imageUrl && <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />}
+              <div
+                key={i}
+                className="relative rounded-lg overflow-hidden aspect-[4/3] bg-gray-100 dark:bg-white/5"
+              >
+                {item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
+                )}
                 <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/60 to-transparent">
                   <p className="text-[10px] font-medium text-white truncate">{item.title}</p>
                 </div>
@@ -123,7 +161,9 @@ export function OnboardingLivePreview({ data }: Props) {
           <div className="flex items-start gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
             <MapPin className="h-3 w-3 mt-0.5 shrink-0 text-emerald-500" />
             <span>
-              {data.quarter && `${data.quarter}, `}{data.city}{data.country && `, ${data.country}`}
+              {data.quarter && `${data.quarter}, `}
+              {data.city}
+              {data.country && `, ${data.country}`}
             </span>
           </div>
           {data.address && (
@@ -163,7 +203,9 @@ export function OnboardingLivePreview({ data }: Props) {
                 {h.closed ? (
                   <span className="text-gray-400">Fermé</span>
                 ) : (
-                  <span className="text-gray-600 dark:text-gray-400">{h.open} – {h.close}</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {h.open} – {h.close}
+                  </span>
                 )}
               </div>
             ))}
@@ -174,12 +216,17 @@ export function OnboardingLivePreview({ data }: Props) {
       {/* Modules */}
       {data.modules.length > 0 && (
         <div className="px-4 pb-3 border-t border-gray-100 dark:border-white/5 pt-3">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Services</p>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+            Services
+          </p>
           <div className="flex flex-wrap gap-1">
             {data.modules.map((mod) => {
               const def = MODULE_ICONS[mod];
               return (
-                <span key={mod} className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-full text-[10px] font-medium">
+                <span
+                  key={mod}
+                  className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-full text-[10px] font-medium"
+                >
                   {def?.label || mod}
                 </span>
               );
@@ -191,7 +238,9 @@ export function OnboardingLivePreview({ data }: Props) {
       {/* Empty state */}
       {!hasContent && (
         <div className="px-4 py-8 text-center">
-          <p className="text-xs text-gray-400">Remplissez le formulaire pour voir votre page publique se construire ici</p>
+          <p className="text-xs text-gray-400">
+            Remplissez le formulaire pour voir votre page publique se construire ici
+          </p>
         </div>
       )}
     </div>

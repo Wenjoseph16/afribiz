@@ -28,10 +28,10 @@ export default function StepPortfolio({ data, onChange }: Props) {
       if (res.data?.success) {
         setImageUrl(res.data.data.url || res.data.data.path);
       } else {
-        setUploadError('Échec de l\'upload');
+        setUploadError("Échec de l'upload");
       }
     } catch (e: any) {
-      setUploadError(e?.response?.data?.error || 'Erreur lors de l\'upload');
+      setUploadError(e?.response?.data?.error || "Erreur lors de l'upload");
     } finally {
       setUploading(false);
     }
@@ -69,10 +69,17 @@ export default function StepPortfolio({ data, onChange }: Props) {
       {data.portfolio.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
           {data.portfolio.map((item, i) => (
-            <div key={i} className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
+            <div
+              key={i}
+              className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-white/10"
+            >
               {item.imageUrl ? (
                 <div className="aspect-[4/3] relative">
-                  <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 </div>
               ) : (
@@ -136,10 +143,16 @@ export default function StepPortfolio({ data, onChange }: Props) {
           />
           {uploadError && <p className="text-[11px] text-red-500">{uploadError}</p>}
           <div className="flex items-center gap-3">
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImageUpload(file);
-            }} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(file);
+              }}
+            />
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading}

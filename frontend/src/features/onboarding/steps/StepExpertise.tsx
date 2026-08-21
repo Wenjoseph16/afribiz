@@ -6,14 +6,27 @@ import type { OnboardingData, OnboardingCertificate } from '@/types/business';
 import { apiClient } from '@/services/apiClient';
 
 const SKILLS_BY_TYPE: Record<string, string[]> = {
-  RESTAURANT: ['Cuisine africaine', 'Poulet braisé', 'Traiteur', 'Végétarien', 'Pâtisserie', 'Boissons locales'],
+  RESTAURANT: [
+    'Cuisine africaine',
+    'Poulet braisé',
+    'Traiteur',
+    'Végétarien',
+    'Pâtisserie',
+    'Boissons locales',
+  ],
   FAST_FOOD: ['Burger', 'Pizza', 'Brochettes', 'Frites', 'Snack rapide'],
   HOTEL: ['Hébergement', 'Conférence', 'Spa', 'Restaurant', 'Événementiel'],
   BOUTIQUE_VETEMENTS: ['Mode femme', 'Mode homme', 'Mode enfant', 'Accessoires', 'Artisanat'],
   BOUTIQUE_COSMETIQUES: ['Cosmétiques naturels', 'Soins peau', 'Maquillage', 'Parfums'],
   BOUTIQUE_ELECTRONIQUE: ['Téléphones', 'Ordinateurs', 'Accessoires', 'Réparation'],
   PHOTOGRAPHE: ['Mariage', 'Portrait', 'Événementiel', 'Commercial', 'Produit'],
-  FREELANCE: ['Développement web', 'Design graphique', 'Rédaction', 'Traduction', 'Marketing digital'],
+  FREELANCE: [
+    'Développement web',
+    'Design graphique',
+    'Rédaction',
+    'Traduction',
+    'Marketing digital',
+  ],
   DEVELOPPEUR: ['Frontend', 'Backend', 'Mobile', 'DevOps', 'UI/UX'],
   SALON_COIFFURE: ['Coiffure femme', 'Coiffure homme', 'Tresses', 'Locks', 'Coloration'],
   CABINET_MEDICAL: ['Consultation', 'Laboratoire', 'Pharmacie', 'Imagerie'],
@@ -60,13 +73,17 @@ export default function StepExpertise({ data, onChange }: Props) {
       try {
         const res = await apiClient.uploadMedia(file);
         if (res.data?.success) fileUrl = res.data.data.url || res.data.data.path;
-        else setCertUploadError('Échec de l\'upload du certificat');
+        else setCertUploadError("Échec de l'upload du certificat");
       } catch (e: any) {
         setCertUploadError(e?.response?.data?.error || 'Erreur upload');
       }
     }
 
-    const cert: OnboardingCertificate = { name: certName.trim(), issuer: certIssuer.trim(), fileUrl };
+    const cert: OnboardingCertificate = {
+      name: certName.trim(),
+      issuer: certIssuer.trim(),
+      fileUrl,
+    };
     onChange({ certificates: [...data.certificates, cert] });
     setCertName('');
     setCertIssuer('');
@@ -95,7 +112,10 @@ export default function StepExpertise({ data, onChange }: Props) {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium border border-emerald-200 dark:border-emerald-800/40"
               >
                 {tag}
-                <button onClick={() => removeTag(tag)} className="hover:text-red-500 transition-colors">
+                <button
+                  onClick={() => removeTag(tag)}
+                  className="hover:text-red-500 transition-colors"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -127,7 +147,10 @@ export default function StepExpertise({ data, onChange }: Props) {
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput); }
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addTag(tagInput);
+              }
             }}
             placeholder="Ajouter une compétence personnalisée…"
             className="flex-1 px-3 py-2 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
@@ -157,7 +180,9 @@ export default function StepExpertise({ data, onChange }: Props) {
           rows={4}
           className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
         />
-        <p className="text-xs text-gray-400 mt-1 text-right">{data.experienceDescription.length}/500</p>
+        <p className="text-xs text-gray-400 mt-1 text-right">
+          {data.experienceDescription.length}/500
+        </p>
       </div>
 
       {/* Années d'expérience */}
@@ -189,13 +214,21 @@ export default function StepExpertise({ data, onChange }: Props) {
         {data.certificates.length > 0 && (
           <div className="space-y-2 mb-3">
             {data.certificates.map((cert, i) => (
-              <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30">
+              <div
+                key={i}
+                className="flex items-center gap-3 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30"
+              >
                 <Award className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{cert.name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {cert.name}
+                  </p>
                   {cert.issuer && <p className="text-xs text-gray-500">{cert.issuer}</p>}
                 </div>
-                <button onClick={() => removeCertificate(i)} className="text-gray-400 hover:text-red-500 transition-colors">
+                <button
+                  onClick={() => removeCertificate(i)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -220,10 +253,16 @@ export default function StepExpertise({ data, onChange }: Props) {
             className="w-full px-3 py-2 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           />
           <div className="flex gap-2 items-center">
-            <input ref={certFileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) setCertFileName(f.name);
-            }} />
+            <input
+              ref={certFileRef}
+              type="file"
+              accept="image/*,.pdf"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) setCertFileName(f.name);
+              }}
+            />
             <button
               onClick={() => certFileRef.current?.click()}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-white/5 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
@@ -232,7 +271,9 @@ export default function StepExpertise({ data, onChange }: Props) {
               {certFileName ? certFileName : 'Joindre un fichier'}
             </button>
             {certFileName && (
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">✓</span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                ✓
+              </span>
             )}
             <button
               onClick={addCertificate}

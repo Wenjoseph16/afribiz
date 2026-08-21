@@ -88,6 +88,14 @@ export const businessModuleEnum = z.enum([
   'DISPUTES',
   'MODULE_MARKETPLACE',
   'ADVANCED_TASKS',
+  'TRAINING',
+  'SAVINGS',
+  'CRM',
+  'MARKETING',
+  'MEDIA',
+  'AFRISCORE',
+  'GROUP_BUY',
+  'VOICE',
 ]);
 
 export const businessOnboardingSchema = z.object({
@@ -110,23 +118,14 @@ export const businessOnboardingSchema = z.object({
   managerBio: z.string().max(500).optional(),
   skills: z.array(z.string()).optional().default([]),
   certifications: z.array(z.string()).optional().default([]),
+  portfolioImages: z.array(z.string()).max(5).optional().default([]),
+  tagline: z.string().max(200).optional(),
   website: z.string().url().optional().or(z.literal('')),
   facebook: z.string().optional(),
   instagram: z.string().optional(),
   tiktok: z.string().optional(),
   youtube: z.string().optional(),
   linkedin: z.string().optional(),
-  language: z.string().optional(),
-  paymentMethods: z
-    .array(
-      z.object({
-        method: z.string(),
-        name: z.string(),
-        number: z.string(),
-        isActive: z.boolean(),
-      })
-    )
-    .optional(),
 });
 
 export const productSchema = z.object({

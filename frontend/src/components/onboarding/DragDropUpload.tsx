@@ -72,9 +72,7 @@ export function DragDropUpload({
   if (multiple && Array.isArray(value) && value.length > 0) {
     return (
       <div className="space-y-2">
-        {label && (
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
-        )}
+        {label && <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>}
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           {value.map((url, i) => (
             <div
@@ -142,9 +140,7 @@ export function DragDropUpload({
 
   return (
     <div className="space-y-2">
-      {label && (
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
-      )}
+      {label && <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>}
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
@@ -203,7 +199,9 @@ export function DragDropUpload({
                   ? 'Déposez ici'
                   : 'Glissez une image'}
             </span>
-            <span className="text-[10px] text-gray-400 dark:text-gray-500">ou cliquez pour parcourir</span>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+              ou cliquez pour parcourir
+            </span>
           </div>
         )}
       </div>

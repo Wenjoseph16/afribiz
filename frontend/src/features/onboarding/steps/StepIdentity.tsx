@@ -30,7 +30,7 @@ export default function StepIdentity({ data, onChange }: Props) {
         setUploadError(`Échec de l'upload: ${res.data?.error || 'Erreur inconnue'}`);
       }
     } catch (e: any) {
-      const msg = e?.response?.data?.error || e?.message || 'Erreur lors de l\'upload';
+      const msg = e?.response?.data?.error || e?.message || "Erreur lors de l'upload";
       setUploadError(msg);
     } finally {
       setUploading(false);
@@ -72,7 +72,9 @@ export default function StepIdentity({ data, onChange }: Props) {
           {BUSINESS_CATEGORIES.map((cat) => (
             <optgroup key={cat.label} label={cat.label}>
               {cat.types.map((t) => (
-                <option key={t} value={t}>{BUSINESS_TYPE_LABELS[t] || t}</option>
+                <option key={t} value={t}>
+                  {BUSINESS_TYPE_LABELS[t] || t}
+                </option>
               ))}
             </optgroup>
           ))}
@@ -109,7 +111,13 @@ export default function StepIdentity({ data, onChange }: Props) {
           <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
             Logo
           </label>
-          <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'logo')} />
+          <input
+            ref={logoRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileChange(e, 'logo')}
+          />
           {data.logo ? (
             <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
               <img src={data.logo} alt="Logo" className="w-full h-full object-cover" />
@@ -141,7 +149,13 @@ export default function StepIdentity({ data, onChange }: Props) {
           <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
             Bannière
           </label>
-          <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'banner')} />
+          <input
+            ref={bannerRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileChange(e, 'banner')}
+          />
           {data.banner ? (
             <div className="relative w-full aspect-[2/1] rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
               <img src={data.banner} alt="Bannière" className="w-full h-full object-cover" />
@@ -163,7 +177,9 @@ export default function StepIdentity({ data, onChange }: Props) {
               ) : (
                 <Upload className="h-5 w-5" />
               )}
-              <span className="text-xs font-medium">{uploadingBanner ? 'Upload…' : 'Bannière'}</span>
+              <span className="text-xs font-medium">
+                {uploadingBanner ? 'Upload…' : 'Bannière'}
+              </span>
             </button>
           )}
         </div>

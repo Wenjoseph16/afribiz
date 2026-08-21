@@ -8,18 +8,45 @@ import { Country, State, City } from 'country-state-city';
 
 // Codes ISO des pays africains prioritaires
 const AFRICAN_ISO = [
-  'TG', 'BJ', 'CI', 'GH', 'NG', 'SN', 'CM', 'ML', 'BF', 'NE',
-  'GN', 'CG', 'CD', 'GA', 'TD', 'CF', 'CG', 'TG', 'RW', 'UG',
-  'KE', 'ET', 'ZA', 'TZ', 'MZ', 'MG', 'DZ', 'MA', 'TN', 'EG',
+  'TG',
+  'BJ',
+  'CI',
+  'GH',
+  'NG',
+  'SN',
+  'CM',
+  'ML',
+  'BF',
+  'NE',
+  'GN',
+  'CG',
+  'CD',
+  'GA',
+  'TD',
+  'CF',
+  'CG',
+  'TG',
+  'RW',
+  'UG',
+  'KE',
+  'ET',
+  'ZA',
+  'TZ',
+  'MZ',
+  'MG',
+  'DZ',
+  'MA',
+  'TN',
+  'EG',
 ];
 
-const AFRIQUE = Country.getAllCountries().filter(
-  (c) => AFRICAN_ISO.includes(c.isoCode)
-);
+const AFRIQUE = Country.getAllCountries().filter((c) => AFRICAN_ISO.includes(c.isoCode));
 
 function findCountryCode(name: string): string | undefined {
-  return AFRIQUE.find((c) => c.name === name)?.isoCode ||
-    Country.getAllCountries().find((c) => c.name === name)?.isoCode;
+  return (
+    AFRIQUE.find((c) => c.name === name)?.isoCode ||
+    Country.getAllCountries().find((c) => c.name === name)?.isoCode
+  );
 }
 
 const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
