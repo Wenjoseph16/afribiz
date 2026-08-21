@@ -24,6 +24,8 @@ const ACCOUNTS = (() => {
 
 const MAIN = ACCOUNTS?.main || { email: '', password: 'Afribiz@2026!' };
 const ADMIN = ACCOUNTS?.admin || { email: '', password: 'Afribiz@2026!' };
+const DEV = ACCOUNTS?.dev || { email: '', password: 'Afribiz@2026!' };
+const CLIENT = ACCOUNTS?.client || { email: '', password: 'Afribiz@2026!' };
 
 test.setTimeout(9_000_000); // 2h30 — dev server très lent à froid
 
@@ -130,8 +132,8 @@ function summarize(results: PageResult[], label: string) {
 test('FULL-SITE: client', async ({ browser }) => {
   test.slow();
   const context = await browser.newContext();
-  if (!MAIN.email) throw new Error('Comptes e2e absents — lancer le setup');
-  await auth(context, { email: MAIN.email, password: MAIN.password });
+  if (!CLIENT.email) throw new Error('Comptes e2e absents — lancer le setup');
+  await auth(context, { email: CLIENT.email, password: CLIENT.password });
   const page = await context.newPage();
   const results: PageResult[] = [];
   for (const url of CLIENT_ROUTES) await visitPage(page, url, results, IGNORE);
@@ -155,7 +157,8 @@ test('FULL-SITE: business', async ({ browser }) => {
 test('FULL-SITE: developpeur', async ({ browser }) => {
   test.slow();
   const context = await browser.newContext();
-  await auth(context, { email: MAIN.email, password: MAIN.password });
+  if (!DEV.email) throw new Error('Comptes e2e absents — lancer le setup');
+  await auth(context, { email: DEV.email, password: DEV.password });
   const page = await context.newPage();
   const results: PageResult[] = [];
   for (const url of DEV_ROUTES) await visitPage(page, url, results, IGNORE);

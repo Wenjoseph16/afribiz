@@ -3,8 +3,8 @@ module.exports = {
     {
       name: 'afribiz-backend',
       cwd: './backend',
-      script: 'npx',
-      args: 'tsx watch src/server.ts',
+      script: '../node_modules/tsx/dist/cli.mjs',
+      args: 'watch src/server.ts',
       interpreter: 'node',
       env: { NODE_ENV: 'development' },
       watch: false,
@@ -12,8 +12,8 @@ module.exports = {
     {
       name: 'afribiz-frontend',
       cwd: './frontend',
-      script: 'npx',
-      args: 'next dev -p 3000',
+      script: '../node_modules/next/dist/bin/next',
+      args: 'dev -p 3000',
       interpreter: 'node',
       env: { NODE_ENV: 'development' },
       watch: false,
