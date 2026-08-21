@@ -174,11 +174,7 @@ export const sendLiveChat = catchAsyncErrors(async (req: AuthenticatedRequest, r
 });
 
 export const joinLiveRoom = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
-  const participant = await liveService.joinLive(
-    req.params.id,
-    req.user?.id,
-    req.body.userName
-  );
+  const participant = await liveService.joinLive(req.params.id, req.user?.id, req.body.userName);
   res.json(successResponse(participant, 'Rejoint le live'));
 });
 

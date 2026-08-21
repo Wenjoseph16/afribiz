@@ -22,6 +22,7 @@ import {
   publishEscrowReleased,
   publishOrderPendingReminder,
   publishOrderAutoCancelled,
+  publishDeliveryConfirmReminder,
   publishTrialExpiring,
 } from '../events/publishers';
 import { expireOldStories, expireOldFeedItems } from './storyService';
@@ -780,6 +781,21 @@ export class CronService {
         lastError: null,
       },
       {
+        id: 'delivery-confirm-reminders',
+        name: 'Rappel validation livraison',
+        description:
+          'Relance le client pour confirmer la réception avant libération du séquestre (24h après livraison)',
+        category: 'client',
+        schedule: 'Toutes les 30 min',
+        cron: '*/30 * * * *',
+        enabled: true,
+        lastRun: null,
+        nextRun: null,
+        todayCount: 0,
+        errorCount: 0,
+        lastError: null,
+      },
+      {
         id: 'auto-escrow-release',
         name: 'Séquestre auto (14j)',
         description: 'Libère les fonds sans commande associée après 14 jours',
@@ -1134,6 +1150,12 @@ export class CronService {
       'Séquestre libéré automatiquement'
     );
     scheduleIfEnabled(
+      'delivery-confirm-reminders',
+      '*/30 * * * *',
+      () => CronService.checkDeliveryConfirmations(),
+      'Rappels validation livraison envoyés'
+    );
+    scheduleIfEnabled(
       'auto-escrow-release',
       '30 10 * * *',
       () => CronService.checkAutoEscrowRelease(),
@@ -1260,6 +1282,11 @@ export class CronService {
         bookingId: b.id,
         businessName: biz.name || '',
       });
+      publishBookingReminder({
+        userId: b.clientId,
+        bookingId: b.id,
+        businessName: biz.name || '',
+      });
       await prisma.booking.update({
         where: { id: b.id },
         data: { reminderSent: true, remindedAt: now },
@@ -1306,7 +1333,8 @@ export class CronService {
         reminder7dSent: p.reminder7dSent,
         reminder3dSent: p.reminder3dSent,
         reminder1dSent: p.reminder1dSent,
-        [stage === '7d' ? 'reminder7dSent' : stage === '3d' ? 'reminder3dSent' : 'reminder1dSent']: true,
+        [stage === '7d' ? 'reminder7dSent' : stage === '3d' ? 'reminder3dSent' : 'reminder1dSent']:
+          true,
         [stage === '7d' ? 'reminder7dAt' : stage === '3d' ? 'reminder3dAt' : 'reminder1dAt']: now,
       };
 
@@ -1317,7 +1345,11 @@ export class CronService {
             ? '⏳ Plus que 3 jours — votre épargne vous attend'
             : '🌱 Derniers jours pour compléter (sans pression)';
       const deadline =
-        stage === '7d' ? 'encore 7 jours' : stage === '3d' ? 'encore 3 jours' : 'plus que quelques jours';
+        stage === '7d'
+          ? 'encore 7 jours'
+          : stage === '3d'
+            ? 'encore 3 jours'
+            : 'plus que quelques jours';
 
       try {
         await prisma.notification.create({
@@ -1329,28 +1361,31 @@ export class CronService {
               `${p.itemName} — vous êtes à ${progress}% (${saved.toLocaleString('fr-FR')} / ${target.toLocaleString('fr-FR')} FCFA), il vous reste ${deadline}. ` +
               `Aucune pression : cotisez quand vous voulez, ou annulez et soyez remboursé intégralement.`,
             link: '/dashboard/my-layaway',
-            metadata: p.businessId ? { businessId: p.businessId, source: 'layaway-reminder' } : { source: 'layaway-reminder' },
+            metadata: p.businessId
+              ? { businessId: p.businessId, source: 'layaway-reminder' }
+              : { source: 'layaway-reminder' },
           },
         });
         // Push temps réel (socket) — le client voit le rappel sans recharger
         try {
-          getIO()
-            ?.to(`user:${p.clientId}`)
-            .emit('layaway:reminder', {
-              planId: p.id,
-              itemName: p.itemName,
-              stage,
-              progress,
-              saved,
-              target,
-            });
+          getIO()?.to(`user:${p.clientId}`).emit('layaway:reminder', {
+            planId: p.id,
+            itemName: p.itemName,
+            stage,
+            progress,
+            saved,
+            target,
+          });
         } catch {
           /* socket non prêt : non bloquant */
         }
         await prisma.layawayPlan.update({ where: { id: p.id }, data } as any);
         sent++;
       } catch (err) {
-        logger.warn('Cron: layaway reminder failed', { error: (err as Error).message, planId: p.id });
+        logger.warn('Cron: layaway reminder failed', {
+          error: (err as Error).message,
+          planId: p.id,
+        });
       }
     }
     if (sent > 0) logger.info(`Cron: sent ${sent} gentle layaway reminders`);
@@ -1364,12 +1399,13 @@ export class CronService {
     const urgentReminderEnd = 35 * 60 * 1000;
     const autoCancel = 60 * 60 * 1000;
 
+    // On traite TOUTES les commandes PENDING, sans fenêtre de temps : sinon une commande
+    // restée en attente (cron interrompu, intervalle manqué) n'est jamais relancée ni annulée.
     const pendingOrders = await prisma.order.findMany({
       where: {
         status: 'PENDING',
         buyerId: { not: null },
         businessId: { not: null },
-        createdAt: { gte: new Date(now - 65 * 60 * 1000) },
       },
       include: {
         business: { select: { ownerId: true, name: true } },
@@ -1381,7 +1417,29 @@ export class CronService {
       if (!order.businessId || !order.business || !order.buyerId) continue;
       const elapsed = now - new Date(order.createdAt).getTime();
 
-      if (elapsed >= autoCancel) {
+      // Ne jamais auto-annuler une commande déjà payée : l'argent a été débité, l'ordre doit
+      // rester actif (escalade) plutôt que d'être annulé sans remboursement.
+      const isPaid = order.paymentStatus === 'PAID' || order.paymentStatus === 'COMPLETED';
+      if (elapsed >= autoCancel && isPaid) {
+        // Commande payée non traitée : escalation auprès du vendeur, mais PAS d'annulation.
+        publishOrderPendingReminder({
+          userId: order.business.ownerId,
+          orderId: order.id,
+          businessName: order.business.name,
+          amount: order.totalAmount.toString(),
+          businessId: order.businessId,
+          minutesElapsed: Math.floor(elapsed / 60000),
+          reminderLevel: 'urgent',
+        });
+        await prisma.order.update({ where: { id: order.id }, data: { updatedAt: new Date() } });
+        logger.warn(
+          'Cron: PAID order ' +
+            order.orderNumber +
+            ' still PENDING after ' +
+            Math.floor(elapsed / 60000) +
+            ' min - escalated, NOT auto-cancelled'
+        );
+      } else if (elapsed >= autoCancel) {
         await prisma.order.update({
           where: { id: order.id },
           data: {
@@ -2103,6 +2161,38 @@ export class CronService {
     }
     if (orders.length > 0)
       logger.info(`Cron: auto-released ${orders.length} escrows after delivery confirmation`);
+  }
+
+  /**
+   * Relance le CLIENT (acheteur) pour confirmer la réception d'une commande livrée
+   * payée par séquestre. Sans confirmation, les fonds sont libérés au vendeur après
+   * 48h : le rappel (vers 24h) laisse le temps de valider ou d'ouvrir un litige.
+   */
+  public static async checkDeliveryConfirmations(): Promise<void> {
+    // Fenêtre de 30 min alignée sur la cadence du job (*/30) : chaque commande n'est
+    // relancée qu'une seule fois, ~24h après la livraison (libération séquestre à 48h).
+    const reminderWindowStart = new Date(Date.now() - 24.5 * 60 * 60 * 1000);
+    const reminderWindowEnd = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const orders = await prisma.order.findMany({
+      where: {
+        status: 'DELIVERED',
+        buyerId: { not: null },
+        deliveredAt: { gte: reminderWindowStart, lte: reminderWindowEnd },
+        escrow: { status: 'HELD' },
+      },
+      include: { escrow: true, business: { select: { name: true } } },
+    });
+    for (const o of orders) {
+      if (!o.buyerId || !o.business) continue;
+      publishDeliveryConfirmReminder({
+        userId: o.buyerId,
+        orderId: o.id,
+        businessName: o.business.name,
+        amount: o.totalAmount.toString(),
+      });
+    }
+    if (orders.length > 0)
+      logger.info(`Cron: sent ${orders.length} delivery confirm reminders (escrow)`);
   }
 
   public static async checkCopilotAlerts(): Promise<void> {

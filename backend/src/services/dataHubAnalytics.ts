@@ -314,8 +314,7 @@ export async function getSatisfactionAnalytics(businessId: string): Promise<any>
     surveyAverage: agg._avg.score ?? null,
     surveyResponses: totalResponses,
     surveysSent,
-    responseRate:
-      surveysSent > 0 ? Math.round((totalResponses / surveysSent) * 1000) / 10 : null,
+    responseRate: surveysSent > 0 ? Math.round((totalResponses / surveysSent) * 1000) / 10 : null,
     recentLow30d: surveyLow,
     avgRating: score?.avgRating ?? null,
     reviewCount: score?.reviewCount ?? 0,

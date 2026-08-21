@@ -919,7 +919,12 @@ export async function subscribeToPlan(
         customerPhone: data.phone,
       });
     } else {
-      paymentResult = await processMobileMoney(data.provider || 'MOBILE_MONEY', data.phone || '', amount, `Abonnement ${plan.name}`);
+      paymentResult = await processMobileMoney(
+        data.provider || 'MOBILE_MONEY',
+        data.phone || '',
+        amount,
+        `Abonnement ${plan.name}`
+      );
     }
   } catch (e) {
     logger.warn('Abonnement : init paiement échoué, souscription en attente', {
@@ -961,7 +966,11 @@ export async function subscribeToPlan(
         business: { select: { id: true, name: true } },
       },
     });
-    return { subscription: activated, needsConfirmation: false, providerRef: paymentResult.providerRef };
+    return {
+      subscription: activated,
+      needsConfirmation: false,
+      providerRef: paymentResult.providerRef,
+    };
   }
 
   // PENDING → le client doit confirmer sur son téléphone (ou webhook)
@@ -969,14 +978,13 @@ export async function subscribeToPlan(
     subscription,
     needsConfirmation: true,
     providerRef: paymentResult?.providerRef || null,
-    paymentMessage: paymentResult?.message || `Paiement ${data.provider || 'Mobile Money'} initié. Confirmez sur votre téléphone.`,
+    paymentMessage:
+      paymentResult?.message ||
+      `Paiement ${data.provider || 'Mobile Money'} initié. Confirmez sur votre téléphone.`,
   };
 }
 
-export async function confirmSubscriptionPayment(
-  userId: string,
-  data: { providerRef: string }
-) {
+export async function confirmSubscriptionPayment(userId: string, data: { providerRef: string }) {
   if (!data.providerRef) throw new AppError('Référence de paiement requise', 400);
 
   // Trouver la transaction liée à la souscription de l'utilisateur
@@ -1085,7 +1093,9 @@ async function activateSubscription(
 
   const sub = await prisma.businessSubscription.findUnique({
     where: { id: subscriptionId },
-    include: { plan: { include: { business: { select: { id: true, ownerId: true, name: true } } } } },
+    include: {
+      plan: { include: { business: { select: { id: true, ownerId: true, name: true } } } },
+    },
   });
   if (!sub) throw new AppError('Abonnement introuvable', 404);
   if (sub.status === 'ACTIVE') {

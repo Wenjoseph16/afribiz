@@ -3,7 +3,7 @@ import { AppError } from '../middlewares/errorHandler';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 
 async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true, ...activeModuleAssignmentsSelect },
   });

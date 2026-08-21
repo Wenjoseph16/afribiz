@@ -4,7 +4,7 @@ import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/busines
 import { AppError } from '../middlewares/errorHandler';
 
 async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true, name: true, ...activeModuleAssignmentsSelect, settings: true },
   });
@@ -146,7 +146,13 @@ export async function listTasks(ownerId: string, filters: any) {
     }),
     prisma.planningTask.count({ where }),
   ]);
-  return { tasks, total, page: parsedPage, limit: parsedLimit, totalPages: Math.ceil(total / parsedLimit) };
+  return {
+    tasks,
+    total,
+    page: parsedPage,
+    limit: parsedLimit,
+    totalPages: Math.ceil(total / parsedLimit),
+  };
 }
 
 export async function getTask(ownerId: string, taskId: string) {
@@ -257,7 +263,13 @@ export async function listSchedules(ownerId: string, filters: any) {
     }),
     prisma.employeeSchedule.count({ where }),
   ]);
-  return { schedules, total, page: parsedPage, limit: parsedLimit, totalPages: Math.ceil(total / parsedLimit) };
+  return {
+    schedules,
+    total,
+    page: parsedPage,
+    limit: parsedLimit,
+    totalPages: Math.ceil(total / parsedLimit),
+  };
 }
 
 export async function upsertSchedule(ownerId: string, data: any) {
@@ -362,7 +374,13 @@ export async function listPlanningLogs(ownerId: string, filters: any) {
     prisma.planningLog.findMany({ where, skip, take: parsedLimit, orderBy: { createdAt: 'desc' } }),
     prisma.planningLog.count({ where }),
   ]);
-  return { logs, total, page: parsedPage, limit: parsedLimit, totalPages: Math.ceil(total / parsedLimit) };
+  return {
+    logs,
+    total,
+    page: parsedPage,
+    limit: parsedLimit,
+    totalPages: Math.ceil(total / parsedLimit),
+  };
 }
 
 // ===================== STATS =====================

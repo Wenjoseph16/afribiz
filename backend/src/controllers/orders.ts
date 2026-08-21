@@ -38,7 +38,11 @@ export const createBusinessOrder = catchAsyncErrors(
         action: 'ORDER_CREATED',
         module: 'ORDERS',
         description: `Commande ${data.orderNumber || data.id} créée`,
-        metadata: { orderId: data.id, orderNumber: data.orderNumber, totalAmount: data.totalAmount },
+        metadata: {
+          orderId: data.id,
+          orderNumber: data.orderNumber,
+          totalAmount: data.totalAmount,
+        },
         ipAddress: req.ip,
       }).catch(() => {});
     }

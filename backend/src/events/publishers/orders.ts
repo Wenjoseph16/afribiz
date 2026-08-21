@@ -91,6 +91,21 @@ export const publishOrderAutoCancelled = def<{
     link: `/dashboard/orders/${p.orderId}`,
   })
 );
+export const publishDeliveryConfirmReminder = def<{
+  userId: string;
+  orderId: string;
+  businessName: string;
+  amount: string;
+}>(
+  DomainEventType.ORDER_DELIVERY_CONFIRM_REMINDER,
+  (p) => ({ orderId: p.orderId, businessName: p.businessName, amount: p.amount }),
+  (p) => ({
+    orderId: p.orderId,
+    businessName: p.businessName,
+    amount: p.amount,
+    link: `/dashboard/orders/${p.orderId}`,
+  })
+);
 export const publishCartAbandoned = def<{
   userId: string;
   businessId: string;

@@ -11,7 +11,9 @@ jest.mock('../../services/crm', () => ({
   syncClientFromOrder: jest.fn().mockResolvedValue(undefined),
   recalculateAllDynamicSegments: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock('../../services/customer360', () => ({ logActivity: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('../../services/customer360', () => ({
+  logActivity: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('../../services/analyticsService', () => ({
   trackAnalyticsEvent: jest.fn().mockResolvedValue(undefined),
 }));
@@ -169,7 +171,9 @@ describe('groupBuyService', () => {
         currentCount: 5,
         status: 'REACHED',
       });
-      (mockPrisma.business.findUnique as jest.Mock).mockResolvedValueOnce(mockBusiness).mockResolvedValueOnce({ ownerId: 'owner-1', name: 'Biz' });
+      (mockPrisma.business.findUnique as jest.Mock)
+        .mockResolvedValueOnce(mockBusiness)
+        .mockResolvedValueOnce({ ownerId: 'owner-1', name: 'Biz' });
       (mockPrisma.groupBuyParticipant.findMany as jest.Mock).mockResolvedValue([]);
       const r = await groupBuy.addParticipant('u1', {
         groupBuyId: 'gb-1',

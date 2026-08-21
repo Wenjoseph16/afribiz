@@ -19,7 +19,7 @@ const ESCROW_COMMISSION_RATE = 0.01; // 1% sur la libération (cohérent avec mo
 // ─────────────────────────────────────────────
 
 async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true, name: true, slug: true },
   });
@@ -234,7 +234,7 @@ export async function createLayawayOffersBatch(
     throw new AppError(
       scope === 'ITEMS'
         ? 'Aucun article trouvé pour les identifiants fournis'
-        : "Aucun article de ce type dans le catalogue (ou dans les catégories choisies)",
+        : 'Aucun article de ce type dans le catalogue (ou dans les catégories choisies)',
       400
     );
   }
@@ -316,7 +316,10 @@ async function findItemsForBatch(
     }
     const where: any = { businessId };
     if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
-    const rows = await prisma.room.findMany({ where, select: { id: true, name: true, price: true } });
+    const rows = await prisma.room.findMany({
+      where,
+      select: { id: true, name: true, price: true },
+    });
     return rows.map((r) => ({ id: r.id, name: r.name, price: Number(r.price || 0) }));
   }
   if (itemType === 'RENTAL') {
@@ -328,7 +331,10 @@ async function findItemsForBatch(
     }
     const where: any = { businessId };
     if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
-    const rows = await prisma.rental.findMany({ where, select: { id: true, name: true, price: true } });
+    const rows = await prisma.rental.findMany({
+      where,
+      select: { id: true, name: true, price: true },
+    });
     return rows.map((r) => ({ id: r.id, name: r.name, price: Number(r.price || 0) }));
   }
   if (itemType === 'EVENT') {
@@ -360,7 +366,10 @@ async function findItemsForBatch(
   }
   const where: any = { businessId };
   if (scope === 'ITEMS' && itemIds.length) where.id = { in: itemIds };
-  const rows = await prisma.training.findMany({ where, select: { id: true, title: true, price: true } });
+  const rows = await prisma.training.findMany({
+    where,
+    select: { id: true, title: true, price: true },
+  });
   return rows.map((r) => ({ id: r.id, name: r.title, price: Number(r.price || 0) }));
 }
 

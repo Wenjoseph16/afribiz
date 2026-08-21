@@ -80,7 +80,7 @@ export async function verifySignature(documentId: string) {
 
 // ── List Signature Requests ──
 export async function listSignatureRequests(ownerId: string, documentId?: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true },
   });

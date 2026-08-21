@@ -13,7 +13,7 @@ import { syncClientFromBooking, recalculateAllDynamicSegments } from './crm';
 import { logActivity } from './customer360';
 
 async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: {
       id: true,

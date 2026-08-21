@@ -45,7 +45,7 @@ export async function getClientDashboardData(userId: string) {
 }
 
 export async function getBusinessDashboardData(userId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId: userId },
     select: { id: true },
   });

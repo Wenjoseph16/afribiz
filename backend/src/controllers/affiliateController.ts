@@ -15,7 +15,7 @@ export const createLink = catchAsyncErrors(async (req: AuthenticatedRequest, res
     itemId,
     commissionPercent,
   });
-  res.status(201).json(successResponse(link, 'Lien d\'affiliation créé'));
+  res.status(201).json(successResponse(link, "Lien d'affiliation créé"));
 });
 
 export const listLinks = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
@@ -27,7 +27,7 @@ export const listLinks = catchAsyncErrors(async (req: AuthenticatedRequest, res:
 export const deleteLink = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) throw new Error('Non authentifié');
   await affiliateService.deleteAffiliateLink(req.user.id, req.params.id);
-  res.json(successResponse(null, 'Lien d\'affiliation supprimé'));
+  res.json(successResponse(null, "Lien d'affiliation supprimé"));
 });
 
 export const resolveLink = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {

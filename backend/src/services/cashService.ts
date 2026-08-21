@@ -194,7 +194,11 @@ export async function addMovement(
       amount,
       description: `${movement.label} — ${movement.description || ''}`.trim(),
       reference: `CAISSE-${session.id.slice(0, 8)}`,
-      metadata: { cashMovementId: movement.id, sourceType: data.sourceType, sourceId: data.sourceId },
+      metadata: {
+        cashMovementId: movement.id,
+        sourceType: data.sourceType,
+        sourceId: data.sourceId,
+      },
     },
   });
 
@@ -277,7 +281,7 @@ export async function recordOrderSale(
           userId: performedBy,
           action: 'MANUAL_ADJUSTMENT',
           amount: 0,
-          description: `⚠️ TRACE CAISSE EN ÉCHEC — commande ${order.number || order.id} (${Number(paidAmount || 0)} F non tracés dans la caisse du jour)`, 
+          description: `⚠️ TRACE CAISSE EN ÉCHEC — commande ${order.number || order.id} (${Number(paidAmount || 0)} F non tracés dans la caisse du jour)`,
           metadata: {
             cashTraceFailed: true,
             orderId: order.id,
@@ -393,7 +397,10 @@ export async function getCashWidget(ownerId: string) {
     include: { movements: { orderBy: { createdAt: 'asc' } } },
   });
   if (!session) {
-    return { open: false, totals: { opening: 0, entries: 0, expenses: 0, expectedBalance: 0, salesCount: 0 } };
+    return {
+      open: false,
+      totals: { opening: 0, entries: 0, expenses: 0, expectedBalance: 0, salesCount: 0 },
+    };
   }
   const totals = computeTotals(session);
   return { open: true, sessionId: session.id, openedAt: session.openedAt, ...totals };

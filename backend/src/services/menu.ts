@@ -5,7 +5,7 @@ import { AppError } from '../middlewares/errorHandler';
 import type { MenuItemCreateInput } from '../types/service';
 
 async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId },
     select: { id: true, name: true, ...activeModuleAssignmentsSelect },
   });

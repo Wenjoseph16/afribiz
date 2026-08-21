@@ -9,7 +9,7 @@ import { logActivity } from './customer360';
 import { trackAnalyticsEvent } from './analyticsService';
 
 async function getBusinessId(ownerId: string) {
-  const b = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
+  const b = await prisma.business.findFirst({ where: { ownerId }, select: { id: true } });
   if (!b) throw new AppError('Business non trouvé', 404);
   return b.id;
 }
@@ -81,7 +81,10 @@ export async function listGroupBuys(ownerId: string) {
     price: Number(g.price),
     groupPrice: Number(g.groupPrice),
     savings: g.savings ? Number(g.savings) : null,
-    progress: g.minParticipants > 0 ? Math.min(100, Math.round((g.currentCount / g.minParticipants) * 100)) : 0,
+    progress:
+      g.minParticipants > 0
+        ? Math.min(100, Math.round((g.currentCount / g.minParticipants) * 100))
+        : 0,
   }));
 }
 
@@ -97,7 +100,10 @@ export async function getGroupBuy(ownerId: string, id: string) {
     price: Number(gb.price),
     groupPrice: Number(gb.groupPrice),
     savings: gb.savings ? Number(gb.savings) : null,
-    progress: gb.minParticipants > 0 ? Math.min(100, Math.round((gb.currentCount / gb.minParticipants) * 100)) : 0,
+    progress:
+      gb.minParticipants > 0
+        ? Math.min(100, Math.round((gb.currentCount / gb.minParticipants) * 100))
+        : 0,
     participants: gb.participants.map((p) => ({
       ...p,
       amount: Number(p.amount),
@@ -106,42 +112,75 @@ export async function getGroupBuy(ownerId: string, id: string) {
 }
 
 // Types d'articles rattachables à un achat groupé (tous les catalogues)
-const GROUP_BUY_ITEM_TYPES = ['PRODUCT', 'SERVICE', 'MENU_ITEM', 'ROOM', 'RENTAL', 'EVENT', 'TRAINING'];
+const GROUP_BUY_ITEM_TYPES = [
+  'PRODUCT',
+  'SERVICE',
+  'MENU_ITEM',
+  'ROOM',
+  'RENTAL',
+  'EVENT',
+  'TRAINING',
+];
 
 /**
  * Résout le nom réel d'un article depuis la base (n'importe quel type).
  * Retourne null si l'article n'existe pas.
  */
-async function resolveGroupBuyItemName(businessId: string, itemType: string | null, itemId: string | null): Promise<string | null> {
+async function resolveGroupBuyItemName(
+  businessId: string,
+  itemType: string | null,
+  itemId: string | null
+): Promise<string | null> {
   if (!itemType || !itemId) return null;
   try {
     switch (itemType) {
       case 'PRODUCT': {
-        const p = await prisma.product.findFirst({ where: { id: itemId, businessId, deletedAt: null }, select: { name: true } });
+        const p = await prisma.product.findFirst({
+          where: { id: itemId, businessId, deletedAt: null },
+          select: { name: true },
+        });
         return p?.name ?? null;
       }
       case 'SERVICE': {
-        const s = await prisma.service.findFirst({ where: { id: itemId, businessId }, select: { name: true } });
+        const s = await prisma.service.findFirst({
+          where: { id: itemId, businessId },
+          select: { name: true },
+        });
         return s?.name ?? null;
       }
       case 'MENU_ITEM': {
-        const m = await prisma.menuItem.findFirst({ where: { id: itemId, businessId }, select: { name: true } });
+        const m = await prisma.menuItem.findFirst({
+          where: { id: itemId, businessId },
+          select: { name: true },
+        });
         return m?.name ?? null;
       }
       case 'ROOM': {
-        const r = await prisma.room.findFirst({ where: { id: itemId, businessId }, select: { name: true } });
+        const r = await prisma.room.findFirst({
+          where: { id: itemId, businessId },
+          select: { name: true },
+        });
         return r?.name ?? null;
       }
       case 'RENTAL': {
-        const r = await prisma.rental.findFirst({ where: { id: itemId, businessId }, select: { name: true } });
+        const r = await prisma.rental.findFirst({
+          where: { id: itemId, businessId },
+          select: { name: true },
+        });
         return r?.name ?? null;
       }
       case 'EVENT': {
-        const e = await prisma.event.findFirst({ where: { id: itemId, businessId }, select: { title: true } });
+        const e = await prisma.event.findFirst({
+          where: { id: itemId, businessId },
+          select: { title: true },
+        });
         return e?.title ?? null;
       }
       case 'TRAINING': {
-        const t = await prisma.training.findFirst({ where: { id: itemId, businessId }, select: { title: true } });
+        const t = await prisma.training.findFirst({
+          where: { id: itemId, businessId },
+          select: { title: true },
+        });
         return t?.title ?? null;
       }
       default:
@@ -174,7 +213,7 @@ export async function createGroupBuy(
   const itemType = data.itemType || (data.productId ? 'PRODUCT' : null);
   const itemId = data.itemId || data.productId || null;
   if (itemType && !GROUP_BUY_ITEM_TYPES.includes(itemType)) {
-    throw new AppError('Type d\'article non pris en charge pour l\'achat groupé', 400);
+    throw new AppError("Type d'article non pris en charge pour l'achat groupé", 400);
   }
   if (itemType && itemId) {
     const realName = await resolveGroupBuyItemName(businessId, itemType, itemId);
@@ -213,7 +252,10 @@ export async function createGroupBuy(
   });
 
   // Notifier : l'achat groupé est en ligne (le business rejoint par le réseau)
-  const owner = await prisma.business.findUnique({ where: { id: businessId }, select: { ownerId: true } });
+  const owner = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { ownerId: true },
+  });
   if (owner?.ownerId) {
     await notify(
       owner.ownerId,
@@ -231,12 +273,14 @@ export async function updateGroupBuy(ownerId: string, id: string, data: any) {
   const businessId = await getBusinessId(ownerId);
   const existing = await prisma.groupBuy.findFirst({ where: { id, businessId } });
   if (!existing) throw new AppError('Achat groupé non trouvé', 404);
-  if (existing.status !== 'ACTIVE') throw new AppError('Seuls les achats groupés ACTIVE peuvent être modifiés', 400);
+  if (existing.status !== 'ACTIVE')
+    throw new AppError('Seuls les achats groupés ACTIVE peuvent être modifiés', 400);
   const upd: any = { ...data };
   if (data.price !== undefined || data.groupPrice !== undefined) {
     const price = Number(data.price ?? existing.price);
     const groupPrice = Number(data.groupPrice ?? existing.groupPrice);
-    if (groupPrice >= price) throw new AppError('Le prix groupe doit être inférieur au prix normal', 400);
+    if (groupPrice >= price)
+      throw new AppError('Le prix groupe doit être inférieur au prix normal', 400);
     upd.savings = price - groupPrice;
   }
   if (data.endAt) upd.endAt = new Date(data.endAt);
@@ -265,9 +309,10 @@ export async function addParticipant(
   const businessId = await getBusinessId(ownerId);
   const gb = await prisma.groupBuy.findFirst({ where: { id: data.groupBuyId, businessId } });
   if (!gb) throw new AppError('Achat groupé non trouvé', 404);
-  if (gb.status !== 'ACTIVE') throw new AppError("Cet achat groupé n'accepte plus de participants", 400);
+  if (gb.status !== 'ACTIVE')
+    throw new AppError("Cet achat groupé n'accepte plus de participants", 400);
   if (gb.maxParticipants && gb.currentCount >= gb.maxParticipants) {
-    throw new AppError("Nombre maximum de participants atteint", 400);
+    throw new AppError('Nombre maximum de participants atteint', 400);
   }
 
   const quantity = Math.max(1, data.quantity || 1);
@@ -311,7 +356,10 @@ export async function addParticipant(
 
   // ── Seuil atteint : le prix groupe est débloqué pour tous ──
   if (reached && gb.status === 'ACTIVE') {
-    const owner = await prisma.business.findUnique({ where: { id: businessId }, select: { ownerId: true, name: true } });
+    const owner = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { ownerId: true, name: true },
+    });
     if (owner?.ownerId) {
       await notify(
         owner.ownerId,
@@ -322,7 +370,11 @@ export async function addParticipant(
         `/dashboard/group-buys/${gb.id}`
       ).catch(() => {});
     }
-    emitBusiness(businessId, 'groupbuy:reached', { groupBuyId: gb.id, currentCount: newCount, minParticipants: gb.minParticipants });
+    emitBusiness(businessId, 'groupbuy:reached', {
+      groupBuyId: gb.id,
+      currentCount: newCount,
+      minParticipants: gb.minParticipants,
+    });
 
     // Chaque participant (connecté) est notifié : il peut valider son achat au prix groupe
     const participants = await prisma.groupBuyParticipant.findMany({
@@ -338,7 +390,10 @@ export async function addParticipant(
           `${gb.title} — validez votre achat à ${Number(gb.groupPrice).toLocaleString('fr-FR')} FCFA avant la fin de l'offre.`,
           '/dashboard/group-buys'
         ).catch(() => {});
-        emitUser(p.userId, 'groupbuy:reached', { groupBuyId: gb.id, groupPrice: Number(gb.groupPrice) });
+        emitUser(p.userId, 'groupbuy:reached', {
+          groupBuyId: gb.id,
+          groupPrice: Number(gb.groupPrice),
+        });
       }
     }
   }
@@ -349,7 +404,12 @@ export async function addParticipant(
     type: 'group_buy',
     category: 'marketing',
     eventName: 'GROUP_BUY_PARTICIPANT_ADDED',
-    properties: { groupBuyId: gb.id, currentCount: newCount, minParticipants: gb.minParticipants, reached },
+    properties: {
+      groupBuyId: gb.id,
+      currentCount: newCount,
+      minParticipants: gb.minParticipants,
+      reached,
+    },
   }).catch(() => {});
 
   return { participant, groupBuy: updated, reached };
@@ -386,10 +446,13 @@ export async function confirmParticipantOrder(ownerId: string, participantId: st
   if (p.status !== 'PENDING') throw new AppError('Cette participation est déjà traitée', 400);
   if (!p.userId) throw new AppError('Seul un participant connecté peut confirmer sa commande', 400);
   if (p.groupBuy.status === 'ACTIVE') {
-    throw new AppError("Le seuil n'est pas encore atteint — le prix groupe n'est pas débloqué", 400);
+    throw new AppError(
+      "Le seuil n'est pas encore atteint — le prix groupe n'est pas débloqué",
+      400
+    );
   }
   if (p.groupBuy.status === 'CANCELLED') {
-    throw new AppError("Cet achat groupé a été annulé — la commande ne peut pas être validée", 400);
+    throw new AppError('Cet achat groupé a été annulé — la commande ne peut pas être validée', 400);
   }
 
   const price = Number(p.groupBuy.price);
@@ -464,7 +527,10 @@ export async function confirmParticipantOrder(ownerId: string, participantId: st
     /* le CRM ne bloque jamais la vente */
   }
 
-  const owner = await prisma.business.findUnique({ where: { id: businessId }, select: { ownerId: true, name: true } });
+  const owner = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { ownerId: true, name: true },
+  });
   if (owner?.ownerId) {
     publishOrderPlaced({
       userId: owner.ownerId,

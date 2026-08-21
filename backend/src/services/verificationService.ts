@@ -127,7 +127,7 @@ export async function upgradeToPlatine(businessId: string) {
 }
 
 export async function getTransactionStats(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId },
     select: { id: true, verificationLevel: true },
   });

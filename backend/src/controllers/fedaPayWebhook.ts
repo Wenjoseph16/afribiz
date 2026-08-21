@@ -71,7 +71,13 @@ export async function applyFedaPayEvent(
       if (newStatus === 'SUCCESS') {
         const order = await prisma.order.findUnique({
           where: { id: transaction.orderId },
-          select: { id: true, orderNumber: true, totalAmount: true, paymentMethod: true, businessId: true },
+          select: {
+            id: true,
+            orderNumber: true,
+            totalAmount: true,
+            paymentMethod: true,
+            businessId: true,
+          },
         });
         if (order) {
           await prisma.order.update({

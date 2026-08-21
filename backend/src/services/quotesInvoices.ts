@@ -3,7 +3,11 @@ import { prisma } from '../lib/db';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
 import { AppError } from '../middlewares/errorHandler';
 
-export async function getBusinessByOwner(ownerId: string, requireModule = true, businessId?: string | null) {
+export async function getBusinessByOwner(
+  ownerId: string,
+  requireModule = true,
+  businessId?: string | null
+) {
   const where = businessId
     ? { id: businessId, ownerId, deletedAt: null }
     : { ownerId, deletedAt: null };

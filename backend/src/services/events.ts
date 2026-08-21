@@ -3,6 +3,8 @@ import { AppError } from '../middlewares/errorHandler';
 import { publishUpcomingEvent } from '../events/publishers';
 import { toDataURL } from 'qrcode';
 import { hasBusinessModule, activeModuleAssignmentsSelect } from '../lib/businessModules';
+import { processMobileMoney, isPaymentDemoMode } from './paymentProcessor';
+import { logger } from '../lib/logger';
 
 // ===== Helper =====
 async function getBusiness(userId: string) {
@@ -637,9 +639,70 @@ export async function registerPublicParticipant(slug: string, eventId: string, d
     color: { dark: '#000', light: '#FFF' },
   });
 
-  return prisma.eventParticipant.create({
-    data: { eventId, ticketRef, qrData, qrCode, ...data },
+  // Résoudre le prix du billet + la méthode de paiement
+  const ticket = data.ticketId
+    ? await prisma.eventTicket.findUnique({ where: { id: data.ticketId } })
+    : null;
+  const ticketPrice = Number(ticket?.price || data.price || 0);
+  const currency = data.currency || 'FCFA';
+  const paymentMethod = data.paymentMethod || 'CASH';
+  const amount = ticketPrice * (Number(data.quantity) || 1);
+
+  // Paiement en ligne : Mobile Money / Escrow (simulé en mode démo)
+  let isPaid = false;
+  let paidAt: Date | null = null;
+  let paymentRef: string | null = null;
+
+  if (paymentMethod !== 'CASH' && amount > 0) {
+    try {
+      const paidStatus = isPaymentDemoMode() ? 'COMPLETED' : 'PENDING';
+      const paymentResult =
+        paymentMethod === 'ESCROW'
+          ? {
+              providerRef: null,
+              status: paidStatus,
+              fee: Math.round(amount * 0.02),
+              message: 'Escrow AfriBiz sécurisé',
+            }
+          : await processMobileMoney(
+              paymentMethod,
+              data.phone || '',
+              amount,
+              `Billet ${ticketRef}`
+            );
+
+      paymentRef = paymentResult.providerRef || null;
+      if (paymentResult.status === 'SUCCESS' || paidStatus === 'COMPLETED') {
+        isPaid = true;
+        paidAt = new Date();
+      }
+    } catch (payErr) {
+      logger.warn(`Event ticket payment failed for ${ticketRef}: ${(payErr as Error).message}`);
+    }
+  }
+
+  const participant = await prisma.eventParticipant.create({
+    data: {
+      eventId,
+      ticketId: data.ticketId || null,
+      ticketRef,
+      qrData,
+      qrCode,
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      email: data.email || null,
+      phone: data.phone || null,
+      price: amount || null,
+      currency,
+      paymentMethod: paymentMethod !== 'CASH' ? paymentMethod : null,
+      paymentRef,
+      isPaid,
+      paidAt,
+      ...data,
+    },
   });
+
+  return participant;
 }
 
 export async function getMyTicket(userId: string, eventId: string) {

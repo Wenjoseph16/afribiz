@@ -3,7 +3,7 @@ import { AppError } from '../middlewares/errorHandler';
 import { logger } from '../lib/logger';
 
 async function getBusinessId(ownerId: string) {
-  const b = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
+  const b = await prisma.business.findFirst({ where: { ownerId }, select: { id: true } });
   if (!b) throw new AppError('Business non trouvé', 404);
   return b.id;
 }

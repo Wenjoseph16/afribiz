@@ -4,7 +4,7 @@ import { searchIdsByText } from '../lib/fulltext';
 import { trackSearchQuery } from './dataHubAnalytics';
 
 export async function globalSearch(ownerId: string, query: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId },
     select: { id: true },
   });

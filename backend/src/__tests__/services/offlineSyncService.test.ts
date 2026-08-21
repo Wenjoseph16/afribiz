@@ -91,8 +91,6 @@ describe('offlineSyncService — executeSyncAction (Chantier 9)', () => {
   });
 
   it('throws 400 for unknown action', async () => {
-    await expect(
-      executeSyncAction('UNKNOWN_ACTION', 'owner-1', {})
-    ).rejects.toThrow('inconnue');
+    await expect(executeSyncAction('UNKNOWN_ACTION', 'owner-1', {})).rejects.toThrow('inconnue');
   });
 });

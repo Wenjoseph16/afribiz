@@ -286,8 +286,7 @@ export async function computeSatisfaction(
       }
     }
     if (replyTimes.length > 0) {
-      const avgHours =
-        replyTimes.reduce((a, b) => a + b, 0) / replyTimes.length / (1000 * 60 * 60);
+      const avgHours = replyTimes.reduce((a, b) => a + b, 0) / replyTimes.length / (1000 * 60 * 60);
       responseTimeScore = clamp(Math.round(Math.max(0, 200 - avgHours * 5)), 0, 200);
     }
   }

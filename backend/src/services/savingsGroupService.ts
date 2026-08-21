@@ -14,7 +14,7 @@ import {
 // ───────── HELPERS ─────────
 
 async function getBusinessId(ownerId: string): Promise<string> {
-  const business = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
+  const business = await prisma.business.findFirst({ where: { ownerId }, select: { id: true } });
   if (!business) throw new AppError('Business non trouvé', 404);
   return business.id;
 }

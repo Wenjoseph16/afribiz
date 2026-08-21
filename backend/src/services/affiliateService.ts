@@ -61,7 +61,13 @@ export async function createAffiliateLink(
   }
   const percent = Math.min(100, Math.max(1, Number(data.commissionPercent) || 5));
   const link = await prisma.affiliateLink.upsert({
-    where: { businessId_itemType_itemId: { businessId: business.id, itemType: data.itemType, itemId: data.itemId } },
+    where: {
+      businessId_itemType_itemId: {
+        businessId: business.id,
+        itemType: data.itemType,
+        itemId: data.itemId,
+      },
+    },
     update: { commissionPercent: percent, isActive: true, ownerId: ownerId || undefined },
     create: {
       businessId: business.id,
@@ -96,7 +102,7 @@ export async function deleteAffiliateLink(ownerId: string, linkId: string) {
   const existing = await prisma.affiliateLink.findFirst({
     where: { id: linkId, businessId: business.id },
   });
-  if (!existing) throw new AppError('Lien d\'affiliation non trouvé', 404);
+  if (!existing) throw new AppError("Lien d'affiliation non trouvé", 404);
   await prisma.affiliateLink.delete({ where: { id: linkId } });
   return { success: true };
 }
@@ -104,7 +110,7 @@ export async function deleteAffiliateLink(ownerId: string, linkId: string) {
 /** Public : que pointe ce lien ? + incrémente les clics. */
 export async function resolveAffiliateLink(code: string) {
   const link = await prisma.affiliateLink.findUnique({ where: { code } });
-  if (!link || !link.isActive) throw new AppError('Lien d\'affiliation invalide ou inactif', 404);
+  if (!link || !link.isActive) throw new AppError("Lien d'affiliation invalide ou inactif", 404);
   const updated = await prisma.affiliateLink.update({
     where: { id: link.id },
     data: { clicks: { increment: 1 } },

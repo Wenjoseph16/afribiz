@@ -49,7 +49,7 @@ export async function createOrUpdateAttachment(
     isActive?: boolean;
   }
 ) {
-  const business = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
+  const business = await prisma.business.findFirst({ where: { ownerId }, select: { id: true } });
   if (!business) throw new AppError('Aucun business associé à ce compte', 404);
 
   await assertItemExists(business.id, data.itemType, data.itemId);
@@ -89,7 +89,7 @@ export async function listAttachments(
   ownerId: string,
   filters: { itemType?: string; itemId?: string; sourceType?: string } = {}
 ) {
-  const business = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
+  const business = await prisma.business.findFirst({ where: { ownerId }, select: { id: true } });
   if (!business) throw new AppError('Aucun business associé à ce compte', 404);
   return prisma.catalogAttachment.findMany({
     where: {
@@ -103,7 +103,7 @@ export async function listAttachments(
 }
 
 export async function updateAttachment(ownerId: string, id: string, data: any) {
-  const business = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
+  const business = await prisma.business.findFirst({ where: { ownerId }, select: { id: true } });
   if (!business) throw new AppError('Aucun business associé à ce compte', 404);
   const att = await prisma.catalogAttachment.findFirst({
     where: { id, businessId: business.id },
@@ -122,15 +122,13 @@ export async function updateAttachment(ownerId: string, id: string, data: any) {
       ...(data.startsAt !== undefined
         ? { startsAt: data.startsAt ? new Date(data.startsAt) : null }
         : {}),
-      ...(data.endsAt !== undefined
-        ? { endsAt: data.endsAt ? new Date(data.endsAt) : null }
-        : {}),
+      ...(data.endsAt !== undefined ? { endsAt: data.endsAt ? new Date(data.endsAt) : null } : {}),
     },
   });
 }
 
 export async function removeAttachment(ownerId: string, id: string) {
-  const business = await prisma.business.findUnique({ where: { ownerId }, select: { id: true } });
+  const business = await prisma.business.findFirst({ where: { ownerId }, select: { id: true } });
   if (!business) throw new AppError('Aucun business associé à ce compte', 404);
   const att = await prisma.catalogAttachment.findFirst({ where: { id, businessId: business.id } });
   if (!att) throw new AppError('Rattachement introuvable', 404);

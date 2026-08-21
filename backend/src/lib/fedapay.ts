@@ -367,7 +367,8 @@ export async function retrieveTransaction(transactionId: string): Promise<FedaPa
       });
       if (tx) {
         amount = Number(tx.amount);
-        status = tx.status === 'SUCCESS' ? 'approved' : tx.status === 'FAILED' ? 'canceled' : 'pending';
+        status =
+          tx.status === 'SUCCESS' ? 'approved' : tx.status === 'FAILED' ? 'canceled' : 'pending';
       }
     } catch {
       /* base indisponible → valeurs par défaut */

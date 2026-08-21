@@ -740,8 +740,7 @@ export async function generateInvoicePdf(invoice: InvoiceWithBusiness): Promise<
               ? [
                   [
                     {
-                      text:
-                        'Remise' + (invoice.promoCode ? ' (' + invoice.promoCode + ')' : ''),
+                      text: 'Remise' + (invoice.promoCode ? ' (' + invoice.promoCode + ')' : ''),
                       alignment: 'right',
                       fontSize: 10,
                       color: '#6b7280',

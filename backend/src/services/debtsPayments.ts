@@ -131,7 +131,7 @@ export async function sendPaymentThanks(debt: any, business: any) {
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findFirst({
-      where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null },
     select: { id: true, name: true, modules: true, settings: true },
   });
   if (!business) throw new AppError('Business not found', 404);
@@ -402,7 +402,9 @@ export async function registerDebtPayment(
       sourceId: debtId,
     },
     ownerId
-  ).catch((e: any) => logger.warn(`Caisse: mouvement DEBT_COLLECTION non créé: ${e?.message || e}`));
+  ).catch((e: any) =>
+    logger.warn(`Caisse: mouvement DEBT_COLLECTION non créé: ${e?.message || e}`)
+  );
 
   if (updated.status === 'SETTLED') {
     sendPaymentThanks(updated, business).catch(() => null);

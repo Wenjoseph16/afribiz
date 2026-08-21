@@ -5,7 +5,7 @@ import { publishPromotionStarted, publishCampaignScheduled } from '../events/pub
 import { autoShareToSocial } from './socialShareService';
 
 async function getBusinessByOwner(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true, name: true, modules: true, settings: true },
   });
@@ -268,7 +268,8 @@ export async function findValidCoupon(
     throw new AppError("Ce code promo ne s'applique pas à ce commerce", 400);
   }
   if (coupon.status !== 'ACTIVE') throw new AppError("Ce code promo n'est plus actif", 400);
-  if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new AppError('Ce code promo a expiré', 400);
+  if (coupon.expiresAt && coupon.expiresAt < new Date())
+    throw new AppError('Ce code promo a expiré', 400);
   if (coupon.maxUses && coupon.useCount >= coupon.maxUses) {
     throw new AppError("Ce code promo a atteint sa limite d'utilisations", 400);
   }
@@ -342,8 +343,18 @@ export async function getAutoApplyDiscount(
     if (promo.targetType !== 'ALL') {
       applicableSubtotal = items
         .filter((it) => {
-          if (promo.targetType === 'PRODUCT' && it.productId && promo.targetIds.includes(it.productId)) return true;
-          if (promo.targetType === 'SERVICE' && it.serviceId && promo.targetIds.includes(it.serviceId)) return true;
+          if (
+            promo.targetType === 'PRODUCT' &&
+            it.productId &&
+            promo.targetIds.includes(it.productId)
+          )
+            return true;
+          if (
+            promo.targetType === 'SERVICE' &&
+            it.serviceId &&
+            promo.targetIds.includes(it.serviceId)
+          )
+            return true;
           return false;
         })
         .reduce((s, it) => s + Number(it.total || 0), 0);

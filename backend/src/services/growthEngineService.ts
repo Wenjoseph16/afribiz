@@ -628,7 +628,7 @@ function generateAdvice({
         type: 'satisfaction',
         priority: 'low',
         message:
-          "Pas encore de note de satisfaction. Les enquêtes partent automatiquement après chaque livraison et séjour terminé.",
+          'Pas encore de note de satisfaction. Les enquêtes partent automatiquement après chaque livraison et séjour terminé.',
         action: 'Voir mes commandes',
         link: '/dashboard/orders',
       });
@@ -673,7 +673,7 @@ function generateAdvice({
       type: 'revenue-flat',
       priority: 'medium',
       message:
-        "Aucune vente hier. Relancez vos clients fidèles ou lancez une petite promotion pour redémarrer la journée.",
+        'Aucune vente hier. Relancez vos clients fidèles ou lancez une petite promotion pour redémarrer la journée.',
       action: 'Créer une promotion',
       link: '/dashboard/promotions/new',
     });

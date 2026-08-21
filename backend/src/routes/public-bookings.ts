@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/db';
 import { logger } from '../lib/logger';
+import { processMobileMoney, isPaymentDemoMode } from '../services/paymentProcessor';
 
 const router = Router();
 
@@ -128,6 +129,7 @@ router.post('/bookings', async (req: Request, res: Response) => {
       specialRequests,
       price,
       currency,
+      paymentMethod,
     } = req.body;
 
     if (!businessSlug || !startDate || !customerName || !customerPhone) {
@@ -213,10 +215,86 @@ router.post('/bookings', async (req: Request, res: Response) => {
       },
     });
 
+    // ── Paiement en ligne de la réservation ──
+    // Si le client a choisi un paiement autre que CASH, on initie le paiement
+    // (Mobile Money via FedaPay, ou simulation en mode démo) et on crée un
+    // Payment lié à la réservation. En mode démo le paiement est confirmé
+    // immédiatement (le parcours fidèle de confirmation mobile est simulé).
+    const amount = Number(price) || 0;
+    const paidStatus = isPaymentDemoMode() ? 'COMPLETED' : 'PENDING';
+    let payment: any = null;
+
+    if (paymentMethod && paymentMethod !== 'CASH' && amount > 0) {
+      try {
+        const paymentResult =
+          paymentMethod === 'ESCROW'
+            ? {
+                providerRef: null,
+                status: paidStatus,
+                fee: Math.round(amount * 0.02),
+                message: 'Escrow AfriBiz sécurisé',
+              }
+            : await processMobileMoney(
+                paymentMethod,
+                customerPhone || '',
+                amount,
+                `Réservation ${booking.bookingNumber}`
+              );
+
+        payment = await prisma.payment.create({
+          data: {
+            userId: clientId,
+            businessId: business.id,
+            bookingId: booking.id,
+            amount,
+            currency: currency || 'FCFA',
+            method: paymentMethod as any,
+            status:
+              paymentResult.status === 'SUCCESS'
+                ? 'COMPLETED'
+                : paymentResult.status === 'FAILED'
+                  ? 'FAILED'
+                  : paidStatus,
+            reference: paymentResult.providerRef || null,
+            description: `Paiement de la réservation ${booking.bookingNumber}`,
+            paidAt:
+              paymentResult.status === 'SUCCESS' || paidStatus === 'COMPLETED' ? new Date() : null,
+          },
+        });
+
+        // Marquer la réservation comme payée (dépôt réglé) quand le paiement est confirmé
+        if (paymentResult.status === 'SUCCESS' || paidStatus === 'COMPLETED') {
+          await prisma.booking.update({
+            where: { id: booking.id },
+            data: { depositPaid: true, depositAmount: amount },
+          });
+        }
+      } catch (payErr) {
+        // Un échec de paiement n'annule pas la réservation : elle reste en attente,
+        // le vendeur pourra encaisser sur place. On trace l'erreur.
+        logger.warn(
+          `Public booking payment failed for ${booking.bookingNumber}: ${(payErr as Error).message}`
+        );
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: {
-        booking: { id: booking.id, bookingNumber: booking.bookingNumber, status: booking.status },
+        booking: {
+          id: booking.id,
+          bookingNumber: booking.bookingNumber,
+          status: booking.status,
+          paymentStatus: payment ? (payment.status === 'COMPLETED' ? 'PAID' : 'PENDING') : 'UNPAID',
+          payment: payment
+            ? {
+                id: payment.id,
+                method: payment.method,
+                status: payment.status,
+                reference: payment.reference,
+              }
+            : null,
+        },
       },
       message: 'Réservation envoyée avec succès',
     });

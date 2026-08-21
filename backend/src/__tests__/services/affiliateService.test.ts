@@ -112,9 +112,9 @@ describe('affiliateService (Chantier 10)', () => {
 
     it('throws 404 if link not found', async () => {
       mockPrisma.affiliateLink.findFirst.mockResolvedValue(null);
-      await expect(
-        affiliateService.deleteAffiliateLink('owner-1', 'nonexistent')
-      ).rejects.toThrow('non trouvé');
+      await expect(affiliateService.deleteAffiliateLink('owner-1', 'nonexistent')).rejects.toThrow(
+        'non trouvé'
+      );
     });
   });
 
@@ -164,9 +164,7 @@ describe('affiliateService (Chantier 10)', () => {
       mockPrisma.affiliateLink.update.mockResolvedValue({});
 
       const result = await affiliateService.applyAffiliateOnPaid('order-1');
-      expect(result).toEqual(
-        expect.objectContaining({ commission: 1000, percent: 10 })
-      );
+      expect(result).toEqual(expect.objectContaining({ commission: 1000, percent: 10 }));
     });
 
     it('returns null when no refCode', async () => {

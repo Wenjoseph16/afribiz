@@ -25,8 +25,8 @@ async function getBusinessByOwner(ownerId: string, businessId?: string | null) {
     ? { id: businessId, ownerId, deletedAt: null }
     : { ownerId, deletedAt: null };
   const business = await prisma.business.findFirst({
-      where,
-      orderBy: { createdAt: 'asc' },
+    where,
+    orderBy: { createdAt: 'asc' },
     select: {
       id: true,
       name: true,
@@ -117,7 +117,11 @@ export async function listBusinessOrders(ownerId: string, filters: any) {
   return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
-export async function getBusinessOrder(ownerId: string, orderId: string, businessId?: string | null) {
+export async function getBusinessOrder(
+  ownerId: string,
+  orderId: string,
+  businessId?: string | null
+) {
   const business = await getBusinessByOwner(ownerId, businessId);
   const order = await prisma.order.findFirst({
     where: { id: orderId, businessId: business.id },
@@ -133,20 +137,13 @@ export async function getBusinessOrder(ownerId: string, orderId: string, busines
  * alerte socket temps réel + notification in-app signée (qui/quoi/prix/remise).
  * Fire-and-forget : ne bloque JAMAIS la vente.
  */
-async function maybeAlertBossOnBigDiscount(
-  ownerId: string,
-  order: any,
-  business: any,
-  data: any
-) {
+async function maybeAlertBossOnBigDiscount(ownerId: string, order: any, business: any, data: any) {
   const baseAmount = Number(order.subtotal || 0);
   const finalAmount = Number(order.totalAmount || 0);
   const discountAmount = Math.max(0, baseAmount - finalAmount);
   if (discountAmount <= 0) return;
 
-  const threshold = Number(
-    (business.settings as any)?.discountAlertThreshold ?? 5000
-  );
+  const threshold = Number((business.settings as any)?.discountAlertThreshold ?? 5000);
   if (discountAmount < threshold) return;
 
   // Socket temps réel → téléphone du boss (room user:{id})
@@ -386,7 +383,12 @@ export async function createOrder(ownerId: string, data: any) {
         // (l'action rejouée au flush retrace le mouvement sur la nouvelle commande).
         await recordOrderSale(
           ownerId,
-          { id: created.id, number: orderNumber, totalAmount: total, paymentMethod: data.paymentMethod },
+          {
+            id: created.id,
+            number: orderNumber,
+            totalAmount: total,
+            paymentMethod: data.paymentMethod,
+          },
           paymentAmount,
           ownerId,
           tx
@@ -704,7 +706,12 @@ export async function updateOrderPayment(ownerId: string, orderId: string, data:
     applyAffiliateOnPaid(orderId).catch(() => {});
     // Caisse du jour (Chantier 4) : l'encaissement (ex. COD réglé au comptoir)
     // entre dans la caisse — idempotent par montant (jamais de doublon).
-    recordOrderSale(ownerId, { id: order.id, number: order.orderNumber, paymentMethod: order.paymentMethod }, Number(order.totalAmount || 0), ownerId).catch(() => null);
+    recordOrderSale(
+      ownerId,
+      { id: order.id, number: order.orderNumber, paymentMethod: order.paymentMethod },
+      Number(order.totalAmount || 0),
+      ownerId
+    ).catch(() => null);
   }
 
   return updated;

@@ -77,8 +77,12 @@ const configByType = {
       hours: z
         .array(
           z.object({
-            open: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Heure d\'ouverture invalide (HH:MM)'),
-            close: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Heure de fermeture invalide (HH:MM)'),
+            open: z
+              .string()
+              .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Heure d'ouverture invalide (HH:MM)"),
+            close: z
+              .string()
+              .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Heure de fermeture invalide (HH:MM)'),
           })
         )
         .default([]),
@@ -90,7 +94,7 @@ const configByType = {
           const [ch, cm] = h.close.split(':').map(Number);
           return oh * 60 + om < ch * 60 + cm;
         }),
-      { message: 'Chaque plage horaire doit avoir une fermeture après l\'ouverture' }
+      { message: "Chaque plage horaire doit avoir une fermeture après l'ouverture" }
     ),
   PERSONALIZATION: z.object({
     fields: z

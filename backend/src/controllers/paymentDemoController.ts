@@ -32,7 +32,10 @@ export const demoConfirmPayment = catchAsyncErrors(
     // Uniquement les transactions simulées (préfixe sim_) — jamais une vraie
     // transaction FedaPay en production.
     if (!String(providerRef).startsWith('sim_')) {
-      throw new AppError('Seules les transactions de démonstration (sim_) sont confirmables ici', 403);
+      throw new AppError(
+        'Seules les transactions de démonstration (sim_) sont confirmables ici',
+        403
+      );
     }
 
     const transaction = await prisma.paymentTransaction.findFirst({

@@ -145,7 +145,7 @@ export async function sendCampaignViaWhatsApp(
   campaignId: string,
   templateId: string
 ) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true, name: true, slug: true, phone: true },
   });
@@ -161,7 +161,8 @@ export async function sendCampaignViaWhatsApp(
     where: { id: templateId, businessId: business.id },
   });
   if (!template) throw new AppError('Template WhatsApp non trouvé', 404);
-  if (template.status !== 'APPROVED') throw new AppError('Le template doit être approuvé (APPROVED)', 400);
+  if (template.status !== 'APPROVED')
+    throw new AppError('Le template doit être approuvé (APPROVED)', 400);
 
   // Clients du business avec un téléphone
   const clients = await prisma.businessClient.findMany({
@@ -170,7 +171,10 @@ export async function sendCampaignViaWhatsApp(
   });
   if (clients.length === 0) throw new AppError('Aucun client avec téléphone à contacter', 400);
 
-  const interpolate = (body: string, c: { firstName: string | null; lastName: string | null; phone: string | null }) =>
+  const interpolate = (
+    body: string,
+    c: { firstName: string | null; lastName: string | null; phone: string | null }
+  ) =>
     body.replace(/\{\{(\d+)\}\}/g, (_, n: string) => {
       const idx = parseInt(n, 10);
       const values = [c.firstName || 'client', c.lastName || '', c.phone || '', business.name];
@@ -237,7 +241,7 @@ export async function sendCampaignViaWhatsApp(
 
 // ── Campaign Stats ──
 export async function getMarketingStats(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true },
   });

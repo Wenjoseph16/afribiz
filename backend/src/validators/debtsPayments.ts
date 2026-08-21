@@ -63,16 +63,18 @@ export const sendReminderSchema = z.object({
   content: z.string().optional(),
 });
 
-export const attachDebtSchema = z.object({
-  orderId: z.string().min(1).optional(),
-  invoiceId: z.string().min(1).optional(),
-  amount: z.number().positive().optional(),
-  dueDate: z.string().optional(),
-  notes: z.string().optional(),
-  buyerId: z.string().min(1).optional(),
-}).refine((d) => d.orderId || d.invoiceId, {
-  message: 'orderId ou invoiceId requis',
-});
+export const attachDebtSchema = z
+  .object({
+    orderId: z.string().min(1).optional(),
+    invoiceId: z.string().min(1).optional(),
+    amount: z.number().positive().optional(),
+    dueDate: z.string().optional(),
+    notes: z.string().optional(),
+    buyerId: z.string().min(1).optional(),
+  })
+  .refine((d) => d.orderId || d.invoiceId, {
+    message: 'orderId ou invoiceId requis',
+  });
 
 export const updateReminderConfigSchema = z.object({
   enabled: z.boolean().optional(),

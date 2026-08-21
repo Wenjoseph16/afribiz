@@ -13,6 +13,7 @@ export {
   publishOrderStatusChanged,
   publishOrderPendingReminder,
   publishOrderAutoCancelled,
+  publishDeliveryConfirmReminder,
   publishBookingCreated,
   publishBookingStatusChanged,
   publishBookingReminder,

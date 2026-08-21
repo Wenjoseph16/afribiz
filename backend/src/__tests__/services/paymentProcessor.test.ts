@@ -52,6 +52,54 @@ describe('Payment Processor', () => {
     expect(r.id).toBe('tx-1');
   });
 
+  test('saveTransaction notifies the business owner (not the buyer) of the commission', async () => {
+    mockPrisma.paymentTransaction.create.mockResolvedValue({ id: 'tx-1' } as any);
+    mockPrisma.financialLog.create.mockResolvedValue({} as any);
+    const { publishCommissionCharged } = jest.requireMock('../../events/publishers');
+    mockPrisma.business.findUnique.mockResolvedValue({
+      id: 'biz-1',
+      name: 'Ma Boutique',
+      ownerId: 'owner-1',
+    } as any);
+
+    await saveTransaction({
+      businessId: 'biz-1',
+      userId: 'buyer-1', // l'acheteur ne doit PAS recevoir la commission
+      orderId: 'o1',
+      amount: 10000,
+      currency: 'FCFA',
+      provider: 'MTN',
+      providerRef: 'REF',
+      status: 'SUCCESS',
+      fee: 0,
+    });
+
+    expect(publishCommissionCharged).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'owner-1', businessId: 'biz-1' })
+    );
+    expect(publishCommissionCharged).not.toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'buyer-1' })
+    );
+  });
+
+  test('saveTransaction skips commission notification when business has no owner', async () => {
+    mockPrisma.paymentTransaction.create.mockResolvedValue({ id: 'tx-1' } as any);
+    mockPrisma.financialLog.create.mockResolvedValue({} as any);
+    const { publishCommissionCharged } = jest.requireMock('../../events/publishers');
+    mockPrisma.business.findUnique.mockResolvedValue(null as any);
+
+    await saveTransaction({
+      businessId: 'biz-1',
+      amount: 10000,
+      currency: 'FCFA',
+      provider: 'MTN',
+      status: 'SUCCESS',
+      fee: 0,
+    });
+
+    expect(publishCommissionCharged).not.toHaveBeenCalled();
+  });
+
   test('processStripePayment throws when not configured', async () => {
     await expect(processStripePayment(5000, 'usd', 'pm_card_visa', 'Test')).rejects.toThrow(
       'Stripe non configuré'

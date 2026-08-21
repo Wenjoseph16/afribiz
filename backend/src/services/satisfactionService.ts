@@ -74,7 +74,11 @@ export async function submitSatisfaction(
     category: 'customer',
     eventName: 'SATISFACTION_SUBMITTED',
     value: score,
-    properties: { orderId: data.orderId || null, bookingId: data.bookingId || null, feedback: data.feedback?.trim() || null },
+    properties: {
+      orderId: data.orderId || null,
+      bookingId: data.bookingId || null,
+      feedback: data.feedback?.trim() || null,
+    },
   }).catch(() => {});
 
   // La note influence l'AfriScore (composante satisfaction) : recalcule non-bloquant
@@ -96,7 +100,7 @@ export async function submitSatisfaction(
  * Accessible au propriétaire du business (résolu via ownerId).
  */
 export async function getBusinessSatisfactionStats(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true, name: true },
   });
@@ -150,9 +154,7 @@ export async function getBusinessSatisfactionStats(ownerId: string) {
   // le graphique affiche une vraie tendance, pas juste les jours où il y a des notes.
   const trend = [] as { date: string; count: number; average: number }[];
   for (let i = 29; i >= 0; i--) {
-    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
+    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const b = byDay.get(date);
     trend.push({
       date,
@@ -175,7 +177,7 @@ export async function getBusinessSatisfactionStats(ownerId: string) {
   return {
     businessId: business.id,
     businessName: business.name,
-    averageScore: totalCount ? Math.round(((aggregate._avg.score || 0) * 10)) / 10 : null,
+    averageScore: totalCount ? Math.round((aggregate._avg.score || 0) * 10) / 10 : null,
     totalResponses: totalCount,
     distribution: [5, 4, 3, 2, 1].map((score) => ({
       score,
@@ -206,7 +208,7 @@ export async function getBusinessSatisfactionStats(ownerId: string) {
  * - recent : feed fusionné des derniers retours (enquêtes + avis)
  */
 export async function getBusinessReputation(ownerId: string) {
-  const business = await prisma.business.findUnique({
+  const business = await prisma.business.findFirst({
     where: { ownerId, deletedAt: null },
     select: { id: true, name: true },
   });
@@ -305,9 +307,7 @@ export async function getBusinessReputation(ownerId: string) {
       type: 'review' as const,
       score: r.rating,
       text: r.comment || r.title || null,
-      clientName: u
-        ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Client'
-        : 'Client',
+      clientName: u ? `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Client' : 'Client',
       createdAt: r.createdAt,
       responded: !!r.response,
     };
@@ -350,11 +350,7 @@ export async function getBusinessReputation(ownerId: string) {
  * Contexte affiché sur la page d'enquête (nom du commerce, article, référence)
  * pour que le client sache ce qu'il évalue. Accès limité au client concerné.
  */
-export async function getSatisfactionContext(
-  userId: string,
-  orderId?: string,
-  bookingId?: string
-) {
+export async function getSatisfactionContext(userId: string, orderId?: string, bookingId?: string) {
   if (orderId) {
     const order = await prisma.order.findFirst({
       where: { id: orderId, buyerId: userId },

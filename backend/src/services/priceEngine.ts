@@ -499,11 +499,7 @@ export async function computePrice(
   // priorité du moteur : négocié > flash > groupé > dégressif > promo > coupon).
   // Il ne s'applique que si AUCUN mécanisme n'est actif, ou si le mécanisme
   // principal est explicitement marqué cumulable par le business.
-  if (
-    input.couponCode &&
-    input.couponCode.trim() &&
-    (!appliedMechanism || mainCumulative)
-  ) {
+  if (input.couponCode && input.couponCode.trim() && (!appliedMechanism || mainCumulative)) {
     try {
       const coupon = await prisma.coupon.findFirst({
         where: { code: { equals: input.couponCode.trim(), mode: 'insensitive' }, businessId },

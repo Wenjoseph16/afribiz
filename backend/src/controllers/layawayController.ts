@@ -36,12 +36,14 @@ export const createOffersBatch = catchAsyncErrors(
       durationDays,
       minInstallment,
     });
-    res.status(201).json(
-      successResponse(
-        result,
-        `${result.activated} épargne(s) activée(s)${result.skipped ? `, ${result.skipped} sans prix ignorée(s)` : ''}`
-      )
-    );
+    res
+      .status(201)
+      .json(
+        successResponse(
+          result,
+          `${result.activated} épargne(s) activée(s)${result.skipped ? `, ${result.skipped} sans prix ignorée(s)` : ''}`
+        )
+      );
   }
 );
 

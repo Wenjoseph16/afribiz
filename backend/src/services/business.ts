@@ -742,14 +742,7 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
 
   const allModules: BusinessModule[] = [...mandatoryModules, ...data.modules];
 
-  const {
-    latitude,
-    longitude,
-    modules: inputModules,
-    openingHours,
-    portfolio,
-    ...rest
-  } = data;
+  const { latitude, longitude, modules: inputModules, openingHours, portfolio, ...rest } = data;
 
   // Résoudre le plan plateforme par défaut (AfriBiz — GRATUIT au lancement).
   // S'il n'existe pas en base, planId reste null → planAccessService retombe sur DEFAULT_PLAN_ID.
@@ -829,13 +822,16 @@ export async function createBusiness(ownerId: string, data: OnboardingInput) {
 
   // ── Sauver les horaires d'ouverture dans BusinessHour ──
   const dayMap: Record<string, number> = {
-    lundi: 1, mardi: 2, mercredi: 3, jeudi: 4,
-    vendredi: 5, samedi: 6, dimanche: 0,
+    lundi: 1,
+    mardi: 2,
+    mercredi: 3,
+    jeudi: 4,
+    vendredi: 5,
+    samedi: 6,
+    dimanche: 0,
   };
   if (openingHours && typeof openingHours === 'object') {
-    const hourEntries = Object.entries(openingHours).filter(
-      ([, v]) => v && typeof v === 'object'
-    );
+    const hourEntries = Object.entries(openingHours).filter(([, v]) => v && typeof v === 'object');
     if (hourEntries.length > 0) {
       await prisma.businessHour.createMany({
         data: hourEntries.map(([day, hours]) => ({
@@ -914,7 +910,9 @@ export async function respondToBusinessReview(
   ownerId: string,
   response: string
 ) {
-  const business = await prisma.business.findFirst({ where: { slug, ownerId, deletedAt: null, isActive: true } });
+  const business = await prisma.business.findFirst({
+    where: { slug, ownerId, deletedAt: null, isActive: true },
+  });
   if (!business) throw new AppError('Business non trouvé ou accès refusé', 404);
 
   const review = await prisma.businessReview.findUnique({

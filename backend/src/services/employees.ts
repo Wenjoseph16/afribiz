@@ -131,7 +131,8 @@ export async function updateEmployee(ownerId: string, employeeId: string, data: 
   if (data.salary !== undefined) updateData.salary = data.salary;
   if (data.hireDate !== undefined) updateData.hireDate = new Date(data.hireDate);
   if (data.isActive !== undefined) updateData.isActive = data.isActive;
-  if (data.maxDiscountPercentage !== undefined) updateData.maxDiscountPercentage = data.maxDiscountPercentage;
+  if (data.maxDiscountPercentage !== undefined)
+    updateData.maxDiscountPercentage = data.maxDiscountPercentage;
 
   // Hasher le PIN si modifié (Chantier 7 : sécurité)
   if (data.pinCode !== undefined) {
