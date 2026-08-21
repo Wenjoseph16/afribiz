@@ -7,6 +7,7 @@ import {
   getDeveloperDashboard,
   getDeveloperByUserId,
   getPublicDeveloperProfile,
+  computeProfileStrength,
 } from '../../services/developer';
 
 jest.mock('../../lib/logger', () => ({
@@ -126,6 +127,85 @@ describe('Developer Service', () => {
         description: 'My description',
       });
       expect(r.companyName).toBe('New Corp');
+    });
+
+    test('maps expertise matrix and derives flat arrays', async () => {
+      DeveloperRepository.findByUserId.mockResolvedValue(mockProfile);
+      let savedData: any;
+      DeveloperRepository.update.mockImplementation(async (_id: string, data: any) => {
+        savedData = data;
+        return { ...mockProfile, ...data };
+      });
+      await updateProfile('u1', {
+        expertise: {
+          coreStack: [
+            { name: 'Next.js', level: 'SENIOR_EXPERT', years: 6 },
+            { name: 'Node.js', level: 'CONFIRME' },
+            { name: 'PostgreSQL', level: 'CONFIRME' },
+          ],
+          domains: ['FinTech / Paiement', 'SaaS B2B'],
+        },
+      });
+      expect(savedData.expertise.coreStack).toHaveLength(3);
+      // Dérivation : technologies = coreStack, specialties = domains
+      expect(savedData.technologies).toEqual(
+        expect.arrayContaining(['Next.js', 'Node.js', 'PostgreSQL'])
+      );
+      expect(savedData.specialties).toEqual(
+        expect.arrayContaining(['FinTech / Paiement', 'SaaS B2B'])
+      );
+    });
+
+    test('stores portfolioItems and certifications', async () => {
+      DeveloperRepository.findByUserId.mockResolvedValue(mockProfile);
+      let savedData: any;
+      DeveloperRepository.update.mockImplementation(async (_id: string, data: any) => {
+        savedData = data;
+        return { ...mockProfile, ...data };
+      });
+      const portfolioItems = [
+        { title: 'App livraison', imageUrl: 'http://x/1.png', linkUrl: 'https://x.app' },
+      ];
+      const certifications = [{ name: 'AWS Dev', issuer: 'Amazon', year: 2025 }];
+      await updateProfile('u1', { portfolioItems, certifications });
+      expect(savedData.portfolioItems).toEqual(portfolioItems);
+      expect(savedData.certifications).toEqual(certifications);
+    });
+  });
+
+  describe('computeProfileStrength', () => {
+    test('empty profile scores near zero', () => {
+      expect(computeProfileStrength({})).toBeLessThanOrEqual(5);
+    });
+
+    test('complete profile scores 100', () => {
+      const s = computeProfileStrength({
+        photo: 'http://x/p.png',
+        logo: null,
+        companyName: 'Dev Corp',
+        description: 'Une bio suffisamment longue pour compter dans le score de confiance.',
+        expertise: {
+          coreStack: [
+            { name: 'React', level: 'CONFIRME' },
+            { name: 'Node.js', level: 'SENIOR_EXPERT' },
+            { name: 'PostgreSQL', level: 'JUNIOR' },
+          ],
+          domains: ['SaaS B2B'],
+        },
+        portfolioItems: [{ title: 'Projet' }],
+        certifications: [{ name: 'Certif' }],
+        identityDocument: 'http://x/id.png',
+      });
+      expect(s).toBe(100);
+    });
+
+    test('partial profile scores proportionally', () => {
+      const s = computeProfileStrength({
+        photo: 'http://x/p.png',
+        companyName: 'Dev Corp',
+        expertise: { coreStack: [{ name: 'React' }], domains: [] },
+      });
+      expect(s).toBe(25); // photo 10 + nom 5 + stack partielle 10
     });
   });
 

@@ -59,11 +59,15 @@ function mapProfileToFrontend(profile: any) {
     address: profile.address,
     website: profile.website,
     github: profile.github,
+    gitlab: (profile as any).gitlab ?? null,
     linkedin: profile.linkedin,
     portfolio: profile.portfolio,
     yearsOfExperience: profile.experience,
     specialties: profile.specialties || [],
     technologies: profile.technologies || [],
+    expertise: (profile as any).expertise ?? null,
+    portfolioItems: (profile as any).portfolioItems ?? [],
+    certifications: (profile as any).certifications ?? [],
     publicDescription: profile.description,
     presentation: profile.description,
     verificationStatus: profile.verificationStatus,
@@ -79,7 +83,33 @@ function mapProfileToFrontend(profile: any) {
     updatedAt: profile.updatedAt,
     onboardingCompleted: true,
     onboardingStep: 100,
+    profileStrength: computeProfileStrength(profile),
   };
+}
+
+/**
+ * Force du profil développeur (0-100) — signaux de crédibilité style marketplace freelance.
+ * Source de vérité unique : calculée côté serveur à chaque lecture du profil.
+ */
+export function computeProfileStrength(profile: any): number {
+  let score = 0;
+  const expertise = (profile.expertise ?? null) as {
+    coreStack?: { name: string; level?: string; years?: number }[];
+    domains?: string[];
+  } | null;
+
+  if (profile.photo || profile.logo) score += 10;
+  if (profile.description && profile.description.length >= 50) score += 10;
+  if ((profile.companyName || '').trim().length >= 2) score += 5;
+  if (expertise?.coreStack && expertise.coreStack.length >= 3) score += 20;
+  else if (expertise?.coreStack && expertise.coreStack.length > 0) score += 10;
+  if (expertise?.domains && expertise.domains.length > 0) score += 10;
+  if (Array.isArray(profile.portfolioItems) && (profile.portfolioItems as unknown[]).length > 0)
+    score += 15;
+  if (Array.isArray(profile.certifications) && (profile.certifications as unknown[]).length > 0)
+    score += 15;
+  if (profile.identityDocument) score += 15;
+  return Math.min(100, score);
 }
 
 /**
@@ -149,7 +179,27 @@ export async function updateProfile(userId: string, data: any) {
   if (data.technologies && Array.isArray(data.technologies))
     mappedData.technologies = [...new Set(data.technologies)];
 
+  // Matrice d'expertise structurée (source de vérité) — dérive les tableaux plats
+  // pour compatibilité avec les pages publiques existantes.
+  if (data.expertise !== undefined) {
+    mappedData.expertise = data.expertise as any;
+    const coreStack = (data.expertise?.coreStack ?? []) as { name: string }[];
+    const domains = (data.expertise?.domains ?? []) as string[];
+    if (coreStack.length > 0) {
+      mappedData.technologies = [
+        ...new Set([...(mappedData.technologies ?? []), ...coreStack.map((t) => t.name)]),
+      ];
+    }
+    if (domains.length > 0) {
+      mappedData.specialties = [...new Set([...(mappedData.specialties ?? []), ...domains])];
+    }
+  }
+
+  if (data.portfolioItems !== undefined) mappedData.portfolioItems = data.portfolioItems as any;
+  if (data.certifications !== undefined) mappedData.certifications = data.certifications as any;
+
   if (data.github !== undefined) mappedData.github = data.github;
+  if ((data as any).gitlab !== undefined) mappedData.gitlab = (data as any).gitlab;
   if (data.linkedin !== undefined) mappedData.linkedin = data.linkedin;
   if (data.whatsapp !== undefined) mappedData.whatsapp = data.whatsapp;
   if (data.address !== undefined) mappedData.address = data.address;
@@ -164,7 +214,7 @@ export async function updateProfile(userId: string, data: any) {
  */
 export async function submitVerification(
   userId: string,
-  documents: { identityDoc: string; companyDoc: string; responsiblePhoto: string }
+  documents: { identityDoc: string; companyDoc?: string; responsiblePhoto?: string }
 ) {
   const profile = await DeveloperRepository.findByUserId(userId);
   if (!profile) throw new AppError('Profil développeur non trouvé', 404);
@@ -176,8 +226,8 @@ export async function submitVerification(
   const updated = await DeveloperRepository.submitVerification(
     profile.id,
     documents.identityDoc,
-    documents.companyDoc,
-    documents.responsiblePhoto
+    documents.companyDoc || '',
+    documents.responsiblePhoto || ''
   );
   return mapProfileToFrontend(updated);
 }

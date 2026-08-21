@@ -13,36 +13,76 @@ const ticketPriorityEnum = z.enum(['LOW', 'NORMAL', 'HIGH', 'CRITICAL']);
 const ticketCategoryEnum = z.enum(['BUG', 'FEATURE', 'QUESTION', 'OTHER']);
 const ticketStatusEnum = z.enum(['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED']);
 
+export const MASTERY_LEVELS = ['JUNIOR', 'CONFIRME', 'SENIOR_EXPERT', 'ARCHITECTE'] as const;
+
+const masteryLevelSchema = z.enum(MASTERY_LEVELS);
+
+export const coreStackItemSchema = z.object({
+  name: z.string().min(1, 'Le nom de la technologie est requis').max(60),
+  level: masteryLevelSchema,
+  years: z.number().int().min(0).max(50).optional(),
+});
+
+export const portfolioItemSchema = z.object({
+  title: z.string().min(1, 'Le titre du projet est requis').max(120),
+  description: z.string().max(1000).optional(),
+  imageUrl: z.string().max(2048).optional().or(z.literal('')),
+  linkUrl: z.string().max(2048).optional().or(z.literal('')),
+});
+
+export const certificationSchema = z.object({
+  name: z.string().min(1, "L'intitulé est requis").max(160),
+  issuer: z.string().max(120).optional(),
+  year: z.number().int().min(1950).max(2100).optional(),
+  fileUrl: z.string().max(2048).optional().or(z.literal('')),
+});
+
+export const expertiseSchema = z.object({
+  coreStack: z.array(coreStackItemSchema).min(1).max(5),
+  domains: z.array(z.string().min(1).max(80)).max(8),
+});
+
+// URL (upload serveur) ou data URL base64 (rétrocompatibilité ancien formulaire)
+const docField = z
+  .string()
+  .min(1)
+  .refine((v) => v.startsWith('data:') || v.startsWith('http://') || v.startsWith('https://') || v.startsWith('/uploads'), {
+    message: 'Format de document invalide (URL ou fichier attendu)',
+  });
+
 export const activateDeveloperSchema = z.object({});
 
 export const updateProfileSchema = z.object({
-  developerName: z.string().min(2).max(100).optional(),
-  companyName: z.string().min(2).max(100).optional(),
-  photo: z.string().url().optional().or(z.literal('')),
-  companyLogo: z.string().url().optional().or(z.literal('')),
-  phone: z.string().min(4).optional(),
-  whatsapp: z.string().optional(),
-  professionalEmail: z.string().email().optional(),
-  country: z.string().min(2).optional(),
-  city: z.string().min(2).optional(),
-  address: z.string().optional(),
-  website: z.string().url().optional().or(z.literal('')),
-  github: z.string().optional(),
-  gitlab: z.string().optional(),
-  portfolio: z.string().url().optional().or(z.literal('')),
-  linkedin: z.string().optional(),
-  yearsOfExperience: z.number().int().min(0).max(100).optional(),
-  specialties: z.array(z.string()).optional(),
-  technologies: z.array(z.string()).optional(),
-  presentation: z.string().max(2000).optional(),
-  publicDescription: z.string().max(5000).optional(),
-  webhookUrl: z.string().url().optional().or(z.literal('')),
+  developerName: z.string().min(2).max(100).nullish(),
+  companyName: z.string().min(2).max(100).nullish(),
+  photo: z.string().url().nullish().or(z.literal('')),
+  companyLogo: z.string().url().nullish().or(z.literal('')),
+  phone: z.string().min(4).nullish(),
+  whatsapp: z.string().nullish(),
+  professionalEmail: z.string().email().nullish(),
+  country: z.string().min(2).nullish(),
+  city: z.string().min(2).nullish(),
+  address: z.string().nullish(),
+  website: z.string().url().nullish().or(z.literal('')),
+  github: z.string().nullish(),
+  gitlab: z.string().nullish(),
+  portfolio: z.string().url().nullish().or(z.literal('')),
+  linkedin: z.string().nullish(),
+  yearsOfExperience: z.number().int().min(0).max(100).nullish(),
+  specialties: z.array(z.string()).nullish(),
+  technologies: z.array(z.string()).nullish(),
+  expertise: expertiseSchema.nullish(),
+  portfolioItems: z.array(portfolioItemSchema).max(10).nullish(),
+  certifications: z.array(certificationSchema).max(10).nullish(),
+  presentation: z.string().max(2000).nullish(),
+  publicDescription: z.string().max(5000).nullish(),
+  webhookUrl: z.string().url().nullish().or(z.literal('')),
 });
 
 export const submitVerificationSchema = z.object({
-  identityDoc: z.string().min(1, "Le document d'identité est requis"),
-  companyDoc: z.string().min(1, 'Le document de la société est requis'),
-  responsiblePhoto: z.string().min(1, 'La photo du responsable est requise'),
+  identityDoc: docField,
+  companyDoc: docField.optional().or(z.literal('')),
+  responsiblePhoto: docField.optional().or(z.literal('')),
 });
 
 export const createModuleSchema = z.object({

@@ -76,10 +76,13 @@ export class DeveloperRepository {
   /**
    * Update developer profile
    */
-  static async update(id: string, data: Partial<DeveloperProfile>): Promise<DeveloperProfile> {
+  static async update(
+    id: string,
+    data: Prisma.DeveloperProfileUpdateInput | Partial<DeveloperProfile>
+  ): Promise<DeveloperProfile> {
     return prisma.developerProfile.update({
       where: { id },
-      data,
+      data: data as Prisma.DeveloperProfileUpdateInput,
     });
   }
 

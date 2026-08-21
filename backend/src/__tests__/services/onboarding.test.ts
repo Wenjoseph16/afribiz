@@ -1,12 +1,10 @@
-const mockCreate = jest
-  .fn()
-  .mockResolvedValue({
-    id: 'biz-new',
-    slug: 'mon-business',
-    name: 'Mon',
-    type: 'RESTAURANT',
-    modules: [],
-  });
+const mockCreate = jest.fn().mockResolvedValue({
+  id: 'biz-new',
+  slug: 'mon-business',
+  name: 'Mon',
+  type: 'RESTAURANT',
+  modules: [],
+});
 const mockFind = jest.fn().mockResolvedValue(null);
 const txProxy = new Proxy({} as any, {
   get(_t, prop) {

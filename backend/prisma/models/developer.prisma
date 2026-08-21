@@ -13,9 +13,13 @@ model DeveloperProfile {
   skills                 String[]
   specialties            String[]
   technologies           String[]
+  expertise              Json?
   experience             Int?
   portfolio              String?
+  portfolioItems         Json?
+  certifications         Json?
   github                 String?
+  gitlab                 String?
   linkedin               String?
   whatsapp               String?
   address                String?

@@ -224,6 +224,19 @@ export async function updateModule(moduleId: string, userId: string, data: any) 
  */
 export async function publishModule(moduleId: string, userId: string) {
   const developerId = await getDeveloperIdByUserId(userId);
+
+  // Gate crédibilité : identité vérifiée obligatoire pour publier
+  const devProfile = await prisma.developerProfile.findUnique({
+    where: { id: developerId },
+    select: { verificationStatus: true },
+  });
+  if (devProfile?.verificationStatus !== 'VERIFIED') {
+    throw new AppError(
+      "Vérification d'identité requise : soumettez votre pièce d'identité depuis l'onboarding développeur et attendez la validation avant de publier.",
+      403
+    );
+  }
+
   const module = await prisma.developerModule.findFirst({
     where: { id: moduleId, developerId },
   });
