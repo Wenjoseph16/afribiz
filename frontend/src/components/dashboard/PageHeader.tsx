@@ -62,9 +62,9 @@ export function PageHeader({
         <div className="max-w-xl">
           <div className="flex items-center gap-2 flex-wrap">
             {gradient ? (
-              <h1 className="text-2xl sm:text-3xl font-bold gradient-text">{title}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold gradient-text font-display">{title}</h1>
             ) : (
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold font-display text-gray-900 dark:text-gray-100 tracking-tight">
                 {title}
               </h1>
             )}

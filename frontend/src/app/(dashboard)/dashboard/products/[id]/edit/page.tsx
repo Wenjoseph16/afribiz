@@ -277,7 +277,8 @@ export default function EditProductPage() {
         unit,
         isOnPreOrder: availability === 'pre_order',
         isPromotional,
-        promotionalPrice: isPromotional && promotionalPrice > 0 ? Number(promotionalPrice) : undefined,
+        promotionalPrice:
+          isPromotional && promotionalPrice > 0 ? Number(promotionalPrice) : undefined,
         discountPercent: autoDiscount || 0,
         weight: weight ? Number(weight) : undefined,
         dimensions: dimensions.trim() || undefined,
@@ -601,7 +602,7 @@ export default function EditProductPage() {
               type="checkbox"
               checked={enableLayaway}
               onChange={(e) => setEnableLayaway(e.target.checked)}
-              disabled={layawayLoading || (priceOnDemand || price <= 0)}
+              disabled={layawayLoading || priceOnDemand || price <= 0}
               className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
             />
             <div>
@@ -611,13 +612,13 @@ export default function EditProductPage() {
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" /> Vérification…
                   </span>
                 ) : (
-                  'Activer l\'épargne sur ce produit 🐷'
+                  "Activer l'épargne sur ce produit 🐷"
                 )}
               </p>
               <p className="text-xs text-gray-500">
                 {priceOnDemand || price <= 0
                   ? "Renseignez un prix pour pouvoir activer l'épargne"
-                  : "Vos clients épargnent par petites cotisations — argent sécurisé en escrow (commission 1%)"}
+                  : 'Vos clients épargnent par petites cotisations — argent sécurisé en escrow (commission 1%)'}
               </p>
             </div>
           </label>
@@ -860,12 +861,7 @@ export default function EditProductPage() {
           </div>
           {isPhysical && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <MoneyInput
-                label="Poids (kg)"
-                value={weight}
-                onChange={setWeight}
-                currency="kg"
-              />
+              <MoneyInput label="Poids (kg)" value={weight} onChange={setWeight} currency="kg" />
               <Input
                 label="Dimensions"
                 value={dimensions}

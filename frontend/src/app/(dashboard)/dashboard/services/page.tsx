@@ -32,6 +32,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import ModuleCharts from '@/components/dashboard/ModuleCharts';
 import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
 import { CopilotTips } from '@/components/copilot/CopilotTips';
+import { SetupGuard } from '@/components/dashboard/SetupGuard';
 import {
   useMyServices,
   useServiceStats,
@@ -265,7 +266,11 @@ export default function ServicesPage() {
       <PageHeader
         title="Centre des prestations"
         description="Gérez vos services, suivez les réservations et mettez en avant vos meilleures offres."
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Catalogue' }, { label: 'Services' }]}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Catalogue' },
+          { label: 'Services' },
+        ]}
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -281,12 +286,18 @@ export default function ServicesPage() {
                 Catégories
               </Button>
             </Link>
-            <Link href="/dashboard/services/new">
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1.5" />
-                Nouveau service
-              </Button>
-            </Link>
+            <SetupGuard
+              module="SERVICES"
+              action="Nouveau service"
+              configureHref="/dashboard/business/settings"
+            >
+              <Link href="/dashboard/services/new">
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Nouveau service
+                </Button>
+              </Link>
+            </SetupGuard>
           </div>
         }
       />
@@ -521,12 +532,18 @@ export default function ServicesPage() {
             {searchQuery ? 'Essayez autre chose' : 'Ajoutez votre premier service'}
           </p>
           {!searchQuery && (
-            <Link href="/dashboard/services/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-1.5" />
-                Nouveau service
-              </Button>
-            </Link>
+            <SetupGuard
+              module="SERVICES"
+              action="Nouveau service"
+              configureHref="/dashboard/business/settings"
+            >
+              <Link href="/dashboard/services/new">
+                <Button>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Nouveau service
+                </Button>
+              </Link>
+            </SetupGuard>
           )}
         </Card>
       ) : viewMode === 'grid' ? (

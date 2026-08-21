@@ -24,7 +24,11 @@ import { apiClient } from '@/services/apiClient';
 
 const SEVERITY_STYLES: Record<string, { label: string; cls: string; icon: any }> = {
   high: { label: 'Critique', cls: 'bg-red-50 text-red-700 border-red-200', icon: AlertCircle },
-  medium: { label: 'À surveiller', cls: 'bg-amber-50 text-amber-700 border-amber-200', icon: AlertTriangle },
+  medium: {
+    label: 'À surveiller',
+    cls: 'bg-amber-50 text-amber-700 border-amber-200',
+    icon: AlertTriangle,
+  },
   low: { label: 'Info', cls: 'bg-sky-50 text-sky-700 border-sky-200', icon: AlertTriangle },
 };
 
@@ -35,7 +39,7 @@ const SCORE_STYLES: Record<string, { ring: string; text: string; label: string }
 };
 
 function fmt(n: number | null | undefined) {
-  return (Number(n || 0)).toLocaleString('fr-FR');
+  return Number(n || 0).toLocaleString('fr-FR');
 }
 
 function ScoreRing({ score, status }: { score: number; status: string }) {
@@ -46,7 +50,15 @@ function ScoreRing({ score, status }: { score: number; status: string }) {
   return (
     <div className="relative h-20 w-20 shrink-0">
       <svg viewBox="0 0 80 80" className="h-20 w-20 -rotate-90">
-        <circle cx="40" cy="40" r={r} fill="none" stroke="currentColor" strokeWidth="7" className="text-gray-100 dark:text-gray-800" />
+        <circle
+          cx="40"
+          cy="40"
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="7"
+          className="text-gray-100 dark:text-gray-800"
+        />
         <circle
           cx="40"
           cy="40"
@@ -95,9 +107,7 @@ export function CockpitBoss() {
   const businesses = data.businesses || [];
   const consolidated = data.consolidated;
   const hasMultiple = data.hasMultiple;
-  const active = activeBusinessId
-    ? businesses.find((b: any) => b.id === activeBusinessId)
-    : null;
+  const active = activeBusinessId ? businesses.find((b: any) => b.id === activeBusinessId) : null;
   const current = active || (businesses[0] as any) || null;
   const anomalies = current?.anomalies || [];
   const cash = current?.cash || {};
@@ -168,19 +178,27 @@ export function CockpitBoss() {
         {/* Chiffres clés */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Caisse attendue</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Caisse attendue
+            </p>
             <p className="mt-1 text-lg font-bold text-gray-900">{fmt(cash.expectedBalance)} F</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Stock (prix vente)</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Stock (prix vente)
+            </p>
             <p className="mt-1 text-lg font-bold text-gray-900">{fmt(stock.valueAtSale)} F</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Créances clients</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Créances clients
+            </p>
             <p className="mt-1 text-lg font-bold text-gray-900">{fmt(current?.debts)} F</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">CA aujourd'hui</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              CA aujourd'hui
+            </p>
             <p className="mt-1 text-lg font-bold text-gray-900">{fmt(today.revenue)} F</p>
             <p className="text-[10px] text-slate-400">{today.ordersCount || 0} vente(s)</p>
           </div>
@@ -209,7 +227,16 @@ export function CockpitBoss() {
                   key={i}
                   className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white px-3.5 py-2.5"
                 >
-                  <Icon className={cn('h-4 w-4 mt-0.5', a.severity === 'high' ? 'text-red-500' : a.severity === 'medium' ? 'text-amber-500' : 'text-sky-500')} />
+                  <Icon
+                    className={cn(
+                      'h-4 w-4 mt-0.5',
+                      a.severity === 'high'
+                        ? 'text-red-500'
+                        : a.severity === 'medium'
+                          ? 'text-amber-500'
+                          : 'text-sky-500'
+                    )}
+                  />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-800">{a.message}</p>
                     {a.gap != null && (

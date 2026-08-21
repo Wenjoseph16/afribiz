@@ -5,10 +5,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
   CheckCircle2,
-  Circle,
   AlertCircle,
   ArrowRight,
-  Upload,
   Image,
   Phone,
   MapPin,
@@ -21,9 +19,15 @@ import {
   Users,
   Globe,
   MessageCircle,
-  Star,
   ChevronDown,
-  Sparkles,
+  UtensilsCrossed,
+  Hotel,
+  Car,
+  Palette,
+  GraduationCap,
+  Wrench,
+  Megaphone,
+  Briefcase,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { Business } from '@/types/business';
@@ -42,19 +46,73 @@ interface Props {
   business: Business | null | undefined;
 }
 
+// Modules qui exigent un moyen de paiement pour être opérationnels.
+const PAYMENT_GATED: string[] = [
+  'BOOKINGS',
+  'ORDERS',
+  'QUOTES_INVOICES',
+  'DEBTS_PAYMENTS',
+  'SUBSCRIPTIONS',
+  'SAVINGS',
+];
+
+const MODULE_TASKS: Record<
+  string,
+  { label: string; href: string; icon: React.ComponentType<any> }
+> = {
+  PRODUCTS: { label: 'Ajouter vos produits', href: '/dashboard/products', icon: ShoppingBag },
+  SERVICES: { label: 'Ajouter vos services', href: '/dashboard/services', icon: Hand },
+  MENU: { label: 'Créer votre menu / carte', href: '/dashboard/menu', icon: UtensilsCrossed },
+  ROOMS: { label: 'Ajouter vos chambres', href: '/dashboard/rooms', icon: Hotel },
+  RENTALS: { label: 'Ajouter vos locations', href: '/dashboard/rentals', icon: Car },
+  PORTFOLIO: { label: 'Exposer vos réalisations', href: '/dashboard/portfolio', icon: Palette },
+  TRAINING: {
+    label: 'Ajouter une formation',
+    href: '/dashboard/trainings/manage',
+    icon: GraduationCap,
+  },
+  EVENTS: { label: 'Publier un événement', href: '/dashboard/events', icon: Calendar },
+  DELIVERIES: {
+    label: 'Définir vos zones de livraison',
+    href: '/dashboard/deliveries/zones',
+    icon: Truck,
+  },
+  PARTNERS: { label: 'Inviter un partenaire', href: '/dashboard/partners', icon: Users },
+  EMPLOYEES: { label: 'Ajouter un employé', href: '/dashboard/employees', icon: Briefcase },
+  PLANNING: {
+    label: 'Ajouter un employé pour planifier',
+    href: '/dashboard/employees',
+    icon: Clock,
+  },
+  CRM: { label: 'Importer vos clients', href: '/dashboard/clients', icon: Users },
+  MARKETING: {
+    label: 'Lancer votre première campagne',
+    href: '/dashboard/marketing',
+    icon: Megaphone,
+  },
+  ADVANCED_TASKS: {
+    label: 'Configurer vos automatisations',
+    href: '/dashboard/tasks',
+    icon: Wrench,
+  },
+};
+
 export function SetupAssistant({ completionScore, business }: Props) {
   const [expanded, setExpanded] = useState(true);
 
   const tasks: Task[] = useMemo(() => {
     if (!business) return [];
-    return [
+    const activeModules: string[] = business.modules || [];
+    const setup = business.setup || {};
+
+    const coreTasks: Task[] = [
       {
         id: 'logo',
         label: 'Ajouter un logo',
         href: '/dashboard/public-page',
         icon: Image,
         done: !!business.logo,
-        section: 'Identité',
+        section: 'Identité & contact',
       },
       {
         id: 'cover',
@@ -62,15 +120,15 @@ export function SetupAssistant({ completionScore, business }: Props) {
         href: '/dashboard/public-page',
         icon: Image,
         done: !!business.coverImage,
-        section: 'Identité',
+        section: 'Identité & contact',
       },
       {
         id: 'desc',
         label: 'Rédiger une description',
         href: '/dashboard/public-page',
         icon: Globe,
-        done: !!business.description,
-        section: 'Identité',
+        done: !!business.description || !!business.shortDescription,
+        section: 'Identité & contact',
       },
       {
         id: 'phone',
@@ -78,7 +136,7 @@ export function SetupAssistant({ completionScore, business }: Props) {
         href: '/dashboard/public-page',
         icon: Phone,
         done: !!business.phone,
-        section: 'Contact',
+        section: 'Identité & contact',
       },
       {
         id: 'address',
@@ -86,7 +144,7 @@ export function SetupAssistant({ completionScore, business }: Props) {
         href: '/dashboard/public-page',
         icon: MapPin,
         done: !!business.address,
-        section: 'Contact',
+        section: 'Identité & contact',
       },
       {
         id: 'hours',
@@ -94,7 +152,7 @@ export function SetupAssistant({ completionScore, business }: Props) {
         href: '/dashboard/public-page',
         icon: Clock,
         done: (business.hours?.length || 0) > 0,
-        section: 'Contact',
+        section: 'Identité & contact',
       },
       {
         id: 'whatsapp',
@@ -102,33 +160,34 @@ export function SetupAssistant({ completionScore, business }: Props) {
         href: '/dashboard/public-page',
         icon: MessageCircle,
         done: !!business.whatsapp,
-        section: 'Contact',
-      },
-      {
-        id: 'modules',
-        label: 'Activer des modules',
-        href: '/dashboard/marketplace',
-        icon: Sparkles,
-        done: (business.modules?.length || 0) > 0,
-        section: 'Configuration',
-      },
-      {
-        id: 'payments',
-        label: 'Configurer les paiements',
-        href: '/dashboard/settings',
-        icon: CreditCard,
-        done: false,
-        section: 'Configuration',
-      },
-      {
-        id: 'delivery',
-        label: 'Configurer les livraisons',
-        href: '/dashboard/deliveries',
-        icon: Truck,
-        done: (business as any)?.deliveryZones?.length > 0,
-        section: 'Configuration',
+        section: 'Identité & contact',
       },
     ];
+
+    // Modules actifs → tâche de configuration, avec l'état `setup` calculé côté serveur.
+    const moduleTasks: Task[] = activeModules
+      .filter((m) => MODULE_TASKS[m])
+      .map((m) => ({
+        id: `module-${m}`,
+        label: MODULE_TASKS[m].label,
+        href: MODULE_TASKS[m].href,
+        icon: MODULE_TASKS[m].icon,
+        done: setup[m]?.configured ?? false,
+        section: 'Vos modules',
+      }));
+
+    // Moyens de paiement : si un module encaisse des fonds, il faut les activer.
+    const needsPayment = activeModules.some((m) => PAYMENT_GATED.includes(m));
+    const paymentTask: Task = {
+      id: 'payments',
+      label: 'Activer vos moyens de paiement',
+      href: '/dashboard/business/settings',
+      icon: CreditCard,
+      done: (business.paymentMethods?.length || 0) > 0,
+      section: 'Vos modules',
+    };
+
+    return [...coreTasks, ...(needsPayment ? [paymentTask] : []), ...moduleTasks];
   }, [business]);
 
   const completedTasks = tasks.filter((t) => t.done).length;

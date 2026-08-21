@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import ModuleCharts from '@/components/dashboard/ModuleCharts';
 import type { ModuleChartData } from '@/components/dashboard/ModuleCharts';
 import { CopilotTips } from '@/components/copilot/CopilotTips';
+import { SetupGuard } from '@/components/dashboard/SetupGuard';
 import { useMyEvents, useEventDashboardStats } from '@/features/hooks';
 
 interface EventItem {
@@ -169,12 +170,18 @@ export default function EventsPage() {
           { label: 'Tous les événements' },
         ]}
         actions={
-          <Link href="/dashboard/events/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Créer un événement
-            </Button>
-          </Link>
+          <SetupGuard
+            module="EVENTS"
+            action="Créer un événement"
+            configureHref="/dashboard/business/settings"
+          >
+            <Link href="/dashboard/events/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Créer un événement
+              </Button>
+            </Link>
+          </SetupGuard>
         }
       />
 
@@ -382,12 +389,18 @@ export default function EventsPage() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             {searchQuery ? 'Essayez une autre recherche' : 'Créez votre premier événement'}
           </p>
-          <Link href="/dashboard/events/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Créer un événement
-            </Button>
-          </Link>
+          <SetupGuard
+            module="EVENTS"
+            action="Créer un événement"
+            configureHref="/dashboard/business/settings"
+          >
+            <Link href="/dashboard/events/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-1.5" />
+                Créer un événement
+              </Button>
+            </Link>
+          </SetupGuard>
         </Card>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

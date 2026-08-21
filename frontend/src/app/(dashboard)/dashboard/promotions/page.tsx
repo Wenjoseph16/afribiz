@@ -33,12 +33,9 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { cn } from '@/lib/utils';
 import { CopilotTips } from '@/components/copilot/CopilotTips';
+import { SetupGuard } from '@/components/dashboard/SetupGuard';
 import { formatPrice } from '@/utils/helpers';
-import {
-  useMyPromotions,
-  useDeletePromotion,
-  promoKeys,
-} from '@/features/hooks/promotions';
+import { useMyPromotions, useDeletePromotion, promoKeys } from '@/features/hooks/promotions';
 import { useQueryClient } from '@tanstack/react-query';
 
 // ─── Types ───
@@ -118,10 +115,7 @@ function promoStatus(p: Promotion): { key: 'active' | 'inactive' | 'expired' } {
   return { key: 'active' };
 }
 
-const STATUS_BADGE: Record<
-  string,
-  { label: string; tone: 'success' | 'danger' | 'muted' }
-> = {
+const STATUS_BADGE: Record<string, { label: string; tone: 'success' | 'danger' | 'muted' }> = {
   active: { label: 'Active', tone: 'success' },
   inactive: { label: 'Inactive', tone: 'muted' },
   expired: { label: 'Expirée', tone: 'danger' },
@@ -129,12 +123,7 @@ const STATUS_BADGE: Record<
 
 export default function PromotionsPage() {
   const qc = useQueryClient();
-  const {
-    data: promosData,
-    isLoading,
-    error,
-    refetch,
-  } = useMyPromotions({ limit: 100 });
+  const { data: promosData, isLoading, error, refetch } = useMyPromotions({ limit: 100 });
   const deletePromo = useDeletePromotion();
 
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -191,7 +180,10 @@ export default function PromotionsPage() {
     setDeleteTarget(null);
   };
 
-  if (error) return <ErrorState message={(error as any)?.message || 'Erreur de chargement'} onRetry={refetch} />;
+  if (error)
+    return (
+      <ErrorState message={(error as any)?.message || 'Erreur de chargement'} onRetry={refetch} />
+    );
 
   if (isLoading)
     return (
@@ -211,12 +203,18 @@ export default function PromotionsPage() {
           { label: 'Promotions' },
         ]}
         actions={
-          <Link href="/dashboard/promotions/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nouvelle promotion
-            </Button>
-          </Link>
+          <SetupGuard
+            module="PROMOTIONS"
+            action="Nouvelle promotion"
+            configureHref="/dashboard/business/settings"
+          >
+            <Link href="/dashboard/promotions/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nouvelle promotion
+              </Button>
+            </Link>
+          </SetupGuard>
         }
       />
 
@@ -316,12 +314,18 @@ export default function PromotionsPage() {
                 : 'Créez votre première promotion pour booster vos ventes — remise, code ou offre spéciale.'
             }
             action={
-              <Link href="/dashboard/promotions/new">
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Créer une promotion
-                </Button>
-              </Link>
+              <SetupGuard
+                module="PROMOTIONS"
+                action="Créer une promotion"
+                configureHref="/dashboard/business/settings"
+              >
+                <Link href="/dashboard/promotions/new">
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Créer une promotion
+                  </Button>
+                </Link>
+              </SetupGuard>
             }
           />
         </Card>

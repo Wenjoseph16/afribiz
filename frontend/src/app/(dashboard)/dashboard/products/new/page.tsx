@@ -146,9 +146,9 @@ export default function NewProductPage() {
   const [availDays, setAvailDays] = useState<number[]>([]);
   const [availOpen, setAvailOpen] = useState('08:00');
   const [availClose, setAvailClose] = useState('18:00');
-  const [persoFields, setPersoFields] = useState<Array<{ key: string; label: string; price: string; required: boolean }>>([
-    { key: 'p1', label: '', price: '', required: false },
-  ]);
+  const [persoFields, setPersoFields] = useState<
+    Array<{ key: string; label: string; price: string; required: boolean }>
+  >([{ key: 'p1', label: '', price: '', required: false }]);
   const [giftWrapPrice, setGiftWrapPrice] = useState('');
   const [timeslotMinutes, setTimeslotMinutes] = useState('');
   const [crossSellIds, setCrossSellIds] = useState<string[]>([]);
@@ -168,7 +168,9 @@ export default function NewProductPage() {
   const [commissionPercent, setCommissionPercent] = useState('');
   const [storePickupEnabled, setStorePickupEnabled] = useState(true);
   // Prix dégressifs par quantité (grossiste/épicier)
-  const [tierRows, setTierRows] = useState<Array<{ key: string; minQuantity: string; percent: string }>>([]);
+  const [tierRows, setTierRows] = useState<
+    Array<{ key: string; minQuantity: string; percent: string }>
+  >([]);
   const nextTierKey = useRef(1);
   // Fournisseur
   const [suppliersList, setSuppliersList] = useState<any[]>([]);
@@ -187,7 +189,7 @@ export default function NewProductPage() {
       .getMyProducts({ limit: 500 })
       .then((res: any) => {
         const list = res?.data?.data ?? [];
-        setCrossSellList(Array.isArray(list) ? list : list.items ?? []);
+        setCrossSellList(Array.isArray(list) ? list : (list.items ?? []));
       })
       .catch(() => {});
     // Fournisseurs du business
@@ -195,7 +197,7 @@ export default function NewProductPage() {
       .getSuppliers()
       .then((res: any) => {
         const data = res?.data?.data ?? {};
-        setSuppliersList(Array.isArray(data) ? data : data.suppliers ?? []);
+        setSuppliersList(Array.isArray(data) ? data : (data.suppliers ?? []));
       })
       .catch(() => {});
   }, []);
@@ -236,7 +238,11 @@ export default function NewProductPage() {
     setAvailDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   };
 
-  const updatePerso = (key: string, field: 'label' | 'price' | 'required', value: string | boolean) => {
+  const updatePerso = (
+    key: string,
+    field: 'label' | 'price' | 'required',
+    value: string | boolean
+  ) => {
     setPersoFields((prev) => prev.map((f) => (f.key === key ? { ...f, [field]: value } : f)));
   };
 
@@ -416,7 +422,8 @@ export default function NewProductPage() {
             })
           );
         }
-        if (Number(giftWrapPrice) > 0) tasks.push(attach('GIFT_WRAP', { price: Number(giftWrapPrice) }));
+        if (Number(giftWrapPrice) > 0)
+          tasks.push(attach('GIFT_WRAP', { price: Number(giftWrapPrice) }));
         if (Number(timeslotMinutes) > 0) {
           tasks.push(attach('TIMESLOT', { durationMinutes: Number(timeslotMinutes) }));
         }
@@ -467,7 +474,9 @@ export default function NewProductPage() {
         if (!storePickupEnabled) {
           tasks.push(attach('STORE_PICKUP', { available: false }));
         }
-        const validTiers = tierRows.filter((r) => Number(r.minQuantity) > 0 && Number(r.percent) > 0);
+        const validTiers = tierRows.filter(
+          (r) => Number(r.minQuantity) > 0 && Number(r.percent) > 0
+        );
         if (validTiers.length > 0) {
           tasks.push(
             attach('DISCOUNT_TIER', {
@@ -959,7 +968,10 @@ export default function NewProductPage() {
             </div>
             <div className="space-y-2">
               {persoFields.map((f) => (
-                <div key={f.key} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto_auto] gap-2 items-center">
+                <div
+                  key={f.key}
+                  className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto_auto] gap-2 items-center"
+                >
                   <input
                     value={f.label}
                     onChange={(e) => updatePerso(f.key, 'label', e.target.value)}
@@ -1023,7 +1035,9 @@ export default function NewProductPage() {
                 placeholder="Ex. 30"
                 className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-brand outline-none transition-all"
               />
-              <p className="text-[11px] text-gray-400 mt-1">Réservation sur créneau — 1 unité max</p>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Réservation sur créneau — 1 unité max
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
@@ -1043,7 +1057,9 @@ export default function NewProductPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] text-gray-400 mt-1">« Les clients achètent aussi » (Ctrl + clic)</p>
+              <p className="text-[11px] text-gray-400 mt-1">
+                « Les clients achètent aussi » (Ctrl + clic)
+              </p>
             </div>
           </div>
 
@@ -1062,7 +1078,8 @@ export default function NewProductPage() {
                     Autoriser la négociation 🤝
                   </p>
                   <p className="text-xs text-gray-500">
-                    Le client propose son prix — vous acceptez ou contre-proposez (Prix Flash Client)
+                    Le client propose son prix — vous acceptez ou contre-proposez (Prix Flash
+                    Client)
                   </p>
                 </div>
               </label>
@@ -1199,7 +1216,10 @@ export default function NewProductPage() {
             {tierRows.length > 0 && (
               <div className="space-y-2">
                 {tierRows.map((r) => (
-                  <div key={r.key} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-2 items-center">
+                  <div
+                    key={r.key}
+                    className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-2 items-center"
+                  >
                     <input
                       type="number"
                       min={1}
@@ -1245,8 +1265,8 @@ export default function NewProductPage() {
                   Programme d'affiliation 🤝
                 </p>
                 <p className="text-xs text-gray-500">
-                  Chaque client devient un vendeur : il partage le lien, vous gagnez une vente,
-                  il touche sa commission
+                  Chaque client devient un vendeur : il partage le lien, vous gagnez une vente, il
+                  touche sa commission
                 </p>
               </div>
             </label>
@@ -1265,8 +1285,7 @@ export default function NewProductPage() {
                   className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
                 />
                 <p className="text-[11px] text-gray-400 mt-1">
-                  Lien généré après création : /r/CODE — commission créditée à chaque commande
-                  payée
+                  Lien généré après création : /r/CODE — commission créditée à chaque commande payée
                 </p>
               </div>
             )}
@@ -1274,9 +1293,7 @@ export default function NewProductPage() {
 
           {/* ── Étape E — Fournisseur ── */}
           <div className="mt-5">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              Fournisseur 🏭
-            </p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Fournisseur 🏭</p>
             <p className="text-xs text-gray-500 mb-2">
               Qui approvisionne cet article + prix d'achat (marge calculée automatiquement)
             </p>
@@ -1319,7 +1336,13 @@ export default function NewProductPage() {
                   placeholder="Nom du fournisseur"
                   className="flex-1 px-3 py-2 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm outline-none focus:border-brand"
                 />
-                <Button type="button" size="sm" variant="outline" onClick={addSupplier} disabled={supplierSaving}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={addSupplier}
+                  disabled={supplierSaving}
+                >
                   {supplierSaving ? 'Ajout...' : 'Ajouter'}
                 </Button>
               </div>

@@ -87,11 +87,20 @@ export function QuickActions() {
               <div className="relative rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-white/[0.02] to-transparent p-4 text-center">
                 <div className="absolute inset-0 rounded-[calc(1rem-0.1875rem)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-emerald-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
                 <div className="relative">
-                  <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200', action.color)}>
+                  <div
+                    className={cn(
+                      'w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200',
+                      action.color
+                    )}
+                  >
                     <action.icon className={cn('w-5 h-5', action.iconColor)} />
                   </div>
-                  <p className="text-xs font-semibold text-gray-700 dark:text-white/70 group-hover:text-gray-900 dark:text-white transition-colors">{action.label}</p>
-                  <p className="text-[10px] text-gray-400 dark:text-white/25 mt-0.5 hidden sm:block">{action.description}</p>
+                  <p className="text-xs font-semibold text-gray-700 dark:text-white/70 group-hover:text-gray-900 dark:text-white transition-colors">
+                    {action.label}
+                  </p>
+                  <p className="text-[10px] text-gray-400 dark:text-white/25 mt-0.5 hidden sm:block">
+                    {action.description}
+                  </p>
                 </div>
               </div>
             </Link>

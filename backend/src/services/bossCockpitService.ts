@@ -75,7 +75,12 @@ async function getStockHealth(businessId: string) {
  * Si le total est significativement EN DESSOUS → il manque de l'argent
  * (vente non enregistrée, vol, perte non déclarée) → anomalie.
  */
-async function getConservationAnomaly(businessId: string, baseline: any, cash: any, debtTotal: number) {
+async function getConservationAnomaly(
+  businessId: string,
+  baseline: any,
+  cash: any,
+  debtTotal: number
+) {
   const current = await getStockHealth(businessId);
   const expectedRemaining = baseline.stockValueAtSale - baseline.soldSinceBaseline;
   const actualRemaining = current.stockValueAtSale;
@@ -216,7 +221,15 @@ export async function getBossCockpit(ownerId: string) {
       });
     } catch (e: any) {
       logger.warn(`Cockpit business ${b.id} échoué: ${e?.message || e}`);
-      items.push({ id: b.id, name: b.name, type: b.type, logo: b.logo, score: 0, status: 'critical', anomalies: [] });
+      items.push({
+        id: b.id,
+        name: b.name,
+        type: b.type,
+        logo: b.logo,
+        score: 0,
+        status: 'critical',
+        anomalies: [],
+      });
     }
   }
 
@@ -233,9 +246,7 @@ export async function getBossCockpit(ownerId: string) {
       businessCount: items.length,
       anomalyCount: allAnomalies.length,
       highAnomalyCount: allAnomalies.filter((a) => a.severity === 'high').length,
-      totalExpectedCash: Math.round(
-        items.reduce((a, i) => a + (i.cash?.expectedBalance || 0), 0)
-      ),
+      totalExpectedCash: Math.round(items.reduce((a, i) => a + (i.cash?.expectedBalance || 0), 0)),
       totalStockValue: Math.round(items.reduce((a, i) => a + (i.stock?.valueAtSale || 0), 0)),
       totalDebts: Math.round(items.reduce((a, i) => a + (i.debts || 0), 0)),
       totalTodayRevenue: Math.round(items.reduce((a, i) => a + (i.today?.revenue || 0), 0)),
@@ -262,7 +273,11 @@ async function getCashWidgetFromId(businessId: string) {
       include: { movements: { orderBy: { createdAt: 'asc' } } },
     });
     if (!session) {
-      return { open: false, totals: { opening: 0, entries: 0, expenses: 0, expectedBalance: 0, salesCount: 0 }, difference: 0 };
+      return {
+        open: false,
+        totals: { opening: 0, entries: 0, expenses: 0, expectedBalance: 0, salesCount: 0 },
+        difference: 0,
+      };
     }
     const opening = Number(session.openingBalance || 0);
     const entries = session.movements
@@ -276,10 +291,20 @@ async function getCashWidgetFromId(businessId: string) {
       sessionId: session.id,
       openedAt: session.openedAt,
       difference: session.difference != null ? Number(session.difference) : null,
-      totals: { opening, entries, expenses, expectedBalance: opening + entries - expenses, salesCount: 0 },
+      totals: {
+        opening,
+        entries,
+        expenses,
+        expectedBalance: opening + entries - expenses,
+        salesCount: 0,
+      },
     };
   } catch (e: any) {
     logger.warn(`getCashWidgetFromId échoué: ${e?.message || e}`);
-    return { open: false, totals: { opening: 0, entries: 0, expenses: 0, expectedBalance: 0, salesCount: 0 }, difference: 0 };
+    return {
+      open: false,
+      totals: { opening: 0, entries: 0, expenses: 0, expectedBalance: 0, salesCount: 0 },
+      difference: 0,
+    };
   }
 }
