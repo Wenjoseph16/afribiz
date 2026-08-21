@@ -143,10 +143,7 @@ export default function ClientsPage() {
       <PageHeader
         title="Centre de relation client"
         description="Segmentez, fidélisez et suivez l'activité de chaque client en temps réel"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Clients & CRM' },
-        ]}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Clients & CRM' }]}
         actions={
           <div className="flex gap-2">
             <Link href="/dashboard/clients/segments">
@@ -297,7 +294,9 @@ export default function ClientsPage() {
             />
             <Select
               value={savings}
-              onChange={(e) => setSavings(e.target.value as '' | 'active' | 'ready' | 'completed' | 'none')}
+              onChange={(e) =>
+                setSavings(e.target.value as '' | 'active' | 'ready' | 'completed' | 'none')
+              }
               options={[
                 { value: '', label: 'Toute épargne' },
                 { value: 'active', label: '💚 En épargne' },
@@ -399,18 +398,19 @@ export default function ClientsPage() {
                     <td className="p-4">
                       {client.savings?.hasLayaway ? (
                         <div className="flex flex-col items-start gap-1">
-                          {(client.savings.active + client.savings.ready > 0) && (
+                          {client.savings.active + client.savings.ready > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                               <PiggyBank className="h-3 w-3" />
                               {client.savings.active + client.savings.ready} plan(s) ·{' '}
                               {Number(client.savings.totalSaved || 0).toLocaleString('fr-FR')} F
                             </span>
                           )}
-                          {client.savings.completed > 0 && client.savings.active + client.savings.ready === 0 && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 whitespace-nowrap">
-                              🎉 Acheté via épargne
-                            </span>
-                          )}
+                          {client.savings.completed > 0 &&
+                            client.savings.active + client.savings.ready === 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 whitespace-nowrap">
+                                🎉 Acheté via épargne
+                              </span>
+                            )}
                         </div>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
@@ -450,11 +450,7 @@ export default function ClientsPage() {
         isOpen={!!selectedClient}
         onClose={() => setSelectedId(null)}
         icon={<Users className="h-5 w-5" />}
-        title={
-          selectedClient
-            ? `${selectedClient.firstName} ${selectedClient.lastName}`
-            : 'Client'
-        }
+        title={selectedClient ? `${selectedClient.firstName} ${selectedClient.lastName}` : 'Client'}
         subtitle={selectedClient?.email}
         footer={
           selectedClient ? (
@@ -481,9 +477,7 @@ export default function ClientsPage() {
                 {clientInitials(selectedClient)}
               </div>
               <div>
-                {isTopClient(selectedClient) && (
-                  <LiveBadge tone="warning" label="Top client" />
-                )}
+                {isTopClient(selectedClient) && <LiveBadge tone="warning" label="Top client" />}
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-1">
                   Client depuis {formatDate(selectedClient.createdAt)}
                 </p>
@@ -492,11 +486,7 @@ export default function ClientsPage() {
 
             {/* Coordonnées */}
             <div className="grid grid-cols-2 gap-3">
-              <InfoStat
-                icon={Phone}
-                label="Téléphone"
-                value={selectedClient.phone || '—'}
-              />
+              <InfoStat icon={Phone} label="Téléphone" value={selectedClient.phone || '—'} />
               <InfoStat icon={MapPin} label="Ville" value={selectedClient.city || '—'} />
             </div>
 

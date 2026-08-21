@@ -141,7 +141,7 @@ export default function AgentsPage() {
   return (
     <div className="space-y-6 pb-8">
       <PageHeader
-        title="Réseau d&apos;Agents"
+        title="Réseau d'Agents"
         description="Gérez vos agents de dépôt/retrait, commissions et KYC"
         breadcrumbs={[{ label: 'Finance' }, { label: 'Agents' }]}
         actions={

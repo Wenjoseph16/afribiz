@@ -49,6 +49,8 @@ export interface ApiSearchItem {
   afriScore?: number;
   /** Id de l'offre épargne active jointe par le backend (badge 🔒) */
   layawayOfferId?: string;
+  /** Le business autorise la négociation du prix (bouton 🤝) */
+  negotiable?: boolean;
   developer?: { companyName?: string };
   version?: string;
   totalInstalls?: number;

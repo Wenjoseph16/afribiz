@@ -1,13 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  ShoppingBag,
-  Calendar,
-  Star,
-  Plus,
-  ChevronRight,
-} from 'lucide-react';
+import { ShoppingBag, Calendar, Star, Plus, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 
@@ -100,38 +94,61 @@ function moduleRoute(mod: string): string {
 
 function orderStatusLabel(s?: string | null) {
   switch (s) {
-    case 'DELIVERED': return 'Livrée';
-    case 'CONFIRMED': return 'Confirmée';
-    case 'CANCELLED': return 'Annulée';
-    case 'PENDING': return 'En attente';
-    default: return s || '—';
+    case 'DELIVERED':
+      return 'Livrée';
+    case 'CONFIRMED':
+      return 'Confirmée';
+    case 'CANCELLED':
+      return 'Annulée';
+    case 'PENDING':
+      return 'En attente';
+    default:
+      return s || '—';
   }
 }
 
 function orderStatusColor(s?: string | null) {
   switch (s) {
-    case 'DELIVERED': return 'text-emerald-600';
-    case 'CONFIRMED': return 'text-blue-600';
-    case 'CANCELLED': return 'text-red-500';
-    default: return 'text-amber-600';
+    case 'DELIVERED':
+      return 'text-emerald-600';
+    case 'CONFIRMED':
+      return 'text-blue-600';
+    case 'CANCELLED':
+      return 'text-red-500';
+    default:
+      return 'text-amber-600';
   }
 }
 
 function bookingStatusLabel(s?: string | null) {
   switch (s) {
-    case 'confirmed': case 'CONFIRMED': return 'Confirmée';
-    case 'pending': case 'PENDING': return 'En attente';
-    case 'cancelled': case 'CANCELLED': return 'Annulée';
-    default: return s || '—';
+    case 'confirmed':
+    case 'CONFIRMED':
+      return 'Confirmée';
+    case 'pending':
+    case 'PENDING':
+      return 'En attente';
+    case 'cancelled':
+    case 'CANCELLED':
+      return 'Annulée';
+    default:
+      return s || '—';
   }
 }
 
 function bookingStatusColor(s?: string | null) {
   switch (s) {
-    case 'confirmed': case 'CONFIRMED': return 'text-emerald-600';
-    case 'pending': case 'PENDING': return 'text-amber-600';
-    case 'cancelled': case 'CANCELLED': return 'text-red-500';
-    default: return 'text-slate-500';
+    case 'confirmed':
+    case 'CONFIRMED':
+      return 'text-emerald-600';
+    case 'pending':
+    case 'PENDING':
+      return 'text-amber-600';
+    case 'cancelled':
+    case 'CANCELLED':
+      return 'text-red-500';
+    default:
+      return 'text-slate-500';
   }
 }
 
@@ -176,9 +193,7 @@ export function Zone3Details({ orders, bookings, reviews, modules }: Zone3Props)
                       #{order.orderNumber?.slice(-6) || order.id.slice(0, 8)}
                     </p>
                     <p className="text-[11px] text-slate-400">
-                      {order.createdAt
-                        ? new Date(order.createdAt).toLocaleDateString('fr-FR')
-                        : ''}
+                      {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR') : ''}
                     </p>
                   </div>
                 </div>
@@ -225,7 +240,7 @@ export function Zone3Details({ orders, bookings, reviews, modules }: Zone3Props)
                       {b.serviceName || b.type || 'Réservation'}
                     </p>
                     <p className="text-[11px] text-slate-400">
-                      {(b.date || b.startDate)
+                      {b.date || b.startDate
                         ? new Date(b.date || b.startDate!).toLocaleDateString('fr-FR', {
                             day: 'numeric',
                             month: 'short',
@@ -234,7 +249,12 @@ export function Zone3Details({ orders, bookings, reviews, modules }: Zone3Props)
                     </p>
                   </div>
                 </div>
-                <p className={cn('text-[11px] font-medium shrink-0 ml-3', bookingStatusColor(b.status))}>
+                <p
+                  className={cn(
+                    'text-[11px] font-medium shrink-0 ml-3',
+                    bookingStatusColor(b.status)
+                  )}
+                >
                   {bookingStatusLabel(b.status)}
                 </p>
               </div>
@@ -262,7 +282,10 @@ export function Zone3Details({ orders, bookings, reviews, modules }: Zone3Props)
               <div key={r.id} className="p-3 rounded-xl bg-slate-50">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm font-medium text-slate-800">
-                    {r.authorName || (r.user?.firstName ? `${r.user.firstName} ${r.user.lastName || ''}`.trim() : 'Client')}
+                    {r.authorName ||
+                      (r.user?.firstName
+                        ? `${r.user.firstName} ${r.user.lastName || ''}`.trim()
+                        : 'Client')}
                   </p>
                   <div className="flex items-center gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -270,17 +293,13 @@ export function Zone3Details({ orders, bookings, reviews, modules }: Zone3Props)
                         key={i}
                         className={cn(
                           'h-3 w-3',
-                          i < (r.rating || 0)
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-slate-200'
+                          i < (r.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
                         )}
                       />
                     ))}
                   </div>
                 </div>
-                {r.comment && (
-                  <p className="text-xs text-slate-500 line-clamp-2">{r.comment}</p>
-                )}
+                {r.comment && <p className="text-xs text-slate-500 line-clamp-2">{r.comment}</p>}
               </div>
             ))}
           </div>

@@ -81,8 +81,9 @@ export default function BusinessFinancePage() {
     const q = search.toLowerCase();
     return list.filter(
       (i: any) =>
-        String(i.invoiceNumber || '').toLowerCase().includes(q) ||
-        clientName(i).toLowerCase().includes(q)
+        String(i.invoiceNumber || '')
+          .toLowerCase()
+          .includes(q) || clientName(i).toLowerCase().includes(q)
     );
   }, [invoicesData, search]);
 
@@ -92,15 +93,16 @@ export default function BusinessFinancePage() {
     const q = search.toLowerCase();
     return list.filter(
       (i: any) =>
-        String(i.quoteNumber || '').toLowerCase().includes(q) ||
-        clientName(i).toLowerCase().includes(q)
+        String(i.quoteNumber || '')
+          .toLowerCase()
+          .includes(q) || clientName(i).toLowerCase().includes(q)
     );
   }, [quotesData, search]);
 
   const selected =
     tab === 'invoices'
-      ? invoices.find((i: any) => i.id === selectedId) ?? null
-      : quotes.find((q: any) => q.id === selectedId) ?? null;
+      ? (invoices.find((i: any) => i.id === selectedId) ?? null)
+      : (quotes.find((q: any) => q.id === selectedId) ?? null);
 
   // KPIs servis par le backend (getFinStats) : comptent TOUTES les factures,
   // pas seulement les 100 chargées dans la liste (évite les totaux tronqués).
@@ -114,7 +116,11 @@ export default function BusinessFinancePage() {
       <PageHeader
         title={tab === 'invoices' ? 'Centre de facturation' : 'Devis & propositions'}
         description="Pilotez vos factures, suivez les règlements et convertissez vos devis en chiffre d'affaires."
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Finance' }, { label: 'Factures & Devis' }]}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Finance' },
+          { label: 'Factures & Devis' },
+        ]}
         actions={
           <div className="flex items-center gap-2">
             <Link
@@ -340,7 +346,10 @@ export default function BusinessFinancePage() {
                         )}
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex items-center justify-end gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Link
                             href={`/dashboard/invoices/${inv.id}`}
                             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-brand transition-colors"
@@ -426,7 +435,10 @@ export default function BusinessFinancePage() {
                         {formatCurrency(Number(q.totalAmount || 0))}
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex items-center justify-end gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Link
                             href={`/dashboard/finance/quotes/${q.id}`}
                             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-brand transition-colors"
@@ -461,9 +473,7 @@ export default function BusinessFinancePage() {
         icon={<FileText className="h-5 w-5 text-brand" />}
         title={selected?.invoiceNumber || selected?.quoteNumber || 'Détail'}
         subtitle={
-          tab === 'invoices'
-            ? 'Facture émise par votre entreprise'
-            : 'Devis envoyé à votre client'
+          tab === 'invoices' ? 'Facture émise par votre entreprise' : 'Devis envoyé à votre client'
         }
         size="md"
       >
@@ -471,7 +481,9 @@ export default function BusinessFinancePage() {
           <div className="space-y-5">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-300">{clientName(selected)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {clientName(selected)}
+              </span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-xl bg-gray-50 dark:bg-gray-700/40 p-3">
@@ -517,7 +529,9 @@ export default function BusinessFinancePage() {
                       key={idx}
                       className="flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-700 pb-2"
                     >
-                      <span className="text-gray-600 dark:text-gray-300">{item.description || item.label || 'Article'}</span>
+                      <span className="text-gray-600 dark:text-gray-300">
+                        {item.description || item.label || 'Article'}
+                      </span>
                       <span className="font-semibold text-gray-900 dark:text-gray-100">
                         {formatCurrency(Number(item.amount || item.total || 0))}
                       </span>
@@ -547,7 +561,9 @@ export default function BusinessFinancePage() {
                       key={idx}
                       className="flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-700 pb-2"
                     >
-                      <span className="text-gray-600 dark:text-gray-300">{item.description || item.label || 'Article'}</span>
+                      <span className="text-gray-600 dark:text-gray-300">
+                        {item.description || item.label || 'Article'}
+                      </span>
                       <span className="font-semibold text-gray-900 dark:text-gray-100">
                         {formatCurrency(Number(item.amount || item.total || 0))}
                       </span>

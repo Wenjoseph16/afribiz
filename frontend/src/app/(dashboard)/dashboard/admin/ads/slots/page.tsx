@@ -174,9 +174,7 @@ export default function AdminSlotsPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-medium text-gray-500">
-                            Max pubs
-                          </label>
+                          <label className="text-[10px] font-medium text-gray-500">Max pubs</label>
                           <input
                             type="number"
                             value={form.maxPerSlot ?? 10}

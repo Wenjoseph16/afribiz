@@ -84,7 +84,12 @@ export function Rooms({ rooms }: RoomsProps) {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} hasLayaway={!!(layawayMap || {})[room.id]} layawayOffer={(layawayMap || {})[room.id]} />
+            <RoomCard
+              key={room.id}
+              room={room}
+              hasLayaway={!!(layawayMap || {})[room.id]}
+              layawayOffer={(layawayMap || {})[room.id]}
+            />
           ))}
         </div>
 
@@ -100,7 +105,15 @@ export function Rooms({ rooms }: RoomsProps) {
   );
 }
 
-function RoomCard({ room, hasLayaway, layawayOffer }: { room: Room; hasLayaway?: boolean; layawayOffer?: { id: string } }) {
+function RoomCard({
+  room,
+  hasLayaway,
+  layawayOffer,
+}: {
+  room: Room;
+  hasLayaway?: boolean;
+  layawayOffer?: { id: string };
+}) {
   const fmtPrice = (p: number) => formatPrice(p, room.currency);
   const typeLabel = room.type ? ROOM_TYPE_LABELS[room.type] || room.type : null;
   const statusStyle = room.status ? STATUS_STYLES[room.status] : null;

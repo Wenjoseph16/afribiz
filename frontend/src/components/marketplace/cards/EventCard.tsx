@@ -16,7 +16,7 @@ export default function EventCard({ item, view = 'grid' }: EventCardProps) {
   const router = useRouter();
 
   const handleCardClick = () => {
-    router.push(`/business/${item.businessSlug || item.id}`);
+    router.push(`/events/${item.businessSlug || item.id}/${item.id}`);
   };
 
   if (view === 'list') {
@@ -60,15 +60,13 @@ export default function EventCard({ item, view = 'grid' }: EventCardProps) {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/business/${item.businessSlug || item.id}`);
+                router.push(`/events/${item.businessSlug || item.id}/${item.id}`);
               }}
               className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
             >
               Participer
             </button>
-            {item.layawayOfferId && (
-              <LayawayCardButton offerId={item.layawayOfferId} size="xs" />
-            )}
+            {item.layawayOfferId && <LayawayCardButton offerId={item.layawayOfferId} size="xs" />}
           </div>
         </div>
       </div>
@@ -106,7 +104,7 @@ export default function EventCard({ item, view = 'grid' }: EventCardProps) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/business/${item.businessSlug || item.id}`);
+              router.push(`/events/${item.businessSlug || item.id}/${item.id}`);
             }}
             className="flex-1 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
           >

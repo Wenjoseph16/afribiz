@@ -51,14 +51,29 @@ const CYCLE_NAMES: Record<string, string> = {
 const MOBILE_MONEY_PROVIDERS = [
   { id: 'WAVE', label: 'Wave', color: 'bg-emerald-500', countries: "Sénégal, Côte d'Ivoire" },
   { id: 'MTN_MOMO', label: 'MTN MoMo', color: 'bg-red-500', countries: 'Ghana, Ouganda, Rwanda' },
-  { id: 'ORANGE_MONEY', label: 'Orange Money', color: 'bg-orange-500', countries: "Côte d'Ivoire, Sénégal, Mali" },
+  {
+    id: 'ORANGE_MONEY',
+    label: 'Orange Money',
+    color: 'bg-orange-500',
+    countries: "Côte d'Ivoire, Sénégal, Mali",
+  },
   { id: 'TMONEY', label: 'T-Money', color: 'bg-blue-500', countries: 'Togo' },
   { id: 'FLOOZ', label: 'Flooz', color: 'bg-yellow-500', countries: 'Togo, Bénin' },
-  { id: 'MOOV_MONEY', label: 'Moov Money', color: 'bg-sky-600', countries: 'Bénin, Togo, Côte d\u2019Ivoire' },
+  {
+    id: 'MOOV_MONEY',
+    label: 'Moov Money',
+    color: 'bg-sky-600',
+    countries: 'Bénin, Togo, Côte d\u2019Ivoire',
+  },
   { id: 'AIRTEL_MONEY', label: 'Airtel Money', color: 'bg-red-600', countries: 'Ghana, Ouganda' },
   { id: 'MPESA', label: 'M-Pesa', color: 'bg-green-600', countries: 'Kenya, Tanzanie, RDC' },
   { id: 'FREE', label: 'Free Money', color: 'bg-fuchsia-600', countries: 'Sénégal' },
-  { id: 'FEDAPAY', label: 'FedaPay', color: 'bg-violet-500', countries: 'Multi-pays (cartes + Mobile Money)' },
+  {
+    id: 'FEDAPAY',
+    label: 'FedaPay',
+    color: 'bg-violet-500',
+    countries: 'Multi-pays (cartes + Mobile Money)',
+  },
 ];
 
 interface Plan {
@@ -193,7 +208,7 @@ export function Subscriptions({ slug, plans }: SubscriptionsProps) {
             setErrorMsg(
               err?.response?.data?.error ||
                 err?.response?.data?.message ||
-                "Impossible de souscrire pour le moment. Réessayez."
+                'Impossible de souscrire pour le moment. Réessayez.'
             );
           }
           setStep('confirm');
@@ -300,7 +315,10 @@ export function Subscriptions({ slug, plans }: SubscriptionsProps) {
                 {/* Bénéfices */}
                 <ul className="mt-5 space-y-2.5 flex-1">
                   {(plan.benefits || []).map((benefit, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300"
+                    >
                       <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
                       {benefit}
                     </li>
@@ -383,7 +401,10 @@ export function Subscriptions({ slug, plans }: SubscriptionsProps) {
                 <div className="mt-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 p-3 text-sm text-red-600 dark:text-red-400">
                   {errorMsg}
                   {errorMsg.includes('déjà un abonnement') && (
-                    <Link href="/dashboard/my-subscriptions" className="block mt-2 font-semibold underline">
+                    <Link
+                      href="/dashboard/my-subscriptions"
+                      className="block mt-2 font-semibold underline"
+                    >
                       Voir mes abonnements →
                     </Link>
                   )}
@@ -430,7 +451,12 @@ export function Subscriptions({ slug, plans }: SubscriptionsProps) {
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     )}
                   >
-                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center text-white', p.color)}>
+                    <div
+                      className={cn(
+                        'w-8 h-8 rounded-lg flex items-center justify-center text-white',
+                        p.color
+                      )}
+                    >
                       <Smartphone className="h-4 w-4" />
                     </div>
                     <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">
@@ -519,7 +545,11 @@ export function Subscriptions({ slug, plans }: SubscriptionsProps) {
                 <Button variant="ghost" onClick={closeModal}>
                   Plus tard
                 </Button>
-                <Button variant="secondary" onClick={confirmPayment} disabled={confirmMutation.isPending}>
+                <Button
+                  variant="secondary"
+                  onClick={confirmPayment}
+                  disabled={confirmMutation.isPending}
+                >
                   {confirmMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : (

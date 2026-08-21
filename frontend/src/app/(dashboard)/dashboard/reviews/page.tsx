@@ -13,9 +13,11 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useReviews } from '@/features/hooks';
 import { apiClient } from '@/services/apiClient';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function ReviewsPage() {
-  const { data, isLoading, error, refetch } = useReviews({ limit: 100 });
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const { data, isLoading, error, refetch } = useReviews({ limit: 100, userId: currentUserId });
   const qc = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -101,7 +103,7 @@ export default function ReviewsPage() {
         breadcrumbs={[{ label: 'Mes avis' }]}
       />
 
-      <Link href="/dashboard/explore">
+      <Link href="/marketplace">
         <Button variant="primary" className="mb-6">
           Donner un avis
         </Button>
@@ -170,7 +172,7 @@ export default function ReviewsPage() {
           title="Aucun avis"
           description="Vous n'avez pas encore publié d'avis. Partagez votre expérience après un achat ou une réservation."
           action={
-            <Link href="/dashboard/explore">
+            <Link href="/marketplace">
               <Button>Découvrir des business</Button>
             </Link>
           }

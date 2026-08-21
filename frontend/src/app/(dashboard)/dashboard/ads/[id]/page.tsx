@@ -40,8 +40,7 @@ export default function AdDetailPage() {
       <PageHeader
         title={campaign?.name || 'Campagne'}
         description={
-          AD_STATUS_LABELS[campaign?.status as keyof typeof AD_STATUS_LABELS] ||
-          campaign?.status
+          AD_STATUS_LABELS[campaign?.status as keyof typeof AD_STATUS_LABELS] || campaign?.status
         }
         badge={
           campaign?.status

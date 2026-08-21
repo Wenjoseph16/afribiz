@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   Wallet,
   ArrowUpRight,
@@ -374,10 +375,12 @@ export default function PaymentsPage() {
               title="Aucune transaction"
               description="Vos transactions apparaîtront ici après vos achats et réservations."
               action={
-                <Button variant="primary" size="sm">
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Explorer le marketplace
-                </Button>
+                <Link href="/marketplace">
+                  <Button variant="primary" size="sm">
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Explorer le marketplace
+                  </Button>
+                </Link>
               }
             />
           }

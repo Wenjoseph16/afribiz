@@ -121,10 +121,7 @@ export default function BusinessEscrowPage() {
       <PageHeader
         title="Escrow"
         description="Paiements sécurisés — fonds bloqués jusqu'à confirmation par les deux parties."
-        breadcrumbs={[
-          { label: 'Finance', href: '/dashboard/finance' },
-          { label: 'Escrow' },
-        ]}
+        breadcrumbs={[{ label: 'Finance', href: '/dashboard/finance' }, { label: 'Escrow' }]}
         gradient
       />
 

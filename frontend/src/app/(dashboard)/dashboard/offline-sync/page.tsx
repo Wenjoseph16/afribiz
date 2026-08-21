@@ -223,7 +223,10 @@ export default function OfflineSyncPage() {
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {/* File CLIENT (IndexedDB) — actions hors-ligne en attente sur ce téléphone */}
             {clientItems.map((item: any) => (
-              <div key={item.id} className="p-4 flex items-center justify-between bg-violet-50/40 dark:bg-violet-950/20">
+              <div
+                key={item.id}
+                className="p-4 flex items-center justify-between bg-violet-50/40 dark:bg-violet-950/20"
+              >
                 <div className="flex items-center gap-3">
                   <HardDrive className="w-4 h-4 text-violet-500" />
                   <div>
@@ -234,8 +237,7 @@ export default function OfflineSyncPage() {
                       <span className="text-xs text-gray-400">#{item.id?.substring(0, 8)}</span>
                     </p>
                     <p className="text-xs text-gray-500">
-                      Sur ce téléphone ·{' '}
-                      {new Date(item.createdAt).toLocaleString('fr-FR')}
+                      Sur ce téléphone · {new Date(item.createdAt).toLocaleString('fr-FR')}
                       {item.lastError ? ` · ${item.lastError}` : ''}
                     </p>
                   </div>

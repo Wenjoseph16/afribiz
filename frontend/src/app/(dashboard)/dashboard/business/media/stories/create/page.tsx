@@ -270,16 +270,22 @@ export default function CreateStoryPage() {
                   setLinkTargetId('');
                   const t = e.target.value;
                   if (t === 'PRODUCT' && shopProducts.length === 0) {
-                    apiClient.getMyProducts({ limit: 200 }).then((res: any) => {
-                      const list = res?.data?.data ?? [];
-                      setShopProducts(Array.isArray(list) ? list : list.items ?? []);
-                    }).catch(() => {});
+                    apiClient
+                      .getMyProducts({ limit: 200 })
+                      .then((res: any) => {
+                        const list = res?.data?.data ?? [];
+                        setShopProducts(Array.isArray(list) ? list : (list.items ?? []));
+                      })
+                      .catch(() => {});
                   }
                   if (t === 'SERVICE' && shopServices.length === 0) {
-                    apiClient.getMyServices({ limit: 200 }).then((res: any) => {
-                      const list = res?.data?.data ?? [];
-                      setShopServices(Array.isArray(list) ? list : list.items ?? []);
-                    }).catch(() => {});
+                    apiClient
+                      .getMyServices({ limit: 200 })
+                      .then((res: any) => {
+                        const list = res?.data?.data ?? [];
+                        setShopServices(Array.isArray(list) ? list : (list.items ?? []));
+                      })
+                      .catch(() => {});
                   }
                 }}
                 className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/20"
@@ -305,8 +311,7 @@ export default function CreateStoryPage() {
             </div>
             {linkTargetId && (
               <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
-                ✓ Article lié — le bouton « Commander » affichera le prix réel calculé par
-                AfriBiz
+                ✓ Article lié — le bouton « Commander » affichera le prix réel calculé par AfriBiz
               </p>
             )}
           </Card>

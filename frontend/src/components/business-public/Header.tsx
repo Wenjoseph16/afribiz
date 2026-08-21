@@ -26,7 +26,14 @@ interface HeaderProps {
   hasRentals?: boolean;
 }
 
-export function Header({ business, slug, hasProducts, hasServices, hasRooms, hasRentals }: HeaderProps) {
+export function Header({
+  business,
+  slug,
+  hasProducts,
+  hasServices,
+  hasRooms,
+  hasRentals,
+}: HeaderProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const actions: {
     label: string;
@@ -126,7 +133,7 @@ export function Header({ business, slug, hasProducts, hasServices, hasRooms, has
 
   return (
     <div
-      className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-16 z-40"
+      className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative z-40"
       role="region"
       aria-label="Actions rapides"
     >

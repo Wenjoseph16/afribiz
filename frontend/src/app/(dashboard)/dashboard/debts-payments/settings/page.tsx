@@ -24,10 +24,34 @@ import { cn } from '@/lib/utils';
 import { apiClient } from '@/services/apiClient';
 
 const CHANNELS = [
-  { key: 'WHATSAPP', label: 'WhatsApp', desc: 'Message direct sur WhatsApp', icon: MessageSquare, color: 'text-emerald-500' },
-  { key: 'SMS', label: 'SMS', desc: 'Message texte classique', icon: Smartphone, color: 'text-blue-500' },
-  { key: 'EMAIL', label: 'Email', desc: 'Email personnalisé', icon: Mail, color: 'text-purple-500' },
-  { key: 'PUSH', label: 'Push', desc: 'Notification in-app AfriBiz', icon: Bell, color: 'text-amber-500' },
+  {
+    key: 'WHATSAPP',
+    label: 'WhatsApp',
+    desc: 'Message direct sur WhatsApp',
+    icon: MessageSquare,
+    color: 'text-emerald-500',
+  },
+  {
+    key: 'SMS',
+    label: 'SMS',
+    desc: 'Message texte classique',
+    icon: Smartphone,
+    color: 'text-blue-500',
+  },
+  {
+    key: 'EMAIL',
+    label: 'Email',
+    desc: 'Email personnalisé',
+    icon: Mail,
+    color: 'text-purple-500',
+  },
+  {
+    key: 'PUSH',
+    label: 'Push',
+    desc: 'Notification in-app AfriBiz',
+    icon: Bell,
+    color: 'text-amber-500',
+  },
 ] as const;
 
 const PRESET_DAYS = [
@@ -130,9 +154,7 @@ export default function DebtReminderSettingsPage() {
   }, [load]);
 
   const toggleChannel = (key: string) => {
-    setChannels((prev) =>
-      prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]
-    );
+    setChannels((prev) => (prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]));
   };
 
   const toggleDay = (day: number) => {
@@ -233,7 +255,8 @@ export default function DebtReminderSettingsPage() {
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 max-w-xl">
                 Une dette impayée est relancée toute seule, en douceur, aux paliers que vous
-                choisissez. Le client reçoit un lien de paiement en un clic. Vous n’avez rien à faire.
+                choisissez. Le client reçoit un lien de paiement en un clic. Vous n’avez rien à
+                faire.
               </p>
             </div>
           </div>
@@ -398,8 +421,8 @@ export default function DebtReminderSettingsPage() {
               <h3 className="font-semibold text-gray-900 dark:text-white">Messages envoyés</h3>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-              Modifiez librement le ton des messages. Les variables entre {'{'} {'}'} sont remplacées
-              automatiquement pour chaque client.
+              Modifiez librement le ton des messages. Les variables entre {'{'} {'}'} sont
+              remplacées automatiquement pour chaque client.
             </p>
 
             <div className="flex flex-wrap gap-1.5 mb-5">
@@ -476,7 +499,9 @@ export default function DebtReminderSettingsPage() {
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-5 h-5 text-brand shrink-0" />
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              <span className="font-semibold text-gray-900 dark:text-white">100% doux, jamais agressif.</span>{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                100% doux, jamais agressif.
+              </span>{' '}
               Les rappels sont progressifs, personnalisés et contiennent un lien de paiement direct.
               Le client garde une excellente image de votre commerce.
             </p>

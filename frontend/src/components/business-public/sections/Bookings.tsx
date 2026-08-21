@@ -67,6 +67,8 @@ export function Bookings({ whatsapp, businessName, slug }: BookingsProps) {
   const [slots, setSlots] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [submitError, setSubmitError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [bookingsEnabled, setBookingsEnabled] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -78,9 +80,13 @@ export function Bookings({ whatsapp, businessName, slug }: BookingsProps) {
         if (json.success && json.data) {
           setServices(json.data.services || []);
           setSlots(json.data.slots || []);
+          setBookingsEnabled(json.data.bookingsEnabled !== false);
+        } else {
+          setLoadError(json.error || "Ce business n'est pas disponible à la réservation.");
         }
       } catch (e) {
         console.error('Failed to load booking info', e);
+        setLoadError('Impossible de charger les disponibilités pour le moment.');
       } finally {
         setIsLoading(false);
       }
@@ -634,6 +640,43 @@ export function Bookings({ whatsapp, businessName, slug }: BookingsProps) {
           </Button>
         </div>
       </div>
+    );
+  }
+
+  if (loadError || !bookingsEnabled || services.length === 0) {
+    return (
+      <section
+        id="section-bookings"
+        className="scroll-mt-32 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800/50"
+      >
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <CalendarDays className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Réservation en ligne indisponible
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            {loadError ||
+              'Ce business ne propose pas encore de réservation en ligne pour le moment.'}
+          </p>
+          {whatsapp && (
+            <a
+              href={
+                'https://wa.me/' +
+                whatsapp +
+                '?text=' +
+                encodeURIComponent(
+                  'Bonjour, je souhaite réserver un créneau avec ' + (businessName || 'vous') + '.'
+                )
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" /> Réserver via WhatsApp
+            </a>
+          )}
+        </div>
+      </section>
     );
   }
 

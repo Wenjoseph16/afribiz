@@ -62,9 +62,7 @@ export function RevenueAreaChart({ data, total }: RevenueAreaChartProps) {
               axisLine={false}
               tickLine={false}
               width={40}
-              tickFormatter={(v: number) =>
-                v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`
-              }
+              tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`)}
             />
             <Tooltip
               formatter={(value: any) => [

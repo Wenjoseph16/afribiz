@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface OrdersBarChartProps {
   data: Array<{ label: string; value: number }>;
@@ -24,9 +16,7 @@ export function OrdersBarChart({ data }: OrdersBarChartProps) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-400">
             Commandes / jour
           </p>
-          <p className="text-sm font-bold text-slate-800 mt-1 tabular-nums">
-            {total} au total
-          </p>
+          <p className="text-sm font-bold text-slate-800 mt-1 tabular-nums">{total} au total</p>
         </div>
       </div>
 
@@ -48,7 +38,10 @@ export function OrdersBarChart({ data }: OrdersBarChartProps) {
               allowDecimals={false}
             />
             <Tooltip
-              formatter={(value: any) => [`${value} commande${Number(value) > 1 ? 's' : ''}`, 'Commandes']}
+              formatter={(value: any) => [
+                `${value} commande${Number(value) > 1 ? 's' : ''}`,
+                'Commandes',
+              ]}
               contentStyle={{
                 borderRadius: 10,
                 border: '1px solid #E2E8F0',
@@ -57,12 +50,7 @@ export function OrdersBarChart({ data }: OrdersBarChartProps) {
               }}
               cursor={{ fill: 'rgba(16,185,129,0.06)' }}
             />
-            <Bar
-              dataKey="value"
-              fill="#10b981"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={32}
-            />
+            <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={32} />
           </BarChart>
         </ResponsiveContainer>
       </div>

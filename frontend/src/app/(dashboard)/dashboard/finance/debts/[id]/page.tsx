@@ -4,15 +4,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/dashboard/PageHeader';
-import {
-  DollarSign,
-  User,
-  Phone,
-  Loader,
-  CheckCircle2,
-  FileText,
-  Send,
-} from 'lucide-react';
+import { DollarSign, User, Phone, Loader, CheckCircle2, FileText, Send } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';

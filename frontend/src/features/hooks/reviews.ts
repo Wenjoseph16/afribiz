@@ -5,9 +5,10 @@ export const reviewKeys = {
   all: ['reviews'] as const,
 };
 
-export function useReviews(params?: { page?: number; limit?: number }) {
+export function useReviews(params?: { page?: number; limit?: number; userId?: string }) {
   return useQuery({
     queryKey: [...reviewKeys.all, params],
+    enabled: params?.userId === undefined ? true : !!params.userId,
     queryFn: async () => {
       const res = await apiClient.getReviews(params);
       const d = res.data as unknown as { reviews?: unknown[]; data?: unknown[] };

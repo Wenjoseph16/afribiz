@@ -45,6 +45,7 @@ export interface ProductResult extends BaseResult {
   available: boolean;
   image: string;
   description?: string;
+  negotiable?: boolean;
   reviews?: {
     id: string;
     rating: number;

@@ -68,13 +68,25 @@ export function InternalNav({ modules, hasStories, hasShorts, hasActiveLive }: I
 
   const mediaSections: { id: string; label: string; icon: React.ReactNode }[] = [];
   if (hasActiveLive) {
-    mediaSections.push({ id: 'section-live', label: 'En Direct', icon: <Radio className="w-4 h-4 text-red-500" /> });
+    mediaSections.push({
+      id: 'section-live',
+      label: 'En Direct',
+      icon: <Radio className="w-4 h-4 text-red-500" />,
+    });
   }
   if (hasStories) {
-    mediaSections.push({ id: 'section-media-stories', label: 'Stories', icon: <Camera className="w-4 h-4" /> });
+    mediaSections.push({
+      id: 'section-media-stories',
+      label: 'Stories',
+      icon: <Camera className="w-4 h-4" />,
+    });
   }
   if (hasShorts) {
-    mediaSections.push({ id: 'section-media-shorts', label: 'Shorts', icon: <Play className="w-4 h-4" /> });
+    mediaSections.push({
+      id: 'section-media-shorts',
+      label: 'Shorts',
+      icon: <Play className="w-4 h-4" />,
+    });
   }
 
   const clientSections = modules

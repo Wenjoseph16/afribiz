@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { initOfflineSync, getOfflineStatus, subscribeOfflineStatus, flushSyncQueue } from '@/lib/offline/sync';
+import {
+  initOfflineSync,
+  getOfflineStatus,
+  subscribeOfflineStatus,
+  flushSyncQueue,
+} from '@/lib/offline/sync';
 import { getPendingSyncCount } from '@/lib/offline/queue';
 import { WifiOff, Wifi, RefreshCw } from 'lucide-react';
 
@@ -61,7 +66,11 @@ export function OfflineProvider() {
   return (
     <button
       onClick={() => !isSyncing && flushSyncQueue()}
-      title={isOffline ? 'Hors-ligne — les actions sont enregistrées localement' : 'En ligne — synchronisation automatique'}
+      title={
+        isOffline
+          ? 'Hors-ligne — les actions sont enregistrées localement'
+          : 'En ligne — synchronisation automatique'
+      }
       className={`fixed bottom-4 left-4 z-[60] flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium shadow-lg transition-all duration-300 ${
         isOffline
           ? 'bg-amber-500 text-white'

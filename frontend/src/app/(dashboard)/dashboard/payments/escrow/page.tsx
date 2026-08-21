@@ -2,14 +2,7 @@
 
 import { useMemo } from 'react';
 import { PageHeader } from '@/components/dashboard/PageHeader';
-import {
-  Shield,
-  DollarSign,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Loader,
-} from 'lucide-react';
+import { Shield, DollarSign, Clock, CheckCircle2, AlertTriangle, Loader } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { ErrorState } from '@/components/ui/ErrorState';

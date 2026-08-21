@@ -104,9 +104,7 @@ export default function BusinessDemandDetailPage() {
       <PageHeader
         title={demand.title}
         badge={
-          demand.isUrgent
-            ? { label: 'Urgent', className: 'bg-red-500/10 text-red-600' }
-            : undefined
+          demand.isUrgent ? { label: 'Urgent', className: 'bg-red-500/10 text-red-600' } : undefined
         }
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
@@ -161,7 +159,8 @@ export default function BusinessDemandDetailPage() {
                     approvedMatch?.developer?.user?.lastName,
                   ]
                     .filter(Boolean)
-                    .join(' ') || (demand as any).approvedDeveloperId}
+                    .join(' ') ||
+                  (demand as any).approvedDeveloperId}
               </span>
             </div>
             <p className="text-sm text-yellow-700 mt-1">

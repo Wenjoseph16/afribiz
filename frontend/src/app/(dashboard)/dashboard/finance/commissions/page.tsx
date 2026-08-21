@@ -46,10 +46,7 @@ export default function BusinessCommissionsPage() {
       <PageHeader
         title="Revenus & Commissions"
         description="Suivez vos revenus et les commissions AfriBiz prélevées — transparence totale sur chaque transaction."
-        breadcrumbs={[
-          { label: 'Finance', href: '/dashboard/finance' },
-          { label: 'Commissions' },
-        ]}
+        breadcrumbs={[{ label: 'Finance', href: '/dashboard/finance' }, { label: 'Commissions' }]}
         gradient
         actions={
           <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1">

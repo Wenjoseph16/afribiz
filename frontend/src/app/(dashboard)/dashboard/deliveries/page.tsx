@@ -145,33 +145,37 @@ export default function DeliveriesPage() {
       <PageHeader
         title="Centre des livraisons"
         description="Gérez vos expéditions, suivez vos coursiers et maîtrisez vos zones de livraison."
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Ventes' }, { label: 'Livraisons' }]}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Ventes' },
+          { label: 'Livraisons' },
+        ]}
         actions={
           <>
-          <Link href="/dashboard/deliveries/stats">
-            <Button variant="outline" size="sm">
-              <Package className="h-4 w-4 mr-1.5" />
-              Stats
-            </Button>
-          </Link>
-          <Link href="/dashboard/deliveries/zones">
-            <Button variant="outline" size="sm">
-              <MapPin className="h-4 w-4 mr-1.5" />
-              Zones
-            </Button>
-          </Link>
-          <Link href="/dashboard/deliveries/drivers">
-            <Button variant="outline" size="sm">
-              <User className="h-4 w-4 mr-1.5" />
-              Chauffeurs
-            </Button>
-          </Link>
-          <Link href="/dashboard/deliveries/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Nouvelle livraison
-            </Button>
-          </Link>
+            <Link href="/dashboard/deliveries/stats">
+              <Button variant="outline" size="sm">
+                <Package className="h-4 w-4 mr-1.5" />
+                Stats
+              </Button>
+            </Link>
+            <Link href="/dashboard/deliveries/zones">
+              <Button variant="outline" size="sm">
+                <MapPin className="h-4 w-4 mr-1.5" />
+                Zones
+              </Button>
+            </Link>
+            <Link href="/dashboard/deliveries/drivers">
+              <Button variant="outline" size="sm">
+                <User className="h-4 w-4 mr-1.5" />
+                Chauffeurs
+              </Button>
+            </Link>
+            <Link href="/dashboard/deliveries/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Nouvelle livraison
+              </Button>
+            </Link>
           </>
         }
       />

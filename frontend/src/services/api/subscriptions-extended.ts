@@ -37,7 +37,10 @@ export function injectSubscriptionsExtended(api: ApiClientMethods) {
   api.getMySubscription = function () {
     return this.get('/business/subscriptions/my-subscription');
   };
-  api.subscribeToPlan = function (planId: string, opts?: { provider?: string; phone?: string; autoRenew?: boolean }) {
+  api.subscribeToPlan = function (
+    planId: string,
+    opts?: { provider?: string; phone?: string; autoRenew?: boolean }
+  ) {
     return this.post('/business/subscriptions/subscribe', {
       planId,
       ...(opts || {}),

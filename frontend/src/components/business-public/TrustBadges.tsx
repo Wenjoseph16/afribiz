@@ -156,9 +156,7 @@ function SatisfactionBadge({ score }: { score: number }) {
     >
       <Star className={cn('w-4 h-4', colors.text)} />
       <span className={cn('text-sm font-bold', colors.text)}>{score}</span>
-      <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-        satisfaction
-      </span>
+      <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">satisfaction</span>
     </div>
   );
 }

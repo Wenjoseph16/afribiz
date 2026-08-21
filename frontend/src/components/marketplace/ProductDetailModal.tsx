@@ -9,14 +9,11 @@ import {
   MessageCircle,
   Store,
   Star,
-  Clock,
-  Truck,
   Shield,
   Heart,
   Tag,
   Percent,
   Zap,
-  Gift,
   Package,
   TrendingUp,
   ChevronDown,
@@ -59,10 +56,6 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
           icon: Percent,
         }
       : null,
-    { label: 'Livraison offerte', desc: 'Pour toute commande de 50 000 FCFA', icon: Truck },
-    { label: 'Garantie satisfait', desc: 'Remboursement sous 14 jours', icon: Shield },
-    { label: 'Programme fidélité', desc: 'Gagnez des points sur chaque achat', icon: Gift },
-    { label: 'Achat en gros', desc: '-15% dès 10 unités achetées', icon: Package },
   ].filter(Boolean);
 
   const handleAddToCart = async () => {
@@ -326,64 +319,60 @@ export function ProductDetailModal({ product, isOpen, onClose }: ProductDetailMo
               </button>
             </div>
 
-            <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-              <button
-                onClick={() => setShowPromos(!showPromos)}
-                className="flex items-center justify-between w-full mb-3"
-              >
-                <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-brand" />
-                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Promotions et offres
-                  </span>
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-brand-50 text-brand">
-                    {promos.length}
-                  </span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    'w-4 h-4 text-gray-400 transition-transform duration-200',
-                    showPromos && 'rotate-180'
-                  )}
-                />
-              </button>
-              {showPromos && (
-                <div className="space-y-2 animate-fade-in">
-                  {promos.map((promo: any, i: number) => {
-                    const Icon = promo.icon;
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-brand-50/50 to-emerald-50/50 dark:from-brand-900/10 dark:to-emerald-900/10 border border-brand-100/50 dark:border-brand-900/30"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-brand flex-shrink-0 shadow-sm">
-                          <Icon className="w-4 h-4" />
+            {promos.length > 0 && (
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+                <button
+                  onClick={() => setShowPromos(!showPromos)}
+                  className="flex items-center justify-between w-full mb-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-brand" />
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Promotions et offres
+                    </span>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-brand-50 text-brand">
+                      {promos.length}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      'w-4 h-4 text-gray-400 transition-transform duration-200',
+                      showPromos && 'rotate-180'
+                    )}
+                  />
+                </button>
+                {showPromos && (
+                  <div className="space-y-2 animate-fade-in">
+                    {promos.map((promo: any, i: number) => {
+                      const Icon = promo.icon;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-brand-50/50 to-emerald-50/50 dark:from-brand-900/10 dark:to-emerald-900/10 border border-brand-100/50 dark:border-brand-900/30"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-brand flex-shrink-0 shadow-sm">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {promo.label}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{promo.desc}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                            {promo.label}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{promo.desc}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 mt-auto pt-6 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <Truck className="w-4 h-4" /> Livraison disponible
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <Clock className="w-4 h-4" /> Retour sous 14 jours
-              </div>
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                 <Shield className="w-4 h-4" /> Paiement sécurisé
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <TrendingUp className="w-4 h-4" /> {product.reviewCount} acheteurs
+                <TrendingUp className="w-4 h-4" /> {product.reviewCount} avis
               </div>
             </div>
           </div>

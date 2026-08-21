@@ -63,7 +63,8 @@ export function Zone2Tendance({ history, orderStatusBreakdown }: Zone2Props) {
         </div>
         <p className="text-sm font-semibold text-slate-700">Vos graphiques apparaîtront ici</p>
         <p className="text-xs text-slate-400 mt-1">
-          Les tendances de votre chiffre d'affaires et commandes s'afficheront dès vos premières ventes.
+          Les tendances de votre chiffre d'affaires et commandes s'afficheront dès vos premières
+          ventes.
         </p>
       </div>
     );

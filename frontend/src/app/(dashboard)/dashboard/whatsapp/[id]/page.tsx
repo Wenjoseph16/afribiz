@@ -82,7 +82,9 @@ export default function TemplateDetailPage() {
     <div className="space-y-6 pb-8 max-w-2xl">
       <PageHeader
         title={template?.name || 'Modifier le template'}
-        description={template?.status ? `Statut : ${template.status}` : 'Modification du template WhatsApp'}
+        description={
+          template?.status ? `Statut : ${template.status}` : 'Modification du template WhatsApp'
+        }
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'WhatsApp', href: '/dashboard/whatsapp' },

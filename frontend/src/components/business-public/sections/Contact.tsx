@@ -90,7 +90,6 @@ export function Contact({ business }: ContactProps) {
     }
   };
 
-
   // Réseaux sociaux renseignés (handle court ou URL complète)
   const socials = SOCIALS.filter((s) => (business as any)[s.key]).map((s) => {
     const raw = String((business as any)[s.key]);

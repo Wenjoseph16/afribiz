@@ -117,10 +117,7 @@ export default function FinanceDebtsPage() {
       <PageHeader
         title="Dettes & Paiements"
         description="Gérez les dettes clients, paiements partiels et soldes — suivez chaque créance jusqu'au règlement."
-        breadcrumbs={[
-          { label: 'Finance', href: '/dashboard/finance' },
-          { label: 'Dettes' },
-        ]}
+        breadcrumbs={[{ label: 'Finance', href: '/dashboard/finance' }, { label: 'Dettes' }]}
         gradient
       />
 

@@ -145,7 +145,7 @@ export default function OrderTimeline({
               Commande prise en charge
             </p>
             <p className="text-xs text-blue-600 dark:text-blue-400">
-              Le vendeur s\'occupe de votre commande
+              Le vendeur s&apos;occupe de votre commande
             </p>
           </div>
         </div>
@@ -260,8 +260,9 @@ export default function OrderTimeline({
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Si le vendeur ne répond pas dans les 60 minutes, la commande sera automatiquement
-              annulée. Vous recevrez une notification dès qu&apos;elle sera prise en charge.
+              Le vendeur est informé après 15 minutes, puis relancé à 30 minutes. Sans réponse sous
+              60 minutes, la commande sera automatiquement annulée et vous recevrez une
+              notification.
             </p>
           </div>
         </div>

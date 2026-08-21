@@ -53,15 +53,13 @@ export default function TrainingCard({ item, view = 'grid' }: TrainingCardProps)
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/business/${item.businessSlug || item.id}`);
+                router.push(`/book/${item.businessSlug || item.id}`);
               }}
               className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
             >
               S'inscrire
             </button>
-            {item.layawayOfferId && (
-              <LayawayCardButton offerId={item.layawayOfferId} size="xs" />
-            )}
+            {item.layawayOfferId && <LayawayCardButton offerId={item.layawayOfferId} size="xs" />}
           </div>
         </div>
       </div>
@@ -101,15 +99,13 @@ export default function TrainingCard({ item, view = 'grid' }: TrainingCardProps)
           {item.businessName}
         </p>
         <div className="mt-3 flex items-baseline justify-between">
-          <span className="text-base font-bold text-gray-900 dark:text-gray-100">
-            {priceLabel}
-          </span>
+          <span className="text-base font-bold text-gray-900 dark:text-gray-100">{priceLabel}</span>
         </div>
         <div className="mt-3 flex gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/business/${item.businessSlug || item.id}`);
+              router.push(`/book/${item.businessSlug || item.id}`);
             }}
             className="flex-1 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
           >

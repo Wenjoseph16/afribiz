@@ -61,12 +61,17 @@ export function useAutoSave<T extends object>(
   initial: T,
   delay = 600
 ): AutoSaveState<T> {
-  const draft = useRef<Record<string, unknown> | null>(safeGet<Record<string, unknown>>(storageKey));
+  const draft = useRef<Record<string, unknown> | null>(
+    safeGet<Record<string, unknown>>(storageKey)
+  );
 
-  const [value, setValueState] = useState<T>(() => ({
-    ...initial,
-    ...(draft.current || {}),
-  }) as T);
+  const [value, setValueState] = useState<T>(
+    () =>
+      ({
+        ...initial,
+        ...(draft.current || {}),
+      }) as T
+  );
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -87,16 +92,13 @@ export function useAutoSave<T extends object>(
     [storageKey]
   );
 
-  const setValue = useCallback(
-    <K extends keyof T>(key: K, v: T[K]) => {
-      setValueState((prev) => {
-        const next = { ...prev, [key]: v };
-        setIsDirty(true);
-        return next as T;
-      });
-    },
-    []
-  );
+  const setValue = useCallback(<K extends keyof T>(key: K, v: T[K]) => {
+    setValueState((prev) => {
+      const next = { ...prev, [key]: v };
+      setIsDirty(true);
+      return next as T;
+    });
+  }, []);
 
   const patch = useCallback((partial: Partial<T>) => {
     setValueState((prev) => {

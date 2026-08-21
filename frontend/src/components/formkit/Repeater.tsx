@@ -44,7 +44,13 @@ export function Repeater<T>({
   return (
     <div className="space-y-3">
       {items.map((item, i) => (
-        <div key={i} className={cn('relative rounded-xl border-2 border-gray-100 dark:border-gray-800 p-4', itemClassName)}>
+        <div
+          key={i}
+          className={cn(
+            'relative rounded-xl border-2 border-gray-100 dark:border-gray-800 p-4',
+            itemClassName
+          )}
+        >
           {renderItem(item, i, (patch) => update(i, patch))}
           <button
             type="button"
@@ -59,7 +65,14 @@ export function Repeater<T>({
       ))}
 
       {canAdd && (
-        <Button type="button" variant="outline" size="sm" onClick={() => onChange([...items, makeNew()])} disabled={disabled} className="w-full">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onChange([...items, makeNew()])}
+          disabled={disabled}
+          className="w-full"
+        >
           <Plus className="w-4 h-4 mr-1.5" />
           {addLabel}
         </Button>

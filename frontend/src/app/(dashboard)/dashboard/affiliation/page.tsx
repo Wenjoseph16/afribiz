@@ -47,7 +47,10 @@ export default function AffiliationPage() {
   // Stats globales
   const totalClicks = links.reduce((sum: number, l: any) => sum + (l.clicks || 0), 0);
   const totalOrders = links.reduce((sum: number, l: any) => sum + (l.orders || 0), 0);
-  const totalEarnings = links.reduce((sum: number, l: any) => sum + Number(l.commissionTotal || 0), 0);
+  const totalEarnings = links.reduce(
+    (sum: number, l: any) => sum + Number(l.commissionTotal || 0),
+    0
+  );
 
   // Mutation supprimer
   const deleteMutation = useMutation({
@@ -77,10 +80,7 @@ export default function AffiliationPage() {
       <PageHeader
         title="Programme d'Affiliation"
         description="Partagez vos produits, chaque vente vous rapporte une commission"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Affiliation' },
-        ]}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Affiliation' }]}
       />
 
       {/* Stats */}

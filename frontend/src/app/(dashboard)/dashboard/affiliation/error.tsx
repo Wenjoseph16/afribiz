@@ -12,9 +12,7 @@ export default function Error({
       <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
         Une erreur est survenue
       </h2>
-      <p className="text-sm text-gray-500 mb-4">
-        {error.message || 'Erreur inconnue'}
-      </p>
+      <p className="text-sm text-gray-500 mb-4">{error.message || 'Erreur inconnue'}</p>
       <button
         onClick={reset}
         className="px-4 py-2 rounded-xl bg-brand text-white text-sm font-medium hover:bg-brand/90 transition-colors"

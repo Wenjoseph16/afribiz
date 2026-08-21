@@ -47,13 +47,21 @@ export default function OrderActionModal({
       { id: order.id, status: 'ACCEPTED' },
       {
         onSuccess: () => {
-          notify({ title: 'Commande acceptée', description: 'Le client a été notifié.', variant: 'success' });
+          notify({
+            title: 'Commande acceptée',
+            description: 'Le client a été notifié.',
+            variant: 'success',
+          });
           onSuccess?.();
           onClose();
           setAction(null);
         },
         onError: (err: any) => {
-          notify({ title: 'Erreur', description: err?.message || 'Impossible d\'accepter la commande.', variant: 'error' });
+          notify({
+            title: 'Erreur',
+            description: err?.message || "Impossible d'accepter la commande.",
+            variant: 'error',
+          });
         },
       }
     );
@@ -64,14 +72,22 @@ export default function OrderActionModal({
       { id: order.id, status: 'REFUSED', reason: refuseReason || undefined },
       {
         onSuccess: () => {
-          notify({ title: 'Commande refusée', description: 'Le client a été notifié avec le motif.', variant: 'info' });
+          notify({
+            title: 'Commande refusée',
+            description: 'Le client a été notifié avec le motif.',
+            variant: 'info',
+          });
           onSuccess?.();
           onClose();
           setAction(null);
           setRefuseReason('');
         },
         onError: (err: any) => {
-          notify({ title: 'Erreur', description: err?.message || 'Impossible de refuser la commande.', variant: 'error' });
+          notify({
+            title: 'Erreur',
+            description: err?.message || 'Impossible de refuser la commande.',
+            variant: 'error',
+          });
         },
       }
     );

@@ -66,13 +66,19 @@ export function ScopePicker({
     {
       value: 'CATEGORY',
       label: 'Une catégorie',
-      desc: categories.length > 0 ? `${categories.length} catégorie(s) disponibles` : 'Choisir une catégorie',
+      desc:
+        categories.length > 0
+          ? `${categories.length} catégorie(s) disponibles`
+          : 'Choisir une catégorie',
       icon: <FolderTree className="w-4 h-4" />,
     },
     {
       value: 'ITEMS',
       label: 'Des articles précis',
-      desc: items.length > 0 ? `${items.length} ${itemTypeLabel} disponibles` : `Choisir des ${itemTypeLabel}`,
+      desc:
+        items.length > 0
+          ? `${items.length} ${itemTypeLabel} disponibles`
+          : `Choisir des ${itemTypeLabel}`,
       icon: <Package className="w-4 h-4" />,
     },
   ];
@@ -107,7 +113,9 @@ export function ScopePicker({
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900 dark:text-white">{opt.label}</p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">{opt.desc}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
+                  {opt.desc}
+                </p>
               </div>
             </button>
           );
@@ -175,7 +183,9 @@ export function ScopePicker({
                 )}
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {item.name}
+                  </p>
                   {item.type && <p className="text-[11px] text-gray-400">{item.type}</p>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

@@ -170,9 +170,7 @@ export default function ModuleDetailPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() =>
-                  submitValidation.mutateAsync(moduleId).then(() => refetch())
-                }
+                onClick={() => submitValidation.mutateAsync(moduleId).then(() => refetch())}
                 isLoading={submitValidation.isPending}
               >
                 <Shield className="w-4 h-4 mr-2" />

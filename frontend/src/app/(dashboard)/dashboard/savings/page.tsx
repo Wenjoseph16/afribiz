@@ -130,7 +130,7 @@ export default function SavingsPage() {
       {/* Header */}
       <PageHeader
         title="Tontine & Épargne Collective"
-        description="Gérez vos groupes d&apos;épargne avec des transactions sécurisées via escrow"
+        description="Gérez vos groupes d'épargne avec des transactions sécurisées via escrow"
         breadcrumbs={[{ label: 'Croissance' }, { label: 'Tontine' }]}
         actions={
           <>

@@ -36,8 +36,7 @@ export function LayawayMiniCard({
   // directement depuis localStorage (pattern identique à la vitrine business).
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
-  const hasToken =
-    typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
+  const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
 
   const { data: offer, isLoading: offerLoading } = useQuery({
     queryKey: ['layaway-active-offer', itemType, itemId],
@@ -62,15 +61,19 @@ export function LayawayMiniCard({
   const existingPlan = useMemo(() => {
     if (!myPlans || !offer) return null;
     return (
-      myPlans.find(
-        (p: any) => p.offerId === offer.id && ['ACTIVE', 'READY'].includes(p.status)
-      ) || null
+      myPlans.find((p: any) => p.offerId === offer.id && ['ACTIVE', 'READY'].includes(p.status)) ||
+      null
     );
   }, [myPlans, offer]);
 
   if (offerLoading) {
     return (
-      <div className={cn('rounded-2xl border border-emerald-200/60 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 animate-pulse', className)}>
+      <div
+        className={cn(
+          'rounded-2xl border border-emerald-200/60 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 animate-pulse',
+          className
+        )}
+      >
         <div className="h-4 w-32 bg-emerald-200/60 dark:bg-emerald-800/40 rounded" />
         <div className="h-8 w-48 bg-emerald-200/60 dark:bg-emerald-800/40 rounded mt-3" />
       </div>
@@ -108,7 +111,7 @@ export function LayawayMiniCard({
       // Erreur réelle (500 / réseau) : on reste sur la page avec un message clair
       setError(
         err?.response?.data?.message ||
-          "Impossible de créer le plan épargne pour le moment. Réessayez dans un instant."
+          'Impossible de créer le plan épargne pour le moment. Réessayez dans un instant.'
       );
     }
   };
@@ -171,7 +174,8 @@ export function LayawayMiniCard({
             <div className="rounded-xl bg-white/70 dark:bg-gray-800/60 border border-emerald-100 dark:border-emerald-900/50 px-2.5 py-1.5">
               <p className="text-[10px] text-gray-500 dark:text-gray-400">Durée</p>
               <p className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                {duration} j<span className="font-medium text-gray-500 dark:text-gray-400"> max</span>
+                {duration} j
+                <span className="font-medium text-gray-500 dark:text-gray-400"> max</span>
               </p>
             </div>
           </div>

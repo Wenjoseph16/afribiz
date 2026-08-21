@@ -55,7 +55,7 @@ export default function ServiceCard({ item, view = 'grid' }: ServiceCardProps) {
           </div>
           <div className="flex gap-2 mt-3">
             <Link
-              href={`/business/${item.businessSlug || item.id}`}
+              href={`/book/${item.businessSlug || item.id}`}
               className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-1.5 rounded-lg transition-colors inline-block"
             >
               Réserver
@@ -111,7 +111,7 @@ export default function ServiceCard({ item, view = 'grid' }: ServiceCardProps) {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Link
-            href={`/business/${item.businessSlug || item.id}`}
+            href={`/book/${item.businessSlug || item.id}`}
             className="flex-1 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors inline-block text-center"
           >
             Réserver

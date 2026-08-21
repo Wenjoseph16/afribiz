@@ -146,7 +146,8 @@ export function Banner({ business, slug }: BannerProps) {
               {business.city && (
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5" />
-                  {business.city}{business.country ? `, ${business.country}` : ''}
+                  {business.city}
+                  {business.country ? `, ${business.country}` : ''}
                 </span>
               )}
               {business.shortDescription && (

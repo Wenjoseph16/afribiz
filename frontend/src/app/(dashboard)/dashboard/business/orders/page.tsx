@@ -225,10 +225,7 @@ export default function BusinessOrdersPage() {
       <PageHeader
         title="Commandes reçues"
         description="Gérez les commandes de vos clients en temps réel"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Commandes' },
-        ]}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Commandes' }]}
         actions={
           <div className="flex items-center gap-2">
             <button

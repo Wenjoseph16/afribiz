@@ -80,7 +80,14 @@ export default function DeveloperDemandDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={d.title}
-        badge={d.isUrgent ? { label: 'Urgent', className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' } : undefined}
+        badge={
+          d.isUrgent
+            ? {
+                label: 'Urgent',
+                className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+              }
+            : undefined
+        }
         breadcrumbs={[
           { label: 'Développeur', href: '/dashboard/developer' },
           { label: 'Demandes', href: '/dashboard/developer/demands' },

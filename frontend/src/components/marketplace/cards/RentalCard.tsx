@@ -67,7 +67,7 @@ export default function RentalCard({ item, view = 'grid' }: RentalCardProps) {
               {item.available ? 'Disponible' : 'Indisponible'}
             </span>
             <button
-              onClick={() => router.push(`/business/${item.businessSlug || item.id}`)}
+              onClick={() => router.push(`/book/${item.businessSlug || item.id}`)}
               className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-1.5 rounded-lg transition-colors"
             >
               Réserver
@@ -115,7 +115,7 @@ export default function RentalCard({ item, view = 'grid' }: RentalCardProps) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            router.push(`/business/${item.businessSlug || item.id}`);
+            router.push(`/book/${item.businessSlug || item.id}`);
           }}
           className="w-full mt-3 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
         >

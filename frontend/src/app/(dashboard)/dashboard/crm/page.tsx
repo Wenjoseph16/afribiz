@@ -38,7 +38,9 @@ const BusinessReputationCard = dynamic(
   () => import('@/components/dashboard/BusinessReputationCard'),
   {
     ssr: false,
-    loading: () => <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />,
+    loading: () => (
+      <div className="h-64 rounded-2xl bg-gray-50 dark:bg-gray-800/50 animate-pulse" />
+    ),
   }
 );
 

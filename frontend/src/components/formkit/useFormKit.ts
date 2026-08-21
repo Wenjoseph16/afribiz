@@ -117,11 +117,14 @@ export function useFormKit<T extends Record<string, unknown>>(
     [fields, validateAll, onSubmit, values]
   );
 
-  const reset = useCallback((next?: Partial<T>) => {
-    setValues({ ...initialValues(), ...(next || {}) } as T);
-    setErrors({});
-    setTouched({});
-  }, [initialValues]);
+  const reset = useCallback(
+    (next?: Partial<T>) => {
+      setValues({ ...initialValues(), ...(next || {}) } as T);
+      setErrors({});
+      setTouched({});
+    },
+    [initialValues]
+  );
 
   const isValid = (Object.keys(errors) as (keyof T)[]).filter((k) => errors[k]).length === 0;
 

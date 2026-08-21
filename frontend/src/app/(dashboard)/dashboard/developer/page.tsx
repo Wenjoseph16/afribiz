@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   Package,
@@ -118,27 +119,25 @@ export default function DeveloperDashboardPage() {
     return Array.isArray(raw) ? raw.slice(0, 5) : [];
   }, [dashboard]);
 
-  // Guard: show access denied for non-developer users
+  // Guard: redirect non-developer users to onboarding or dashboard
   const canAccess = user?.roles?.includes('DEVELOPER');
+  const router = useRouter();
+  useEffect(() => {
+    if (user && !canAccess) {
+      router.replace('/dashboard/become-developer');
+    }
+  }, [user, canAccess, router]);
+
   if (user && !canAccess) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-8">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-4">
-            <Code className="h-8 w-8 text-indigo-600" />
+            <Code className="h-8 w-8 text-indigo-600 animate-pulse" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Accès Développeur
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            Vous devez avoir un rôle DEVELOPER pour accéder à cet espace.
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Redirection vers l&apos;onboarding...
           </p>
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Retour au tableau de bord
-            </Button>
-          </Link>
         </div>
       </div>
     );

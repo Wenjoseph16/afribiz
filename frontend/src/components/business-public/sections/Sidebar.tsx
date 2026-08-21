@@ -23,12 +23,16 @@ interface SidebarProps {
   business: Business;
 }
 
-function SidebarCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function SidebarCard({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={`p-1.5 rounded-2xl ring-1 ring-gray-200/50 dark:ring-white/5 ${className}`}>
-      <div className="p-5 rounded-xl bg-white dark:bg-gray-800/80">
-        {children}
-      </div>
+      <div className="p-5 rounded-xl bg-white dark:bg-gray-800/80">{children}</div>
     </div>
   );
 }
@@ -69,11 +73,20 @@ export function Sidebar({ business }: SidebarProps) {
 
     if (nowMin >= openMin && nowMin <= closeMin) {
       if (closeMin - nowMin <= 60)
-        return { label: 'Ferme bientôt', className: 'text-orange-500 bg-orange-50 dark:bg-orange-900/20' };
-      return { label: 'Ouvert', className: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' };
+        return {
+          label: 'Ferme bientôt',
+          className: 'text-orange-500 bg-orange-50 dark:bg-orange-900/20',
+        };
+      return {
+        label: 'Ouvert',
+        className: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20',
+      };
     }
     if (nowMin < openMin && openMin - nowMin <= 60)
-      return { label: 'Ouvre bientôt', className: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' };
+      return {
+        label: 'Ouvre bientôt',
+        className: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20',
+      };
     return { label: 'Fermé', className: 'text-red-500 bg-red-50 dark:bg-red-900/20' };
   };
 
@@ -85,7 +98,9 @@ export function Sidebar({ business }: SidebarProps) {
       {hasHours && (
         <SidebarCard>
           <div className="flex items-center justify-between">
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${status.className}`}>
+            <div
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${status.className}`}
+            >
               <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
               {status.label}
             </div>
@@ -110,29 +125,50 @@ export function Sidebar({ business }: SidebarProps) {
                   <p className="text-sm text-gray-600 dark:text-gray-300">{business.address}</p>
                   {business.city && (
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {business.city}{business.country ? `, ${business.country}` : ''}
+                      {business.city}
+                      {business.country ? `, ${business.country}` : ''}
                     </p>
                   )}
                 </div>
               </div>
             )}
             {business.phone && (
-              <a href={`tel:${business.phone}`} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors">
+              <a
+                href={`tel:${business.phone}`}
+                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
+              >
                 <Phone className="w-4 h-4 text-gray-400 shrink-0" /> {business.phone}
               </a>
             )}
             {business.whatsapp && (
-              <a href={`https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors">
+              <a
+                href={`https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors"
+              >
                 <MessageCircle className="w-4 h-4 shrink-0" /> WhatsApp
               </a>
             )}
             {business.email && (
-              <a href={`mailto:${business.email}`} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors">
+              <a
+                href={`mailto:${business.email}`}
+                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
+              >
                 <Mail className="w-4 h-4 text-gray-400 shrink-0" /> {business.email}
               </a>
             )}
             {business.website && (
-              <a href={business.website.startsWith('http') ? business.website : `https://${business.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors">
+              <a
+                href={
+                  business.website.startsWith('http')
+                    ? business.website
+                    : `https://${business.website}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
+              >
                 <Globe className="w-4 h-4 text-gray-400 shrink-0" /> Site web
               </a>
             )}
@@ -225,9 +261,18 @@ export function Sidebar({ business }: SidebarProps) {
           <SectionTitle icon={<CreditCard className="w-4 h-4" />}>Paiements</SectionTitle>
           <div className="space-y-2">
             {business.paymentMethods.map((pm) => (
-              <div key={pm.id} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+              <div
+                key={pm.id}
+                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300"
+              >
                 <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 text-xs font-bold">
-                  {pm.method === 'MOBILE_MONEY' ? 'M' : pm.method === 'BANK_TRANSFER' ? 'B' : pm.method === 'CREDIT_CARD' ? 'C' : '€'}
+                  {pm.method === 'MOBILE_MONEY'
+                    ? 'M'
+                    : pm.method === 'BANK_TRANSFER'
+                      ? 'B'
+                      : pm.method === 'CREDIT_CARD'
+                        ? 'C'
+                        : '€'}
                 </div>
                 <div>
                   <p className="font-medium">{pm.name || pm.method}</p>
@@ -248,9 +293,13 @@ export function Sidebar({ business }: SidebarProps) {
               <div key={zone.id} className="flex justify-between items-center text-sm">
                 <span className="text-gray-600 dark:text-gray-300">{zone.name}</span>
                 <div className="text-right">
-                  <span className="font-medium text-gray-900 dark:text-white">{formatPrice(Number(zone.fee))}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {formatPrice(Number(zone.fee))}
+                  </span>
                   {zone.minOrder && (
-                    <span className="text-xs text-gray-400 ml-1">(min. {formatPrice(Number(zone.minOrder))})</span>
+                    <span className="text-xs text-gray-400 ml-1">
+                      (min. {formatPrice(Number(zone.minOrder))})
+                    </span>
                   )}
                 </div>
               </div>

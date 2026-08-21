@@ -159,7 +159,9 @@ export function Accueil({ business }: AccueilProps) {
   ].filter(Boolean);
 
   return (
-    <section id="section-accueil" className="scroll-mt-32">        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+    <section id="section-accueil" className="scroll-mt-32">
+      {' '}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
         {/* Eyebrow + Header */}
         <motion.div {...fadeUp}>
           <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.2em] font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 mb-4">
@@ -342,7 +344,11 @@ export function Accueil({ business }: AccueilProps) {
                             >
                               {img ? (
                                 <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-amber-50 dark:bg-amber-900/20">
-                                  <img src={img} alt={cert} className="w-full h-full object-cover" />
+                                  <img
+                                    src={img}
+                                    alt={cert}
+                                    className="w-full h-full object-cover"
+                                  />
                                 </div>
                               ) : (
                                 <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shrink-0">

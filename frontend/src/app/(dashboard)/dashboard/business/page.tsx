@@ -141,10 +141,18 @@ export default function BusinessDashboardPage() {
     const counts = { delivered: 0, confirmed: 0, pending: 0, cancelled: 0 };
     for (const o of orders) {
       switch (o.status) {
-        case 'DELIVERED': counts.delivered++; break;
-        case 'CONFIRMED': counts.confirmed++; break;
-        case 'CANCELLED': counts.cancelled++; break;
-        default: counts.pending++; break;
+        case 'DELIVERED':
+          counts.delivered++;
+          break;
+        case 'CONFIRMED':
+          counts.confirmed++;
+          break;
+        case 'CANCELLED':
+          counts.cancelled++;
+          break;
+        default:
+          counts.pending++;
+          break;
       }
     }
     return counts;
@@ -219,10 +227,7 @@ export default function BusinessDashboardPage() {
       />
 
       {/* ═══ ZONE 2 : LA TENDANCE (visible = empty state si 0 données) ═══ */}
-      <Zone2Tendance
-        history={agg.history}
-        orderStatusBreakdown={orderStatusBreakdown}
-      />
+      <Zone2Tendance history={agg.history} orderStatusBreakdown={orderStatusBreakdown} />
 
       {/* ═══ ZONE 3 : LES DÉTAILS (sections vides masquées) ═══ */}
       <Zone3Details

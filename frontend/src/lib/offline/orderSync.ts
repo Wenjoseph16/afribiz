@@ -37,7 +37,10 @@ export async function createBusinessOrderOfflineAware(
   });
 
   const items = (payload.items as any[]) || [];
-  const subtotal = items.reduce((a: number, i: any) => a + Number(i.unitPrice || 0) * Number(i.quantity || 0), 0);
+  const subtotal = items.reduce(
+    (a: number, i: any) => a + Number(i.unitPrice || 0) * Number(i.quantity || 0),
+    0
+  );
   const discount = Number(payload.discount || 0);
   const deliveryFee = Number(payload.deliveryFee || 0);
   const total = Math.max(0, subtotal + deliveryFee - discount);

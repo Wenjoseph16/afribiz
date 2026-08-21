@@ -11,6 +11,7 @@ import { useAddToCart } from '@/features/hooks';
 import { ProductDetailModal } from '@/components/marketplace/ProductDetailModal';
 import StarRating from './StarRating';
 import { LayawayCardButton, LayawayBadge } from './LayawayCardButton';
+import { setPendingProduct } from '@/lib/messageProduct';
 import type { ProductResult } from './types';
 
 interface ProductCardProps {
@@ -63,7 +64,14 @@ export default function ProductCard({ item, view = 'grid' }: ProductCardProps) {
 
   const handleContactBusiness = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Open the messaging system with a direct conversation with this business
+    // Attacher le produit au premier message puis ouvrir la messagerie
+    setPendingProduct({
+      id: item.id,
+      name: item.name,
+      price: item.promoPrice || item.price,
+      image: item.image || null,
+      businessId: item.businessId || item.businessSlug,
+    });
     router.push(
       '/dashboard/messages?business=' +
         encodeURIComponent(item.businessSlug) +
@@ -240,14 +248,12 @@ export default function ProductCard({ item, view = 'grid' }: ProductCardProps) {
                 </svg>
               </div>
             )}
-          {badge > 0 && (
-            <span className="absolute top-1 left-1 bg-red-500 text-white text-[9px] font-bold px-1 py-0.5 rounded">
-              -{badge}%
-            </span>
-          )}
-          {item.layawayOfferId && (
-            <LayawayBadge className="absolute top-1 right-1" />
-          )}
+            {badge > 0 && (
+              <span className="absolute top-1 left-1 bg-red-500 text-white text-[9px] font-bold px-1 py-0.5 rounded">
+                -{badge}%
+              </span>
+            )}
+            {item.layawayOfferId && <LayawayBadge className="absolute top-1 right-1" />}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">

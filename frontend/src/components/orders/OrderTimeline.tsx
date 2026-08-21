@@ -111,9 +111,7 @@ export function OrderTimeline({
                 <p className="text-xs text-gray-500 mt-0.5">{step.description}</p>
               )}
               {step.timestamp && (
-                <p className="text-[10px] text-gray-400 mt-1">
-                  {formatTimestamp(step.timestamp)}
-                </p>
+                <p className="text-[10px] text-gray-400 mt-1">{formatTimestamp(step.timestamp)}</p>
               )}
             </div>
           </div>
@@ -154,9 +152,7 @@ function buildSteps(
     },
     {
       label: isCancelled ? 'Annulée' : 'En cours de traitement',
-      description: isCancelled
-        ? 'La commande a été annulée'
-        : 'Le business prépare votre commande',
+      description: isCancelled ? 'La commande a été annulée' : 'Le business prépare votre commande',
       status: isCancelled
         ? 'error'
         : ['PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED'].includes(status)

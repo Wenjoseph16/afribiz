@@ -94,7 +94,11 @@ export default function WalletPage() {
     },
   });
 
-  const { data: txData, isLoading: txLoading, refetch: refetchTx } = useQuery({
+  const {
+    data: txData,
+    isLoading: txLoading,
+    refetch: refetchTx,
+  } = useQuery({
     queryKey: ['wallet-transactions'],
     queryFn: async () => {
       const res = await apiClient.getBusinessWalletTransactions();

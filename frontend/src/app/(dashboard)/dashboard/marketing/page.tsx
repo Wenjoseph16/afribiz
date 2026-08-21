@@ -190,7 +190,7 @@ export default function MarketingPage() {
                 <div>
                   <p className="text-sm font-medium">{c.name}</p>
                   <p className="text-xs text-gray-500">
-                    {(c.channels?.length ? c.channels.join(', ') : 'WHATSAPP')} ·{' '}
+                    {c.channels?.length ? c.channels.join(', ') : 'WHATSAPP'} ·{' '}
                     {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
                     {c.sentCount > 0 ? ` · ${c.sentCount} envoyés` : ''}
                     {c.openedCount > 0 ? ` · ${c.openedCount} ouverts` : ''}
@@ -214,7 +214,15 @@ export default function MarketingPage() {
                               : 'info'
                     }
                   >
-                    {c.status === 'COMPLETED' ? 'Envoyée' : c.status === 'SCHEDULED' ? 'Planifiée' : c.status === 'ACTIVE' ? 'Active' : c.status === 'PAUSED' ? 'En pause' : 'Brouillon'}
+                    {c.status === 'COMPLETED'
+                      ? 'Envoyée'
+                      : c.status === 'SCHEDULED'
+                        ? 'Planifiée'
+                        : c.status === 'ACTIVE'
+                          ? 'Active'
+                          : c.status === 'PAUSED'
+                            ? 'En pause'
+                            : 'Brouillon'}
                   </Badge>
                   {c.status === 'DRAFT' && (
                     <Button size="sm" variant="secondary" onClick={() => openSendModal(c)}>

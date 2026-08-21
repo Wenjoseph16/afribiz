@@ -34,9 +34,7 @@ export default function BusinessDiscountsCard({ stats }: { stats?: DiscountsStat
             <BadgePercent className="h-4.5 w-4.5 text-rose-600 dark:text-rose-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              Remises accordées
-            </p>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Remises accordées</p>
             <p className="text-[11px] text-gray-400">30 derniers jours</p>
           </div>
         </div>
@@ -58,7 +56,8 @@ export default function BusinessDiscountsCard({ stats }: { stats?: DiscountsStat
         <div className="space-y-4">
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
-              {total.toLocaleString()} <span className="text-sm font-medium text-gray-400">FCFA</span>
+              {total.toLocaleString()}{' '}
+              <span className="text-sm font-medium text-gray-400">FCFA</span>
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               offerts à vos clients via promotions et coupons

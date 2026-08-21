@@ -68,15 +68,13 @@ export default function RoomCard({ item, view = 'grid' }: RoomCardProps) {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/business/${item.businessSlug || item.id}`);
+                router.push(`/book/${item.businessSlug || item.id}`);
               }}
               className="text-xs font-medium text-white bg-brand hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors"
             >
               Réserver
             </button>
-            {item.layawayOfferId && (
-              <LayawayCardButton offerId={item.layawayOfferId} size="xs" />
-            )}
+            {item.layawayOfferId && <LayawayCardButton offerId={item.layawayOfferId} size="xs" />}
           </div>
         </div>
       </div>
@@ -135,7 +133,7 @@ export default function RoomCard({ item, view = 'grid' }: RoomCardProps) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/business/${item.businessSlug || item.id}`);
+              router.push(`/book/${item.businessSlug || item.id}`);
             }}
             className="flex-1 text-xs font-medium text-white bg-brand rounded-lg py-2 hover:bg-brand-700 transition-colors"
           >

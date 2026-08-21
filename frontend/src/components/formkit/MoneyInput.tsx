@@ -84,7 +84,14 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
-      <FormField label={label} htmlFor={inputId} error={error} help={help} hint={hint} required={required}>
+      <FormField
+        label={label}
+        htmlFor={inputId}
+        error={error}
+        help={help}
+        hint={hint}
+        required={required}
+      >
         <div className="relative">
           <input
             ref={ref}

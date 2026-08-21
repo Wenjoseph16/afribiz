@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ShoppingBag,
   Search,
@@ -15,9 +16,6 @@ import {
   Store,
   AlertTriangle,
   TrendingUp,
-  FileText,
-  User,
-  MapPin,
   ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,7 +23,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { LiveBadge } from '@/components/ui/LiveBadge';
-import { Drawer } from '@/components/ui/Drawer';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { PageHeader } from '@/components/dashboard/PageHeader';
@@ -81,26 +78,6 @@ const TABS = [
   { key: 'CANCELLED', label: 'Annulées' },
 ];
 
-function InfoStat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value?: string;
-}) {
-  return (
-    <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 p-3">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1">
-        <Icon className="h-3 w-3" />
-        {label}
-      </p>
-      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{value || '—'}</p>
-    </div>
-  );
-}
-
 function customerName(o: any): string {
   const b = o.buyer;
   if (b?.firstName || b?.lastName) return `${b.firstName || ''} ${b.lastName || ''}`.trim();
@@ -114,6 +91,7 @@ function customerDetail(o: any): string {
 }
 
 export default function OrdersPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const isBusiness = user?.roles?.includes('BUSINESS') || user?.primaryRole === 'BUSINESS';
   const qc = useQueryClient();
@@ -121,7 +99,6 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
   const [actionOrder, setActionOrder] = useState<any>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   const handleExportCSV = async () => {
@@ -165,7 +142,6 @@ export default function OrdersPage() {
   const allOrders = Array.isArray(ordersData)
     ? ordersData
     : ordersData?.orders || ordersData?.data || [];
-  const selectedOrder = allOrders.find((o: any) => o.id === selectedId) || null;
 
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
@@ -243,7 +219,7 @@ export default function OrdersPage() {
                 </Link>
               </>
             )}
-            <Link href={isBusiness ? '/dashboard/business/orders/new' : '/dashboard/explore'}>
+            <Link href={isBusiness ? '/dashboard/business/orders/new' : '/marketplace'}>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1.5" />
                 Nouvelle commande
@@ -343,7 +319,7 @@ export default function OrdersPage() {
                 : "Les commandes de vos clients apparaîtront ici en temps réel dès qu'elles seront passées."
             }
             action={
-              <Link href="/dashboard/explore">
+              <Link href="/marketplace">
                 <Button size="sm">
                   <Store className="h-4 w-4 mr-1.5" />
                   Explorer le marketplace
@@ -374,7 +350,7 @@ export default function OrdersPage() {
                   return (
                     <tr
                       key={order.id}
-                      onClick={() => setSelectedId(order.id)}
+                      onClick={() => router.push(`/dashboard/orders/${order.id}`)}
                       className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
                     >
                       <td className="p-4">
@@ -416,7 +392,8 @@ export default function OrdersPage() {
                           {formatPrice(Number(order.totalAmount || 0))}
                         </p>
                         <p className="text-[10px] text-gray-400">
-                          {order.items?.length || 0} article{(order.items?.length || 0) > 1 ? 's' : ''}
+                          {order.items?.length || 0} article
+                          {(order.items?.length || 0) > 1 ? 's' : ''}
                         </p>
                       </td>
                       <td className="p-4" onClick={(e) => e.stopPropagation()}>
@@ -431,7 +408,11 @@ export default function OrdersPage() {
                               Traiter
                             </Button>
                           ) : (
-                            <Button variant="ghost" size="xs" onClick={() => setSelectedId(order.id)}>
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                            >
                               <ChevronRight className="h-3.5 w-3.5" />
                               Détail
                             </Button>
@@ -446,158 +427,6 @@ export default function OrdersPage() {
           </div>
         </Card>
       )}
-
-      {/* Drawer 360° commande */}
-      <Drawer
-        isOpen={!!selectedOrder}
-        onClose={() => setSelectedId(null)}
-        icon={<ShoppingBag className="h-5 w-5" />}
-        title={selectedOrder?.orderNumber || 'Commande'}
-        subtitle={
-          selectedOrder
-            ? `${new Date(selectedOrder.createdAt || selectedOrder.date).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}`
-            : undefined
-        }
-        footer={
-          selectedOrder && isBusiness ? (
-            <div className="flex flex-wrap gap-2">
-              {selectedOrder.status === 'PENDING' && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    setActionOrder(selectedOrder);
-                    setSelectedId(null);
-                  }}
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Traiter la commande
-                </Button>
-              )}
-              {selectedOrder.invoice && (
-                <Link href="/dashboard/accounting">
-                  <Button variant="outline" size="sm">
-                    <FileText className="h-4 w-4" />
-                    Voir la facture
-                  </Button>
-                </Link>
-              )}
-            </div>
-          ) : undefined
-        }
-      >
-        {selectedOrder && (
-          <div className="space-y-5">
-            {/* Statut + facture */}
-            <div className="flex items-center justify-between gap-3">
-              {(() => {
-                const s = STATUS_CONFIG[selectedOrder.status] || STATUS_CONFIG.PENDING;
-                return <LiveBadge tone={s.tone} label={s.label} pulse={s.pulse} />;
-              })()}
-              {selectedOrder.invoice && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  <FileText className="h-3 w-3" />
-                  {selectedOrder.invoice.invoiceNumber}
-                </span>
-              )}
-            </div>
-
-            {/* Client */}
-            <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                Client
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <InfoStat icon={User} label="Nom" value={customerName(selectedOrder)} />
-                <InfoStat
-                  icon={Clock}
-                  label="Type"
-                  value={TYPE_LABELS[selectedOrder.type] || selectedOrder.type}
-                />
-                <InfoStat
-                  icon={Package}
-                  label="Contact"
-                  value={
-                    selectedOrder.contactPhone ||
-                    selectedOrder.buyer?.phone ||
-                    selectedOrder.buyer?.email ||
-                    '—'
-                  }
-                />
-                <InfoStat
-                  icon={MapPin}
-                  label="Zone de livraison"
-                  value={
-                    selectedOrder.deliveryZone?.name
-                      ? `${selectedOrder.deliveryZone.name}${
-                          Number(selectedOrder.deliveryZone.fee) > 0
-                            ? ` · ${formatPrice(Number(selectedOrder.deliveryZone.fee))}`
-                            : ''
-                        }`
-                      : selectedOrder.address || '—'
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Articles */}
-            <div>
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                Articles ({selectedOrder.items?.length || 0})
-              </p>
-              {selectedOrder.items?.length ? (
-                <div className="space-y-1.5">
-                  {selectedOrder.items.map((item: any, i: number) => (
-                    <div
-                      key={item.id || i}
-                      className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 dark:bg-gray-700/30 px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {item.name || item.productName || 'Article'}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {item.quantity} × {formatPrice(Number(item.unitPrice || 0))}
-                        </p>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">
-                        {formatPrice(Number(item.total || item.quantity * (item.unitPrice || 0)))}
-                      </p>
-                    </div>
-                  ))}
-                  {selectedOrder.deliveryZone &&
-                    Number(selectedOrder.deliveryZone.fee) > 0 && (
-                      <div className="flex items-center justify-between px-3 py-1.5 text-sm">
-                        <span className="text-gray-500">Livraison</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {formatPrice(Number(selectedOrder.deliveryZone.fee))}
-                        </span>
-                      </div>
-                    )}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400">Aucun article détaillé</p>
-              )}
-            </div>
-
-            {/* Total */}
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 px-4 py-3 flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Total de la commande
-              </span>
-              <span className="text-lg font-bold text-gray-900 dark:text-white">
-                {formatPrice(Number(selectedOrder.totalAmount || 0))}
-              </span>
-            </div>
-          </div>
-        )}
-      </Drawer>
 
       {/* Action modal (flux existant : accepter / refuser / confirmer) */}
       {actionOrder && (

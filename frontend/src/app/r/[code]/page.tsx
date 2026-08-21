@@ -39,8 +39,7 @@ export default function AffiliateRedirectPage() {
         const priceRes = await apiClient.resolveCatalogAttachments([
           { itemType: link.itemType, itemId: link.itemId, quantity: 1 },
         ]);
-        const item =
-          priceRes?.data?.data?.items?.[`${link.itemType}:${link.itemId}`];
+        const item = priceRes?.data?.data?.items?.[`${link.itemType}:${link.itemId}`];
         const path = item?.target?.path;
         if (alive) {
           if (path) {
@@ -62,7 +61,7 @@ export default function AffiliateRedirectPage() {
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 p-6 text-center">
       <Loader2 className="w-6 h-6 animate-spin text-brand" />
       <p className="text-sm text-gray-600 dark:text-gray-300">
-        {error ? error : 'Redirection vers l\'article...'}
+        {error ? error : "Redirection vers l'article..."}
       </p>
       {error && (
         <a href="/" className="text-sm text-brand font-medium hover:underline">

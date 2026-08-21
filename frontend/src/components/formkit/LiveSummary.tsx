@@ -39,9 +39,7 @@ export function LiveSummary({
 }: LiveSummaryProps) {
   return (
     <Card padding="lg" className={cn(sticky && 'sticky top-24', className)}>
-      {title && (
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">{title}</h2>
-      )}
+      {title && <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">{title}</h2>}
 
       {children}
 

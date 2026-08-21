@@ -23,10 +23,7 @@ import { EmptyState } from '@/components/dashboard/EmptyState';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { apiClient } from '@/services/apiClient';
-import {
-  useBusinessInstalledModules,
-  useReinstallModule,
-} from '@/features/developerHooks';
+import { useBusinessInstalledModules, useReinstallModule } from '@/features/developerHooks';
 
 export default function BusinessModuleRuntimePage() {
   const params = useParams();
@@ -69,7 +66,10 @@ export default function BusinessModuleRuntimePage() {
       <div className="space-y-6">
         <PageHeader
           title="Module introuvable"
-          breadcrumbs={[{ label: 'Business', href: '/dashboard/business' }, { label: 'Modules', href: '/dashboard/business/modules' }]}
+          breadcrumbs={[
+            { label: 'Business', href: '/dashboard/business' },
+            { label: 'Modules', href: '/dashboard/business/modules' },
+          ]}
         />
         <EmptyState
           icon={<Package className="w-12 h-12 text-gray-400" />}
@@ -82,15 +82,24 @@ export default function BusinessModuleRuntimePage() {
 
   const statusBadge = () => {
     if (installation.status === 'UNINSTALLED')
-      return { label: 'Désinstallé', className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' };
+      return {
+        label: 'Désinstallé',
+        className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+      };
     if (installation.trialExpired)
-      return { label: 'Essai expiré', className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' };
+      return {
+        label: 'Essai expiré',
+        className: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+      };
     if (installation.isTrial)
       return {
         label: installation.trialDaysLeft > 0 ? `Essai J-${installation.trialDaysLeft}` : 'Essai',
         className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
       };
-    return { label: 'Actif', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' };
+    return {
+      label: 'Actif',
+      className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
+    };
   };
 
   // Sécurité : on ne rend l'iframe que pour une URL https CROSS-ORIGINE.
@@ -201,7 +210,9 @@ export default function BusinessModuleRuntimePage() {
                   Prix
                 </span>
                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                  {module.isFree ? 'Gratuit' : `${module.price?.toLocaleString('fr-FR')} ${module.currency || 'FCFA'}`}
+                  {module.isFree
+                    ? 'Gratuit'
+                    : `${module.price?.toLocaleString('fr-FR')} ${module.currency || 'FCFA'}`}
                 </span>
               </div>
             </div>
@@ -252,8 +263,8 @@ export default function BusinessModuleRuntimePage() {
               />
               <div className="flex items-center gap-2 px-5 py-2.5 bg-amber-50/80 dark:bg-amber-900/10 border-t border-amber-200/60 dark:border-amber-400/10 text-xs text-amber-700 dark:text-amber-400">
                 <Shield className="w-3.5 h-3.5 shrink-0" />
-                Interface intégrée dans un bac à sable sécurisé. Vos données AfriBiz ne sont
-                jamais partagées avec le module.
+                Interface intégrée dans un bac à sable sécurisé. Vos données AfriBiz ne sont jamais
+                partagées avec le module.
               </div>
             </div>
           ) : (

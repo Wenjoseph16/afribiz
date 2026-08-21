@@ -181,7 +181,8 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
                 Nos Produits
               </h2>
               <p className="mt-2 text-gray-500 text-sm">
-                {products.length} produit{products.length > 1 ? 's' : ''} disponible{products.length > 1 ? 's' : ''}
+                {products.length} produit{products.length > 1 ? 's' : ''} disponible
+                {products.length > 1 ? 's' : ''}
               </p>
             </div>
           </div>
@@ -278,7 +279,11 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
                             src={product.images[0]}
                             alt={product.name}
                             fill
-                            sizes={isHero ? '(max-width: 768px) 100vw, 66vw' : '(max-width: 768px) 100vw, 33vw'}
+                            sizes={
+                              isHero
+                                ? '(max-width: 768px) 100vw, 66vw'
+                                : '(max-width: 768px) 100vw, 33vw'
+                            }
                             className="object-cover group-hover:scale-[1.04] transition-transform duration-[800ms] ease-[cubic-bezier(0.32,0.72,0,1)]"
                           />
                         ) : (
@@ -385,7 +390,8 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
                               justAddedId === product.id
                                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                                 : 'bg-gray-900 text-white hover:bg-gray-800 shadow-lg shadow-gray-900/10 hover:shadow-gray-900/20',
-                              (product.stock <= 0 || addingId === product.id) && 'opacity-40 cursor-not-allowed'
+                              (product.stock <= 0 || addingId === product.id) &&
+                                'opacity-40 cursor-not-allowed'
                             )}
                           >
                             {addingId === product.id ? (

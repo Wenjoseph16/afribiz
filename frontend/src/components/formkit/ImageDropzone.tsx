@@ -139,7 +139,14 @@ export function ImageDropzone({
               key={i}
               className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 group"
             >
-              <Image src={img.dataUrl} alt={img.name} fill sizes="160px" className="object-cover" unoptimized />
+              <Image
+                src={img.dataUrl}
+                alt={img.name}
+                fill
+                sizes="160px"
+                className="object-cover"
+                unoptimized
+              />
               <button
                 type="button"
                 onClick={() => remove(i)}

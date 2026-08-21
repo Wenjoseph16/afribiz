@@ -177,7 +177,8 @@ export default function NewShortPage() {
 
               <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-brand" /> Commander depuis le short (Optionnel)
+                  <ShoppingBag className="w-4 h-4 text-brand" /> Commander depuis le short
+                  (Optionnel)
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <select
@@ -186,7 +187,11 @@ export default function NewShortPage() {
                       setLinkTargetType(e.target.value);
                       setLinkTargetId('');
                       const t = e.target.value;
-                      if ((t === 'PRODUCT' || t === 'SERVICE') && shopProducts.length === 0 && shopServices.length === 0) {
+                      if (
+                        (t === 'PRODUCT' || t === 'SERVICE') &&
+                        shopProducts.length === 0 &&
+                        shopServices.length === 0
+                      ) {
                         apiClient
                           .getMyProducts({ limit: 200 })
                           .then((res: any) => {
@@ -216,11 +221,13 @@ export default function NewShortPage() {
                       className="col-span-1 px-3 py-2.5 text-sm rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 focus:border-brand outline-none transition-all"
                     >
                       <option value="">Choisir l'article...</option>
-                      {(linkTargetType === 'PRODUCT' ? shopProducts : shopServices).map((it: any) => (
-                        <option key={it.id} value={it.id}>
-                          {it.name}
-                        </option>
-                      ))}
+                      {(linkTargetType === 'PRODUCT' ? shopProducts : shopServices).map(
+                        (it: any) => (
+                          <option key={it.id} value={it.id}>
+                            {it.name}
+                          </option>
+                        )
+                      )}
                     </select>
                   ) : (
                     <Input
@@ -232,7 +239,8 @@ export default function NewShortPage() {
                 </div>
                 {linkTargetId && (
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
-                    ✓ Article lié — le bouton « Commander » affichera le prix réel calculé par AfriBiz
+                    ✓ Article lié — le bouton « Commander » affichera le prix réel calculé par
+                    AfriBiz
                   </p>
                 )}
                 <p className="text-[10px] text-gray-400 mt-2">

@@ -154,9 +154,9 @@ export default function DeliverySettingsPage() {
             <Gift className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <p className="text-sm text-amber-700 dark:text-amber-300">
               <strong>Checkout intelligent :</strong> si les deux sont activés, vos clients
-              choisissent eux-mêmes entre <strong>Livraison</strong> et{' '}
-              <strong>Retrait</strong> au moment de commander. Le frais de livraison est calculé
-              automatiquement selon le quartier choisi.
+              choisissent eux-mêmes entre <strong>Livraison</strong> et <strong>Retrait</strong> au
+              moment de commander. Le frais de livraison est calculé automatiquement selon le
+              quartier choisi.
             </p>
           </div>
         </>

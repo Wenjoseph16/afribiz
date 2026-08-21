@@ -223,7 +223,7 @@ export default function NewGroupBuyPage() {
                     className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-transparent text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none disabled:opacity-50 dark:text-gray-100"
                   >
                     <option value="">
-                      {itemType ? '— Choisir un article —' : 'Sélectionnez d\'abord un type'}
+                      {itemType ? '— Choisir un article —' : "Sélectionnez d'abord un type"}
                     </option>
                     {items.map((i) => (
                       <option key={i.id} value={i.id}>
@@ -237,7 +237,8 @@ export default function NewGroupBuyPage() {
             {selectedItem && (
               <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                 ✓ Lié à « {itemName(selectedItem)} »
-                {itemPrice(selectedItem) > 0 && ` — prix catalogue ${formatPrice(itemPrice(selectedItem))}`}
+                {itemPrice(selectedItem) > 0 &&
+                  ` — prix catalogue ${formatPrice(itemPrice(selectedItem))}`}
               </p>
             )}
           </div>
@@ -278,7 +279,10 @@ export default function NewGroupBuyPage() {
                 {groupPrice > 0 && groupPrice < price ? (
                   <>
                     Chaque participant économise{' '}
-                    <strong>{formatPrice(savings)} ({pct}%)</strong> par rapport au prix normal.
+                    <strong>
+                      {formatPrice(savings)} ({pct}%)
+                    </strong>{' '}
+                    par rapport au prix normal.
                   </>
                 ) : (
                   <>Le prix groupe doit être inférieur au prix normal.</>
@@ -337,11 +341,7 @@ export default function NewGroupBuyPage() {
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/dashboard/group-buys')}
-            >
+            <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/group-buys')}>
               Annuler
             </Button>
             <Button size="sm" onClick={handleSubmit} disabled={saving || !valid}>
@@ -350,7 +350,7 @@ export default function NewGroupBuyPage() {
               ) : (
                 <Save className="w-4 h-4 mr-1.5" />
               )}
-              {saving ? 'Création...' : 'Créer l\'achat groupé'}
+              {saving ? 'Création...' : "Créer l'achat groupé"}
             </Button>
           </div>
 
@@ -369,8 +369,10 @@ export default function NewGroupBuyPage() {
           Comment ça marche
         </h3>
         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-          1. Vous publiez l'offre (liée à un article ou autonome) avec un prix groupe · 2. Les clients rejoignent via la page publique ou le lien WhatsApp ·
-          3. Au seuil atteint, le prix groupe est débloqué pour tous · 4. Chaque participant confirme et sa commande est créée automatiquement.
+          1. Vous publiez l'offre (liée à un article ou autonome) avec un prix groupe · 2. Les
+          clients rejoignent via la page publique ou le lien WhatsApp · 3. Au seuil atteint, le prix
+          groupe est débloqué pour tous · 4. Chaque participant confirme et sa commande est créée
+          automatiquement.
         </p>
       </Card>
     </div>

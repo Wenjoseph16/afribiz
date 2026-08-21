@@ -87,7 +87,7 @@ export default function StoriesPage() {
             </div>
           </div>
         </Card>
-        <Link href="/dashboard/explore">
+        <Link href="/marketplace">
           <Card className="p-4 hover:border-brand/30 transition-colors cursor-pointer h-full">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">

@@ -118,7 +118,9 @@ export function SlotPicker({
       <div className="text-center py-8">
         <Clock className="w-10 h-10 text-white/15 mx-auto mb-3" />
         <p className="text-sm text-white/40">Aucun créneau configuré pour ce jour</p>
-        <p className="text-xs text-white/20 mt-1">Contactez l&apos;établissement pour les horaires</p>
+        <p className="text-xs text-white/20 mt-1">
+          Contactez l&apos;établissement pour les horaires
+        </p>
       </div>
     );
   }
@@ -168,7 +170,12 @@ export function SlotPicker({
               <p className="text-[10px] font-medium text-white/30 uppercase">
                 {['L', 'M', 'M', 'J', 'V', 'S', 'D'][(d.getDay() + 6) % 7]}
               </p>
-              <p className={cn('text-sm font-bold', isSelected ? 'text-emerald-400' : 'text-white/60')}>
+              <p
+                className={cn(
+                  'text-sm font-bold',
+                  isSelected ? 'text-emerald-400' : 'text-white/60'
+                )}
+              >
                 {d.getDate()}
               </p>
               {hasSlots && (
@@ -204,8 +211,15 @@ export function SlotPicker({
                   )}
                 >
                   <div className="flex items-center justify-center gap-1.5">
-                    <Clock className={cn('w-3 h-3', isSelected ? 'text-emerald-400' : 'text-white/30')} />
-                    <span className={cn('text-sm font-bold tabular-nums', isSelected ? 'text-emerald-400' : 'text-white/60')}>
+                    <Clock
+                      className={cn('w-3 h-3', isSelected ? 'text-emerald-400' : 'text-white/30')}
+                    />
+                    <span
+                      className={cn(
+                        'text-sm font-bold tabular-nums',
+                        isSelected ? 'text-emerald-400' : 'text-white/60'
+                      )}
+                    >
                       {slot.startTime}
                     </span>
                   </div>

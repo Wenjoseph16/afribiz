@@ -5,8 +5,20 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Calendar, Search, Clock, DollarSign, Loader, Store, AlertTriangle,
-  User, MapPin, Users, ChevronRight, CalendarCheck, ArrowUpRight, Plus,
+  Calendar,
+  Search,
+  Clock,
+  DollarSign,
+  Loader,
+  Store,
+  AlertTriangle,
+  User,
+  MapPin,
+  Users,
+  ChevronRight,
+  CalendarCheck,
+  ArrowUpRight,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -33,11 +45,7 @@ const TABS = [
 ];
 
 function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn('glass rounded-2xl glass-hover', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('glass rounded-2xl glass-hover', className)}>{children}</div>;
 }
 
 export default function BookingsPage() {
@@ -47,35 +55,53 @@ export default function BookingsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
 
-  const { data: bookingsData, isLoading, refetch } = useQuery({
+  const {
+    data: bookingsData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: isBusiness ? ['business', 'bookings'] : ['bookings'],
     queryFn: async () => {
-      const res = await apiClient.get(isBusiness ? '/business/bookings?limit=100' : '/bookings?limit=100');
+      const res = await apiClient.get(
+        isBusiness ? '/business/bookings?limit=100' : '/bookings?limit=100'
+      );
       return res.data.data;
     },
     enabled: !!user,
     refetchInterval: 30_000,
   });
 
-  const allBookings = Array.isArray(bookingsData) ? bookingsData : bookingsData?.bookings || bookingsData?.data || [];
+  const allBookings = Array.isArray(bookingsData)
+    ? bookingsData
+    : bookingsData?.bookings || bookingsData?.data || [];
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
 
-  const stats = useMemo(() => ({
-    total: allBookings.length,
-    pending: allBookings.filter((b: any) => b.status === 'PENDING').length,
-    confirmed: allBookings.filter((b: any) => b.status === 'CONFIRMED').length,
-    revenue: allBookings.filter((b: any) => ['COMPLETED', 'IN_PROGRESS', 'CONFIRMED'].includes(b.status)).reduce((a: number, b: any) => a + Number(b.price || 0), 0),
-  }), [allBookings]);
+  const stats = useMemo(
+    () => ({
+      total: allBookings.length,
+      pending: allBookings.filter((b: any) => b.status === 'PENDING').length,
+      confirmed: allBookings.filter((b: any) => b.status === 'CONFIRMED').length,
+      revenue: allBookings
+        .filter((b: any) => ['COMPLETED', 'IN_PROGRESS', 'CONFIRMED'].includes(b.status))
+        .reduce((a: number, b: any) => a + Number(b.price || 0), 0),
+    }),
+    [allBookings]
+  );
 
   const filtered = allBookings.filter((b: any) => {
     if (activeTab === 'upcoming') {
-      if (new Date(b.startDate || b.date) < now || ['CANCELLED', 'COMPLETED'].includes(b.status)) return false;
+      if (new Date(b.startDate || b.date) < now || ['CANCELLED', 'COMPLETED'].includes(b.status))
+        return false;
     }
     if (!['all', 'upcoming'].includes(activeTab) && b.status !== activeTab) return false;
     if (search) {
       const q = search.toLowerCase();
-      return (b.bookingNumber || '').toLowerCase().includes(q) || (b.title || '').toLowerCase().includes(q) || (b.customerName || '').toLowerCase().includes(q);
+      return (
+        (b.bookingNumber || '').toLowerCase().includes(q) ||
+        (b.title || '').toLowerCase().includes(q) ||
+        (b.customerName || '').toLowerCase().includes(q)
+      );
     }
     return true;
   });
@@ -83,7 +109,11 @@ export default function BookingsPage() {
   if (isLoading) return <BookingsSkeleton />;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-7xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6 max-w-7xl mx-auto"
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -91,8 +121,12 @@ export default function BookingsPage() {
             <CalendarCheck className="w-3 h-3" />
             Réservations
           </div>
-          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">Mes réservations</h1>
-          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">{stats.total} réservation{stats.total > 1 ? 's' : ''} au total</p>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
+            Mes réservations
+          </h1>
+          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">
+            {stats.total} réservation{stats.total > 1 ? 's' : ''} au total
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <LiveIndicator />
@@ -110,16 +144,30 @@ export default function BookingsPage() {
           { label: 'En attente', value: stats.pending, icon: AlertTriangle, color: 'amber' },
           { label: 'Confirmées', value: stats.confirmed, icon: CalendarCheck, color: 'blue' },
           { label: 'Total', value: stats.total, icon: Calendar, color: 'white' },
-          { label: 'Revenu', value: `${stats.revenue.toLocaleString()} FCFA`, icon: DollarSign, color: 'emerald' },
+          {
+            label: 'Revenu',
+            value: `${stats.revenue.toLocaleString()} FCFA`,
+            icon: DollarSign,
+            color: 'emerald',
+          },
         ].map((kpi) => (
           <GlassCard key={kpi.label}>
             <div className="flex items-center gap-3">
-              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', `bg-${kpi.color}-500/10 border border-${kpi.color}-500/20`)}>
+              <div
+                className={cn(
+                  'w-9 h-9 rounded-xl flex items-center justify-center',
+                  `bg-${kpi.color}-500/10 border border-${kpi.color}-500/20`
+                )}
+              >
                 <kpi.icon className={cn('w-4 h-4', `text-${kpi.color}-400`)} />
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{kpi.value}</p>
-                <p className="text-[10px] text-gray-400 dark:text-white/30 font-medium">{kpi.label}</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">
+                  {kpi.value}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-white/30 font-medium">
+                  {kpi.label}
+                </p>
               </div>
             </div>
           </GlassCard>
@@ -196,15 +244,27 @@ export default function BookingsPage() {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {booking.title || booking.bookingNumber || `#${booking.id.slice(0, 8)}`}
+                              {booking.title ||
+                                booking.bookingNumber ||
+                                `#${booking.id.slice(0, 8)}`}
                             </p>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-xs text-gray-400 dark:text-white/30">
-                                {startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                                {startDate.toLocaleDateString('fr-FR', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                })}
                                 {' · '}
-                                {startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                {startDate.toLocaleTimeString('fr-FR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
                               </span>
-                              {isToday && <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">Aujourd&apos;hui</span>}
+                              {isToday && (
+                                <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+                                  Aujourd&apos;hui
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -215,7 +275,9 @@ export default function BookingsPage() {
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <div className={cn('w-1.5 h-1.5 rounded-full', s.dot)} />
-                              <span className="text-[10px] text-gray-500 dark:text-white/40 font-medium">{s.label}</span>
+                              <span className="text-[10px] text-gray-500 dark:text-white/40 font-medium">
+                                {s.label}
+                              </span>
                             </div>
                           </div>
                           <ChevronRight className="h-4 w-4 text-gray-400 dark:text-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />

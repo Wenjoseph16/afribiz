@@ -410,7 +410,9 @@ export default function BusinessLayawayPage() {
       setBatchScope({ scope: 'ALL', categoryIds: [], itemIds: [] });
       qc.invalidateQueries({ queryKey: ['layaway-offers'] });
     } catch (e: any) {
-      setBatchError(e?.response?.data?.message || e?.message || "Erreur lors de l'activation en masse");
+      setBatchError(
+        e?.response?.data?.message || e?.message || "Erreur lors de l'activation en masse"
+      );
     } finally {
       setBatchCreating(false);
     }

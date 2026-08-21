@@ -28,11 +28,29 @@ import { SlotPicker } from '@/components/bookings/SlotPicker';
 import { formatPrice } from '@/utils/helpers';
 import { apiClient } from '@/services/apiClient';
 
-const BOOKING_TYPES = ['APPOINTMENT', 'ROOM', 'TABLE', 'EVENT', 'CONSULTATION', 'SERVICE', 'SPACE', 'EQUIPMENT', 'VEHICLE', 'TRAINING'];
+const BOOKING_TYPES = [
+  'APPOINTMENT',
+  'ROOM',
+  'TABLE',
+  'EVENT',
+  'CONSULTATION',
+  'SERVICE',
+  'SPACE',
+  'EQUIPMENT',
+  'VEHICLE',
+  'TRAINING',
+];
 const TYPE_LABELS: Record<string, string> = {
-  APPOINTMENT: 'Rendez-vous', ROOM: 'Chambre', TABLE: 'Restaurant', EVENT: 'Événement',
-  CONSULTATION: 'Consultation', SERVICE: 'Service', SPACE: 'Espace', EQUIPMENT: 'Équipement',
-  VEHICLE: 'Véhicule', TRAINING: 'Formation',
+  APPOINTMENT: 'Rendez-vous',
+  ROOM: 'Chambre',
+  TABLE: 'Restaurant',
+  EVENT: 'Événement',
+  CONSULTATION: 'Consultation',
+  SERVICE: 'Service',
+  SPACE: 'Espace',
+  EQUIPMENT: 'Équipement',
+  VEHICLE: 'Véhicule',
+  TRAINING: 'Formation',
 };
 
 const PAYMENT_METHODS = [
@@ -41,14 +59,28 @@ const PAYMENT_METHODS = [
   { id: 'CASH', label: 'Sur place', icon: Banknote },
 ];
 
-function GlassInput({ label, icon: Icon, required, ...props }: { label: string; icon: any; required?: boolean; [key: string]: any }) {
+function GlassInput({
+  label,
+  icon: Icon,
+  required,
+  ...props
+}: {
+  label: string;
+  icon: any;
+  required?: boolean;
+  [key: string]: any;
+}) {
   return (
     <div>
       <label className="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
         {label} {required && <span className="text-emerald-400">*</span>}
       </label>
       <div className="relative">
-        {Icon && <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/20"><Icon className="w-4 h-4" /></div>}
+        {Icon && (
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/20">
+            <Icon className="w-4 h-4" />
+          </div>
+        )}
         <input
           className={cn(
             'w-full py-3 rounded-xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] text-gray-900 dark:text-white placeholder:text-gray-400 dark:text-white/20',
@@ -63,11 +95,7 @@ function GlassInput({ label, icon: Icon, required, ...props }: { label: string; 
 }
 
 function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn('glass rounded-2xl glass-hover', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('glass rounded-2xl glass-hover', className)}>{children}</div>;
 }
 
 function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
@@ -90,7 +118,9 @@ export default function NewBookingPage() {
   const { notify } = useToast();
   const notifyError = useNotifyError();
 
-  const services = Array.isArray(servicesData) ? servicesData : servicesData?.items || servicesData?.data || [];
+  const services = Array.isArray(servicesData)
+    ? servicesData
+    : servicesData?.items || servicesData?.data || [];
   const rooms = Array.isArray(roomsData) ? roomsData : roomsData?.items || roomsData?.data || [];
 
   const today = new Date().toISOString().split('T')[0];
@@ -122,9 +152,10 @@ export default function NewBookingPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const startDateTime = selectedDate && selectedTime
-        ? new Date(`${selectedDate}T${selectedTime}`).toISOString()
-        : undefined;
+      const startDateTime =
+        selectedDate && selectedTime
+          ? new Date(`${selectedDate}T${selectedTime}`).toISOString()
+          : undefined;
 
       await createBooking.mutateAsync({
         title: title || `Réservation ${TYPE_LABELS[type] || type}`,
@@ -175,13 +206,24 @@ export default function NewBookingPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
-        <Link href="/dashboard/bookings" className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-white/40 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-white/10 transition-all duration-200">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-4 mb-8"
+      >
+        <Link
+          href="/dashboard/bookings"
+          className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-white/40 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-white/10 transition-all duration-200"
+        >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">Nouvelle réservation</h1>
-          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">Créez une réservation en quelques clics</p>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
+            Nouvelle réservation
+          </h1>
+          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">
+            Créez une réservation en quelques clics
+          </p>
         </div>
       </motion.div>
 
@@ -190,7 +232,9 @@ export default function NewBookingPage() {
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
             <button
-              onClick={() => { if (i <= currentIdx) setStep(s.key); }}
+              onClick={() => {
+                if (i <= currentIdx) setStep(s.key);
+              }}
               className={cn(
                 'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300',
                 i <= currentIdx
@@ -201,7 +245,12 @@ export default function NewBookingPage() {
               {i < currentIdx ? <Check className="w-4 h-4" /> : i + 1}
             </button>
             {i < steps.length - 1 && (
-              <div className={cn('w-8 h-0.5 rounded-full transition-all duration-500', i < currentIdx ? 'bg-emerald-500' : 'bg-gray-100 dark:bg-white/10')} />
+              <div
+                className={cn(
+                  'w-8 h-0.5 rounded-full transition-all duration-500',
+                  i < currentIdx ? 'bg-emerald-500' : 'bg-gray-100 dark:bg-white/10'
+                )}
+              />
             )}
           </div>
         ))}
@@ -210,20 +259,38 @@ export default function NewBookingPage() {
       <div className="grid lg:grid-cols-5 gap-6">
         {/* Main content */}
         <div className="lg:col-span-3">
-          <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+          >
             {/* STEP 1: Details */}
             {step === 'details' && (
               <GlassCard>
                 <SectionHeader icon={Package} title="Informations" />
                 <div className="space-y-4">
-                  <GlassInput label="Titre" icon={Package} required placeholder="Ex: Coupe + Barbe, Consultation..." value={title} onChange={(e: any) => setTitle(e.target.value)} />
+                  <GlassInput
+                    label="Titre"
+                    icon={Package}
+                    required
+                    placeholder="Ex: Coupe + Barbe, Consultation..."
+                    value={title}
+                    onChange={(e: any) => setTitle(e.target.value)}
+                  />
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">Type</label>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                      Type
+                    </label>
                     <div className="grid grid-cols-3 gap-2">
                       {BOOKING_TYPES.slice(0, 6).map((t) => (
                         <button
                           key={t}
-                          onClick={() => { setType(t); if (t !== 'SERVICE') setServiceId(''); if (t !== 'ROOM') setRoomId(''); }}
+                          onClick={() => {
+                            setType(t);
+                            if (t !== 'SERVICE') setServiceId('');
+                            if (t !== 'ROOM') setRoomId('');
+                          }}
                           className={cn(
                             'p-2.5 rounded-xl border text-xs font-medium transition-all duration-200',
                             type === t
@@ -238,12 +305,18 @@ export default function NewBookingPage() {
                   </div>
                   {type === 'SERVICE' && services.length > 0 && (
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">Service</label>
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                        Service
+                      </label>
                       <div className="space-y-2">
                         {services.map((s: any) => (
                           <button
                             key={s.id}
-                            onClick={() => { setServiceId(s.id); setPrice(String(s.price || 0)); setTitle(s.name); }}
+                            onClick={() => {
+                              setServiceId(s.id);
+                              setPrice(String(s.price || 0));
+                              setTitle(s.name);
+                            }}
                             className={cn(
                               'w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all duration-200',
                               serviceId === s.id
@@ -252,18 +325,36 @@ export default function NewBookingPage() {
                             )}
                           >
                             <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">{s.name}</p>
-                              <p className="text-xs text-gray-400 dark:text-white/30">{s.duration ? `${s.duration} min` : ''}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {s.name}
+                              </p>
+                              <p className="text-xs text-gray-400 dark:text-white/30">
+                                {s.duration ? `${s.duration} min` : ''}
+                              </p>
                             </div>
-                            <span className="text-sm font-bold text-emerald-400">{formatPrice(Number(s.price || 0))}</span>
+                            <span className="text-sm font-bold text-emerald-400">
+                              {formatPrice(Number(s.price || 0))}
+                            </span>
                           </button>
                         ))}
                       </div>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-4">
-                    <GlassInput label="Nom du client" icon={User} placeholder="Nom complet" value={clientName} onChange={(e: any) => setClientName(e.target.value)} />
-                    <GlassInput label="Téléphone" icon={Phone} placeholder="+225 XX XX XX XX" value={clientPhone} onChange={(e: any) => setClientPhone(e.target.value)} />
+                    <GlassInput
+                      label="Nom du client"
+                      icon={User}
+                      placeholder="Nom complet"
+                      value={clientName}
+                      onChange={(e: any) => setClientName(e.target.value)}
+                    />
+                    <GlassInput
+                      label="Téléphone"
+                      icon={Phone}
+                      placeholder="+225 XX XX XX XX"
+                      value={clientPhone}
+                      onChange={(e: any) => setClientPhone(e.target.value)}
+                    />
                   </div>
                 </div>
               </GlassCard>
@@ -295,12 +386,30 @@ export default function NewBookingPage() {
                 <SectionHeader icon={CreditCard} title="Paiement de l'acompte" />
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <GlassInput label="Prix total" icon={DollarSign} type="number" min={0} placeholder="0" value={price} onChange={(e: any) => setPrice(e.target.value)} />
-                    <GlassInput label="Acompte" icon={DollarSign} type="number" min={0} placeholder="0" value={depositAmount} onChange={(e: any) => setDepositAmount(e.target.value)} />
+                    <GlassInput
+                      label="Prix total"
+                      icon={DollarSign}
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={price}
+                      onChange={(e: any) => setPrice(e.target.value)}
+                    />
+                    <GlassInput
+                      label="Acompte"
+                      icon={DollarSign}
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={depositAmount}
+                      onChange={(e: any) => setDepositAmount(e.target.value)}
+                    />
                   </div>
                   {deposit > 0 && (
                     <>
-                      <p className="text-xs text-gray-500 dark:text-white/40">Mode de paiement de l&apos;acompte</p>
+                      <p className="text-xs text-gray-500 dark:text-white/40">
+                        Mode de paiement de l&apos;acompte
+                      </p>
                       <div className="grid grid-cols-3 gap-2">
                         {PAYMENT_METHODS.map((m) => (
                           <button
@@ -313,8 +422,24 @@ export default function NewBookingPage() {
                                 : 'bg-gray-100 dark:bg-white/10 border-gray-100 dark:border-white/[0.06] hover:border-gray-200 dark:border-white/15'
                             )}
                           >
-                            <m.icon className={cn('w-5 h-5 mx-auto mb-1.5', paymentMethod === m.id ? 'text-emerald-400' : 'text-gray-400 dark:text-white/30')} />
-                            <p className={cn('text-xs font-medium', paymentMethod === m.id ? 'text-emerald-400' : 'text-gray-500 dark:text-white/40')}>{m.label}</p>
+                            <m.icon
+                              className={cn(
+                                'w-5 h-5 mx-auto mb-1.5',
+                                paymentMethod === m.id
+                                  ? 'text-emerald-400'
+                                  : 'text-gray-400 dark:text-white/30'
+                              )}
+                            />
+                            <p
+                              className={cn(
+                                'text-xs font-medium',
+                                paymentMethod === m.id
+                                  ? 'text-emerald-400'
+                                  : 'text-gray-500 dark:text-white/40'
+                              )}
+                            >
+                              {m.label}
+                            </p>
                           </button>
                         ))}
                       </div>
@@ -323,8 +448,12 @@ export default function NewBookingPage() {
                   {deposit === 0 && (
                     <div className="text-center py-6">
                       <ShieldCheck className="w-10 h-10 text-gray-300 dark:text-white/15 mx-auto mb-3" />
-                      <p className="text-sm text-gray-500 dark:text-white/40">Pas d&apos;acompte requis</p>
-                      <p className="text-xs text-gray-400 dark:text-white/20 mt-1">Le paiement se fera sur place</p>
+                      <p className="text-sm text-gray-500 dark:text-white/40">
+                        Pas d&apos;acompte requis
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-white/20 mt-1">
+                        Le paiement se fera sur place
+                      </p>
                     </div>
                   )}
                 </div>
@@ -345,11 +474,21 @@ export default function NewBookingPage() {
                     ['Personnes', String(guests)],
                     ['Prix', effectivePrice > 0 ? formatPrice(effectivePrice) : '—'],
                     ['Acompte', deposit > 0 ? formatPrice(deposit) : 'Aucun'],
-                    ['Paiement', deposit > 0 ? PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label : 'Sur place'],
+                    [
+                      'Paiement',
+                      deposit > 0
+                        ? PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label
+                        : 'Sur place',
+                    ],
                   ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-white/5">
+                    <div
+                      key={label}
+                      className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-white/5"
+                    >
                       <span className="text-xs text-gray-500 dark:text-white/40">{label}</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{value}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {value}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -362,11 +501,15 @@ export default function NewBookingPage() {
         <div className="lg:col-span-2 space-y-4">
           {/* Summary */}
           <GlassCard>
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-3">Résumé</h3>
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-3">
+              Résumé
+            </h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-white/40">Service</span>
-                <span className="text-gray-900 dark:text-white font-medium">{title || TYPE_LABELS[type]}</span>
+                <span className="text-gray-900 dark:text-white font-medium">
+                  {title || TYPE_LABELS[type]}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-white/40">Date</span>
@@ -374,21 +517,25 @@ export default function NewBookingPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-white/40">Créneau</span>
-                <span className="text-gray-900 dark:text-white font-medium">{selectedTime || '—'}</span>
+                <span className="text-gray-900 dark:text-white font-medium">
+                  {selectedTime || '—'}
+                </span>
               </div>
-              {effectivePrice > 0 && (
-                <div className="h-px bg-gray-100 dark:bg-white/5 my-1" />
-              )}
+              {effectivePrice > 0 && <div className="h-px bg-gray-100 dark:bg-white/5 my-1" />}
               {effectivePrice > 0 && (
                 <>
                   <div className="flex justify-between">
                     <span className="text-gray-500 dark:text-white/40">Total</span>
-                    <span className="text-gray-900 dark:text-white font-bold tabular-nums">{formatPrice(effectivePrice)}</span>
+                    <span className="text-gray-900 dark:text-white font-bold tabular-nums">
+                      {formatPrice(effectivePrice)}
+                    </span>
                   </div>
                   {deposit > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-500 dark:text-white/40">Acompte</span>
-                      <span className="text-emerald-400 font-bold tabular-nums">{formatPrice(deposit)}</span>
+                      <span className="text-emerald-400 font-bold tabular-nums">
+                        {formatPrice(deposit)}
+                      </span>
                     </div>
                   )}
                 </>
@@ -415,7 +562,15 @@ export default function NewBookingPage() {
                 disabled={isSubmitting}
                 className="flex-1 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 text-gray-900 dark:text-white font-bold text-sm disabled:opacity-40 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Création...</> : <><Check className="w-4 h-4" /> Créer la réservation</>}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Création...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" /> Créer la réservation
+                  </>
+                )}
               </button>
             ) : (
               <button

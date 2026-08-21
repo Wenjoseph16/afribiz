@@ -261,7 +261,10 @@ export default function BusinessOrderDetailPage() {
       refetch();
       if (debtId) router.push(`/dashboard/debts-payments/${debtId}`);
     } catch (e: any) {
-      alert(e?.response?.data?.message || "Impossible de coller la dette (dette peut-être déjà existante)");
+      alert(
+        e?.response?.data?.message ||
+          'Impossible de coller la dette (dette peut-être déjà existante)'
+      );
     } finally {
       setAttaching(false);
     }

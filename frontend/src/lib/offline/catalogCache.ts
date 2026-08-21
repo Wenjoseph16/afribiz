@@ -153,7 +153,9 @@ export async function getCachedProduct(id: string): Promise<CachedProduct | unde
  * Récupère un produit par son code-barres depuis le cache.
  * Utile pour le scanner hors-ligne.
  */
-export async function getCachedProductByBarcode(barcode: string): Promise<CachedProduct | undefined> {
+export async function getCachedProductByBarcode(
+  barcode: string
+): Promise<CachedProduct | undefined> {
   const all = await getCachedProducts();
   return all.find((p) => p.barcode === barcode);
 }

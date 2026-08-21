@@ -362,10 +362,19 @@ export default function Customer360Page() {
                           </div>
                           <div className="flex items-center justify-between mt-1.5 text-[11px] text-gray-400">
                             <span>
-                              {sp.progress}% · {sp.status === 'ACTIVE' ? 'En cours' : sp.status === 'READY' ? 'Prêt à convertir' : sp.status === 'COMPLETED' ? 'Terminé' : sp.status}
+                              {sp.progress}% ·{' '}
+                              {sp.status === 'ACTIVE'
+                                ? 'En cours'
+                                : sp.status === 'READY'
+                                  ? 'Prêt à convertir'
+                                  : sp.status === 'COMPLETED'
+                                    ? 'Terminé'
+                                    : sp.status}
                             </span>
                             {sp.expiresAt && (
-                              <span>Échéance {new Date(sp.expiresAt).toLocaleDateString('fr-FR')}</span>
+                              <span>
+                                Échéance {new Date(sp.expiresAt).toLocaleDateString('fr-FR')}
+                              </span>
                             )}
                           </div>
                         </div>

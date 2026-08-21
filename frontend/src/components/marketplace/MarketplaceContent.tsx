@@ -102,7 +102,7 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
       city: item.city || item.business?.city || '',
       country: item.country || item.business?.country || '',
       image: item.logo || item.images?.[0] || item.image || '',
-      businessSlug: item.slug || item.business?.slug || item.id,
+      businessSlug: item.slug || item.business?.slug || item.business?.id || item.id,
       distance: item.distanceFormatted || undefined,
       layawayOfferId: item.layawayOfferId || undefined,
     };
@@ -130,7 +130,7 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
           promoPrice: item.promotionalPrice ? Number(item.promotionalPrice) : undefined,
           businessName: item.business?.name || '',
           businessId: item.business?.id || '',
-          businessSlug: item.business?.slug || item.slug || item.id || '',
+          businessSlug: item.business?.slug || item.slug || item.business?.id || item.id || '',
           available: (item.stock ?? 0) > 0 || !!item.isAvailable,
           image: item.images?.[0] || '',
           description: item.shortDescription || item.description || '',
@@ -515,19 +515,69 @@ export default function MarketplaceContent({ initialCountry = '' }: MarketplaceC
       items.push(mapItem({ ...b, _type: 'business' }))
     );
     (trending.topProducts || []).forEach((p: ApiSearchItem) =>
-      items.push(mapItem({ ...p, _type: 'product', business: { name: p.business?.name } }))
+      items.push(
+        mapItem({
+          ...p,
+          _type: 'product',
+          business: {
+            name: p.business?.name,
+            slug: p.business?.slug,
+            id: p.business?.id,
+          },
+        })
+      )
     );
     (trending.topServices || []).forEach((s: ApiSearchItem) =>
-      items.push(mapItem({ ...s, _type: 'service', business: { name: s.business?.name } }))
+      items.push(
+        mapItem({
+          ...s,
+          _type: 'service',
+          business: {
+            name: s.business?.name,
+            slug: s.business?.slug,
+            id: s.business?.id,
+          },
+        })
+      )
     );
     (trending.topEvents || []).forEach((e: ApiSearchItem) =>
-      items.push(mapItem({ ...e, _type: 'event', business: { name: e.business?.name } }))
+      items.push(
+        mapItem({
+          ...e,
+          _type: 'event',
+          business: {
+            name: e.business?.name,
+            slug: e.business?.slug,
+            id: e.business?.id,
+          },
+        })
+      )
     );
     (trending.topRooms || []).forEach((r: ApiSearchItem) =>
-      items.push(mapItem({ ...r, _type: 'room', business: { name: r.business?.name } }))
+      items.push(
+        mapItem({
+          ...r,
+          _type: 'room',
+          business: {
+            name: r.business?.name,
+            slug: r.business?.slug,
+            id: r.business?.id,
+          },
+        })
+      )
     );
     (trending.topTrainings || []).forEach((t: ApiSearchItem) =>
-      items.push(mapItem({ ...t, _type: 'training', business: { name: t.business?.name } }))
+      items.push(
+        mapItem({
+          ...t,
+          _type: 'training',
+          business: {
+            name: t.business?.name,
+            slug: t.business?.slug,
+            id: t.business?.id,
+          },
+        })
+      )
     );
     return items;
   }, [trending]);

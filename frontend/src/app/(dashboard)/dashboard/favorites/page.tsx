@@ -210,7 +210,7 @@ export default function FavoritesPage() {
           }
           action={
             !search ? (
-              <Link href="/dashboard/explore">
+              <Link href="/marketplace">
                 <Button>Explorer la marketplace</Button>
               </Link>
             ) : undefined
@@ -254,7 +254,7 @@ export default function FavoritesPage() {
                     </button>
                   </div>
                   <Link
-                    href={itemSlug ? `/dashboard/${typePath}/${itemSlug}` : '/dashboard/explore'}
+                    href={itemSlug ? `/dashboard/${typePath}/${itemSlug}` : '/marketplace'}
                     className="block group/card"
                   >
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover/card:text-brand transition-colors line-clamp-2">
@@ -291,7 +291,7 @@ export default function FavoritesPage() {
                       Contacter
                     </Link>
                     <Link
-                      href={itemSlug ? `/dashboard/${typePath}/${itemSlug}` : '/dashboard/explore'}
+                      href={itemSlug ? `/dashboard/${typePath}/${itemSlug}` : '/marketplace'}
                       className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-400 hover:text-brand transition-colors"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -329,7 +329,7 @@ export default function FavoritesPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <Link
-                      href={itemSlug ? `/dashboard/${typePath}/${itemSlug}` : '/dashboard/explore'}
+                      href={itemSlug ? `/dashboard/${typePath}/${itemSlug}` : '/marketplace'}
                       className="block"
                     >
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-brand transition-colors">

@@ -60,7 +60,7 @@ export default function FinancePage() {
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Finance' },
-          { label: 'Vue d\'ensemble' },
+          { label: "Vue d'ensemble" },
         ]}
       />
 
@@ -238,7 +238,9 @@ export default function FinancePage() {
                 <ShieldAlert className="w-5 h-5 text-red-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">Risques clients</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Risques clients
+                </p>
                 <p className="text-[10px] text-gray-500">Scores & alertes</p>
               </div>
               <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-red-500 transition-colors" />

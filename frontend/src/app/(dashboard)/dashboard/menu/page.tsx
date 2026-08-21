@@ -264,7 +264,11 @@ export default function MenuPage() {
       <PageHeader
         title="Centre de gestion du menu"
         description="Pilotez vos plats, suivez les ventes et mettez en avant vos meilleures recettes."
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Catalogue' }, { label: 'Menu' }]}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Catalogue' },
+          { label: 'Menu' },
+        ]}
         actions={
           <div className="flex items-center gap-2">
             <Link href="/dashboard/menu/categories">

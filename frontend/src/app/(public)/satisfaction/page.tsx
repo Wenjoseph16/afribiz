@@ -20,14 +20,7 @@ import { Footer } from '@/components/layout/Footer';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 
-const STAR_LABELS = [
-  '',
-  'Décevant',
-  'Moyen',
-  'Bien',
-  'Très bien',
-  'Excellent ✨',
-];
+const STAR_LABELS = ['', 'Décevant', 'Moyen', 'Bien', 'Très bien', 'Excellent ✨'];
 
 function SatisfactionInner() {
   const searchParams = useSearchParams();
@@ -48,8 +41,8 @@ function SatisfactionInner() {
   const redirect = orderId
     ? `/satisfaction?orderId=${orderId}`
     : bookingId
-    ? `/satisfaction?bookingId=${bookingId}`
-    : '/satisfaction';
+      ? `/satisfaction?bookingId=${bookingId}`
+      : '/satisfaction';
 
   // Contexte de la commande / réservation (pour savoir ce qu'on évalue)
   useEffect(() => {
@@ -100,9 +93,7 @@ function SatisfactionInner() {
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
               <Lock className="h-7 w-7 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Votre avis compte
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Votre avis compte</h1>
             <p className="mt-3 text-sm leading-relaxed text-slate-500">
               Connectez-vous pour noter votre expérience en moins d'une minute.
             </p>
@@ -200,7 +191,7 @@ function SatisfactionInner() {
             <p className="mt-2 max-w-md text-sm leading-relaxed text-emerald-50/90">
               {context?.businessName
                 ? `Comment s'est passée votre expérience chez ${context.businessName} ?`
-                : 'Comment s\'est passée votre expérience ?'}
+                : "Comment s'est passée votre expérience ?"}
             </p>
             {context && (
               <div className="mt-4 flex flex-wrap items-center gap-2">

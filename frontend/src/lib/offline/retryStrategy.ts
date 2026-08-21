@@ -17,9 +17,9 @@ import { dbGetAll, dbPut } from './db';
 const QUEUE_STORE = 'syncQueue' as const;
 
 const RETRY_DELAYS = [
-  5 * 1000,       // 5s
-  30 * 1000,      // 30s
-  2 * 60 * 1000,  // 2min
+  5 * 1000, // 5s
+  30 * 1000, // 30s
+  2 * 60 * 1000, // 2min
   10 * 60 * 1000, // 10min
   30 * 60 * 1000, // 30min (max)
 ];
@@ -49,7 +49,10 @@ export function shouldRetryNow(retryCount: number, lastAttemptAt: number): boole
 export async function getRetryableItems(): Promise<any[]> {
   const all = await dbGetAll<any>(QUEUE_STORE);
   return all
-    .filter((item) => item.status === 'FAILED' && shouldRetryNow(item.retryCount || 0, item.lastAttemptAt || 0))
+    .filter(
+      (item) =>
+        item.status === 'FAILED' && shouldRetryNow(item.retryCount || 0, item.lastAttemptAt || 0)
+    )
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 }
 

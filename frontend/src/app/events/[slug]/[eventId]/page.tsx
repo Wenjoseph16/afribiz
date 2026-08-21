@@ -79,6 +79,7 @@ function BookingModal({
     phone: '',
     quantity: 1,
   });
+  const [paymentMethod, setPaymentMethod] = useState<string>('CASH');
   const [success, setSuccess] = useState(false);
 
   const mutation = useMutation({
@@ -86,6 +87,7 @@ function BookingModal({
       apiClient.registerPublicParticipant(slug, eventId, {
         ...data,
         ticketId: ticket.id,
+        paymentMethod,
       }),
     onSuccess: () => setSuccess(true),
   });
@@ -239,6 +241,41 @@ function BookingModal({
                 }
                 className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-transparent text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500/20 transition-all outline-none"
               />
+            </div>
+          )}
+
+          {ticket.price > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Méthode de paiement
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'CASH', label: 'Sur place' },
+                  { id: 'MOBILE_MONEY', label: 'Mobile Money' },
+                  { id: 'ESCROW', label: 'Escrow' },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setPaymentMethod(m.id)}
+                    className={cn(
+                      'px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all',
+                      paymentMethod === m.id
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-indigo-300 dark:hover:border-indigo-700'
+                    )}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Total :{' '}
+                <span className="font-bold text-gray-900 dark:text-gray-100">
+                  {(Number(ticket.price) * form.quantity).toLocaleString()} FCFA
+                </span>
+              </p>
             </div>
           )}
 

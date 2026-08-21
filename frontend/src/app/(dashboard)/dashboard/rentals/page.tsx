@@ -4,8 +4,19 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Car, Plus, Search, Eye, Pencil, DollarSign, Package,
-  CheckCircle2, XCircle, Loader, AlertTriangle, Zap, Sparkles,
+  Car,
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  DollarSign,
+  Package,
+  CheckCircle2,
+  XCircle,
+  Loader,
+  AlertTriangle,
+  Zap,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/helpers';
@@ -14,18 +25,24 @@ import { useMyRentals, useRentalStats } from '@/features/hooks';
 import { ErrorState } from '@/components/ui/ErrorState';
 
 interface RentalItem {
-  id: string; name: string; description: string | null; price: number;
-  unit: string | null; deposit: number | null; priceUnit: string; currency: string;
-  images: string[]; quantity: number; availableQty: number; isActive: boolean;
-  sortOrder: number; createdAt: string;
-}function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (    <div className={cn('glass rounded-2xl glass-hover', className)}>
-      {children}
-    </div>
-  );
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  unit: string | null;
+  deposit: number | null;
+  priceUnit: string;
+  currency: string;
+  images: string[];
+  quantity: number;
+  availableQty: number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
 }
-
-
+function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn('glass rounded-2xl glass-hover', className)}>{children}</div>;
+}
 
 export default function RentalsPage() {
   const { data: rentalsData, isLoading, error, refetch } = useMyRentals();
@@ -34,7 +51,8 @@ export default function RentalsPage() {
   const [search, setSearch] = useState('');
 
   const allRentals: RentalItem[] = Array.isArray(rentalsData)
-    ? rentalsData : rentalsData?.rentals || rentalsData?.data || [];
+    ? rentalsData
+    : rentalsData?.rentals || rentalsData?.data || [];
 
   const stats = statsData || {
     total: allRentals.length,
@@ -48,7 +66,9 @@ export default function RentalsPage() {
     if (activeTab === 'inactive') f = f.filter((r) => !r.isActive);
     if (search) {
       const q = search.toLowerCase();
-      f = f.filter((r) => r.name.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q));
+      f = f.filter(
+        (r) => r.name.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q)
+      );
     }
     return f;
   }, [allRentals, activeTab, search]);
@@ -61,8 +81,12 @@ export default function RentalsPage() {
           <GlassCard>
             <div className="text-center py-14">
               <Sparkles className="w-12 h-12 text-gray-300 dark:text-white/15 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Module Locations non activé</h3>
-              <p className="text-sm text-gray-500 dark:text-white/40 mb-5 max-w-md mx-auto">Activez ce module pour mettre vos articles en location.</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Module Locations non activé
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-white/40 mb-5 max-w-md mx-auto">
+                Activez ce module pour mettre vos articles en location.
+              </p>
               <Link href="/dashboard/modules-analysis">
                 <button className="px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium rounded-xl hover:bg-emerald-500/20 transition-all">
                   <Sparkles className="w-4 h-4 inline mr-1.5" /> Voir mes modules
@@ -73,17 +97,27 @@ export default function RentalsPage() {
         </div>
       );
     }
-    return <ErrorState message={(error as any)?.response?.data?.error || error.message} onRetry={refetch} />;
+    return (
+      <ErrorState
+        message={(error as any)?.response?.data?.error || error.message}
+        onRetry={refetch}
+      />
+    );
   }
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <Loader className="h-8 w-8 animate-spin text-emerald-400" />
-    </div>
-  );
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader className="h-8 w-8 animate-spin text-emerald-400" />
+      </div>
+    );
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 max-w-7xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6 max-w-7xl mx-auto"
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -91,8 +125,13 @@ export default function RentalsPage() {
             <Car className="w-3 h-3" />
             Locations
           </div>
-          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">Articles en location</h1>
-          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">{stats.total} article{stats.total > 1 ? 's' : ''} — {stats.active} disponible{stats.active > 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white tracking-tight">
+            Articles en location
+          </h1>
+          <p className="text-gray-400 dark:text-white/30 text-sm mt-0.5">
+            {stats.total} article{stats.total > 1 ? 's' : ''} — {stats.active} disponible
+            {stats.active > 1 ? 's' : ''}
+          </p>
         </div>
         <Link href="/dashboard/rentals/new">
           <button className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-400 text-gray-900 dark:text-white text-sm font-bold rounded-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all duration-300 active:scale-[0.98]">
@@ -110,12 +149,21 @@ export default function RentalsPage() {
         ].map((kpi) => (
           <GlassCard key={kpi.label}>
             <div className="flex items-center gap-3">
-              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center border', `bg-${kpi.color}-500/10 border-${kpi.color}-500/20`)}>
+              <div
+                className={cn(
+                  'w-9 h-9 rounded-xl flex items-center justify-center border',
+                  `bg-${kpi.color}-500/10 border-${kpi.color}-500/20`
+                )}
+              >
                 <kpi.icon className={cn('w-4 h-4', `text-${kpi.color}-400`)} />
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">{kpi.value}</p>
-                <p className="text-[10px] text-gray-400 dark:text-white/30 font-medium">{kpi.label}</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">
+                  {kpi.value}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-white/30 font-medium">
+                  {kpi.label}
+                </p>
               </div>
             </div>
           </GlassCard>
@@ -181,28 +229,40 @@ export default function RentalsPage() {
                 {/* Image */}
                 <div className="relative h-36 rounded-[calc(1rem-0.1875rem)] bg-gradient-to-br from-emerald-500/5 to-transparent overflow-hidden">
                   {rental.images?.[0] ? (
-                    <Image src={rental.images[0]} alt="" fill className="object-cover" sizes="300px" />
+                    <Image
+                      src={rental.images[0]}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="300px"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Car className="w-10 h-10 text-gray-900 dark:text-white/10" />
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-                  <span className={cn(
-                    'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
-                    rental.isActive
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                      : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/40 border-gray-200 dark:border-white/10'
-                  )}>
+                  <span
+                    className={cn(
+                      'absolute top-2 right-2 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
+                      rental.isActive
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/40 border-gray-200 dark:border-white/10'
+                    )}
+                  >
                     {rental.isActive ? 'Disponible' : 'Indisponible'}
                   </span>
                 </div>
 
                 <div className="relative rounded-[calc(1rem-0.1875rem)] p-4">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 mb-2">{rental.name}</h3>
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 mb-2">
+                    {rental.name}
+                  </h3>
                   <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-white/40 mb-1">
                     <DollarSign className="w-3 h-3" />
-                    <span className="font-semibold text-emerald-400">{formatPrice(rental.price, rental.currency)}</span>
+                    <span className="font-semibold text-emerald-400">
+                      {formatPrice(rental.price, rental.currency)}
+                    </span>
                     <span>/ {rental.priceUnit}</span>
                   </div>
                   {rental.deposit && (

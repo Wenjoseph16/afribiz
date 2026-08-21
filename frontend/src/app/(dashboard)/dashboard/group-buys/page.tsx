@@ -31,7 +31,10 @@ import { StatsCard } from '@/components/dashboard/StatsCard';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { apiClient } from '@/services/apiClient';
 
-const STATUS_META: Record<string, { label: string; tone: 'success' | 'warning' | 'default' | 'danger' | 'info' }> = {
+const STATUS_META: Record<
+  string,
+  { label: string; tone: 'success' | 'warning' | 'default' | 'danger' | 'info' }
+> = {
   ACTIVE: { label: 'En cours', tone: 'success' },
   REACHED: { label: 'Seuil atteint 🎉', tone: 'warning' },
   COMPLETED: { label: 'Terminé', tone: 'default' },
@@ -254,8 +257,13 @@ export default function GroupBuysPage() {
       {confirmedMsg && (
         <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/80 dark:bg-emerald-900/10 animate-fade-in">
           <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{confirmedMsg}</p>
-          <Link href="/dashboard/orders" className="ml-auto inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline shrink-0">
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+            {confirmedMsg}
+          </p>
+          <Link
+            href="/dashboard/orders"
+            className="ml-auto inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline shrink-0"
+          >
             Voir les commandes <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -275,21 +283,34 @@ export default function GroupBuysPage() {
           {groups.map((g: any) => {
             const progress =
               g.minParticipants > 0
-                ? Math.min(100, Math.round((g.currentCount || g._count?.participants || 0) / g.minParticipants) * 100)
+                ? Math.min(
+                    100,
+                    Math.round(
+                      (g.currentCount || g._count?.participants || 0) / g.minParticipants
+                    ) * 100
+                  )
                 : 0;
             const meta = STATUS_META[g.status] || { label: g.status, tone: 'default' as const };
             const isReached = g.status === 'REACHED';
-            const pendingCount = g.participants?.filter((p: any) => p.status === 'PENDING').length || 0;
+            const pendingCount =
+              g.participants?.filter((p: any) => p.status === 'PENDING').length || 0;
             return (
-              <Card key={g.id} className="p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
+              <Card
+                key={g.id}
+                className="p-5 flex flex-col gap-4 hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{g.title}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        {g.title}
+                      </h3>
                       {isReached && <Zap className="h-4 w-4 text-amber-500 shrink-0" />}
                     </div>
                     {g.description && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{g.description}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                        {g.description}
+                      </p>
                     )}
                   </div>
                   <Badge variant={meta.tone}>{meta.label}</Badge>
@@ -300,7 +321,8 @@ export default function GroupBuysPage() {
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
                     <span className="inline-flex items-center gap-1">
                       <Users className="h-3 w-3" />
-                      {g.currentCount || g._count?.participants || 0}/{g.minParticipants} participants
+                      {g.currentCount || g._count?.participants || 0}/{g.minParticipants}{' '}
+                      participants
                     </span>
                     <span className="font-semibold">{progress}%</span>
                   </div>
@@ -318,7 +340,8 @@ export default function GroupBuysPage() {
                   </div>
                   {isReached && (
                     <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1.5 inline-flex items-center gap-1">
-                      <PartyPopper className="h-3 w-3" /> Prix groupe débloqué — les participants connectés peuvent valider leur commande
+                      <PartyPopper className="h-3 w-3" /> Prix groupe débloqué — les participants
+                      connectés peuvent valider leur commande
                     </p>
                   )}
                 </div>
@@ -326,14 +349,20 @@ export default function GroupBuysPage() {
                 {/* Prix */}
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="p-2.5 bg-gray-50 dark:bg-gray-800/60 rounded-xl">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Prix normal</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                      Prix normal
+                    </p>
                     <p className="font-semibold text-gray-900 dark:text-gray-100 line-through decoration-gray-300">
                       {fmt(g.price)}
                     </p>
                   </div>
                   <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
-                    <p className="text-[10px] text-emerald-500 uppercase tracking-wider">Prix groupe</p>
-                    <p className="font-bold text-emerald-600 dark:text-emerald-400">{fmt(g.groupPrice)}</p>
+                    <p className="text-[10px] text-emerald-500 uppercase tracking-wider">
+                      Prix groupe
+                    </p>
+                    <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {fmt(g.groupPrice)}
+                    </p>
                   </div>
                   <div className="p-2.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
                     <p className="text-[10px] text-purple-500 uppercase tracking-wider">Économie</p>
@@ -360,7 +389,8 @@ export default function GroupBuysPage() {
 
                 {g.endAt && (
                   <div className="flex items-center gap-1 text-xs text-gray-400">
-                    <Calendar className="w-3 h-3" /> Clôture : {new Date(g.endAt).toLocaleDateString('fr-FR')}
+                    <Calendar className="w-3 h-3" /> Clôture :{' '}
+                    {new Date(g.endAt).toLocaleDateString('fr-FR')}
                   </div>
                 )}
 
@@ -400,7 +430,9 @@ export default function GroupBuysPage() {
       <Modal open={showNew} onClose={() => setShowNew(false)} title="Nouvel achat groupé">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titre</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Titre
+            </label>
             <input
               value={newGb.title}
               onChange={(e) => setNewGb({ ...newGb, title: e.target.value })}
@@ -532,7 +564,9 @@ export default function GroupBuysPage() {
                   className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl flex items-center justify-between gap-2 text-sm"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{p.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {p.name}
+                    </p>
                     <p className="text-xs text-gray-500">
                       {p.quantity}x · {fmt(p.amount)} FCFA
                       {p.userId ? ' · connecté' : ' · invité'}
@@ -588,13 +622,17 @@ export default function GroupBuysPage() {
                 <label className="block text-xs font-medium text-gray-500 mb-1">Quantité</label>
                 <input
                   value={newParticipant.quantity}
-                  onChange={(e) => setNewParticipant({ ...newParticipant, quantity: e.target.value })}
+                  onChange={(e) =>
+                    setNewParticipant({ ...newParticipant, quantity: e.target.value })
+                  }
                   type="number"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Montant (FCFA)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Montant (FCFA)
+                </label>
                 <input
                   value={newParticipant.amount}
                   onChange={(e) => setNewParticipant({ ...newParticipant, amount: e.target.value })}

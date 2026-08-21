@@ -69,10 +69,7 @@ export default function FinanceHistoryPage() {
       <PageHeader
         title="Historique financier"
         description="Toutes les actions financières tracées : dettes, paiements, escrow, rappels et risques."
-        breadcrumbs={[
-          { label: 'Finance', href: '/dashboard/finance' },
-          { label: 'Historique' },
-        ]}
+        breadcrumbs={[{ label: 'Finance', href: '/dashboard/finance' }, { label: 'Historique' }]}
         gradient
       />
 

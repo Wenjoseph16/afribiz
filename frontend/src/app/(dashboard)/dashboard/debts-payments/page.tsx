@@ -151,7 +151,9 @@ export default function DebtsPaymentsPage() {
       return;
     }
     if (amount > payTarget.amount) {
-      setFeedback(`Le montant dépasse le reste à payer (${payTarget.amount.toLocaleString()} FCFA)`);
+      setFeedback(
+        `Le montant dépasse le reste à payer (${payTarget.amount.toLocaleString()} FCFA)`
+      );
       return;
     }
     setPayLoading(true);
@@ -283,7 +285,11 @@ export default function DebtsPaymentsPage() {
             (d) => d.status === 'CRITICAL' || d.priority === 'CRITICAL'
           );
           const totalRemaining = allDebts.reduce(
-            (a, d) => a + (ACTIVE_STATUSES.includes(d.status) || OVERDUE_STATUSES.includes(d.status) ? d.amount : 0),
+            (a, d) =>
+              a +
+              (ACTIVE_STATUSES.includes(d.status) || OVERDUE_STATUSES.includes(d.status)
+                ? d.amount
+                : 0),
             0
           );
 
@@ -587,9 +593,7 @@ export default function DebtsPaymentsPage() {
               />
             </div>
 
-            {feedback && (
-              <p className="text-xs text-red-500 text-center">{feedback}</p>
-            )}
+            {feedback && <p className="text-xs text-red-500 text-center">{feedback}</p>}
 
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setPayTarget(null)}>
@@ -628,7 +632,10 @@ function getBadge(debt: DebtItem): { label: string; class: string } | null {
       class: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-300',
     };
   }
-  if (debt.createdAt && new Date(debt.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) {
+  if (
+    debt.createdAt &&
+    new Date(debt.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  ) {
     return {
       label: '🆕 Nouveau',
       class: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-300',
@@ -765,11 +772,21 @@ function DebtCard({
       <div className="px-4 pb-4 pt-1 flex items-center gap-2">
         {!isClosed ? (
           <>
-            <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={onPay}>
+            <Button
+              size="sm"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              onClick={onPay}
+            >
               <Banknote className="h-3.5 w-3.5 mr-1" />
               Encaisser
             </Button>
-            <Button variant="outline" size="sm" className="flex-1" onClick={onRemind} disabled={reminding}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={onRemind}
+              disabled={reminding}
+            >
               {reminding ? (
                 <Loader className="h-3.5 w-3.5 animate-spin mr-1" />
               ) : (

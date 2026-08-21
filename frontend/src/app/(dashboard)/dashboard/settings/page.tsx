@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Info,
@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   Smartphone,
+  Laptop,
   Trash2,
   Loader,
 } from 'lucide-react';
@@ -24,6 +25,8 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationPreferences, useUpdateNotificationPreferences } from '@/features/hooks';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { apiClient } from '@/services/apiClient';
+import { useToast } from '@/components/ui/ToastProvider';
 
 const PREF_TABS = [
   { id: 'general', label: 'Général', icon: Info },
@@ -51,6 +54,94 @@ export default function ClientSettingsPage() {
     saveHistory: true,
     autoPlay: false,
   });
+
+  const [sessions, setSessions] = useState<
+    {
+      id: string;
+      device?: string;
+      userAgent?: string;
+      location?: string;
+      city?: string;
+      country?: string;
+      lastActive?: string;
+      isCurrent?: boolean;
+    }[]
+  >([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const { notify } = useToast();
+
+  const loadSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const res = await apiClient.getSessions();
+      const list = res.data.data?.sessions || res.data.data || [];
+      setSessions(Array.isArray(list) ? list : []);
+    } catch {
+      setSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'devices') loadSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const disconnectSession = async (sessionId: string) => {
+    setDisconnecting(sessionId);
+    try {
+      await apiClient.revokeSession(sessionId);
+      notify({ title: 'Appareil déconnecté', variant: 'success' });
+      loadSessions();
+    } catch {
+      notify({ title: 'Échec de la déconnexion', variant: 'error' });
+    } finally {
+      setDisconnecting(null);
+    }
+  };
+
+  const disconnectAll = async () => {
+    setDisconnecting('all');
+    try {
+      await apiClient.revokeOtherSessions();
+      notify({ title: 'Autres appareils déconnectés', variant: 'success' });
+      loadSessions();
+    } catch {
+      notify({ title: 'Échec de la déconnexion', variant: 'error' });
+    } finally {
+      setDisconnecting(null);
+    }
+  };
+
+  const deviceLabel = (s: (typeof sessions)[number]) => {
+    const ua = s.userAgent || s.device || '';
+    if (/iPhone|iPad|Android/i.test(ua)) return 'Téléphone';
+    if (/Mac/i.test(ua)) return 'Mac';
+    if (/Windows/i.test(ua)) return 'Windows PC';
+    if (/Linux/i.test(ua)) return 'Linux';
+    return s.device || 'Appareil';
+  };
+
+  const deviceLocation = (s: (typeof sessions)[number]) => {
+    const parts = [s.city, s.country].filter(Boolean).join(', ');
+    return parts || s.location || 'Localisation inconnue';
+  };
+
+  const deviceTime = (s: (typeof sessions)[number]) => {
+    if (s.isCurrent) return 'Actif maintenant';
+    if (!s.lastActive) return 'Récemment';
+    return `Actif il y a ${new Date(s.lastActive).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })}`;
+  };
+
+  const isMobileUA = (s: (typeof sessions)[number]) =>
+    /iPhone|iPad|Android/i.test(s.userAgent || '');
 
   const togglePref = (key: keyof typeof prefs) => {
     setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -368,68 +459,69 @@ export default function ClientSettingsPage() {
           {/* Appareils */}
           {activeTab === 'devices' && (
             <Card title="Appareils connectés">
-              <div className="space-y-3">
-                {[
-                  {
-                    name: 'iPhone 15 Pro',
-                    location: 'Lomé, Togo',
-                    time: 'Actif maintenant',
-                    isCurrent: true,
-                  },
-                  {
-                    name: 'MacBook Pro',
-                    location: 'Lomé, Togo',
-                    time: 'Il y a 2h',
-                    isCurrent: false,
-                  },
-                  {
-                    name: 'Samsung Galaxy S24',
-                    location: 'Accra, Ghana',
-                    time: 'Il y a 3j',
-                    isCurrent: false,
-                  },
-                  {
-                    name: 'Windows PC - Chrome',
-                    location: 'Cotonou, Bénin',
-                    time: 'Il y a 1sem',
-                    isCurrent: false,
-                  },
-                ].map((device, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-gray-400">
-                        <Smartphone className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {device.name}
-                          </span>
-                          {device.isCurrent && (
-                            <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-                              Actuel
-                            </span>
+              {sessionsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="h-6 w-6 animate-spin text-brand" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <div className="text-center py-12">
+                  <Smartphone className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Aucun appareil connecté</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {sessions.map((s) => (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-700"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-gray-400">
+                          {isMobileUA(s) ? (
+                            <Smartphone className="h-4 w-4" />
+                          ) : (
+                            <Laptop className="h-4 w-4" />
                           )}
                         </div>
-                        <p className="text-xs text-gray-500">
-                          {device.location} · {device.time}
-                        </p>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {deviceLabel(s)}
+                            </span>
+                            {s.isCurrent && (
+                              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                                Actuel
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {deviceLocation(s)} · {deviceTime(s)}
+                          </p>
+                        </div>
                       </div>
+                      {!s.isCurrent && (
+                        <button
+                          onClick={() => disconnectSession(s.id)}
+                          disabled={disconnecting === s.id}
+                          className="text-xs text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+                        >
+                          {disconnecting === s.id ? 'Déconnexion...' : 'Déconnecter'}
+                        </button>
+                      )}
                     </div>
-                    {!device.isCurrent && (
-                      <button className="text-xs text-red-600 hover:text-red-700 font-medium">
-                        Déconnecter
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <div className="mt-4">
-                <Button variant="outline" size="sm">
-                  Déconnecter tous les appareils
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={disconnectAll}
+                  disabled={disconnecting === 'all'}
+                >
+                  {disconnecting === 'all'
+                    ? 'Déconnexion...'
+                    : 'Déconnecter tous les autres appareils'}
                 </Button>
               </div>
             </Card>

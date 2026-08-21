@@ -292,7 +292,8 @@ export function StoryViewer({ groups, initialGroup, onClose }: StoryViewerProps)
         ])
         .then((res: any) => {
           if (!alive) return;
-          const item = res?.data?.data?.items?.[`${currentStory.linkTargetType}:${currentStory.linkTargetId}`];
+          const item =
+            res?.data?.data?.items?.[`${currentStory.linkTargetType}:${currentStory.linkTargetId}`];
           if (item?.unitPrice && item?.target?.path) {
             setShoppable({ price: item.unitPrice, target: item.target.path, name: item.name });
           }

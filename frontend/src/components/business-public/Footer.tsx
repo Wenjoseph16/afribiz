@@ -27,13 +27,41 @@ interface FooterProps {
 }
 
 const SOCIAL_CONFIG: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
-  facebook: { icon: <Share2 className="w-4 h-4" />, label: 'Facebook', color: 'hover:bg-blue-500/10 hover:text-blue-400' },
-  instagram: { icon: <Camera className="w-4 h-4" />, label: 'Instagram', color: 'hover:bg-pink-500/10 hover:text-pink-400' },
-  twitter: { icon: <MessageCircle className="w-4 h-4" />, label: 'Twitter / X', color: 'hover:bg-sky-500/10 hover:text-sky-400' },
-  linkedin: { icon: <ExternalLink className="w-4 h-4" />, label: 'LinkedIn', color: 'hover:bg-blue-600/10 hover:text-blue-500' },
-  youtube: { icon: <Play className="w-4 h-4" />, label: 'YouTube', color: 'hover:bg-red-500/10 hover:text-red-400' },
-  tiktok: { icon: <Music className="w-4 h-4" />, label: 'TikTok', color: 'hover:bg-white/10 hover:text-white' },
-  website: { icon: <Globe className="w-4 h-4" />, label: 'Site web', color: 'hover:bg-emerald-500/10 hover:text-emerald-400' },
+  facebook: {
+    icon: <Share2 className="w-4 h-4" />,
+    label: 'Facebook',
+    color: 'hover:bg-blue-500/10 hover:text-blue-400',
+  },
+  instagram: {
+    icon: <Camera className="w-4 h-4" />,
+    label: 'Instagram',
+    color: 'hover:bg-pink-500/10 hover:text-pink-400',
+  },
+  twitter: {
+    icon: <MessageCircle className="w-4 h-4" />,
+    label: 'Twitter / X',
+    color: 'hover:bg-sky-500/10 hover:text-sky-400',
+  },
+  linkedin: {
+    icon: <ExternalLink className="w-4 h-4" />,
+    label: 'LinkedIn',
+    color: 'hover:bg-blue-600/10 hover:text-blue-500',
+  },
+  youtube: {
+    icon: <Play className="w-4 h-4" />,
+    label: 'YouTube',
+    color: 'hover:bg-red-500/10 hover:text-red-400',
+  },
+  tiktok: {
+    icon: <Music className="w-4 h-4" />,
+    label: 'TikTok',
+    color: 'hover:bg-white/10 hover:text-white',
+  },
+  website: {
+    icon: <Globe className="w-4 h-4" />,
+    label: 'Site web',
+    color: 'hover:bg-emerald-500/10 hover:text-emerald-400',
+  },
 };
 
 export function Footer({ business }: FooterProps) {
@@ -87,9 +115,21 @@ export function Footer({ business }: FooterProps) {
   };
 
   const contactLinks = [
-    { icon: <Phone className="w-4 h-4" />, href: business.phone ? `tel:${business.phone}` : null, label: 'Téléphone' },
-    { icon: <Mail className="w-4 h-4" />, href: business.email ? `mailto:${business.email}` : null, label: 'Email' },
-    { icon: <MessageCircle className="w-4 h-4" />, href: business.whatsapp ? `https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}` : null, label: 'WhatsApp' },
+    {
+      icon: <Phone className="w-4 h-4" />,
+      href: business.phone ? `tel:${business.phone}` : null,
+      label: 'Téléphone',
+    },
+    {
+      icon: <Mail className="w-4 h-4" />,
+      href: business.email ? `mailto:${business.email}` : null,
+      label: 'Email',
+    },
+    {
+      icon: <MessageCircle className="w-4 h-4" />,
+      href: business.whatsapp ? `https://wa.me/${business.whatsapp.replace(/[^0-9]/g, '')}` : null,
+      label: 'WhatsApp',
+    },
   ].filter((s) => s.href);
 
   return (
@@ -110,18 +150,16 @@ export function Footer({ business }: FooterProps) {
                 <span className="inline-block rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-[0.2em] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
                   Newsletter
                 </span>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-1">
-                  Restez informé
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Offres et nouveautés directement par email
-                </p>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Restez informé</h3>
+                <p className="text-sm text-gray-400">Offres et nouveautés directement par email</p>
               </div>
               <div className="w-full sm:w-auto sm:min-w-[340px]">
                 {subscribed ? (
                   <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
                     <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                    <span className="text-sm font-medium text-emerald-300">Inscription envoyée !</span>
+                    <span className="text-sm font-medium text-emerald-300">
+                      Inscription envoyée !
+                    </span>
                   </div>
                 ) : (
                   <form onSubmit={handleSubscribe} className="flex gap-2">
@@ -161,12 +199,7 @@ export function Footer({ business }: FooterProps) {
               <div className="flex items-center gap-3 mb-5">
                 {business.logo ? (
                   <div className="w-10 h-10 rounded-xl overflow-hidden relative bg-white/5">
-                    <Image
-                      src={business.logo}
-                      alt={business.name}
-                      fill
-                      className="object-cover"
-                    />
+                    <Image src={business.logo} alt={business.name} fill className="object-cover" />
                   </div>
                 ) : (
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-500/20">
@@ -233,16 +266,26 @@ export function Footer({ business }: FooterProps) {
                 {business.address && (
                   <p className="flex items-start gap-2 text-gray-500">
                     <MapPin className="w-3.5 h-3.5 text-gray-600 mt-0.5 flex-shrink-0" />
-                    <span>{business.address}{business.city ? `, ${business.city}` : ''}{business.country ? `, ${business.country}` : ''}</span>
+                    <span>
+                      {business.address}
+                      {business.city ? `, ${business.city}` : ''}
+                      {business.country ? `, ${business.country}` : ''}
+                    </span>
                   </p>
                 )}
                 {business.phone && (
-                  <a href={`tel:${business.phone}`} className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors">
+                  <a
+                    href={`tel:${business.phone}`}
+                    className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors"
+                  >
                     <Phone className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" /> {business.phone}
                   </a>
                 )}
                 {business.email && (
-                  <a href={`mailto:${business.email}`} className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors">
+                  <a
+                    href={`mailto:${business.email}`}
+                    className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors"
+                  >
                     <Mail className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" /> {business.email}
                   </a>
                 )}
@@ -266,11 +309,31 @@ export function Footer({ business }: FooterProps) {
               </h4>
               <div className="space-y-3 text-[13px]">
                 {[
-                  { href: '/privacy', icon: <Shield className="w-3.5 h-3.5 text-gray-600" />, label: 'Confidentialité' },
-                  { href: '/terms', icon: <FileText className="w-3.5 h-3.5 text-gray-600" />, label: 'Conditions' },
-                  { href: '/cookies', icon: <AlertTriangle className="w-3.5 h-3.5 text-gray-600" />, label: 'Cookies' },
-                  { href: '/legal', icon: <FileText className="w-3.5 h-3.5 text-gray-600" />, label: 'Mentions légales' },
-                  { href: `mailto:${business.email || 'contact@afribiz.com'}`, icon: <MessageCircle className="w-3.5 h-3.5 text-gray-600" />, label: 'Contacter' },
+                  {
+                    href: '/privacy',
+                    icon: <Shield className="w-3.5 h-3.5 text-gray-600" />,
+                    label: 'Confidentialité',
+                  },
+                  {
+                    href: '/terms',
+                    icon: <FileText className="w-3.5 h-3.5 text-gray-600" />,
+                    label: 'Conditions',
+                  },
+                  {
+                    href: '/cookies',
+                    icon: <AlertTriangle className="w-3.5 h-3.5 text-gray-600" />,
+                    label: 'Cookies',
+                  },
+                  {
+                    href: '/legal',
+                    icon: <FileText className="w-3.5 h-3.5 text-gray-600" />,
+                    label: 'Mentions légales',
+                  },
+                  {
+                    href: `mailto:${business.email || 'contact@afribiz.com'}`,
+                    icon: <MessageCircle className="w-3.5 h-3.5 text-gray-600" />,
+                    label: 'Contacter',
+                  },
                 ].map((link) => (
                   <a
                     key={link.href + link.label}
@@ -289,9 +352,7 @@ export function Footer({ business }: FooterProps) {
           {socialLinks.length > 0 && (
             <div className="mt-10 pt-8 border-t border-white/5">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p className="text-[13px] text-gray-600">
-                  Suivez {business.name}
-                </p>
+                <p className="text-[13px] text-gray-600">Suivez {business.name}</p>
                 <div className="flex items-center gap-2">
                   {socialLinks.map((social) => (
                     <a
@@ -318,7 +379,10 @@ export function Footer({ business }: FooterProps) {
             </p>
             <p className="flex items-center gap-1">
               Propulsé par{' '}
-              <a href="/" className="text-emerald-500 hover:text-emerald-400 font-medium transition-colors">
+              <a
+                href="/"
+                className="text-emerald-500 hover:text-emerald-400 font-medium transition-colors"
+              >
                 AfriBiz
               </a>
               <Heart className="w-3 h-3 text-emerald-500 fill-emerald-500" />

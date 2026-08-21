@@ -141,7 +141,11 @@ export default function EmployeesPage() {
       <PageHeader
         title="Centre de gestion des équipes"
         description="Gérez vos employés, leurs rôles et suivez la performance de votre équipe."
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Équipe' }, { label: 'Employés' }]}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Équipe' },
+          { label: 'Employés' },
+        ]}
         actions={
           <Link href="/dashboard/employees/new">
             <Button size="sm">

@@ -63,10 +63,7 @@ export default function LivesPage() {
       <PageHeader
         title="Lives Commerciaux"
         description="Diffusez en direct et vendez vos produits en temps réel"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Lives' },
-        ]}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Lives' }]}
         actions={
           <button
             onClick={() => setShowCreateModal(true)}

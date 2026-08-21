@@ -38,9 +38,7 @@ export function ShareBusinessModal({
 
   if (!open) return null;
 
-  const waText = encodeURIComponent(
-    `Découvrez ${businessName} sur AfriBiz 👉 ${url}`
-  );
+  const waText = encodeURIComponent(`Découvrez ${businessName} sur AfriBiz 👉 ${url}`);
 
   return (
     <div
@@ -59,11 +57,7 @@ export function ShareBusinessModal({
           <div className="flex items-center gap-2.5 min-w-0">
             {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logo}
-                alt=""
-                className="w-8 h-8 rounded-lg object-cover shrink-0"
-              />
+              <img src={logo} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
             ) : (
               <div className="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center shrink-0">
                 <Store className="w-4 h-4" />
@@ -122,9 +116,7 @@ export function ShareBusinessModal({
           {/* Lien public */}
           <div className="w-full flex items-center gap-2 p-2 pl-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <Link2 className="w-4 h-4 text-gray-400 shrink-0" />
-            <span className="flex-1 text-xs text-gray-600 dark:text-gray-300 truncate">
-              {url}
-            </span>
+            <span className="flex-1 text-xs text-gray-600 dark:text-gray-300 truncate">{url}</span>
             <button
               onClick={copyLink}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${

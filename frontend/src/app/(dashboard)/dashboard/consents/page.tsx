@@ -144,10 +144,7 @@ export default function ConsentsPage() {
       <PageHeader
         title="Consentements"
         description="Contrôlez les données partagées avec les partenaires"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Consentements' },
-        ]}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Consentements' }]}
         actions={
           <Button onClick={() => setShowCreateForm(true)} size="sm">
             <Plus className="h-4 w-4" />

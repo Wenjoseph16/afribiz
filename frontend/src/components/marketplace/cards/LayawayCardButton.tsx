@@ -25,8 +25,7 @@ export function LayawayCardButton({
   const [starting, setStarting] = useState(false);
   // Pages publiques (marketplace) : le store zustand (skipHydration) n'est pas
   // hydraté — on lit le token directement depuis localStorage (pattern vitrine).
-  const hasToken =
-    typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
+  const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
 
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -57,9 +56,7 @@ export function LayawayCardButton({
       title="Épargnez progressivement et achetez quand vous êtes prêt — argent sécurisé en escrow"
       className={cn(
         'font-medium rounded-lg inline-flex items-center justify-center gap-1 transition-all',
-        size === 'sm'
-          ? 'text-xs px-2.5 py-2'
-          : 'text-[11px] px-2 py-1.5',
+        size === 'sm' ? 'text-xs px-2.5 py-2' : 'text-[11px] px-2 py-1.5',
         'border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20',
         starting && 'opacity-60 cursor-wait',
         className

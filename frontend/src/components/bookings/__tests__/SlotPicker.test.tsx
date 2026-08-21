@@ -21,7 +21,14 @@ describe('SlotPicker', () => {
   it('renders slots for Monday (dayOfWeek=1)', () => {
     mockUseBookingSlots.mockReturnValue({
       data: [
-        { id: '1', dayOfWeek: 1, startTime: '09:00', endTime: '12:00', slotDuration: 60, isActive: true },
+        {
+          id: '1',
+          dayOfWeek: 1,
+          startTime: '09:00',
+          endTime: '12:00',
+          slotDuration: 60,
+          isActive: true,
+        },
       ],
       isLoading: false,
     });
@@ -33,7 +40,14 @@ describe('SlotPicker', () => {
     const onSelect = jest.fn();
     mockUseBookingSlots.mockReturnValue({
       data: [
-        { id: '1', dayOfWeek: 1, startTime: '09:00', endTime: '11:00', slotDuration: 60, isActive: true },
+        {
+          id: '1',
+          dayOfWeek: 1,
+          startTime: '09:00',
+          endTime: '11:00',
+          slotDuration: 60,
+          isActive: true,
+        },
       ],
       isLoading: false,
     });
@@ -46,7 +60,14 @@ describe('SlotPicker', () => {
   it('shows empty state when no slots for the day', () => {
     mockUseBookingSlots.mockReturnValue({
       data: [
-        { id: '1', dayOfWeek: 3, startTime: '09:00', endTime: '17:00', slotDuration: 30, isActive: true },
+        {
+          id: '1',
+          dayOfWeek: 3,
+          startTime: '09:00',
+          endTime: '17:00',
+          slotDuration: 30,
+          isActive: true,
+        },
       ],
       isLoading: false,
     });

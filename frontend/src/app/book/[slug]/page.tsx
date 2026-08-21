@@ -17,6 +17,9 @@ import {
   MapPin,
   ChevronRight,
   Leaf,
+  Smartphone,
+  Shield,
+  Banknote,
 } from 'lucide-react';
 import { apiClient } from '@/services/apiClient';
 import { cn } from '@/lib/utils';
@@ -48,6 +51,8 @@ export default function PublicBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [bookingResult, setBookingResult] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string>('CASH');
+  const [paying, setPaying] = useState(false);
 
   // Available dates
   const [weekStart, setWeekStart] = useState(new Date());
@@ -127,6 +132,7 @@ export default function PublicBookingPage() {
         serviceId: selectedService || undefined,
         resourceId: selectedResource || undefined,
         price: services.find((s: any) => s.id === selectedService)?.price || 0,
+        paymentMethod,
       });
       if (res.data.success) {
         setBookingResult(res.data.data);
@@ -143,6 +149,19 @@ export default function PublicBookingPage() {
   // Services & resources
   const services = businessData?.services || [];
   const resources = businessData?.resources || [];
+  const selectedServiceObj = services.find((s: any) => s.id === selectedService);
+  const bookingPrice = selectedServiceObj ? Number(selectedServiceObj.price) || 0 : 0;
+
+  const PAYMENT_METHODS = [
+    { id: 'CASH', label: 'Sur place', desc: 'Payez à la réception', icon: Banknote },
+    {
+      id: 'MOBILE_MONEY',
+      label: 'Mobile Money',
+      desc: 'Wave, Orange, MTN, Flooz',
+      icon: Smartphone,
+    },
+    { id: 'ESCROW', label: 'Escrow', desc: 'Paiement sécurisé garanti', icon: Shield },
+  ];
 
   if (loading) {
     return (
@@ -545,6 +564,47 @@ export default function PublicBookingPage() {
                 />
               </div>
 
+              {/* Méthode de paiement */}
+              <div className="pt-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+                  Méthode de paiement
+                </label>
+                {bookingPrice > 0 && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Montant à payer :{' '}
+                    <span className="font-bold text-emerald-600">
+                      {bookingPrice.toLocaleString()} FCFA
+                    </span>
+                  </p>
+                )}
+                <div className="grid grid-cols-3 gap-2">
+                  {PAYMENT_METHODS.map((m) => {
+                    const Icon = m.icon;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPaymentMethod(m.id)}
+                        className={cn(
+                          'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center',
+                          paymentMethod === m.id
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                            : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-emerald-300 dark:hover:border-emerald-700'
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="text-xs font-medium">{m.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {paymentMethod !== 'CASH' && bookingPrice === 0 && (
+                  <p className="text-[11px] text-amber-600 mt-2">
+                    Ce service est gratuit : aucun paiement en ligne requis.
+                  </p>
+                )}
+              </div>
+
               <div className="flex items-center gap-3 pt-2">
                 <button
                   onClick={() => setStep('info')}
@@ -583,14 +643,30 @@ export default function PublicBookingPage() {
               Réservation envoyée !
             </h2>
             <p className="text-sm text-gray-500 mb-2">Votre demande a bien été reçue.</p>
-            {bookingResult?.bookingNumber && (
-              <p className="text-xs text-gray-400 mb-6">
+            {bookingResult?.booking?.bookingNumber && (
+              <p className="text-xs text-gray-400 mb-2">
                 N° de réservation :{' '}
                 <span className="font-mono font-bold text-gray-700 dark:text-gray-300">
-                  {bookingResult.bookingNumber}
+                  {bookingResult.booking.bookingNumber}
                 </span>
               </p>
             )}
+            {bookingResult?.booking?.paymentStatus &&
+              bookingResult.booking.paymentStatus !== 'UNPAID' && (
+                <div className="mb-6">
+                  {bookingResult.booking.paymentStatus === 'PAID' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Paiement confirmé
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                      <Clock className="h-3.5 w-3.5" />
+                      Paiement en attente
+                    </span>
+                  )}
+                </div>
+              )}
             <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 mb-6 text-left text-sm space-y-2">
               <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <Calendar className="w-4 h-4 text-emerald-600" />
@@ -622,7 +698,7 @@ export default function PublicBookingPage() {
             <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
               {business?.phone && (
                 <a
-                  href={`https://wa.me/${business.phone.replace(/[^0-9]/g, '')}?text=Bonjour%20${encodeURIComponent(business.name)}%2C%20je%20viens%20de%20r%C3%A9server%20(${bookingResult?.bookingNumber || ''})`}
+                  href={`https://wa.me/${business.phone.replace(/[^0-9]/g, '')}?text=Bonjour%20${encodeURIComponent(business.name)}%2C%20je%20viens%20de%20r%C3%A9server%20(${bookingResult?.booking?.bookingNumber || ''})`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium text-sm transition-all shadow-lg"

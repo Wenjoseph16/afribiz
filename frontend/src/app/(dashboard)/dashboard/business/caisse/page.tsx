@@ -130,7 +130,9 @@ export default function CashPage() {
       setOpenModal(null);
       setFreeAmount('');
       setFlash(
-        res?.offlineQueued ? 'Vente libre enregistrée hors-ligne — sync automatique' : 'Vente libre encaissée'
+        res?.offlineQueued
+          ? 'Vente libre enregistrée hors-ligne — sync automatique'
+          : 'Vente libre encaissée'
       );
       invalidate();
     },
@@ -150,7 +152,9 @@ export default function CashPage() {
       setExpenseAmount('');
       setExpenseLabel('');
       setFlash(
-        res?.offlineQueued ? 'Sortie de caisse enregistrée hors-ligne — sync automatique' : 'Sortie de caisse tracée'
+        res?.offlineQueued
+          ? 'Sortie de caisse enregistrée hors-ligne — sync automatique'
+          : 'Sortie de caisse tracée'
       );
       invalidate();
     },
@@ -180,7 +184,10 @@ export default function CashPage() {
   );
 
   const busy =
-    openMutation.isPending || closeMutation.isPending || freeMutation.isPending || expenseMutation.isPending;
+    openMutation.isPending ||
+    closeMutation.isPending ||
+    freeMutation.isPending ||
+    expenseMutation.isPending;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
@@ -203,7 +210,10 @@ export default function CashPage() {
       {flash && (
         <div className="flex items-center justify-between rounded-2xl border border-emerald-200/60 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-700/30 dark:bg-emerald-900/20 dark:text-emerald-300">
           <span>{flash}</span>
-          <button onClick={() => setFlash(null)} className="text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-200">
+          <button
+            onClick={() => setFlash(null)}
+            className="text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-200"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -212,11 +222,15 @@ export default function CashPage() {
       {/* ── Totaux du jour ── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card padding="lg" className="relative overflow-hidden">
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Dans la boîte</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Dans la boîte
+          </p>
           <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             {formatPrice(totals?.expectedBalance ?? 0)}
           </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">fond + entrées − sorties</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            fond + entrées − sorties
+          </p>
           {isOpen && (
             <span className="absolute right-4 top-4">
               <Badge variant="success">Ouverte</Badge>
@@ -224,21 +238,29 @@ export default function CashPage() {
           )}
         </Card>
         <Card padding="lg">
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Entrées du jour</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Entrées du jour
+          </p>
           <p className="mt-2 flex items-center gap-1.5 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
             <TrendingUp className="h-5 w-5" /> {formatPrice(totals?.entries ?? 0)}
           </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{totals?.salesCount ?? 0} ventes tracées</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {totals?.salesCount ?? 0} ventes tracées
+          </p>
         </Card>
         <Card padding="lg">
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Sorties du jour</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Sorties du jour
+          </p>
           <p className="mt-2 flex items-center gap-1.5 text-2xl font-bold text-rose-600 dark:text-rose-400">
             <TrendingDown className="h-5 w-5" /> {formatPrice(totals?.expenses ?? 0)}
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">dépenses + retraits</p>
         </Card>
         <Card padding="lg">
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Fond de caisse</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Fond de caisse
+          </p>
           <p className="mt-2 flex items-center gap-1.5 text-2xl font-bold text-slate-800 dark:text-slate-100">
             <Wallet className="h-5 w-5" /> {formatPrice(totals?.opening ?? 0)}
           </p>
@@ -259,7 +281,9 @@ export default function CashPage() {
               <a.icon className="h-6 w-6" />
             </span>
             <span>
-              <span className="block text-sm font-semibold text-slate-900 dark:text-white">{a.label}</span>
+              <span className="block text-sm font-semibold text-slate-900 dark:text-white">
+                {a.label}
+              </span>
               <span className="block text-xs text-slate-500 dark:text-slate-400">{a.hint}</span>
             </span>
           </button>
@@ -296,15 +320,24 @@ export default function CashPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
                       {m.label || meta.label}
-                      {m.offlineQueued && <WifiOff className="ml-1.5 inline h-3.5 w-3.5 text-amber-500" />}
+                      {m.offlineQueued && (
+                        <WifiOff className="ml-1.5 inline h-3.5 w-3.5 text-amber-500" />
+                      )}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {time} · {meta.label} · {m.method === 'MOBILE_MONEY' ? 'Mobile Money' : m.method === 'CASH' ? 'Espèces' : m.method}
+                      {time} · {meta.label} ·{' '}
+                      {m.method === 'MOBILE_MONEY'
+                        ? 'Mobile Money'
+                        : m.method === 'CASH'
+                          ? 'Espèces'
+                          : m.method}
                     </p>
                   </div>
                   <span
                     className={`text-sm font-semibold tabular-nums ${
-                      isOut ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                      isOut
+                        ? 'text-rose-600 dark:text-rose-400'
+                        : 'text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
                     {isOut ? '−' : '+'}
@@ -318,7 +351,11 @@ export default function CashPage() {
       </Card>
 
       {/* ── Historique ── */}
-      <Card title="Historique des clôtures" titleIcon={<History className="h-4 w-4" />} padding="none">
+      <Card
+        title="Historique des clôtures"
+        titleIcon={<History className="h-4 w-4" />}
+        padding="none"
+      >
         {!history || history.length === 0 ? (
           <p className="px-5 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
             Aucune clôture pour le moment — le point du soir apparaîtra ici.
@@ -336,7 +373,8 @@ export default function CashPage() {
                     })}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Solde attendu {formatPrice(s.expectedBalance ?? 0)} · compté {formatPrice(s.actualBalance ?? 0)}
+                    Solde attendu {formatPrice(s.expectedBalance ?? 0)} · compté{' '}
+                    {formatPrice(s.actualBalance ?? 0)}
                   </p>
                 </div>
                 {s.difference === 0 ? (
@@ -353,7 +391,12 @@ export default function CashPage() {
       </Card>
 
       {/* ── Modals ── */}
-      <Modal open={openModal === 'open'} onClose={() => setOpenModal(null)} title="Ouvrir la caisse" description="Tapez le fond de caisse du matin (la monnaie dans la boîte).">
+      <Modal
+        open={openModal === 'open'}
+        onClose={() => setOpenModal(null)}
+        title="Ouvrir la caisse"
+        description="Tapez le fond de caisse du matin (la monnaie dans la boîte)."
+      >
         <div className="space-y-4">
           <Input
             type="number"
@@ -363,16 +406,27 @@ export default function CashPage() {
             onChange={(e) => setOpening(e.target.value)}
           />
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setOpenModal(null)}>Annuler</Button>
+            <Button variant="ghost" onClick={() => setOpenModal(null)}>
+              Annuler
+            </Button>
             <Button onClick={() => openMutation.mutate()} disabled={busy}>
-              {openMutation.isPending ? <Loader className="h-4 w-4 animate-spin" /> : <LockOpen className="h-4 w-4" />}
+              {openMutation.isPending ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <LockOpen className="h-4 w-4" />
+              )}
               Ouvrir
             </Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={openModal === 'free'} onClose={() => setOpenModal(null)} title="Vente libre" description="Un montant tapé, sans article — encaissé dans la caisse du jour.">
+      <Modal
+        open={openModal === 'free'}
+        onClose={() => setOpenModal(null)}
+        title="Vente libre"
+        description="Un montant tapé, sans article — encaissé dans la caisse du jour."
+      >
         <div className="space-y-4">
           <Input
             type="number"
@@ -398,16 +452,27 @@ export default function CashPage() {
             ))}
           </div>
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setOpenModal(null)}>Annuler</Button>
+            <Button variant="ghost" onClick={() => setOpenModal(null)}>
+              Annuler
+            </Button>
             <Button onClick={() => freeMutation.mutate()} disabled={busy || !Number(freeAmount)}>
-              {freeMutation.isPending ? <Loader className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {freeMutation.isPending ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
               Encaisser
             </Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={openModal === 'expense'} onClose={() => setOpenModal(null)} title="Sortie de caisse" description="Chaque franc qui sort de la boîte est tracé, signé, auditable.">
+      <Modal
+        open={openModal === 'expense'}
+        onClose={() => setOpenModal(null)}
+        title="Sortie de caisse"
+        description="Chaque franc qui sort de la boîte est tracé, signé, auditable."
+      >
         <div className="space-y-4">
           <Input
             placeholder="Motif (ex: eau 200F, transport 1000F…)"
@@ -423,16 +488,31 @@ export default function CashPage() {
             onChange={(e) => setExpenseAmount(e.target.value)}
           />
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setOpenModal(null)}>Annuler</Button>
-            <Button variant="danger" onClick={() => expenseMutation.mutate()} disabled={busy || !Number(expenseAmount)}>
-              {expenseMutation.isPending ? <Loader className="h-4 w-4 animate-spin" /> : <Minus className="h-4 w-4" />}
+            <Button variant="ghost" onClick={() => setOpenModal(null)}>
+              Annuler
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => expenseMutation.mutate()}
+              disabled={busy || !Number(expenseAmount)}
+            >
+              {expenseMutation.isPending ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Minus className="h-4 w-4" />
+              )}
               Enregistrer la sortie
             </Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={openModal === 'close'} onClose={() => setOpenModal(null)} title="Clôturer la caisse" description="Le point du soir : le système calcule, vous comptez, l'écart saute aux yeux.">
+      <Modal
+        open={openModal === 'close'}
+        onClose={() => setOpenModal(null)}
+        title="Clôturer la caisse"
+        description="Le point du soir : le système calcule, vous comptez, l'écart saute aux yeux."
+      >
         <div className="space-y-4">
           <div className="rounded-2xl border border-slate-200/70 bg-slate-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
             <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -457,7 +537,9 @@ export default function CashPage() {
           />
           {actualBalance !== '' && (
             <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 px-4 py-3 dark:border-gray-700">
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Écart détecté</span>
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                Écart détecté
+              </span>
               <span
                 className={`text-lg font-bold tabular-nums ${
                   Number(actualBalance) - (totals?.expectedBalance ?? 0) === 0
@@ -471,9 +553,19 @@ export default function CashPage() {
             </div>
           )}
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setOpenModal(null)}>Annuler</Button>
-            <Button variant="danger" onClick={() => closeMutation.mutate()} disabled={busy || actualBalance === ''}>
-              {closeMutation.isPending ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            <Button variant="ghost" onClick={() => setOpenModal(null)}>
+              Annuler
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => closeMutation.mutate()}
+              disabled={busy || actualBalance === ''}
+            >
+              {closeMutation.isPending ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
               Clôturer
             </Button>
           </div>

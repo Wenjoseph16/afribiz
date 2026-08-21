@@ -63,7 +63,7 @@ export default function FloatingActions({
         </div>
         <div className="relative group/tooltip">
           <button
-            onClick={() => router.push('/dashboard/explore')}
+            onClick={() => router.push('/marketplace')}
             className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 shadow-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
           >
             <History className="h-5 w-5" />

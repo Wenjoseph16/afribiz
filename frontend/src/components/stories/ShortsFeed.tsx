@@ -34,10 +34,7 @@ import {
   useSaveShort,
   useShortComments,
 } from '@/hooks/features/useShorts';
-import {
-  useMediaCommerceData,
-  COMMERCE_ACTIONS,
-} from '@/hooks/features/useMediaCommerce';
+import { useMediaCommerceData, COMMERCE_ACTIONS } from '@/hooks/features/useMediaCommerce';
 import { VideoCheckoutOverlay } from '@/components/media/VideoCheckoutOverlay';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/services/apiClient';

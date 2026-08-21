@@ -1,13 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {
-  AlertTriangle,
-  Clock,
-  Truck,
-  CreditCard,
-  MessageCircle,
-} from 'lucide-react';
+import { AlertTriangle, Clock, Truck, CreditCard, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface UrgentAction {
@@ -72,9 +66,7 @@ export function UrgentActions({ actions }: UrgentActionsProps) {
                 colors.border
               )}
             >
-              <span className={cn('p-2 rounded-lg', colors.bg, colors.text)}>
-                {action.icon}
-              </span>
+              <span className={cn('p-2 rounded-lg', colors.bg, colors.text)}>{action.icon}</span>
               <span className="flex-1 text-sm font-medium text-slate-800 truncate">
                 {action.label}
               </span>

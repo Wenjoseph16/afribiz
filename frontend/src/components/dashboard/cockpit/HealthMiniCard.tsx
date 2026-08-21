@@ -54,14 +54,7 @@ export function HealthMiniCard({
         {/* Score circulaire */}
         <div className="relative w-16 h-16 shrink-0">
           <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-            <circle
-              cx="32"
-              cy="32"
-              r="28"
-              fill="none"
-              stroke="#E2E8F0"
-              strokeWidth="5"
-            />
+            <circle cx="32" cy="32" r="28" fill="none" stroke="#E2E8F0" strokeWidth="5" />
             <circle
               cx="32"
               cy="32"
