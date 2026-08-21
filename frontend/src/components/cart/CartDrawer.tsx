@@ -214,7 +214,9 @@ export function CartDrawer({
                     <div className="w-20 h-20 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center mb-5">
                       <ShoppingBag className="w-9 h-9 text-emerald-500/30" />
                     </div>
-                    <p className="text-gray-500 dark:text-white/40 font-medium">Votre panier est vide</p>
+                    <p className="text-gray-500 dark:text-white/40 font-medium">
+                      Votre panier est vide
+                    </p>
                     <p className="text-gray-400 dark:text-white/20 text-sm mt-1">
                       Parcourez la marketplace pour trouver des produits
                     </p>

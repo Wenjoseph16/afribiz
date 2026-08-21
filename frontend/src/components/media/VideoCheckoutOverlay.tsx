@@ -3,7 +3,18 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { X, Minus, Plus, ShieldCheck, Loader2, Check, ShoppingBag, Calendar, ArrowRight, PiggyBank } from 'lucide-react';
+import {
+  X,
+  Minus,
+  Plus,
+  ShieldCheck,
+  Loader2,
+  Check,
+  ShoppingBag,
+  Calendar,
+  ArrowRight,
+  PiggyBank,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { apiClient } from '@/services/apiClient';
@@ -25,9 +36,7 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
   const { user } = useAuthStore();
   const [quantity, setQuantity] = useState(1);
   const [method, setMethod] = useState('WAVE');
-  const [date, setDate] = useState(
-    new Date(Date.now() + 86400000).toISOString().slice(0, 10)
-  );
+  const [date, setDate] = useState(new Date(Date.now() + 86400000).toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<any>(null);
@@ -80,7 +89,10 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" onClick={handleClose}>
+    <div
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in"
+      onClick={handleClose}
+    >
       <div
         className="w-full sm:max-w-md bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl animate-slide-up overflow-hidden border border-white/10"
         onClick={(e) => e.stopPropagation()}
@@ -91,7 +103,10 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
             <ShoppingBag className="w-4 h-4 text-brand-500" />
             {order ? 'Commande confirmée' : isBook ? 'Réserver' : 'Acheter sur la vidéo'}
           </h3>
-          <button onClick={handleClose} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <button
+            onClick={handleClose}
+            className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
             <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
@@ -107,7 +122,10 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
                 {order.kind === 'book' ? 'Réservation créée ✓' : 'Commande créée ✓'}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Référence : <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">{order.reference}</span>
+                Référence :{' '}
+                <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">
+                  {order.reference}
+                </span>
               </p>
               <p className="text-xs text-gray-400 mt-2">
                 Le business a été notifié. Vous pourrez finaliser le paiement depuis vos commandes.
@@ -136,7 +154,13 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/60">
               <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 flex-shrink-0">
                 {image ? (
-                  <Image src={image} alt={data?.name || data?.title || ''} width={64} height={64} className="object-cover w-full h-full" />
+                  <Image
+                    src={image}
+                    alt={data?.name || data?.title || ''}
+                    width={64}
+                    height={64}
+                    className="object-cover w-full h-full"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <ShoppingBag className="w-6 h-6" />
@@ -144,7 +168,9 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{data?.name || data?.title}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                  {data?.name || data?.title}
+                </p>
                 <p className="text-lg font-bold text-brand-600 dark:text-brand-400">
                   {Number(price).toLocaleString('fr-FR')} FCFA
                 </p>
@@ -160,7 +186,9 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
             {/* Quantité (produits) */}
             {isProduct && (
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantité</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Quantité
+                </span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -168,7 +196,9 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="w-8 text-center text-sm font-bold text-gray-900 dark:text-white">{quantity}</span>
+                  <span className="w-8 text-center text-sm font-bold text-gray-900 dark:text-white">
+                    {quantity}
+                  </span>
                   <button
                     onClick={() => setQuantity((q) => Math.min(99, q + 1))}
                     className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-brand-600 dark:text-brand-400 hover:bg-brand-200 dark:hover:bg-brand-800 active:scale-90 transition-all"
@@ -198,7 +228,9 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
             {/* Moyen de paiement */}
             {isProduct && (
               <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payer avec</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Payer avec
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {PAYMENT_METHODS.map((m) => (
                     <button
@@ -213,7 +245,9 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
                     >
                       <span className="text-lg">{m.emoji}</span>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 dark:text-white">{m.label}</p>
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                          {m.label}
+                        </p>
                         <p className="text-[10px] text-gray-400 truncate">{m.desc}</p>
                       </div>
                     </button>
@@ -236,7 +270,8 @@ export function VideoCheckoutOverlay({ open, onClose, commerce }: VideoCheckoutO
               <div>
                 <p className="text-[11px] text-gray-400">Total</p>
                 <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {Number(total).toLocaleString('fr-FR')} <span className="text-sm font-medium">FCFA</span>
+                  {Number(total).toLocaleString('fr-FR')}{' '}
+                  <span className="text-sm font-medium">FCFA</span>
                 </p>
               </div>
               <button

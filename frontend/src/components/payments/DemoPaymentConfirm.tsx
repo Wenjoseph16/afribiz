@@ -80,8 +80,8 @@ export default function DemoPaymentConfirm({
       </div>
       <p className="text-xs text-amber-600 dark:text-amber-400">
         📲 Mode démonstration — une notification de paiement a été envoyée à votre téléphone.
-        Confirmez pour simuler la réponse du réseau mobile money (le webhook FedaPay est
-        rejoué à l&apos;identique).
+        Confirmez pour simuler la réponse du réseau mobile money (le webhook FedaPay est rejoué à
+        l&apos;identique).
       </p>
       <Button
         size="sm"

@@ -105,10 +105,18 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
       setProofUrl('');
       setNotes('');
       setShowAddPayment(false);
-      notify({ title: 'Paiement enregistré', description: 'Le paiement a été ajouté avec succès.', variant: 'success' });
+      notify({
+        title: 'Paiement enregistré',
+        description: 'Le paiement a été ajouté avec succès.',
+        variant: 'success',
+      });
     },
     onError: (err: any) => {
-      notify({ title: 'Erreur paiement', description: err?.message || 'Impossible d\'enregistrer le paiement.', variant: 'error' });
+      notify({
+        title: 'Erreur paiement',
+        description: err?.message || "Impossible d'enregistrer le paiement.",
+        variant: 'error',
+      });
     },
   });
 
@@ -124,10 +132,18 @@ export function HybridPaymentSection({ orderId, orderTotal }: HybridPaymentSecti
     }) => apiClient.verifyPayment(paymentId, { verified, notes: vNotes }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hybrid-payments', orderId] });
-      notify({ title: 'Paiement vérifié', description: 'Le statut du paiement a été mis à jour.', variant: 'success' });
+      notify({
+        title: 'Paiement vérifié',
+        description: 'Le statut du paiement a été mis à jour.',
+        variant: 'success',
+      });
     },
     onError: (err: any) => {
-      notify({ title: 'Erreur', description: err?.message || 'Impossible de vérifier le paiement.', variant: 'error' });
+      notify({
+        title: 'Erreur',
+        description: err?.message || 'Impossible de vérifier le paiement.',
+        variant: 'error',
+      });
     },
   });
 

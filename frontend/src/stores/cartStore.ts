@@ -116,3 +116,20 @@ export const useCartStore = create<CartStore>()(
     }
   )
 );
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== 'afribiz-cart') return;
+    if (!e.newValue) {
+      useCartStore.setState({ items: [] });
+      return;
+    }
+    try {
+      const parsed = JSON.parse(e.newValue);
+      const items: CartItem[] = Array.isArray(parsed?.state?.items) ? parsed.state.items : [];
+      useCartStore.setState({ items });
+    } catch {
+      // valeur de stockage invalide : on l'ignore
+    }
+  });
+}
