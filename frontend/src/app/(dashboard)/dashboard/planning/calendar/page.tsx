@@ -131,37 +131,37 @@ export default function CalendarViewPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-          <div className="flex border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+            <div className="flex border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setView('month')}
+                className={cn(
+                  'px-3 py-1.5 text-xs font-medium transition-colors',
+                  view === 'month'
+                    ? 'bg-brand text-white'
+                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                )}
+              >
+                Mois
+              </button>
+              <button
+                onClick={() => setView('week')}
+                className={cn(
+                  'px-3 py-1.5 text-xs font-medium transition-colors',
+                  view === 'week'
+                    ? 'bg-brand text-white'
+                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                )}
+              >
+                Semaine
+              </button>
+            </div>
             <button
-              onClick={() => setView('month')}
-              className={cn(
-                'px-3 py-1.5 text-xs font-medium transition-colors',
-                view === 'month'
-                  ? 'bg-brand text-white'
-                  : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-              )}
+              onClick={() => setCurrentDate(new Date())}
+              className="px-3 py-1.5 rounded-xl text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
-              Mois
-            </button>
-            <button
-              onClick={() => setView('week')}
-              className={cn(
-                'px-3 py-1.5 text-xs font-medium transition-colors',
-                view === 'week'
-                  ? 'bg-brand text-white'
-                  : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
-              )}
-            >
-              Semaine
+              Aujourd'hui
             </button>
           </div>
-          <button
-            onClick={() => setCurrentDate(new Date())}
-            className="px-3 py-1.5 rounded-xl text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            Aujourd'hui
-          </button>
-        </div>
         }
       />
 

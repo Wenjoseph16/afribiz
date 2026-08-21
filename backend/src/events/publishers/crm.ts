@@ -147,8 +147,8 @@ export const publishSatisfactionSurvey = def<{
     const link = p.orderId
       ? `/satisfaction?orderId=${p.orderId}`
       : p.bookingId
-      ? `/satisfaction?bookingId=${p.bookingId}`
-      : '/satisfaction';
+        ? `/satisfaction?bookingId=${p.bookingId}`
+        : '/satisfaction';
     return { orderId: p.orderId, businessName: p.businessName, link };
   }
 );

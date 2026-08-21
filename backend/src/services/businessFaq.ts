@@ -17,7 +17,7 @@ export async function getBusinessFaqs(slug: string) {
 
 export async function getMyFaqs(userId: string) {
   const business = await prisma.business.findFirst({
-      where: { ownerId: userId },
+    where: { ownerId: userId },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -33,7 +33,7 @@ export async function createFaq(
   data: { question: string; answer: string; category?: string; sortOrder?: number }
 ) {
   const business = await prisma.business.findFirst({
-      where: { ownerId: userId },
+    where: { ownerId: userId },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -61,7 +61,7 @@ export async function updateFaq(
   }
 ) {
   const business = await prisma.business.findFirst({
-      where: { ownerId: userId },
+    where: { ownerId: userId },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -79,7 +79,7 @@ export async function updateFaq(
 
 export async function deleteFaq(userId: string, faqId: string) {
   const business = await prisma.business.findFirst({
-      where: { ownerId: userId },
+    where: { ownerId: userId },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -94,7 +94,7 @@ export async function deleteFaq(userId: string, faqId: string) {
 
 export async function reorderFaqs(userId: string, faqIds: string[]) {
   const business = await prisma.business.findFirst({
-      where: { ownerId: userId },
+    where: { ownerId: userId },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);

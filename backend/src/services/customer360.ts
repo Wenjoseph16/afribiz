@@ -205,7 +205,8 @@ export async function getCustomer360(businessId: string, clientId: string) {
       status: lp.status,
       savedAmount,
       targetAmount,
-      progress: targetAmount > 0 ? Math.min(100, Math.round((savedAmount / targetAmount) * 100)) : 0,
+      progress:
+        targetAmount > 0 ? Math.min(100, Math.round((savedAmount / targetAmount) * 100)) : 0,
       remaining: Math.max(0, targetAmount - savedAmount),
       expiresAt: lp.expiresAt,
       createdAt: lp.createdAt,

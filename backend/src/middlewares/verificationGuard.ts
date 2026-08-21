@@ -15,7 +15,7 @@ export async function checkTransactionLimit(
   if (!amount) return next();
 
   const business = await prisma.business.findFirst({
-      where: { ownerId: req.user.id },
+    where: { ownerId: req.user.id },
     select: { verificationLevel: true },
   });
 
@@ -40,7 +40,7 @@ export async function checkDailyTransactionLimit(
   if (!req.user) throw new AppError('Non authentifié', 401);
 
   const business = await prisma.business.findFirst({
-      where: { ownerId: req.user.id },
+    where: { ownerId: req.user.id },
     select: { verificationLevel: true },
   });
 

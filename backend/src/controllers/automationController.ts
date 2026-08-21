@@ -7,7 +7,7 @@ import * as automationEngine from '../services/automationEngine';
 async function getBusinessId(req: AuthenticatedRequest) {
   if (!req.user) throw new AppError('Non authentifié', 401);
   const business = await prisma.business.findFirst({
-      where: { ownerId: req.user.id },
+    where: { ownerId: req.user.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);

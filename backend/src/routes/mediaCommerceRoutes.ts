@@ -18,7 +18,7 @@ router.get(
     if (businessId) where.businessId = businessId;
     else if (req.user?.primaryRole === 'BUSINESS') {
       const business = await prisma.business.findFirst({
-      where: { ownerId: req.user!.id, deletedAt: null },
+        where: { ownerId: req.user!.id, deletedAt: null },
         select: { id: true },
       });
       if (business) where.businessId = business.id;

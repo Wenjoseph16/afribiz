@@ -138,52 +138,52 @@ export default function SchedulesPage() {
           { label: 'Horaires' },
         ]}
         actions={
-        <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 mr-1">
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={cn(
-                'px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1',
-                viewMode === 'calendar'
-                  ? 'bg-white dark:bg-gray-700 text-brand shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              )}
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 mr-1">
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={cn(
+                  'px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1',
+                  viewMode === 'calendar'
+                    ? 'bg-white dark:bg-gray-700 text-brand shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                )}
+              >
+                <CalendarRange className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Calendrier</span>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1',
+                  viewMode === 'list'
+                    ? 'bg-white dark:bg-gray-700 text-brand shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                )}
+              >
+                <LayoutList className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Liste</span>
+              </button>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingId(null);
+                setForm({
+                  employeeName: '',
+                  dayOfWeek: selectedDay,
+                  startTime: '08:00',
+                  endTime: '18:00',
+                  isActive: true,
+                });
+                setShowCreate(true);
+              }}
             >
-              <CalendarRange className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Calendrier</span>
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                'px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1',
-                viewMode === 'list'
-                  ? 'bg-white dark:bg-gray-700 text-brand shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              )}
-            >
-              <LayoutList className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Liste</span>
-            </button>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Nouvel horaire
+            </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditingId(null);
-              setForm({
-                employeeName: '',
-                dayOfWeek: selectedDay,
-                startTime: '08:00',
-                endTime: '18:00',
-                isActive: true,
-              });
-              setShowCreate(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-1.5" />
-            Nouvel horaire
-          </Button>
-        </div>
         }
       />
 

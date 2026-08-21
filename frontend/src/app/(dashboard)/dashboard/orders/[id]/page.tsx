@@ -195,12 +195,20 @@ export default function OrderDetailPage() {
     setUpdating(true);
     try {
       await apiClient.post(`/orders/${id}/cancel`, { reason: cancelReason });
-      notify({ title: 'Commande annulée', description: 'La commande a été annulée avec succès.', variant: 'info' });
+      notify({
+        title: 'Commande annulée',
+        description: 'La commande a été annulée avec succès.',
+        variant: 'info',
+      });
       refetch();
       setShowCancel(false);
       setCancelReason('');
     } catch (err: any) {
-      notify({ title: 'Erreur', description: err?.message || 'Impossible d\'annuler la commande.', variant: 'error' });
+      notify({
+        title: 'Erreur',
+        description: err?.message || "Impossible d'annuler la commande.",
+        variant: 'error',
+      });
     } finally {
       setUpdating(false);
     }

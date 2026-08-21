@@ -188,9 +188,7 @@ export default function CheckoutPage() {
               <Button
                 type="submit"
                 className="w-full py-4 text-lg"
-                disabled={
-                  initiatePayment.isPending || !amount || parseFloat(amount) <= 0
-                }
+                disabled={initiatePayment.isPending || !amount || parseFloat(amount) <= 0}
               >
                 {initiatePayment.isPending ? (
                   <span className="flex items-center gap-2">

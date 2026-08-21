@@ -77,8 +77,7 @@ export async function processMobileMoney(
     'DEMO',
   ];
   if (!validProviders.includes(provider)) throw new AppError('Opérateur non supporté', 400);
-  if (provider !== 'DEMO' && !phone?.trim())
-    throw new AppError('Numéro de téléphone requis', 400);
+  if (provider !== 'DEMO' && !phone?.trim()) throw new AppError('Numéro de téléphone requis', 400);
   if (amount <= 0) throw new AppError('Montant invalide', 400);
 
   // ── Mode démonstration (sans clé FedaPay) : parcours FIDÈLE à la plateforme ──
@@ -91,8 +90,7 @@ export async function processMobileMoney(
       providerRef: `sim_demo_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
       status: 'PENDING',
       fee: Math.round(amount * 0.01),
-      message:
-        '📲 Mode démo — paiement initié. Confirmez sur votre téléphone (simulation).',
+      message: '📲 Mode démo — paiement initié. Confirmez sur votre téléphone (simulation).',
     };
   }
 

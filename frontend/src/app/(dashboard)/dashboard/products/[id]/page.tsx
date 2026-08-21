@@ -117,39 +117,39 @@ export default function ProductDetailPage() {
         ]}
         actions={
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          <Link href={`/dashboard/products/${id}/edit`}>
-            <Button size="sm" variant="secondary">
-              <Pencil className="h-4 w-4 mr-1.5" />
-              Modifier
+            <Link href={`/dashboard/products/${id}/edit`}>
+              <Button size="sm" variant="secondary">
+                <Pencil className="h-4 w-4 mr-1.5" />
+                Modifier
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleToggleActive}
+              isLoading={toggleActive.isPending}
+            >
+              <Eye className="h-4 w-4 mr-1.5" />
+              {product.isActive ? 'Désactiver' : 'Activer'}
             </Button>
-          </Link>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleToggleActive}
-            isLoading={toggleActive.isPending}
-          >
-            <Eye className="h-4 w-4 mr-1.5" />
-            {product.isActive ? 'Désactiver' : 'Activer'}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleDuplicate}
-            isLoading={duplicate.isPending}
-          >
-            <Copy className="h-4 w-4 mr-1.5" />
-            Dupliquer
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => setShowDeleteConfirm(true)}
-            isLoading={deleteProduct.isPending}
-          >
-            <Trash2 className="h-4 w-4 mr-1.5" />
-            Supprimer
-          </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleDuplicate}
+              isLoading={duplicate.isPending}
+            >
+              <Copy className="h-4 w-4 mr-1.5" />
+              Dupliquer
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => setShowDeleteConfirm(true)}
+              isLoading={deleteProduct.isPending}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Supprimer
+            </Button>
           </div>
         }
       />

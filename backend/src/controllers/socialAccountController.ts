@@ -8,7 +8,7 @@ async function getBusinessId(req: AuthenticatedRequest) {
   const business = await (
     await import('../lib/db')
   ).prisma.business.findFirst({
-      where: { ownerId: req.user.id },
+    where: { ownerId: req.user.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);

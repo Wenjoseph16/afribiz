@@ -57,10 +57,5 @@ export async function trackCampaignAction(req: Request, res: Response): Promise<
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('X-Track-Action', action);
   // GIF transparent 1x1
-  res.send(
-    Buffer.from(
-      'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-      'base64'
-    )
-  );
+  res.send(Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'));
 }

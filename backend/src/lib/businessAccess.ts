@@ -1,7 +1,14 @@
 import { prisma } from './db';
 import { AppError } from '../middlewares/errorHandler';
 
-const BUSINESS_SELECT = { id: true, name: true, latitude: true, longitude: true, type: true, logo: true } as const;
+const BUSINESS_SELECT = {
+  id: true,
+  name: true,
+  latitude: true,
+  longitude: true,
+  type: true,
+  logo: true,
+} as const;
 
 /**
  * Retourne le business d'un propriétaire.

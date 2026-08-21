@@ -52,7 +52,7 @@ async function getDeveloperIdByUserId(userId: string): Promise<string> {
 
 async function getBusinessIdByOwnerId(ownerId: string): Promise<string> {
   const business = await prisma.business.findFirst({
-      where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);

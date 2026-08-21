@@ -253,7 +253,7 @@ export default function AfriScorePage() {
           {
             label: 'Note publique',
             value: sat.avgRating ? `${Number(sat.avgRating).toFixed(1)} / 5` : '—',
-            sub: `${sat.reviewCount || 0} avis`, 
+            sub: `${sat.reviewCount || 0} avis`,
           },
           {
             label: 'Satisfaction (avis)',

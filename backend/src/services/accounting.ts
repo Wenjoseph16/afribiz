@@ -5,7 +5,7 @@ import { addMovement, normalizeCashMethod } from './cashService';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findFirst({
-      where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null },
     select: { id: true, name: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);

@@ -8,7 +8,7 @@ import { DomainEventType, DomainEvent } from '../events/events';
 
 async function getBusinessByOwner(ownerId: string) {
   const business = await prisma.business.findFirst({
-      where: { ownerId, deletedAt: null },
+    where: { ownerId, deletedAt: null },
     select: { id: true, name: true, modules: true },
   });
   if (!business) throw new AppError('Business not found', 404);

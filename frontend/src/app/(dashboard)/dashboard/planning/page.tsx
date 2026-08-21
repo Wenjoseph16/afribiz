@@ -419,9 +419,9 @@ function TaskCard({ task }: { task: PlanningTask }) {
   const dueDate = new Date(task.dueDate);
   const isOverdue =
     task.status !== 'DONE' &&
-      task.status !== 'CANCELLED' &&
-      task.status !== 'BLOCKED' &&
-      dueDate < new Date();
+    task.status !== 'CANCELLED' &&
+    task.status !== 'BLOCKED' &&
+    dueDate < new Date();
   const pConf = priorityConfig[task.priority] || priorityConfig.MEDIUM;
   const sConf = statusColor(task.status);
   const badge = getBadge(task);
@@ -484,9 +484,9 @@ function TaskRow({ task }: { task: PlanningTask }) {
   const dueDate = new Date(task.dueDate);
   const isOverdue =
     task.status !== 'DONE' &&
-      task.status !== 'CANCELLED' &&
-      task.status !== 'BLOCKED' &&
-      dueDate < new Date();
+    task.status !== 'CANCELLED' &&
+    task.status !== 'BLOCKED' &&
+    dueDate < new Date();
   const pConf = priorityConfig[task.priority] || priorityConfig.MEDIUM;
   const sConf = statusColor(task.status);
   const badge = getBadge(task);

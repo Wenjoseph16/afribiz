@@ -20,7 +20,7 @@ router.use(['/analytics', '/copilot', '/datahub'], authMiddleware);
  */
 const copilotGuard = catchAsyncErrors(async (req: AuthenticatedRequest, _res: any, next: any) => {
   const business = await prisma.business.findFirst({
-      where: { ownerId: req.user!.id },
+    where: { ownerId: req.user!.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Aucun business associé à ce compte', 404);

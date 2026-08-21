@@ -7,7 +7,7 @@ export const createDemand = catchAsyncErrors(async (req: AuthenticatedRequest, r
   if (!req.user) throw new AppError('Non authentifié', 401);
 
   const business = await prisma.business.findFirst({
-      where: { ownerId: req.user.id },
+    where: { ownerId: req.user.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);
@@ -35,7 +35,7 @@ export const getMyDemands = catchAsyncErrors(async (req: AuthenticatedRequest, r
   if (!req.user) throw new AppError('Non authentifié', 401);
 
   const business = await prisma.business.findFirst({
-      where: { ownerId: req.user.id },
+    where: { ownerId: req.user.id },
     select: { id: true },
   });
   if (!business) throw new AppError('Business non trouvé', 404);

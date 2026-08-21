@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { getBossCockpitOverview, getSingleBusinessCockpit } from '../controllers/bossCockpitController';
+import {
+  getBossCockpitOverview,
+  getSingleBusinessCockpit,
+} from '../controllers/bossCockpitController';
 import {
   getPublicBusiness,
   getBusinessProducts,
