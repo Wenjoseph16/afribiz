@@ -476,6 +476,8 @@ export const updatePublicPage = catchAsyncErrors(
       socialLinks,
       logo,
       coverImage,
+      theme,
+      gallery,
       hours,
     } = req.body;
     const business = await prisma.business.findFirst({ where: { ownerId: req.user.id } });
@@ -497,11 +499,30 @@ export const updatePublicPage = catchAsyncErrors(
     if (socialLinks !== undefined) updateData.socialLinks = socialLinks;
     if (tagline !== undefined) updateData.tagline = tagline;
     if (googleMapsLink !== undefined) updateData.googleMapsLink = googleMapsLink;
+    // Thème de la vitrine : fusion avec l'existant pour ne pas écraser les clés non envoyées
+    if (theme !== undefined && theme !== null && typeof theme === 'object') {
+      const current =
+        business.theme && typeof business.theme === 'object'
+          ? (business.theme as Record<string, unknown>)
+          : {};
+      updateData.theme = { ...current, ...theme };
+    }
+    if (gallery !== undefined && Array.isArray(gallery)) {
+      updateData.gallery = gallery.filter((u: unknown) => typeof u === 'string' && u.length > 0);
+    }
 
-    await prisma.business.update({
-      where: { id: business.id },
-      data: updateData,
-    });
+    try {
+      await prisma.business.update({
+        where: { id: business.id },
+        data: updateData,
+      });
+    } catch (err: any) {
+      // P2002 = violation d'unicité (le slug est déjà pris par un autre business)
+      if (err?.code === 'P2002') {
+        throw new AppError('Ce slug est déjà utilisé par un autre business', 409);
+      }
+      throw err;
+    }
 
     // Update hours if provided
     if (hours && Array.isArray(hours)) {

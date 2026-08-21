@@ -13,7 +13,7 @@ export const onboardingSchema = z.object({
   shortDescription: z
     .string()
     .min(10, 'Description trop courte')
-    .max(150, 'Maximum 150 caractères'),
+    .max(300, 'Maximum 300 caractères'),
   phone: z.string().min(4, 'Numéro de téléphone requis'),
   whatsapp: z.string().optional(),
   address: z.string().min(5, "L'adresse est requise"),
@@ -29,6 +29,7 @@ export const onboardingSchema = z.object({
   experience: z.number().int().min(0).max(100).optional(),
   skills: z.array(z.string()).optional().default([]),
   certifications: z.array(z.string()).optional().default([]),
+  certificationImages: z.array(z.string()).optional().default([]),
   website: z.string().url().optional().or(z.literal('')),
   facebook: z.string().optional(),
   instagram: z.string().optional(),
@@ -61,6 +62,22 @@ export const onboardingSchema = z.object({
     .default([]),
 });
 
+export const businessThemeSchema = z.object({
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Couleur invalide')
+    .optional(),
+  backgroundColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Couleur invalide')
+    .optional(),
+  borderRadius: z.enum(['sm', 'md', 'xl', '2xl']).optional(),
+  fontFamily: z.enum(['inter', 'geist', 'system']).optional(),
+  enableAnimations: z.boolean().optional(),
+  layout: z.enum(['standard', 'compact', 'elegant']).optional(),
+  sectionVisibility: z.record(z.string(), z.boolean()).optional(),
+});
+
 export const publicPageSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   slug: z
@@ -82,6 +99,8 @@ export const publicPageSchema = z.object({
   logo: z.string().optional(),
   coverImage: z.string().optional(),
   socialLinks: z.record(z.string()).optional(),
+  theme: businessThemeSchema.optional(),
+  gallery: z.array(z.string()).max(10, 'Maximum 10 photos').optional(),
   hours: z
     .array(
       z.object({
@@ -103,3 +122,4 @@ export const businessVerificationSchema = z.object({
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
 export type PublicPageInput = z.infer<typeof publicPageSchema>;
+export type BusinessThemeInput = z.infer<typeof businessThemeSchema>;

@@ -1601,6 +1601,8 @@ model Business {
   seoTitle            String?
   seoDescription      String?
   socialLinks         Json?
+  theme               Json?
+  gallery             String[]                 @default([])
   whatsapp            String?
   facebook            String?
   instagram           String?

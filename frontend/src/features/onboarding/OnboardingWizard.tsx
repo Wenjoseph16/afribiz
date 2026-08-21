@@ -30,6 +30,15 @@ const STEPS: OnboardingStepDef[] = [
   { id: 5, label: 'Modules', caption: 'Vos outils' },
 ];
 
+// Ranges affichés → années (borne basse, stockées en Int côté backend)
+const EXPERIENCE_YEARS_MAP: Record<string, number> = {
+  '<1': 0,
+  '1-3': 1,
+  '3-5': 3,
+  '5-10': 5,
+  '10+': 10,
+};
+
 const initialData: OnboardingData = {
   name: '',
   typeId: '',
@@ -141,7 +150,9 @@ export function OnboardingWizard() {
         logo: data.logo || undefined,
         coverImage: data.banner || undefined,
         managerBio: data.experienceDescription || undefined,
-        experience: data.experienceYears ? parseInt(data.experienceYears) || undefined : undefined,
+        experience: data.experienceYears
+          ? (EXPERIENCE_YEARS_MAP[data.experienceYears] ?? undefined)
+          : undefined,
         skills: data.competencies,
         certifications: data.certificates.map((c) => c.name + (c.issuer ? ` — ${c.issuer}` : '')),
         certificationImages: data.certificates.map((c) => c.fileUrl || ''),
