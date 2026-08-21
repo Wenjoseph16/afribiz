@@ -9,6 +9,14 @@ export function injectMessagesExtended(api: ApiClientMethods) {
     content: string;
     attachment?: string;
     attachmentType?: string;
+    product?: {
+      id: string;
+      name: string;
+      price?: string | number;
+      image?: string | null;
+      slug?: string;
+      businessId?: string;
+    };
   }) {
     return this.post('/messages', payload);
   };

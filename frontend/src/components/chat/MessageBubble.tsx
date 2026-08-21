@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCheck, Play, Pause, ImageIcon, FileText } from 'lucide-react';
+import {
+  CheckCheck,
+  Play,
+  Pause,
+  ImageIcon,
+  FileText,
+  ShoppingBag,
+  ExternalLink,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MessageReactions } from './MessageReactions';
 import Image from 'next/image';
@@ -17,6 +25,12 @@ interface MessageBubbleProps {
     createdAt?: string;
     read?: boolean;
     readAt?: string | null;
+    productId?: string | null;
+    productName?: string | null;
+    productPrice?: string | null;
+    productImage?: string | null;
+    productSlug?: string | null;
+    businessId?: string | null;
   };
   /** ID of the "other" participant (not the current user) */
   otherParticipantId?: string;
@@ -39,6 +53,7 @@ export function MessageBubble({
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
   const [imgError, setImgError] = useState(false);
+  const [productImgError, setProductImgError] = useState(false);
 
   const toggleAudio = () => {
     if (!audioRef && message.attachment) {
@@ -129,6 +144,73 @@ export function MessageBubble({
                   />
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Linked product */}
+        {message.productId && message.productName && (
+          <div
+            className={cn(
+              'mb-2 -mx-4 rounded-xl overflow-hidden border',
+              isOutgoing
+                ? 'bg-white/10 border-white/20'
+                : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-700'
+            )}
+          >
+            {message.productImage && !productImgError && (
+              <div className="relative h-28 w-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={message.productImage}
+                  alt={message.productName}
+                  onError={() => setProductImgError(true)}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="p-3">
+              <div
+                className={cn(
+                  'flex items-center gap-1.5 mb-1',
+                  isOutgoing ? 'text-white/70' : 'text-brand'
+                )}
+              >
+                <ShoppingBag className="h-3 w-3" />
+                <span className="text-[10px] font-semibold uppercase tracking-wide">Produit</span>
+              </div>
+              <p
+                className={cn(
+                  'text-sm font-semibold truncate',
+                  isOutgoing ? 'text-white' : 'text-gray-900 dark:text-white'
+                )}
+              >
+                {message.productName}
+              </p>
+              {message.productPrice && (
+                <p
+                  className={cn(
+                    'text-sm font-bold mt-0.5',
+                    isOutgoing ? 'text-white' : 'text-brand'
+                  )}
+                >
+                  {Number(message.productPrice).toLocaleString('fr-FR')} FCFA
+                </p>
+              )}
+              {message.productSlug && (
+                <a
+                  href={`/product/${message.productSlug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className={cn(
+                    'mt-2 inline-flex items-center gap-1 text-xs font-medium underline',
+                    isOutgoing ? 'text-white decoration-white/40' : 'text-brand decoration-brand/40'
+                  )}
+                >
+                  Voir le produit <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
             </div>
           </div>
         )}

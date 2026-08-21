@@ -20,6 +20,14 @@ export function injectMessages(api: ApiClientMethods) {
     recipientId: string;
     subject?: string;
     initialMessage?: string;
+    product?: {
+      id: string;
+      name: string;
+      price?: string | number;
+      image?: string | null;
+      slug?: string;
+      businessId?: string;
+    };
   }) {
     return this.post('/messages/conversations', data);
   };

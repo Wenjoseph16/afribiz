@@ -13,7 +13,6 @@ import {
   Star,
   Shield,
   Truck,
-  Clock,
   Package,
   Share2,
   Heart,
@@ -28,6 +27,7 @@ import StarRating from '@/components/marketplace/cards/StarRating';
 import AdSlot from '@/components/ads/AdSlot';
 import { LayawayMiniCard } from '@/components/marketplace/LayawayMiniCard';
 import { NegotiationButton } from '@/components/negotiation/NegotiationButton';
+import { setPendingProduct } from '@/lib/messageProduct';
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -365,7 +365,24 @@ export default function ProductDetailPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => router.push(`/dashboard/messages`)}
+                onClick={() => {
+                  if (!product) return;
+                  setPendingProduct({
+                    id: product.id,
+                    name: product.name,
+                    price: product.promotionalPrice || product.price,
+                    image: product.images?.[0] || null,
+                    slug,
+                    businessId: product.business?.id,
+                  });
+                  if (product.business?.slug) {
+                    router.push(
+                      `/dashboard/messages?business=${encodeURIComponent(product.business.slug)}&businessName=${encodeURIComponent(product.business.name)}`
+                    );
+                  } else {
+                    router.push('/dashboard/messages');
+                  }
+                }}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 <MessageCircle className="h-4 w-4" /> Contacter
@@ -375,15 +392,12 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="flex flex-wrap gap-x-6 gap-y-3 pt-2">
               {product.deliveryFee !== null && (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Truck className="h-4 w-4 text-brand" /> Livraison disponible
                 </div>
               )}
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Clock className="h-4 w-4 text-brand" /> Retour sous 14 jours
-              </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Shield className="h-4 w-4 text-brand" /> Paiement sécurisé
               </div>

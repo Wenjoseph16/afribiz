@@ -27,6 +27,15 @@ export function useMessages(conversationId: string, params?: { page?: number; li
   });
 }
 
+export type MessageProduct = {
+  id: string;
+  name: string;
+  price?: string | number;
+  image?: string | null;
+  slug?: string;
+  businessId?: string;
+};
+
 export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
@@ -35,6 +44,7 @@ export function useSendMessage() {
       content: string;
       attachment?: string;
       attachmentType?: string;
+      product?: MessageProduct;
     }) => apiClient.sendMessageDirect(payload),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: messageKeys.conversations });
@@ -55,8 +65,12 @@ export function useCreateSupportTicket() {
 export function useCreateConversation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { recipientId: string; subject?: string; initialMessage?: string }) =>
-      apiClient.createConversation(data),
+    mutationFn: (data: {
+      recipientId: string;
+      subject?: string;
+      initialMessage?: string;
+      product?: MessageProduct;
+    }) => apiClient.createConversation(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: messageKeys.conversations }),
   });
 }

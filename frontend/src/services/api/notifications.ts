@@ -8,10 +8,10 @@ export function injectNotifications(api: ApiClientMethods) {
     return this.get('/notifications/unread-count');
   };
   api.markNotificationRead = function (id: string) {
-    return this.put(`/notifications/${id}/read`);
+    return this.patch(`/notifications/${id}/read`);
   };
   api.markAllNotificationsRead = function () {
-    return this.put('/notifications/read-all');
+    return this.patch('/notifications/read-all');
   };
   api.deleteNotification = function (id: string) {
     return this.delete(`/notifications/${id}`);

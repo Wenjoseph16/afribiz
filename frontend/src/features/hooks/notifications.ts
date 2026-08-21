@@ -44,6 +44,17 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.markNotificationRead(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: notificationKeys.all });
+      qc.invalidateQueries({ queryKey: notificationKeys.unread });
+    },
+  });
+}
+
 export function useDeleteNotification() {
   const qc = useQueryClient();
   return useMutation({

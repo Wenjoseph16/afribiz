@@ -17,6 +17,7 @@ const typeMapping: Record<DomainEventType, NotificationType> = {
   ORDER_AUTO_CANCELLED: NotificationType.ORDER_CANCELLED,
   ORDER_SHIPPED: NotificationType.ORDER_SHIPPED,
   ORDER_DELIVERED: NotificationType.ORDER_DELIVERED,
+  ORDER_DELIVERY_CONFIRM_REMINDER: NotificationType.ORDER_DELIVERED,
   ORDER_CANCELLED: NotificationType.ORDER_CANCELLED,
   BOOKING_CREATED: NotificationType.BOOKING_CONFIRMED,
   BOOKING_CONFIRMED: NotificationType.BOOKING_CONFIRMED,
@@ -198,6 +199,7 @@ const eventTitles: Record<DomainEventType, string> = {
   ORDER_PREPARING: 'Commande en préparation',
   ORDER_SHIPPED: 'Commande expédiée',
   ORDER_DELIVERED: 'Commande livrée',
+  ORDER_DELIVERY_CONFIRM_REMINDER: 'Confirmez votre livraison',
   ORDER_CANCELLED: 'Commande annulée',
   BOOKING_CREATED: 'Nouvelle réservation',
   BOOKING_CONFIRMED: 'Réservation confirmée',
@@ -385,6 +387,8 @@ function buildDescription(event: DomainEvent): string {
       return `Votre commande #${meta.orderId || ''} est en route vers votre adresse.`;
     case DomainEventType.ORDER_DELIVERED:
       return `Votre commande #${meta.orderId || ''} a été livrée. N'oubliez pas de laisser un avis !`;
+    case DomainEventType.ORDER_DELIVERY_CONFIRM_REMINDER:
+      return `Votre commande #${meta.orderId || ''} chez ${meta.businessName || ''} a été livrée. Confirmez la réception pour libérer le paiement au vendeur, ou ouvrez un litige si besoin.`;
     case DomainEventType.BOOKING_REMINDER:
       return `Rappel : votre réservation chez ${meta.businessName || ''} est prévue aujourd'hui.`;
     case DomainEventType.PAYMENT_RECEIVED:

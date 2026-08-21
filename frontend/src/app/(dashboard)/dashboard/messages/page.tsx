@@ -21,7 +21,14 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCheck,
+  PanelRightClose,
+  Zap,
+  MessageSquare,
+  Smartphone,
+  Package,
+  Share2,
 } from 'lucide-react';
+import MessagingContextPanel, { type ContextTab } from '@/components/chat/MessagingContextPanel';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Loader } from '@/components/ui/Loader';
@@ -34,12 +41,14 @@ import {
   useMessages,
   useSendMessage,
   useCreateConversation,
+  MessageProduct,
 } from '@/features/hooks';
 import { ChatInput, TypingIndicator, MessageBubble } from '@/components/chat';
 import { connectSocket, getSocket, disconnectSocket } from '@/services/socket';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
 import { apiClient } from '@/services/apiClient';
+import { MESSAGE_PRODUCT_KEY } from '@/lib/messageProduct';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -77,6 +86,10 @@ export default function MessagesPage() {
   const [socketReady, setSocketReady] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, string>>({});
   const liveConvRef = useRef<string | null>(null);
+  const [pendingProduct, setPendingProduct] = useState<MessageProduct | null>(null);
+  const [contextPanel, setContextPanel] = useState<ContextTab | null>(null);
+  const [contextOrderId, setContextOrderId] = useState<string | undefined>(undefined);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const { user } = useAuthStore();
   const currentUser = user;
@@ -212,6 +225,20 @@ export default function MessagesPage() {
     setTypingUsers({});
   }, [selectedConv?.id]);
 
+  // ─── Produit lié en attente (depuis une carte produit) ───
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(MESSAGE_PRODUCT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.id && parsed?.name) setPendingProduct(parsed);
+        localStorage.removeItem(MESSAGE_PRODUCT_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -227,6 +254,9 @@ export default function MessagesPage() {
     const userId = searchParams.get('userId');
     const businessSlug = searchParams.get('business');
     const businessName = searchParams.get('businessName');
+    const orderIdParam = searchParams.get('orderId');
+
+    if (orderIdParam) setContextOrderId(orderIdParam);
 
     if (!userId && !businessSlug) return;
     if (userId && userId === currentUser?.id) return;
@@ -237,10 +267,15 @@ export default function MessagesPage() {
         if (userId) {
           // Créer une conversation directe avec cet utilisateur
           createConversation.mutate(
-            { recipientId: userId, initialMessage: `Bonjour, je vous contacte depuis AfriBiz.` },
+            {
+              recipientId: userId,
+              initialMessage: `Bonjour, je vous contacte depuis AfriBiz.`,
+              product: pendingProduct || undefined,
+            },
             {
               onSuccess: (data: any) => {
                 refetch();
+                setPendingProduct(null);
                 const conv = data?.data?.data?.conversation || data?.data?.conversation;
                 if (conv) {
                   setSelectedConv(conv);
@@ -260,10 +295,12 @@ export default function MessagesPage() {
                 {
                   recipientId: ownerId,
                   initialMessage: `Bonjour ${recipient.owner?.firstName || recipient.name || ''}, je vous contacte depuis AfriBiz.`,
+                  product: pendingProduct || undefined,
                 },
                 {
                   onSuccess: (data: any) => {
                     refetch();
+                    setPendingProduct(null);
                     const conv = data?.data?.data?.conversation || data?.data?.conversation;
                     if (conv) {
                       setSelectedConv(conv);
@@ -280,7 +317,7 @@ export default function MessagesPage() {
       }
     };
     autoStart();
-  }, [searchParams, createConversation, refetch, currentUser?.id]);
+  }, [searchParams, createConversation, refetch, currentUser?.id, pendingProduct]);
 
   // ─── Search recipients ───
   const searchRecipients = useCallback(
@@ -412,9 +449,13 @@ export default function MessagesPage() {
       payload.attachment = attachment.url;
       payload.attachmentType = attachment.type;
     }
+    if (pendingProduct) {
+      payload.product = pendingProduct;
+    }
     sendMessage.mutate(payload, {
       onSuccess: () => {
         setMessageText('');
+        setPendingProduct(null);
       },
     });
   };
@@ -449,6 +490,35 @@ export default function MessagesPage() {
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   };
 
+  // ─── Templates marchand (Actions Rapides) ───
+  const merchantTemplates = [
+    {
+      icon: Smartphone,
+      label: 'IBAN Wave/Moov',
+      text: 'Voici mon IBAN Wave/Moov pour le paiement : +225 07 00 00 00 00. Merci !',
+    },
+    {
+      icon: MapPin,
+      label: 'Point de retrait',
+      text: 'Votre commande est prête au retrait. Point de retrait : Adresse du magasin. Merci !',
+    },
+    {
+      icon: Share2,
+      label: 'Lien de paiement',
+      text: 'Cliquez ici pour finaliser votre paiement en ligne : https://afribiz.com/pay',
+    },
+    {
+      icon: CheckCheck,
+      label: 'Confirmer dispo',
+      text: 'Bonjour, l’article est bien disponible. Je vous confirme la commande. Merci !',
+    },
+  ];
+
+  const openContextPanel = (tab: ContextTab, orderId?: string) => {
+    if (orderId) setContextOrderId(orderId);
+    setContextPanel((prev) => (prev === tab ? null : tab));
+  };
+
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
   return (
@@ -459,19 +529,19 @@ export default function MessagesPage() {
         breadcrumbs={[{ label: 'Messages' }]}
       />
 
-      <div className="h-[calc(100vh-16rem)] -mx-6 flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 relative">
+      <div className="h-[calc(100vh-16rem)] -mx-6 flex rounded-xl overflow-hidden border border-white/10 bg-slate-950/95 backdrop-blur-xl relative shadow-2xl shadow-black/40">
         {/* ─── Conversation list ─── */}
         <div
           className={cn(
-            'w-80 lg:w-96 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 flex flex-col',
+            'w-80 lg:w-96 shrink-0 border-r border-white/10 bg-slate-950/80 backdrop-blur-xl flex flex-col',
             'absolute lg:relative inset-0 z-10 lg:z-auto',
             !showMobileList && 'hidden lg:flex'
           )}
         >
           {/* Header */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b border-white/10">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Conversations</h2>
+              <h2 className="text-lg font-bold text-gray-100">Conversations</h2>
               <button
                 onClick={() => setShowNewConv(true)}
                 type="button"
@@ -488,7 +558,7 @@ export default function MessagesPage() {
                 placeholder="Rechercher..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 pl-9 pr-4 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 transition-all"
+                className="w-full rounded-xl border border-white/10 bg-white/5 pl-9 pr-4 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand/30 transition-all"
               />
             </div>
           </div>
@@ -518,7 +588,7 @@ export default function MessagesPage() {
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="divide-y divide-gray-50 dark:divide-gray-700/30"
+                className="divide-y divide-white/5"
               >
                 <AnimatePresence mode="popLayout">
                   {filteredConvs.map((conv: any) => (
@@ -528,8 +598,8 @@ export default function MessagesPage() {
                         type="button"
                         className={cn(
                           'w-full flex items-center gap-3 p-4 text-left transition-all relative overflow-hidden',
-                          'hover:bg-gray-50 dark:hover:bg-gray-700/30',
-                          selectedConv?.id === conv.id ? 'bg-brand-50 dark:bg-brand-900/20' : ''
+                          'hover:bg-white/5',
+                          selectedConv?.id === conv.id ? 'bg-brand/10' : ''
                         )}
                       >
                         {selectedConv?.id === conv.id && (
@@ -553,14 +623,14 @@ export default function MessagesPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            <p className="text-sm font-semibold text-gray-100 truncate">
                               {getConvName(conv)}
                             </p>
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0 ml-2 whitespace-nowrap">
+                            <span className="text-[10px] text-gray-500 shrink-0 ml-2 whitespace-nowrap">
                               {formatTime(conv.lastMessageAt)}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                          <p className="text-xs text-gray-400 truncate mt-0.5">
                             {conv.lastMessage || 'Nouvelle conversation'}
                           </p>
                         </div>
@@ -585,65 +655,100 @@ export default function MessagesPage() {
         {/* ─── Chat area ─── */}
         <div
           className={cn(
-            'flex-1 flex flex-col bg-gray-50 dark:bg-gray-900/50',
+            'flex-1 flex flex-col bg-slate-950/50 backdrop-blur-xl',
             !selectedConv && 'items-center justify-center'
           )}
         >
           {selectedConv ? (
             <>
               {/* Chat header */}
-              <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between p-4 bg-white/[0.03] border-b border-white/10">
+                <div className="flex items-center gap-3 min-w-0">
                   <button
                     onClick={() => {
                       setSelectedConv(null);
                       setShowMobileList(true);
                     }}
                     type="button"
-                    className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                    className="lg:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand to-emerald-500 flex items-center justify-center text-white font-bold overflow-hidden">
-                    {getConvAvatar(selectedConv) ? (
-                      <Image
-                        src={getConvAvatar(selectedConv)}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="36px"
-                      />
-                    ) : (
-                      getConvInitial(selectedConv) || '?'
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {getConvName(selectedConv)}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {!socketReady ? (
-                        <span className="flex items-center gap-1 text-amber-500">
-                          <AlertCircle className="h-3 w-3" /> Hors ligne
-                        </span>
+                  <button
+                    onClick={() => openContextPanel('profile')}
+                    type="button"
+                    className="flex items-center gap-3 text-left group min-w-0"
+                    title="Voir le profil du contact"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand to-emerald-500 flex items-center justify-center text-white font-bold overflow-hidden ring-2 ring-white/10 group-hover:ring-brand/50 transition-all shrink-0">
+                      {getConvAvatar(selectedConv) ? (
+                        <Image
+                          src={getConvAvatar(selectedConv)}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="36px"
+                        />
                       ) : (
-                        'En ligne'
+                        getConvInitial(selectedConv) || '?'
                       )}
-                    </p>
-                  </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-100 group-hover:text-brand transition-colors truncate">
+                        {getConvName(selectedConv)}
+                      </p>
+                      <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                        {!socketReady ? (
+                          <span className="flex items-center gap-1 text-amber-400">
+                            <AlertCircle className="h-3 w-3" /> Hors ligne
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-emerald-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            En ligne
+                          </span>
+                        )}
+                        <span className="text-gray-600">•</span>
+                        <span className="flex items-center gap-1 text-gray-500">
+                          {selectedConv?.channel === 'WHATSAPP' ? (
+                            <>
+                              <Smartphone className="h-3 w-3 text-emerald-400" /> Pont WhatsApp
+                            </>
+                          ) : (
+                            <>
+                              <MessageSquare className="h-3 w-3 text-brand" /> Chat AfriBiz
+                            </>
+                          )}
+                        </span>
+                      </p>
+                    </div>
+                  </button>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="p-2 rounded-xl hover:bg-white/10 transition-colors"
                   >
-                    <Phone className="h-4 w-4 text-gray-500" />
+                    <Phone className="h-4 w-4 text-gray-400" />
                   </button>
                   <button
                     type="button"
-                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="p-2 rounded-xl hover:bg-white/10 transition-colors"
                   >
-                    <Video className="h-4 w-4 text-gray-500" />
+                    <Video className="h-4 w-4 text-gray-400" />
+                  </button>
+                  <button
+                    onClick={() => openContextPanel('profile')}
+                    type="button"
+                    className={cn(
+                      'p-2 rounded-xl transition-colors',
+                      contextPanel === 'profile'
+                        ? 'bg-brand/20 text-brand'
+                        : 'hover:bg-white/10 text-gray-400'
+                    )}
+                    title="Panneau contextuel"
+                  >
+                    <PanelRightClose className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -660,13 +765,11 @@ export default function MessagesPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col items-center justify-center text-center py-16"
                   >
-                    <div className="w-16 h-16 rounded-full bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-brand/10 flex items-center justify-center mb-4">
                       <Send className="h-6 w-6 text-brand/40" />
                     </div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Aucun message
-                    </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <p className="text-sm font-medium text-gray-400">Aucun message</p>
+                    <p className="text-xs text-gray-500 mt-1">
                       Envoyez votre premier message ci-dessous
                     </p>
                   </motion.div>
@@ -690,6 +793,11 @@ export default function MessagesPage() {
                               attachmentType: msg.attachmentType,
                               createdAt: msg.createdAt,
                               read: msg.read,
+                              productId: msg.productId,
+                              productName: msg.productName,
+                              productPrice: msg.productPrice,
+                              productImage: msg.productImage,
+                              productSlug: msg.productSlug,
                             }}
                             currentUserId={currentUser?.id || ''}
                             isOutgoing={isMe}
@@ -716,7 +824,101 @@ export default function MessagesPage() {
               </div>
 
               {/* Input */}
-              <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+              <div className="p-4 bg-white/[0.03] border-t border-white/10">
+                {/* Badge Commande liée + templates */}
+                <div className="mb-2 flex items-center gap-2 flex-wrap">
+                  {contextOrderId && (
+                    <button
+                      onClick={() => openContextPanel('order', contextOrderId)}
+                      type="button"
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border',
+                        contextPanel === 'order'
+                          ? 'bg-brand/20 text-brand border-brand/30'
+                          : 'bg-white/5 text-gray-300 border-white/10 hover:border-brand/30 hover:text-brand'
+                      )}
+                    >
+                      <Package className="h-3 w-3" />
+                      Commande liée
+                    </button>
+                  )}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowTemplates((v) => !v)}
+                      type="button"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border bg-white/5 text-gray-300 border-white/10 hover:border-brand/30 hover:text-brand"
+                    >
+                      <Zap className="h-3 w-3 text-amber-400" />
+                      Actions Rapides
+                    </button>
+                    <AnimatePresence>
+                      {showTemplates && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                          className="absolute bottom-full left-0 mb-2 w-72 rounded-xl bg-slate-900 border border-white/10 shadow-2xl shadow-black/50 overflow-hidden z-30"
+                        >
+                          <div className="px-3 py-2 border-b border-white/10 text-[10px] font-medium text-gray-500 uppercase tracking-wide">
+                            Templates marchand
+                          </div>
+                          <div className="p-1.5">
+                            {merchantTemplates.map((t) => {
+                              const Icon = t.icon;
+                              return (
+                                <button
+                                  key={t.label}
+                                  onClick={() => {
+                                    setMessageText(t.text);
+                                    setShowTemplates(false);
+                                    inputRef.current?.focus();
+                                  }}
+                                  type="button"
+                                  className="w-full flex items-start gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-white/5 transition-colors"
+                                >
+                                  <Icon className="h-4 w-4 text-brand mt-0.5 shrink-0" />
+                                  <span className="text-xs text-gray-300">{t.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+                {pendingProduct && (
+                  <div className="mb-2 flex items-center gap-3 p-2 pr-1 bg-white/5 rounded-xl border border-white/10">
+                    {pendingProduct.image && (
+                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-white/10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={pendingProduct.image}
+                          alt={pendingProduct.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-gray-100 truncate">
+                        {pendingProduct.name}
+                      </p>
+                      {pendingProduct.price != null && (
+                        <p className="text-xs font-medium text-brand">
+                          {Number(pendingProduct.price).toLocaleString('fr-FR')} FCFA
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setPendingProduct(null)}
+                      type="button"
+                      className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
+                      title="Retirer le produit"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
                 <ChatInput
                   conversationId={selectedConv?.id || null}
                   value={messageText}
@@ -733,13 +935,11 @@ export default function MessagesPage() {
               className="flex-1 flex items-center justify-center p-8"
             >
               <div className="text-center max-w-sm">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-50 to-emerald-50 dark:from-brand-900/20 dark:to-emerald-900/20 flex items-center justify-center mx-auto mb-5 shadow-sm">
-                  <MessageCircle className="h-10 w-10 text-brand/40 dark:text-brand-400/40" />
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand/20 to-emerald-500/20 flex items-center justify-center mx-auto mb-5 border border-white/10">
+                  <MessageCircle className="h-10 w-10 text-brand/60" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  Votre messagerie
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                <h3 className="text-xl font-bold text-gray-100 mb-2">Votre messagerie</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">
                   Sélectionnez une conversation ou démarrez une nouvelle discussion.
                 </p>
                 <button
@@ -754,6 +954,20 @@ export default function MessagesPage() {
             </motion.div>
           )}
         </div>
+
+        {/* ─── Context Panel (Personne / Commande / Client) ─── */}
+        <AnimatePresence>
+          {selectedConv && contextPanel && (
+            <MessagingContextPanel
+              conv={selectedConv}
+              currentUserId={currentUser?.id}
+              orderId={contextOrderId}
+              activeTab={contextPanel}
+              onTabChange={setContextPanel}
+              onClose={() => setContextPanel(null)}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ─── New Conversation Modal ─── */}
@@ -776,12 +990,10 @@ export default function MessagesPage() {
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.2, type: 'spring', stiffness: 300, damping: 30 }}
               onClick={(e: any) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+              className="w-full max-w-lg bg-slate-900 rounded-2xl shadow-2xl border border-white/10 overflow-hidden"
             >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  Nouveau message
-                </h3>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                <h3 className="text-lg font-bold text-gray-100">Nouveau message</h3>
                 <button
                   onClick={() => {
                     setShowNewConv(false);
@@ -789,25 +1001,25 @@ export default function MessagesPage() {
                     setRecipientResults([]);
                   }}
                   type="button"
-                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <div className="p-5">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                <label className="text-sm font-medium text-gray-300 mb-2 block">
                   Rechercher un business
                 </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <input
                     type="text"
                     placeholder="Nom du business, ville..."
                     value={recipientQuery}
                     onChange={(e) => handleRecipientInput(e.target.value)}
                     autoFocus
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pl-9 pr-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 transition-all"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 pl-9 pr-4 py-2.5 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
                   />
                 </div>
 
@@ -875,9 +1087,9 @@ export default function MessagesPage() {
                       exit={{ height: 0, opacity: 0 }}
                       className="mt-3 overflow-hidden"
                     >
-                      <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 space-y-3">
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-3">
                         <div>
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">
+                          <label className="text-xs font-medium text-gray-500 block mb-1.5">
                             Type de business
                           </label>
                           <div className="flex flex-wrap gap-1.5">
@@ -900,7 +1112,7 @@ export default function MessagesPage() {
                                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                                   activeFilters.type === t || (!activeFilters.type && !t)
                                     ? 'bg-brand text-white'
-                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 hover:border-brand/30'
+                                    : 'bg-white/5 text-gray-400 border border-white/10 hover:border-brand/30'
                                 }`}
                               >
                                 {t ? formatType(t) : 'Tous'}
@@ -909,7 +1121,7 @@ export default function MessagesPage() {
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">
+                          <label className="text-xs font-medium text-gray-500 block mb-1.5">
                             Note minimum
                           </label>
                           <div className="flex gap-1.5">
@@ -920,8 +1132,8 @@ export default function MessagesPage() {
                                 type="button"
                                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                                   (activeFilters.minRating || 0) === r
-                                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700'
-                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 hover:border-amber-300'
+                                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                                    : 'bg-white/5 text-gray-400 border border-white/10 hover:border-amber-400/40'
                                 }`}
                               >
                                 {r > 0 && (
@@ -933,7 +1145,7 @@ export default function MessagesPage() {
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1.5">
+                          <label className="text-xs font-medium text-gray-500 block mb-1.5">
                             Ville
                           </label>
                           <input
@@ -941,7 +1153,7 @@ export default function MessagesPage() {
                             placeholder="Filtrer par ville..."
                             value={activeFilters.city || ''}
                             onChange={(e) => applyFilter('city', e.target.value)}
-                            className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 transition-all"
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
                           />
                         </div>
                       </div>
@@ -968,7 +1180,7 @@ export default function MessagesPage() {
                             onClick={() => startConversation(r)}
                             disabled={createConversation.isPending}
                             type="button"
-                            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-600 disabled:opacity-50 group"
+                            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-white/5 transition-all border border-transparent hover:border-white/10 disabled:opacity-50 group"
                           >
                             <div className="w-11 h-11 rounded-full bg-gradient-to-br from-brand to-emerald-400 flex items-center justify-center text-white font-bold shrink-0 relative overflow-hidden">
                               {r.logo ? (
@@ -985,17 +1197,17 @@ export default function MessagesPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                <p className="text-sm font-semibold text-gray-100 truncate">
                                   {r.name}
                                 </p>
                                 {r.type && (
-                                  <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full shrink-0">
+                                  <span className="text-[10px] bg-white/10 text-gray-400 px-1.5 py-0.5 rounded-full shrink-0">
                                     {formatType(r.type)}
                                   </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-gray-400 truncate flex items-center gap-1">
+                                <span className="text-xs text-gray-500 truncate flex items-center gap-1">
                                   <MapPin className="h-3 w-3" />
                                   {[r.city, r.country].filter(Boolean).join(', ') || 'Afrique'}
                                 </span>

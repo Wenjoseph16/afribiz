@@ -1,31 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
-import {
-  Bell,
-  CheckCheck,
-  Trash2,
-  Filter,
-  X,
-  Loader2,
-  ShoppingBag,
-  Calendar,
-  Wallet,
-  MessageCircle,
-  AlertTriangle,
-  Star,
-  Shield,
-  Gift,
-  Clock,
-  ChevronDown,
-  ChevronRight,
-  Package,
-  Truck,
-  CreditCard,
-  Megaphone,
-  Sparkles,
-} from 'lucide-react';
+import { Bell, CheckCheck, Trash2, Filter, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotificationStore } from '@/store/notificationStore';
 import { Button } from '@/components/ui/Button';
@@ -35,77 +11,15 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/components/ui/ToastProvider';
-
-const TYPE_ICONS: Record<string, React.ComponentType<any>> = {
-  ORDER_PLACED: ShoppingBag,
-  ORDER_CONFIRMED: Package,
-  ORDER_SHIPPED: Truck,
-  ORDER_DELIVERED: Package,
-  ORDER_CANCELLED: X,
-  BOOKING_CONFIRMED: Calendar,
-  BOOKING_REMINDER: Clock,
-  PAYMENT_RECEIVED: CreditCard,
-  PAYMENT_FAILED: AlertTriangle,
-  PAYMENT_REMINDER: Clock,
-  NEW_MESSAGE: MessageCircle,
-  REVIEW_RESPONSE: Star,
-  PROMOTION: Gift,
-  SECURITY_ALERT: Shield,
-  DISPUTE_OPENED: AlertTriangle,
-  NEW_EVENT: Sparkles,
-  SYSTEM: Bell,
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  ORDER_PLACED: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20',
-  ORDER_CONFIRMED: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20',
-  ORDER_SHIPPED: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20',
-  ORDER_DELIVERED: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20',
-  ORDER_CANCELLED: 'text-red-600 bg-red-50 dark:bg-red-900/20',
-  BOOKING_CONFIRMED: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20',
-  BOOKING_REMINDER: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20',
-  PAYMENT_RECEIVED: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20',
-  PAYMENT_FAILED: 'text-red-600 bg-red-50 dark:bg-red-900/20',
-  PAYMENT_REMINDER: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20',
-  NEW_MESSAGE: 'text-rose-600 bg-rose-50 dark:bg-rose-900/20',
-  REVIEW_RESPONSE: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20',
-  PROMOTION: 'text-pink-600 bg-pink-50 dark:bg-pink-900/20',
-  SECURITY_ALERT: 'text-red-600 bg-red-50 dark:bg-red-900/20',
-  DISPUTE_OPENED: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20',
-  NEW_EVENT: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20',
-  SYSTEM: 'text-gray-600 bg-gray-50 dark:bg-gray-900/20',
-};
-
-const MODULE_LABELS: Record<string, string> = {
-  ORDER: 'Commandes',
-  BOOKING: 'Réservations',
-  PAYMENT: 'Paiements',
-  MESSAGE: 'Messages',
-  REVIEW: 'Avis',
-  PROMOTION: 'Promotions',
-  SECURITY: 'Sécurité',
-  DISPUTE: 'Litiges',
-  EVENT: 'Événements',
-  SYSTEM: 'Système',
-};
-
-function getModuleKey(type: string): string {
-  const parts = type.split('_');
-  return parts[0] || 'SYSTEM';
-}
-
-function getModuleLabel(type: string): string {
-  return MODULE_LABELS[getModuleKey(type)] || 'Autres';
-}
-
-function getTypeIcon(type: string) {
-  const Icon = TYPE_ICONS[type] || Bell;
-  return Icon;
-}
-
-function getTypeColor(type: string): string {
-  return TYPE_COLORS[type] || 'text-gray-600 bg-gray-50 dark:bg-gray-900/20';
-}
+import {
+  getTypeIcon,
+  getTypeColor,
+  getModuleKey,
+  getModuleLabel,
+  MODULE_LABELS,
+} from './notificationMeta';
+import { NotificationDetailModal } from './NotificationDetailModal';
+import type { Notification } from '@/store/notificationStore';
 
 export function NotificationList() {
   const {
@@ -123,6 +37,12 @@ export function NotificationList() {
 
   const [filterType, setFilterType] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [detail, setDetail] = useState<Notification | null>(null);
+
+  const openDetail = (notif: Notification) => {
+    setDetail(notif);
+    if (!notif.read) markAsRead(notif.id);
+  };
 
   const filtered = useMemo(() => {
     let items = [...notifications];
@@ -247,12 +167,16 @@ export function NotificationList() {
 
     if (notif.link) {
       return (
-        <Link key={notif.id} href={notif.link} className="block">
+        <button key={notif.id} onClick={() => openDetail(notif)} className="block w-full text-left">
           {content}
-        </Link>
+        </button>
       );
     }
-    return <div key={notif.id}>{content}</div>;
+    return (
+      <button key={notif.id} onClick={() => openDetail(notif)} className="block w-full text-left">
+        {content}
+      </button>
+    );
   };
 
   return (
@@ -349,7 +273,7 @@ export function NotificationList() {
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
                 )}
               >
-                {MODULE_LABELS[type] || type}
+                {type && MODULE_LABELS[type] ? MODULE_LABELS[type] : type || 'Toutes'}
               </button>
             ))}
           </div>
@@ -388,6 +312,12 @@ export function NotificationList() {
       ) : (
         <div className="space-y-1">{filtered.map(renderNotification)}</div>
       )}
+      <NotificationDetailModal
+        notif={detail}
+        onClose={() => setDetail(null)}
+        onMarkRead={markAsRead}
+        onDelete={deleteNotification}
+      />
     </div>
   );
 }
