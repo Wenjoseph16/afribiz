@@ -75,6 +75,17 @@ export class RefreshTokenRepository {
   }
 
   /**
+   * Revoke all tokens tied to the given sessions
+   */
+  static async revokeBySessionIds(sessionIds: string[]): Promise<void> {
+    if (sessionIds.length === 0) return;
+    await prisma.refreshToken.updateMany({
+      where: { sessionId: { in: sessionIds }, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  /**
    * Delete all tokens for a user
    */
   static async deleteByUserId(userId: string): Promise<void> {

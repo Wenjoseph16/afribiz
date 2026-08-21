@@ -189,7 +189,12 @@ export const optionalAuth = catchAsyncErrors(
           req.employeeId = decoded.employeeId;
           req.employeeBusinessId = decoded.businessId;
           req.employeePermissions = decoded.permissions || [];
-          req.user = { id: decoded.employeeId, email: '', primaryRole: 'BUSINESS', roles: ['BUSINESS'] };
+          req.user = {
+            id: decoded.employeeId,
+            email: '',
+            primaryRole: 'BUSINESS',
+            roles: ['BUSINESS'],
+          };
         } else {
           req.user = {
             id: decoded.id,
@@ -235,9 +240,7 @@ export const requireEmployeePermission = (
 
     // ── Cas 1 : Token employé ──
     if (req.isEmployee && req.employeePermissions) {
-      const hasPermission = requiredPermissions.some((p) =>
-        req.employeePermissions!.includes(p)
-      );
+      const hasPermission = requiredPermissions.some((p) => req.employeePermissions!.includes(p));
       if (!hasPermission) {
         throw new AppError(
           `Accès refusé. Permissions requises : ${requiredPermissions.join(' ou ')}`,
@@ -249,8 +252,7 @@ export const requireEmployeePermission = (
 
     // ── Cas 2 : Boss (ownerId) → Master Key, toujours autorisé ──
     if (checkOwnership) {
-      const businessId =
-        (req.params.businessId as string) || (req.params.id as string) || '';
+      const businessId = (req.params.businessId as string) || (req.params.id as string) || '';
       if (businessId) {
         const business = await prisma.business.findFirst({
           where: { id: businessId, ownerId: req.user.id, isActive: true },

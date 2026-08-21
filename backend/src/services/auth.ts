@@ -30,7 +30,28 @@ import {
   publishNewDeviceDetected,
 } from '../events/publishers';
 import { trackAnalyticsEvent } from './analyticsService';
-import { forceDisconnectUser } from './socket';
+import { forceDisconnectUser, forceDisconnectSession } from './socket';
+
+/**
+ * Libellé lisible d'un appareil à partir du user agent (ex. « Chrome sur Windows »).
+ */
+function deriveDeviceLabel(userAgent?: string | null): string {
+  if (!userAgent) return 'Appareil inconnu';
+  let browser = 'Navigateur';
+  if (userAgent.includes('Edg/')) browser = 'Edge';
+  else if (userAgent.includes('Firefox/')) browser = 'Firefox';
+  else if (userAgent.includes('OPR/')) browser = 'Opera';
+  else if (userAgent.includes('SamsungBrowser/')) browser = 'Samsung Internet';
+  else if (userAgent.includes('Chrome/')) browser = 'Chrome';
+  else if (userAgent.includes('Safari/')) browser = 'Safari';
+  let os = 'inconnu';
+  if (userAgent.includes('Windows')) os = 'Windows';
+  else if (userAgent.includes('Android')) os = 'Android';
+  else if (userAgent.includes('iPhone')) os = 'iOS';
+  else if (userAgent.includes('Mac OS')) os = 'macOS';
+  else if (userAgent.includes('Linux')) os = 'Linux';
+  return `${browser} sur ${os}`;
+}
 
 export interface SignupPayload {
   firstName: string;
@@ -86,17 +107,18 @@ export class AuthService {
       birthDate: payload.birthDate,
     });
 
-    const tokens = createTokenPair({
-      id: user.id,
-      email: user.email,
-      primaryRole: user.primaryRole,
-      roles: user.roles,
-    });
     const session = await SessionRepository.create({
       userId: user.id,
       ipAddress: '127.0.0.1',
       userAgent: undefined,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+    const tokens = createTokenPair({
+      id: user.id,
+      email: user.email,
+      primaryRole: user.primaryRole,
+      roles: user.roles,
+      sessionId: session.id,
     });
     await RefreshTokenRepository.create({
       userId: user.id,
@@ -214,17 +236,18 @@ export class AuthService {
 
     await UserRepository.updateLastLogin(user.id, payload.ipAddress || '127.0.0.1');
     await this.detectNewDevice(user.id, payload.userAgent, payload.ipAddress);
-    const tokens = createTokenPair({
-      id: user.id,
-      email: user.email,
-      primaryRole: user.primaryRole,
-      roles: user.roles,
-    });
     const session = await SessionRepository.create({
       userId: user.id,
       ipAddress: payload.ipAddress || '127.0.0.1',
       userAgent: payload.userAgent,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+    const tokens = createTokenPair({
+      id: user.id,
+      email: user.email,
+      primaryRole: user.primaryRole,
+      roles: user.roles,
+      sessionId: session.id,
     });
     await RefreshTokenRepository.create({
       userId: user.id,
@@ -302,17 +325,18 @@ export class AuthService {
     await this.detectNewDevice(decoded.id, device || undefined, location || undefined);
 
     await UserRepository.updateLastLogin(user.id, location || '127.0.0.1');
-    const tokens = createTokenPair({
-      id: user.id,
-      email: user.email,
-      primaryRole: user.primaryRole,
-      roles: user.roles,
-    });
     const session = await SessionRepository.create({
       userId: user.id,
       ipAddress: location || '127.0.0.1',
       userAgent: device || undefined,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+    const tokens = createTokenPair({
+      id: user.id,
+      email: user.email,
+      primaryRole: user.primaryRole,
+      roles: user.roles,
+      sessionId: session.id,
     });
     await RefreshTokenRepository.create({
       userId: user.id,
@@ -359,6 +383,7 @@ export class AuthService {
       email: user.email,
       primaryRole: user.primaryRole,
       roles: user.roles,
+      sessionId: stored.sessionId || undefined,
     });
     await RefreshTokenRepository.revoke(stored.id);
     await RefreshTokenRepository.create({
@@ -534,15 +559,22 @@ export class AuthService {
     });
   }
 
-  static async getSessions(userId: string): Promise<any[]> {
+  static async getSessions(userId: string, currentSessionId?: string): Promise<any[]> {
     const sessions = await SessionRepository.findByUserId(userId);
     return sessions.map((s) => ({
       id: s.id,
       ipAddress: s.ipAddress,
+      ip: s.ipAddress,
       userAgent: s.userAgent,
+      device: deriveDeviceLabel(s.userAgent),
+      deviceType: /Android|iPhone|iPod|Mobile|Windows Phone/i.test(s.userAgent || '')
+        ? 'mobile'
+        : 'desktop',
+      location: s.ipAddress || 'Localisation inconnue',
+      lastActive: s.updatedAt,
       createdAt: s.createdAt,
-      lastUsedAt: s.updatedAt,
       isActive: s.isActive,
+      isCurrent: !!currentSessionId && s.id === currentSessionId,
     }));
   }
 
@@ -550,6 +582,28 @@ export class AuthService {
     const s = await SessionRepository.findById(sessionId);
     if (!s || s.userId !== userId) throw new AppError('Session not found', 404);
     await SessionRepository.revoke(sessionId);
+    forceDisconnectSession(sessionId);
+    await SecurityLogRepository.create({
+      userId,
+      action: 'SESSION_REVOKED',
+      metadata: { sessionId },
+    });
+  }
+
+  static async revokeOtherSessions(userId: string, currentSessionId?: string): Promise<void> {
+    const sessions = await SessionRepository.findByUserId(userId);
+    const ids = sessions
+      .filter((s) => currentSessionId && s.id !== currentSessionId)
+      .map((s) => s.id);
+    if (ids.length === 0) return;
+    await SessionRepository.revokeMany(ids);
+    await RefreshTokenRepository.revokeBySessionIds(ids);
+    ids.forEach((id) => forceDisconnectSession(id));
+    await SecurityLogRepository.create({
+      userId,
+      action: 'SESSION_REVOKED',
+      metadata: { count: ids.length },
+    });
   }
 
   static async activateBusinessRole(userId: string): Promise<void> {

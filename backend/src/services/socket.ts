@@ -4,6 +4,7 @@ import { verifyAccessToken, JWTPayload } from '../lib/jwt';
 import { config } from '../config/env';
 import { logger } from '../lib/logger';
 import { presenceService } from './presenceService';
+import { prisma } from '../lib/db';
 
 const isVercel = !!process.env.VERCEL;
 
@@ -22,6 +23,17 @@ export function forceDisconnectUser(userId: string): void {
   io.sockets.sockets.forEach((s) => {
     const u = (s as any).user;
     if (u && u.id === userId) s.disconnect(true);
+  });
+}
+
+/**
+ * Déconnecte uniquement les sockets rattachés à une session donnée
+ * (utilisé quand l'utilisateur révoque un appareil précis).
+ */
+export function forceDisconnectSession(sessionId: string): void {
+  if (!io) return;
+  io.sockets.sockets.forEach((s) => {
+    if ((s as any).sessionId === sessionId) s.disconnect(true);
   });
 }
 
@@ -48,6 +60,15 @@ export function initSocket(httpServer: HttpServer): Server | null {
         return next(new Error('Authentification requise'));
       }
       const decoded = verifyAccessToken(token as string) as JWTPayload;
+      // Si le token porte une session, on vérifie qu'elle est encore active :
+      // un appareil révoqué ne doit plus pouvoir rester connecté en temps réel.
+      if (decoded.sessionId) {
+        const s = await prisma.session.findUnique({ where: { id: decoded.sessionId } });
+        if (!s || s.userId !== decoded.id || !s.isActive || s.expiresAt < new Date()) {
+          return next(new Error('Session invalide ou révoquée'));
+        }
+        (socket as any).sessionId = decoded.sessionId;
+      }
       (socket as any).user = {
         id: decoded.id,
         email: decoded.email,
@@ -91,6 +112,18 @@ export function initSocket(httpServer: HttpServer): Server | null {
 
     socket.on('leave:business', (businessId: string) => {
       socket.leave(`business:${businessId}`);
+    });
+
+    // Suivi temps réel d'une transaction spécifique (ORDER, BOOKING, etc.)
+    socket.on('transaction:join', (data: { type: string; id: string }) => {
+      const room = `transaction:${data.type}:${data.id}`;
+      socket.join(room);
+      logger.debug(`Socket joined transaction room: ${room} (${user.email})`);
+    });
+
+    socket.on('transaction:leave', (data: { type: string; id: string }) => {
+      const room = `transaction:${data.type}:${data.id}`;
+      socket.leave(room);
     });
 
     socket.on('typing:start', (conversationId: string) => {

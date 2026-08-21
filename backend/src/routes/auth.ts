@@ -12,6 +12,7 @@ import {
   verifyOtp,
   getSessions,
   deleteSession,
+  revokeOtherSessions,
   activateBusinessRole,
   activateDeveloperRole,
 } from '../controllers/auth';
@@ -97,6 +98,9 @@ router.get('/sessions', authMiddleware, getSessions);
 
 // Delete session
 router.delete('/sessions/:sessionId', authMiddleware, deleteSession);
+
+// Revoke all other sessions (keep the current one)
+router.post('/sessions/revoke-others', authMiddleware, revokeOtherSessions);
 
 // Activate business role
 router.post('/activate-business', authMiddleware, activateBusinessRole);

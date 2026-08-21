@@ -10,10 +10,7 @@ const router = Router();
  * Validation du body : phone + pinCode (4-6 chiffres)
  */
 const employeeAuthSchema = z.object({
-  phone: z
-    .string()
-    .min(8, 'Numéro de téléphone invalide')
-    .max(20, 'Numéro de téléphone trop long'),
+  phone: z.string().min(8, 'Numéro de téléphone invalide').max(20, 'Numéro de téléphone trop long'),
   pinCode: z
     .string()
     .min(4, 'Le code PIN doit contenir au moins 4 chiffres')

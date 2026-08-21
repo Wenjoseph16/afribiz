@@ -83,8 +83,13 @@ describe('employeeAuth — authenticateEmployee', () => {
 
     mockPrisma.business.findFirst.mockResolvedValue({ id: 'biz-1', name: 'Boutique' });
     mockPrisma.employee.findFirst.mockResolvedValue({
-      id: 'emp-1', firstName: 'Jean', lastName: 'Dupont', position: 'Caissier',
-      photo: null, pinCode: hashedPin, maxDiscountPercentage: null,
+      id: 'emp-1',
+      firstName: 'Jean',
+      lastName: 'Dupont',
+      position: 'Caissier',
+      photo: null,
+      pinCode: hashedPin,
+      maxDiscountPercentage: null,
       employeeRole: { id: 'r1', name: 'Vendeur', permissions: ['VIEW_ORDERS'] },
     });
 
@@ -96,8 +101,14 @@ describe('employeeAuth — authenticateEmployee', () => {
   test('throws 400 when no PIN configured', async () => {
     mockPrisma.business.findFirst.mockResolvedValue({ id: 'biz-1', name: 'Boutique' });
     mockPrisma.employee.findFirst.mockResolvedValue({
-      id: 'emp-1', firstName: 'Jean', lastName: 'Dupont', position: 'Caissier',
-      photo: null, pinCode: null, maxDiscountPercentage: null, employeeRole: null,
+      id: 'emp-1',
+      firstName: 'Jean',
+      lastName: 'Dupont',
+      position: 'Caissier',
+      photo: null,
+      pinCode: null,
+      maxDiscountPercentage: null,
+      employeeRole: null,
     });
 
     await expect(
@@ -110,12 +121,20 @@ describe('employeeAuth — authenticateEmployee', () => {
 
     mockPrisma.business.findFirst.mockResolvedValue({ id: 'biz-1', name: 'Boutique' });
     mockPrisma.employee.findFirst.mockResolvedValue({
-      id: 'emp-2', firstName: 'Marie', lastName: 'Martin', position: 'Aide',
-      photo: null, pinCode: hashedPin, maxDiscountPercentage: null, employeeRole: null,
+      id: 'emp-2',
+      firstName: 'Marie',
+      lastName: 'Martin',
+      position: 'Aide',
+      photo: null,
+      pinCode: hashedPin,
+      maxDiscountPercentage: null,
+      employeeRole: null,
     });
 
     const result = await authenticateEmployee({
-      businessId: 'biz-1', phone: '+22505060708', pinCode: '5678',
+      businessId: 'biz-1',
+      phone: '+22505060708',
+      pinCode: '5678',
     });
 
     expect(result.permissions).toEqual([]);

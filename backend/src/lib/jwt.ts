@@ -1,4 +1,5 @@
 import jwt, { SignOptions, JwtPayload as JwtPayloadBase } from 'jsonwebtoken';
+import { randomUUID } from 'node:crypto';
 import { config } from '../config/env';
 
 export interface JWTPayload extends JwtPayloadBase {
@@ -100,6 +101,9 @@ export const createRefreshToken = (payload: Omit<JWTPayload, 'iat' | 'exp'>): st
   const signPayload: any = {
     id: payload.id,
     email: payload.email,
+    // jti aléatoire : garantit l'unicité du refresh token même à la même seconde
+    // (la colonne token a une contrainte UNIQUE — deux iat identiques sinon).
+    jti: randomUUID(),
   };
 
   return jwt.sign(

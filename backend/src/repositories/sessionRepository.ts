@@ -71,6 +71,17 @@ export class SessionRepository {
   }
 
   /**
+   * Revoke a set of sessions
+   */
+  static async revokeMany(sessionIds: string[]): Promise<void> {
+    if (sessionIds.length === 0) return;
+    await prisma.session.updateMany({
+      where: { id: { in: sessionIds }, isActive: true },
+      data: { isActive: false, revokedAt: new Date() },
+    });
+  }
+
+  /**
    * Delete expired sessions
    */
   static async deleteExpired(): Promise<void> {

@@ -1,5 +1,9 @@
 import { Router, Response } from 'express';
-import { authMiddleware, AuthenticatedRequest, requireEmployeePermission } from '../middlewares/auth';
+import {
+  authMiddleware,
+  AuthenticatedRequest,
+  requireEmployeePermission,
+} from '../middlewares/auth';
 import { prisma } from '../lib/db';
 import { catchAsyncErrors, AppError } from '../middlewares/errorHandler';
 

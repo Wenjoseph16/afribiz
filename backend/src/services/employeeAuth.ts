@@ -82,10 +82,7 @@ export async function authenticateEmployee(params: {
 
   // 3. Vérifier le PIN
   if (!employee.pinCode) {
-    throw new AppError(
-      'Aucun code PIN configuré pour cet employé. Contactez le gérant.',
-      400
-    );
+    throw new AppError('Aucun code PIN configuré pour cet employé. Contactez le gérant.', 400);
   }
 
   const pinValid = await comparePasswords(pinCode, employee.pinCode);
@@ -108,7 +105,9 @@ export async function authenticateEmployee(params: {
     ...(maxDiscount !== null ? { maxDiscountPercentage: maxDiscount } : {}),
   });
 
-  logger.info(`Employee auth success: ${employee.firstName} ${employee.lastName} (${business.name})`);
+  logger.info(
+    `Employee auth success: ${employee.firstName} ${employee.lastName} (${business.name})`
+  );
 
   return {
     token,

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { catchAsyncErrors } from '../middlewares/errorHandler';
+import { AppError, catchAsyncErrors } from '../middlewares/errorHandler';
 import { AuthService } from '../services/auth';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { config } from '../config/env';
@@ -144,16 +144,28 @@ export const verifyOtp = catchAsyncErrors(async (req: Request, res: Response) =>
 
 export const getSessions = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ success: false, error: 'Not authenticated' });
-  const sessions = await AuthService.getSessions(req.user.id);
+  const sessions = await AuthService.getSessions(req.user.id, req.sessionId);
   res.status(200).json({ success: true, data: sessions });
 });
 
 export const deleteSession = catchAsyncErrors(async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ success: false, error: 'Not authenticated' });
   const { sessionId } = req.params;
+  // On ne peut pas révoquer la session courante (ce serait se déconnecter soi-même).
+  if (req.sessionId && sessionId === req.sessionId) {
+    throw new AppError('Impossible de déconnecter la session actuelle', 400);
+  }
   await AuthService.revokeSession(req.user.id, sessionId);
   res.status(200).json({ success: true, message: 'Session deleted successfully' });
 });
+
+export const revokeOtherSessions = catchAsyncErrors(
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) return res.status(401).json({ success: false, error: 'Not authenticated' });
+    await AuthService.revokeOtherSessions(req.user.id, req.sessionId);
+    res.status(200).json({ success: true, message: 'Other sessions revoked successfully' });
+  }
+);
 
 export const activateBusinessRole = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response) => {

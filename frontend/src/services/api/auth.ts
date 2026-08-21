@@ -38,7 +38,7 @@ export function injectAuth(api: ApiClientMethods) {
     return this.post('/auth/activate-business');
   };
   api.activateDeveloperRole = function () {
-    return this.post('/auth/activate-developer');
+    return this.post('/developer/activate');
   };
   api.revokeOtherSessions = function () {
     return this.post('/auth/sessions/revoke-others');
