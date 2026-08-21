@@ -373,12 +373,37 @@ describe('Developers & Modules', () => {
       await ctrl.updateDeveloperStatus(r, res, mockNext);
       await flush();
 
-      expect(adminService.updateDeveloperStatus).toHaveBeenCalledWith('d1', 'approve', 'admin-1');
+      expect(adminService.updateDeveloperStatus).toHaveBeenCalledWith(
+        'd1',
+        'approve',
+        'admin-1',
+        undefined
+      );
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         data: developer,
         message: 'Statut mis à jour',
       });
+    });
+
+    it('should forward rejection reason to service', async () => {
+      const developer = { id: 'd1', verificationStatus: 'REJECTED' };
+      (adminService.updateDeveloperStatus as jest.Mock).mockResolvedValue(developer);
+      const res = mockRes();
+      const r = req({
+        params: { id: 'd1' },
+        body: { action: 'reject', reason: 'Document illisible' },
+      });
+
+      await ctrl.updateDeveloperStatus(r, res, mockNext);
+      await flush();
+
+      expect(adminService.updateDeveloperStatus).toHaveBeenCalledWith(
+        'd1',
+        'reject',
+        'admin-1',
+        'Document illisible'
+      );
     });
   });
 

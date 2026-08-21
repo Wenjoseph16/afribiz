@@ -12,8 +12,12 @@ import {
   ChevronLeft,
   FileText,
   BarChart3,
+  BadgeCheck,
+  XCircle,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
@@ -51,10 +55,36 @@ export default function AdminDeveloperDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const isAdmin = user?.roles?.includes('ADMIN');
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<DeveloperTab>('modules');
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const { data: developer, isLoading } = useAdminDeveloperDetail(id);
+
+  const statusMutation = useMutation({
+    mutationFn: ({ action, reason }: { action: string; reason?: string }) =>
+      apiClient.adminUpdateDeveloperStatus(id, action, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'developers', id] });
+      setRejectOpen(false);
+      setRejectReason('');
+      setActionError('');
+    },
+    onError: (err: any) => {
+      setActionError(err?.response?.data?.message || 'Erreur lors de la mise à jour du statut');
+    },
+  });
+
+  const handleReject = () => {
+    if (rejectReason.trim().length < 5) {
+      setActionError('Le motif doit contenir au moins 5 caractères');
+      return;
+    }
+    statusMutation.mutate({ action: 'reject', reason: rejectReason.trim() });
+  };
 
   const tabs = [
     { id: 'modules' as DeveloperTab, label: 'Modules', icon: Package },
@@ -130,6 +160,163 @@ export default function AdminDeveloperDetailPage() {
             )}
           </div>
         </div>
+      </Card>
+
+      {/* KYC Verification Panel */}
+      <Card padding="lg">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-3">
+              {developer.verificationStatus === 'VERIFIED' ? (
+                <BadgeCheck className="h-5 w-5 text-emerald-500" />
+              ) : developer.verificationStatus === 'PENDING' ? (
+                <Clock className="h-5 w-5 text-amber-500" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-500" />
+              )}
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                Vérification KYC
+              </h2>
+            </div>
+
+            {developer.verificationStatus === 'PENDING' && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Dossier soumis — vérifiez les documents puis validez ou refusez avec un motif. Le
+                développeur n&apos;a pas accès à son espace tant que le KYC n&apos;est pas validé.
+              </p>
+            )}
+            {developer.verificationStatus === 'REJECTED' && (
+              <div className="text-sm">
+                <p className="text-red-600 dark:text-red-400 font-medium">Dossier refusé</p>
+                {developer.rejectionReason && (
+                  <p className="text-gray-500 dark:text-gray-400 mt-1">
+                    Motif transmis : « {developer.rejectionReason} »
+                  </p>
+                )}
+              </div>
+            )}
+            {developer.verificationStatus === 'VERIFIED' && (
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                Identité vérifiée — le développeur a accès à son espace et peut publier des modules.
+              </p>
+            )}
+
+            {/* Documents KYC */}
+            <div className="mt-4 space-y-2">
+              {[
+                { label: "Pièce d'identité", url: developer.identityDocument },
+                { label: 'Document entreprise', url: developer.companyDocument },
+                { label: 'Photo du responsable', url: developer.responsiblePhoto },
+              ]
+                .filter((d) => !!d.url)
+                .map((d) => (
+                  <a
+                    key={d.label}
+                    href={d.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                  >
+                    <span className="flex items-center gap-3">
+                      <FileText className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {d.label}
+                      </span>
+                    </span>
+                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-brand" />
+                  </a>
+                ))}
+              {!developer.identityDocument && !developer.companyDocument && !developer.responsiblePhoto && (
+                <p className="text-sm text-gray-400">Aucun document KYC soumis</p>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="lg:w-64 shrink-0 flex flex-col gap-2 lg:border-l lg:border-gray-200 dark:lg:border-gray-700 lg:pl-6">
+            {actionError && (
+              <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
+                {actionError}
+              </p>
+            )}
+            {developer.verificationStatus !== 'VERIFIED' ? (
+              <>
+                <Button
+                  variant="primary"
+                  onClick={() => statusMutation.mutate({ action: 'verify' })}
+                  disabled={statusMutation.isPending}
+                >
+                  <BadgeCheck className="h-4 w-4" />
+                  Valider le KYC
+                </Button>
+                <Button variant="danger" onClick={() => setRejectOpen(true)} disabled={statusMutation.isPending}>
+                  <XCircle className="h-4 w-4" />
+                  Refuser avec motif
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5" />
+                  Compte validé le{' '}
+                  {developer.verifiedAt
+                    ? new Date(developer.verifiedAt).toLocaleDateString('fr-FR')
+                    : '—'}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRejectOpen(true)}
+                  disabled={statusMutation.isPending}
+                  title="Retirer la validation — un motif sera demandé au développeur"
+                >
+                  Retirer la validation
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Reject reason modal */}
+        {rejectOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                Refuser le dossier KYC
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Le développeur verra ce motif et devra corriger puis resoumettre ses documents.
+              </p>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => {
+                  setRejectReason(e.target.value);
+                  setActionError('');
+                }}
+                rows={4}
+                placeholder="Ex. : La photo de la pièce d'identité est illisible, merci de la resoumettre."
+                className="mt-4 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+              {actionError && <p className="text-xs text-red-500 mt-2">{actionError}</p>}
+              <div className="flex justify-end gap-2 mt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setRejectOpen(false);
+                    setRejectReason('');
+                    setActionError('');
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button variant="danger" size="sm" onClick={handleReject} disabled={statusMutation.isPending}>
+                  Confirmer le refus
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Stats Row */}

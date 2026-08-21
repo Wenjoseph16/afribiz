@@ -140,8 +140,13 @@ export const getDeveloperById = catchAsyncErrors(
 
 export const updateDeveloperStatus = catchAsyncErrors(
   async (req: AuthenticatedRequest, res: Response, _next: NextFunction) => {
-    const { action } = req.body;
-    const developer = await adminService.updateDeveloperStatus(req.params.id, action, req.user?.id);
+    const { action, reason } = req.body;
+    const developer = await adminService.updateDeveloperStatus(
+      req.params.id,
+      action,
+      req.user?.id,
+      reason
+    );
     res.json({ success: true, data: developer, message: 'Statut mis à jour' });
   }
 );

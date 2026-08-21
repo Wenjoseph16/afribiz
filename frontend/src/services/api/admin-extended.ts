@@ -168,8 +168,12 @@ export function injectAdminExtended(api: ApiClientMethods) {
   api.adminGetDeveloperDetail = function (id: string) {
     return this.get('/admin/developers/' + id);
   };
-  api.adminUpdateDeveloperStatus = function (id: string, action: string) {
-    return this.put('/admin/developers/' + id + '/status', { action });
+  api.adminUpdateDeveloperStatus = function (
+    id: string,
+    action: string,
+    reason?: string
+  ) {
+    return this.put('/admin/developers/' + id + '/status', { action, reason });
   };
   api.adminGetDeveloperCommissions = function (params?: any) {
     return this.get('/admin/developers/commissions', { params });

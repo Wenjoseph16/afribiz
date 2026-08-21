@@ -932,10 +932,13 @@ export const getDeveloperById = async (id: string) => {
 
 export const updateDeveloperStatus = async (
   id: string,
-  action: 'validate' | 'verify' | 'suspend' | 'block' | 'delete',
-  adminUserId?: string
+  action: 'validate' | 'verify' | 'reject' | 'suspend' | 'block' | 'delete',
+  adminUserId?: string,
+  reason?: string
 ) => {
   if (action === 'delete') throw new AppError("La suppression d'un développeur est interdite", 400);
+  if (action === 'reject' && (!reason || reason.trim().length < 5))
+    throw new AppError('Un motif est requis pour refuser un développeur', 400);
   const developer = await prisma.developerProfile.findUnique({ where: { id } });
   if (!developer) throw new AppError('Développeur introuvable', 404);
 
@@ -945,7 +948,14 @@ export const updateDeveloperStatus = async (
       data = { verificationStatus: 'PENDING' };
       break;
     case 'verify':
-      data = { verificationStatus: 'VERIFIED', verifiedAt: new Date() };
+      data = { verificationStatus: 'VERIFIED', verifiedAt: new Date(), rejectionReason: null };
+      break;
+    case 'reject':
+      data = {
+        verificationStatus: 'REJECTED',
+        rejectedAt: new Date(),
+        rejectionReason: reason!.trim(),
+      };
       break;
     case 'suspend':
       data = { verificationStatus: 'REJECTED', rejectionReason: 'Compte suspendu' };
@@ -958,17 +968,24 @@ export const updateDeveloperStatus = async (
 
   // Écosystème : journal + analytics (aucun publisher dédié dev, on logge l'action)
   if (adminUserId) {
+    const actionLabels: Record<string, string> = {
+      validate: 'remis en attente',
+      verify: 'vérifié',
+      reject: `refusé${reason ? ` — motif : ${reason.trim()}` : ''}`,
+      suspend: 'suspendu',
+      block: 'bloqué',
+    };
     await logAdminAction({
       adminUserId,
       action: 'ADMIN_USER_ACTION',
       targetUserId: developer.userId,
-      reason: `Développeur ${action === 'verify' ? 'vérifié' : action === 'suspend' ? 'suspendu' : action === 'block' ? 'bloqué' : action} (${developer.companyName || developer.id})`,
-      metadata: { action, developerId: id },
+      reason: `Développeur ${actionLabels[action] ?? action} (${developer.companyName || developer.id})`,
+      metadata: { action, developerId: id, reason },
     });
     await trackAdminAction({
       adminUserId,
       eventName: `ADMIN_DEVELOPER_${action.toUpperCase()}`,
-      properties: { developerId: id, companyName: developer.companyName },
+      properties: { developerId: id, companyName: developer.companyName, reason },
     });
   }
   return updated;

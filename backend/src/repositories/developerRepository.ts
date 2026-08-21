@@ -126,6 +126,8 @@ export class DeveloperRepository {
         identityDocument: identityDoc,
         companyDocument: companyDoc,
         responsiblePhoto: responsiblePhoto,
+        rejectionReason: null,
+        rejectedAt: null,
       },
     });
   }

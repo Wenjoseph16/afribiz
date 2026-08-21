@@ -37,10 +37,10 @@ export default function StepExpertise({ data, update, disabled }: Props) {
 
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return TECH_CATALOG.filter(
-      (t) => t.name.toLowerCase().includes(q) && !stackNames.has(t.name.toLowerCase())
-    ).slice(0, 8);
+    const pool = q
+      ? TECH_CATALOG.filter((t) => t.name.toLowerCase().includes(q))
+      : TECH_CATALOG;
+    return pool.filter((t) => !stackNames.has(t.name.toLowerCase()));
   }, [search, stackNames]);
 
   const addTech = (name: string) => {
@@ -190,9 +190,9 @@ export default function StepExpertise({ data, update, disabled }: Props) {
           />
         </div>
 
-        {/* Résultats groupés */}
+        {/* Résultats groupés — catalogue complet visible, filtré par la recherche */}
         {results.length > 0 && (
-          <div className="mt-2 p-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 max-h-56 overflow-y-auto">
+          <div className="mt-2 p-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 max-h-64 overflow-y-auto">
             {TECH_CATEGORIES.filter((c) => results.some((r) => r.category === c)).map((cat) => (
               <div key={cat} className="mb-1 last:mb-0">
                 <p className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold px-2 pt-1.5 pb-0.5">
@@ -216,6 +216,11 @@ export default function StepExpertise({ data, update, disabled }: Props) {
               </div>
             ))}
           </div>
+        )}
+        {results.length === 0 && search.trim() && (
+          <p className="mt-2 text-xs text-gray-400 px-1">
+            Aucune techno trouvée pour « {search} » — ajoutez-la ci-dessous.
+          </p>
         )}
 
         {/* Saisie libre normalisée */}

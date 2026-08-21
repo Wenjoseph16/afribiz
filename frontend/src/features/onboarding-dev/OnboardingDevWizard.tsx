@@ -253,6 +253,7 @@ export default function OnboardingDevWizard() {
                 onIdentityDocChange={setHasIdentityDoc}
                 strength={strength}
                 verificationStatus={existingProfile?.verificationStatus}
+                rejectionReason={existingProfile?.rejectionReason}
                 disabled={isPending}
               />
             )}

@@ -51,12 +51,14 @@ const DOCS = [
 export default function StepVerify({
   strength,
   verificationStatus,
+  rejectionReason,
   disabled,
   onIdentityDocChange,
 }: {
   data: unknown;
   strength: number;
   verificationStatus?: string;
+  rejectionReason?: string | null;
   disabled: boolean;
   onIdentityDocChange: (has: boolean) => void;
 }) {
@@ -146,11 +148,24 @@ export default function StepVerify({
         </div>
       )}
       {verificationStatus === 'REJECTED' && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30">
-          <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-red-700 dark:text-red-300">
-            Votre dossier a été refusé. Soumettez des documents conformes pour réessayer.
-          </p>
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30">
+          <div className="flex items-start gap-3">
+            <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-red-700 dark:text-red-300">
+                Votre KYC a été refusé par l'équipe AfriBiz
+              </p>
+              {rejectionReason && (
+                <p className="text-red-600 dark:text-red-400 mt-1">
+                  <span className="font-semibold">Motif :</span> {rejectionReason}
+                </p>
+              )}
+              <p className="text-xs text-red-500 dark:text-red-400/80 mt-2">
+                Corrigez le point signalé puis soumettez à nouveau vos documents. L'accès à votre
+                espace développeur sera débloqué après validation.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -313,8 +328,9 @@ export default function StepVerify({
         <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30">
           <Check className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
           <p className="text-sm text-emerald-700 dark:text-emerald-300">
-            Documents soumis ! Vous pouvez finaliser pendant l&apos;examen — la publication de
-            modules sera débloquée dès validation.
+            Documents soumis ! Votre dossier est en cours d&apos;examen par l&apos;équipe AfriBiz.
+            L&apos;accès à votre espace développeur et la publication de modules seront débloqués
+            dès validation de votre KYC.
           </p>
         </div>
       )}

@@ -169,6 +169,19 @@ export async function createModule(
   }
 ) {
   const developerId = await getDeveloperIdByUserId(userId);
+
+  // Gate crédibilité : identité vérifiée obligatoire pour créer un module
+  const devProfile = await prisma.developerProfile.findUnique({
+    where: { id: developerId },
+    select: { verificationStatus: true },
+  });
+  if (devProfile?.verificationStatus !== 'VERIFIED') {
+    throw new AppError(
+      "Vérification d'identité requise : votre compte doit être validé par l'équipe AfriBiz avant de créer un module.",
+      403
+    );
+  }
+
   const slug = await generateUniqueModuleSlug(data.name);
 
   return prisma.developerModule.create({

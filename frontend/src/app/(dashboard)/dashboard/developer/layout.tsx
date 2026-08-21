@@ -12,14 +12,18 @@ import { Button } from '@/components/ui/Button';
  * Guard d'accès à l'espace Développeur.
  *
  * Protège TOUTES les routes /dashboard/developer/* (pas seulement la page
- * racine comme avant). Deux conditions :
+ * racine comme avant). Trois conditions :
  *   1. L'utilisateur DOIT avoir le rôle DEVELOPER.
  *   2. L'utilisateur DOIT avoir terminé l'onboarding (profil développeur existant).
+ *   3. Le compte DOIT être validé par l'admin (KYC vérifié) — sinon le dev est
+ *      renvoyé à l'onboarding où il voit le statut/motif et peut refaire son KYC.
  *
  * Sans quoi il est redirigé :
  *   - pas de rôle DEVELOPER            → /dashboard/become-developer
  *   - rôle DEVELOPER mais onboarding  → /dashboard/developer/onboarding
  *     non terminé
+ *   - onboarding fait mais KYC non    → /dashboard/developer/onboarding
+ *     validé (PENDING/REJECTED)
  *
  * La page d'onboarding elle-même est exemptée (sinon boucle infinie).
  */
@@ -31,6 +35,7 @@ export default function DeveloperLayout({ children }: { children: React.ReactNod
 
   const hasDeveloperRole = !!user?.roles?.includes('DEVELOPER');
   const isOnboardingPage = pathname === '/dashboard/developer/onboarding';
+  const isVerified = profile?.verificationStatus === 'VERIFIED';
 
   // Chargement initial du store / du profil
   const [hydrated, setHydrated] = useState(false);
@@ -53,8 +58,14 @@ export default function DeveloperLayout({ children }: { children: React.ReactNod
     // 2. Onboarding non terminé (pas de profil développeur) → forcer l'onboarding
     if (!isOnboardingPage && !profile && !profileLoading) {
       router.replace('/dashboard/developer/onboarding');
+      return;
     }
-  }, [hydrated, user, hasDeveloperRole, isOnboardingPage, profile, profileLoading, router]);
+
+    // 3. KYC non validé par l'admin → retour à l'onboarding (statut + motif visibles)
+    if (!isOnboardingPage && profile && !profileLoading && !isVerified) {
+      router.replace('/dashboard/developer/onboarding');
+    }
+  }, [hydrated, user, hasDeveloperRole, isOnboardingPage, profile, profileLoading, isVerified, router]);
 
   // Rendu : pages de garde pendant les transitions
   if (!user) {
@@ -93,6 +104,15 @@ export default function DeveloperLayout({ children }: { children: React.ReactNod
 
   // Rôle DEVELOPER mais profil non chargé / non terminé (hors page onboarding)
   if (!isOnboardingPage && (profileLoading || profileError)) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
+      </div>
+    );
+  }
+
+  // KYC non validé : ne jamais rendre le dashboard, rediriger vers l'onboarding
+  if (!isOnboardingPage && profile && !isVerified) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-brand" />

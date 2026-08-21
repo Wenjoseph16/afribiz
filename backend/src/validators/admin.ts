@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const userActions = ['suspend', 'activate', 'block', 'delete'] as const;
 const businessActions = ['validate', 'verify', 'suspend', 'block', 'delete'] as const;
-const developerActions = ['validate', 'verify', 'suspend', 'block', 'delete'] as const;
+const developerActions = ['validate', 'verify', 'reject', 'suspend', 'block', 'delete'] as const;
 // Accepte aussi les libellés de l'UI admin (français) — normalisés côté service
 const moduleActions = [
   'validate',
@@ -31,9 +31,15 @@ export const updateBusinessVerificationSchema = z.object({
   rejectionReason: z.string().max(500).optional(),
 });
 
-export const updateDeveloperStatusSchema = z.object({
-  action: z.enum(developerActions),
-});
+export const updateDeveloperStatusSchema = z
+  .object({
+    action: z.enum(developerActions),
+    reason: z.string().min(5, 'Motif trop court (5 caractères min)').max(500).optional(),
+  })
+  .refine((v) => v.action !== 'reject' || !!v.reason, {
+    message: 'Un motif est requis pour refuser un développeur',
+    path: ['reason'],
+  });
 
 export const updateModuleStatusSchema = z.object({
   action: z.enum(moduleActions),
