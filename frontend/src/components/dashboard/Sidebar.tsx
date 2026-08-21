@@ -95,6 +95,26 @@ export function Sidebar() {
   const canAccessBusiness = user?.roles?.includes('BUSINESS') || !!business;
   const canAccessAdmin = user?.roles?.includes('ADMIN');
 
+  // ⭐ KYC : tant que le compte dev n'est pas validé par l'admin (VERIFIED),
+  // la sidebar ne montre AUCUNE section développeur — uniquement un lien vers
+  // l'onboarding (statut + motif de rejet + re-soumission KYC).
+  const devVerified = devProfile?.verificationStatus === 'VERIFIED';
+  const devNavGroups = devVerified
+    ? DEVELOPER_NAV_GROUPS
+    : [
+        {
+          label: 'Développeur',
+          key: 'dev_kyc_pending',
+          items: [
+            {
+              label: 'Compléter mon dossier',
+              href: '/dashboard/developer/onboarding',
+              icon: 'Shield',
+            },
+          ],
+        },
+      ];
+
   // Synchronise selectedSpace avec les chemins EXPLICITES (espaces dédiés).
   // Jamais de retour automatique vers CLIENT : l'espace est un choix persistant,
   // modifiable uniquement via le sélecteur « Mes espaces » (sidebar + topbar).
@@ -463,9 +483,9 @@ export function Sidebar() {
         {/* Modules installés (écosystème dev) — section dynamique espace business */}
         {inBusinessSpace && <InstalledModulesSection collapsed={sidebarCollapsed} />}
 
-        {/* Developer section */}
+        {/* Developer section — masquée tant que le KYC n'est pas validé */}
         {inDeveloperSpace &&
-          DEVELOPER_NAV_GROUPS.map((group) => {
+          devNavGroups.map((group) => {
             const isExpanded = expandedGroups[group.key] !== false;
             const anyActive = group.items.some((item) => isActive(item.href));
             return (
