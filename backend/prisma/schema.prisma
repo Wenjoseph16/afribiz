@@ -1634,7 +1634,7 @@ model Business {
   experience          Int?
   skills              String[]
   certifications      String[]
-  certificationImages String[]
+  certificationImages String[] @default([])
   portfolioImages     String[]
   onboardingCompleted Boolean                    @default(false)
   onboardedAt         DateTime?
@@ -4191,7 +4191,7 @@ model LoyaltyProgram {
   business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   promotionId     String?
   promotion       Promotion?    @relation(fields: [promotionId], references: [id])
-  name            String        @default("Programme FidÃ©litÃ©")
+  name            String        @default("Programme Fidélité")
   description     String?
   pointsPerAmount Int?          @default(10)
   amountForPoints Decimal?      @default(1000) @db.Decimal(12, 2)

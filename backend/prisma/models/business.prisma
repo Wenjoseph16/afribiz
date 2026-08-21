@@ -58,7 +58,7 @@ model Business {
   experience          Int?
   skills              String[]
   certifications      String[]
-  certificationImages String[]
+  certificationImages String[] @default([])
   portfolioImages     String[]
   onboardingCompleted Boolean                    @default(false)
   onboardedAt         DateTime?

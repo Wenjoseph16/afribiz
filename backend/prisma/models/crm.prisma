@@ -116,6 +116,12 @@ model Message {
   sender          User              @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   content         String
   attachment      String?
+  productId       String?
+  productName     String?
+  productPrice    String?
+  productImage    String?
+  productSlug     String?
+  businessId      String?
   read            Boolean           @default(false)
   readAt          DateTime?
   createdAt       DateTime          @default(now())
@@ -124,6 +130,7 @@ model Message {
   @@index([conversationId])
   @@index([conversationId, createdAt])
   @@index([senderId])
+  @@index([productId])
   @@index([createdAt])
 }
 
