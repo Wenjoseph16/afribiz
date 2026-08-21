@@ -238,7 +238,7 @@ export default function MyTrainingsPage() {
               : "Vous n'êtes inscrit à aucune formation. Explorez les formations disponibles sur la marketplace."
           }
           action={
-            <Link href="/dashboard/explore">
+            <Link href="/marketplace">
               <Button>Découvrir des formations</Button>
             </Link>
           }

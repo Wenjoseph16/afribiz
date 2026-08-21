@@ -253,7 +253,7 @@ export default function MyRentalsPage() {
               : "Vous n'avez pas encore effectué de location. Explorez les offres de location disponibles sur la marketplace."
           }
           action={
-            <Link href="/dashboard/explore">
+            <Link href="/marketplace">
               <Button>Découvrir des locations</Button>
             </Link>
           }

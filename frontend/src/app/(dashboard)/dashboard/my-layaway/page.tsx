@@ -69,7 +69,10 @@ function ProgressRing({ progress, size = 72 }: { progress: number; size?: number
   );
 }
 
-const statusConfig: Record<string, { label: string; variant: 'success' | 'warning' | 'info' | 'default' }> = {
+const statusConfig: Record<
+  string,
+  { label: string; variant: 'success' | 'warning' | 'info' | 'default' }
+> = {
   ACTIVE: { label: 'En cours', variant: 'info' },
   READY: { label: 'Complet — à valider', variant: 'success' },
   COMPLETED: { label: 'Acheté', variant: 'success' },
@@ -94,7 +97,12 @@ export default function MyLayawayPage() {
   // Code promo optionnel : la remise s'applique réellement à la validation
   const [couponCode, setCouponCode] = useState('');
 
-  const { data, isLoading, error: loadError, refetch } = useQuery({
+  const {
+    data,
+    isLoading,
+    error: loadError,
+    refetch,
+  } = useQuery({
     queryKey: ['my-layaway'],
     queryFn: async () => {
       try {
@@ -128,7 +136,7 @@ export default function MyLayawayPage() {
       setContributePlan(null);
       qc.invalidateQueries({ queryKey: ['my-layaway'] });
     } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Erreur lors de la cotisation");
+      setError(e?.response?.data?.message || e?.message || 'Erreur lors de la cotisation');
     } finally {
       setSending(false);
     }
@@ -165,7 +173,10 @@ export default function MyLayawayPage() {
     setConfirmDates(plan);
   };
 
-  const doConfirmCheckout = async (plan: any, dates?: { checkIn?: string; checkOut?: string; guests?: number }): Promise<boolean> => {
+  const doConfirmCheckout = async (
+    plan: any,
+    dates?: { checkIn?: string; checkOut?: string; guests?: number }
+  ): Promise<boolean> => {
     setConfirming(true);
     setError('');
     try {
@@ -177,7 +188,7 @@ export default function MyLayawayPage() {
       qc.invalidateQueries({ queryKey: ['my-layaway'] });
       return true;
     } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Erreur lors de la validation");
+      setError(e?.response?.data?.message || e?.message || 'Erreur lors de la validation');
       return false;
     } finally {
       setConfirming(false);
@@ -198,11 +209,11 @@ export default function MyLayawayPage() {
   const doConfirmWithDates = async () => {
     if (!confirmDates) return;
     if (!checkIn || !checkOut) {
-      setError('Renseignez les dates d\'arrivée et de départ');
+      setError("Renseignez les dates d'arrivée et de départ");
       return;
     }
     if (checkOut <= checkIn) {
-      setError('La date de départ doit être après la date d\'arrivée');
+      setError("La date de départ doit être après la date d'arrivée");
       return;
     }
     const ok = await doConfirmCheckout(confirmDates, {
@@ -228,8 +239,16 @@ export default function MyLayawayPage() {
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatsCard icon={<PiggyBank className="h-5 w-5" />} label="Plans actifs" value={activeCount} />
-        <StatsCard icon={<Wallet className="h-5 w-5" />} label="Total épargné" value={`${formatPrice(totalSaved)}`} />
+        <StatsCard
+          icon={<PiggyBank className="h-5 w-5" />}
+          label="Plans actifs"
+          value={activeCount}
+        />
+        <StatsCard
+          icon={<Wallet className="h-5 w-5" />}
+          label="Total épargné"
+          value={`${formatPrice(totalSaved)}`}
+        />
         <StatsCard icon={<Lock className="h-5 w-5" />} label="Sécurisé en escrow" value="100%" />
         <StatsCard icon={<Sparkles className="h-5 w-5" />} label="Commission" value="0%" />
       </div>
@@ -237,9 +256,10 @@ export default function MyLayawayPage() {
       <div className="flex items-start gap-2 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/60 dark:bg-emerald-900/10 p-3 text-xs text-emerald-700 dark:text-emerald-300">
         <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
         <p>
-          <strong>Zéro risque :</strong> chaque cotisation est bloquée en <strong>escrow AfriBiz</strong> — le vendeur
-          ne touche votre argent qu&apos;à la livraison. Vous pouvez annuler et être <strong>remboursé à 100%</strong> à
-          tout moment, sans frais.
+          <strong>Zéro risque :</strong> chaque cotisation est bloquée en{' '}
+          <strong>escrow AfriBiz</strong> — le vendeur ne touche votre argent qu&apos;à la
+          livraison. Vous pouvez annuler et être <strong>remboursé à 100%</strong> à tout moment,
+          sans frais.
         </p>
       </div>
 
@@ -249,9 +269,9 @@ export default function MyLayawayPage() {
         <EmptyState
           icon={<PiggyBank className="h-10 w-10" />}
           title="Aucun plan épargne"
-          description="Retrouvez ici vos plans d'épargne. Cherchez un produit avec le badge 🔒 Épargne dans le marketplace pour commencer."
+          description="Retrouvez ici vos plans d'épargne. Cherchez un produit avec le badge ðŸ”’ Épargne dans le marketplace pour commencer."
           action={
-            <Link href="/dashboard/explore">
+            <Link href="/marketplace">
               <Button>
                 Explorer le marketplace <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -263,7 +283,10 @@ export default function MyLayawayPage() {
           {plans.map((plan: any) => {
             const st = statusConfig[plan.status] || { label: plan.status, variant: 'default' };
             return (
-              <Card key={plan.id} className="p-5 relative overflow-hidden group hover:shadow-lg transition-all">
+              <Card
+                key={plan.id}
+                className="p-5 relative overflow-hidden group hover:shadow-lg transition-all"
+              >
                 <div className="flex items-start gap-4">
                   <ProgressRing progress={plan.progress} />
                   <div className="flex-1 min-w-0">
@@ -305,7 +328,12 @@ export default function MyLayawayPage() {
                     <Button size="sm" variant="primary" onClick={() => openContribute(plan)}>
                       <Plus className="h-3.5 w-3.5 mr-1.5" /> Cotiser
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setConfirmCancel(plan)} className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmCancel(plan)}
+                      className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
                       <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Annuler
                     </Button>
                   </div>
@@ -330,7 +358,11 @@ export default function MyLayawayPage() {
                       onClick={() => handleReadyClick(plan)}
                       disabled={confirming}
                     >
-                      {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
+                      {confirming ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                      )}
                       {plan.itemType === 'ROOM'
                         ? `Réserver ({formatPrice(plan.targetAmount)})`
                         : plan.itemType === 'RENTAL'
@@ -362,13 +394,21 @@ export default function MyLayawayPage() {
                   >
                     <Button size="sm" variant="secondary" className="w-full">
                       {plan.itemType === 'ROOM' || plan.itemType === 'RENTAL' ? (
-                        <><Calendar className="h-3.5 w-3.5 mr-1.5" /> Voir ma réservation</>
+                        <>
+                          <Calendar className="h-3.5 w-3.5 mr-1.5" /> Voir ma réservation
+                        </>
                       ) : plan.itemType === 'EVENT' ? (
-                        <><CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Voir mon billet</>
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Voir mon billet
+                        </>
                       ) : plan.itemType === 'TRAINING' ? (
-                        <><GraduationCap className="h-3.5 w-3.5 mr-1.5" /> Accéder à ma formation</>
+                        <>
+                          <GraduationCap className="h-3.5 w-3.5 mr-1.5" /> Accéder à ma formation
+                        </>
                       ) : (
-                        <><ShoppingBag className="h-3.5 w-3.5 mr-1.5" /> Suivre ma commande</>
+                        <>
+                          <ShoppingBag className="h-3.5 w-3.5 mr-1.5" /> Suivre ma commande
+                        </>
                       )}
                     </Button>
                   </Link>
@@ -387,7 +427,8 @@ export default function MyLayawayPage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Votre argent est bloqué en escrow jusqu&apos;à la livraison. Remboursement intégral à tout moment.
+            Votre argent est bloqué en escrow jusqu&apos;à la livraison. Remboursement intégral à
+            tout moment.
           </p>
           <div className="grid grid-cols-2 gap-3">
             {[5000, 10000, 25000, 50000].map((v) => (
@@ -405,7 +446,9 @@ export default function MyLayawayPage() {
             ))}
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Montant personnalisé (FCFA)</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">
+              Montant personnalisé (FCFA)
+            </label>
             <input
               type="number"
               value={amount}
@@ -420,7 +463,9 @@ export default function MyLayawayPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Moyen de paiement</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Moyen de paiement
+              </label>
               <Select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
@@ -443,10 +488,25 @@ export default function MyLayawayPage() {
               />
             </div>
           </div>
-          {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">{error}</p>}
-          <Button variant="primary" className="w-full" onClick={doContribute} disabled={sending || !amount}>
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4 mr-2" />}
-            {sending ? 'Sécurisation en escrow...' : `Cotiser ${amount ? formatPrice(Number(amount)) : ''}`}
+          {error && (
+            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+              {error}
+            </p>
+          )}
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={doContribute}
+            disabled={sending || !amount}
+          >
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Lock className="h-4 w-4 mr-2" />
+            )}
+            {sending
+              ? 'Sécurisation en escrow...'
+              : `Cotiser ${amount ? formatPrice(Number(amount)) : ''}`}
           </Button>
         </div>
       </Modal>
@@ -455,13 +515,15 @@ export default function MyLayawayPage() {
       <Modal
         open={!!confirmDates}
         onClose={() => setConfirmDates(null)}
-        title={confirmDates?.itemType === 'RENTAL' ? 'Confirmer la location' : 'Confirmer la réservation'}
+        title={
+          confirmDates?.itemType === 'RENTAL' ? 'Confirmer la location' : 'Confirmer la réservation'
+        }
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Votre épargne ({formatPrice(confirmDates?.targetAmount)}) couvre{' '}
-            <strong className="text-gray-900 dark:text-white">{confirmDates?.itemName}</strong>. Indiquez vos dates :
-            la réservation sera créée directement chez le business, déjà payée.
+            <strong className="text-gray-900 dark:text-white">{confirmDates?.itemName}</strong>.
+            Indiquez vos dates : la réservation sera créée directement chez le business, déjà payée.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -498,7 +560,10 @@ export default function MyLayawayPage() {
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">
-              Code promo <span className="text-gray-400 font-normal">(optionnel — remise appliquée à l&apos;achat)</span>
+              Code promo{' '}
+              <span className="text-gray-400 font-normal">
+                (optionnel — remise appliquée à l&apos;achat)
+              </span>
             </label>
             <input
               type="text"
@@ -508,10 +573,25 @@ export default function MyLayawayPage() {
               className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
           </div>
-          {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">{error}</p>}
-          <Button variant="primary" className="w-full" onClick={doConfirmWithDates} disabled={confirming}>
-            {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-1.5" />}
-            {confirming ? 'Création de la réservation...' : 'Confirmer — réservation payée par mon épargne'}
+          {error && (
+            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+              {error}
+            </p>
+          )}
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={doConfirmWithDates}
+            disabled={confirming}
+          >
+            {confirming ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+            )}
+            {confirming
+              ? 'Création de la réservation...'
+              : 'Confirmer — réservation payée par mon épargne'}
           </Button>
         </div>
       </Modal>
@@ -530,13 +610,22 @@ export default function MyLayawayPage() {
             </strong>{' '}
             sans aucun frais. L&apos;argent n&apos;a jamais été chez le vendeur.
           </p>
-          {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">{error}</p>}
+          {error && (
+            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+              {error}
+            </p>
+          )}
           <div className="flex gap-2">
             <Button variant="ghost" className="flex-1" onClick={() => setConfirmCancel(null)}>
               Garder mon épargne
             </Button>
-            <Button variant="primary" className="flex-1 bg-red-500 hover:bg-red-600" onClick={doCancel} disabled={confirming}>
-              {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirmer l\'annulation'}
+            <Button
+              variant="primary"
+              className="flex-1 bg-red-500 hover:bg-red-600"
+              onClick={doCancel}
+              disabled={confirming}
+            >
+              {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmer l'annulation"}
             </Button>
           </div>
         </div>

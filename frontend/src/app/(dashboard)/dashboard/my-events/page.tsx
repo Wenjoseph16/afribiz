@@ -218,7 +218,7 @@ export default function MyEventsPage() {
               : "Vous n'êtes inscrit à aucun événement pour le moment. Découvrez les événements près de chez vous."
           }
           action={
-            <Link href="/dashboard/explore">
+            <Link href="/marketplace">
               <Button>Découvrir des événements</Button>
             </Link>
           }

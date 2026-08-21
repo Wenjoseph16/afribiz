@@ -100,7 +100,7 @@ export default function MySubscriptionsPage() {
           title="Aucun abonnement actif"
           description="Vous n'avez pas encore souscrit à un abonnement. Découvrez les forfaits proposés par les business de la marketplace (salle de sport, salon, restaurant, hôtel...)."
           action={
-            <Link href="/dashboard/explore">
+            <Link href="/marketplace">
               <Button variant="primary">
                 <Store className="h-4 w-4 mr-2" />
                 Explorer la marketplace
@@ -209,7 +209,7 @@ export default function MySubscriptionsPage() {
                           month: 'short',
                           year: 'numeric',
                         })
-                      : '—'}
+                      : '”'}
                   </p>
                 </div>
               </div>
@@ -222,7 +222,7 @@ export default function MySubscriptionsPage() {
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Jours restants</p>
                   <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                    {daysLeft !== null ? daysLeft : '—'}
+                    {daysLeft !== null ? daysLeft : '”'}
                   </p>
                 </div>
               </div>
@@ -268,15 +268,17 @@ export default function MySubscriptionsPage() {
                   </span>
                   <span className="text-xs text-gray-400">
                     {' '}
-                    · renouvellement{' '}
-                    {subscription?.autoRenew ? 'automatique' : 'manuel'}
+                    · renouvellement {subscription?.autoRenew ? 'automatique' : 'manuel'}
                   </span>
                 </div>
 
                 {subscription?.plan?.benefits && subscription.plan.benefits.length > 0 && (
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {subscription.plan.benefits.map((b: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+                      >
                         <Sparkles className="h-3.5 w-3.5 text-brand shrink-0" />
                         {b}
                       </div>
@@ -287,7 +289,11 @@ export default function MySubscriptionsPage() {
 
               {/* Actions */}
               <div className="lg:w-64 shrink-0 space-y-2">
-                <Link href={subscription?.business?.slug ? `/business/${subscription.business.slug}` : '#'}>
+                <Link
+                  href={
+                    subscription?.business?.slug ? `/business/${subscription.business.slug}` : '#'
+                  }
+                >
                   <Button variant="secondary" className="w-full">
                     <Store className="h-4 w-4 mr-2" />
                     Voir le business
@@ -340,9 +346,7 @@ export default function MySubscriptionsPage() {
                 });
               }}
             >
-              {cancelMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
+              {cancelMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Oui, résilier
             </Button>
           </div>
