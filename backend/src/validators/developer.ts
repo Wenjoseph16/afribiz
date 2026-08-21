@@ -46,9 +46,16 @@ export const expertiseSchema = z.object({
 const docField = z
   .string()
   .min(1)
-  .refine((v) => v.startsWith('data:') || v.startsWith('http://') || v.startsWith('https://') || v.startsWith('/uploads'), {
-    message: 'Format de document invalide (URL ou fichier attendu)',
-  });
+  .refine(
+    (v) =>
+      v.startsWith('data:') ||
+      v.startsWith('http://') ||
+      v.startsWith('https://') ||
+      v.startsWith('/uploads'),
+    {
+      message: 'Format de document invalide (URL ou fichier attendu)',
+    }
+  );
 
 export const activateDeveloperSchema = z.object({});
 
