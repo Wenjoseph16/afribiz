@@ -101,3 +101,79 @@ export const MODULE_STATUS_LABELS: Record<ModuleStatus, string> = {
   REJECTED: 'Rejeté',
   ARCHIVED: 'Archivé',
 };
+
+// ============================================
+// ONBOARDING DÉVELOPPEUR (wizard premium)
+// ============================================
+
+import type { MasteryLevel } from '@/constants/developer';
+
+export interface CoreStackItem {
+  name: string;
+  level: MasteryLevel;
+  years?: number;
+}
+
+export interface DevPortfolioItem {
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+}
+
+export interface DevCertification {
+  name: string;
+  issuer?: string;
+  year?: number;
+  fileUrl?: string;
+}
+
+export interface DevExpertise {
+  coreStack: CoreStackItem[];
+  domains: string[];
+}
+
+export interface DevOnboardingData {
+  // Identité
+  photo: string;
+  companyLogo: string;
+  companyName: string;
+  bio: string;
+  phone: string;
+  professionalEmail: string;
+  country: string;
+  city: string;
+  // Expertise
+  yearsOfExperience: number | null;
+  expertise: DevExpertise;
+  github: string;
+  gitlab: string;
+  linkedin: string;
+  website: string;
+  portfolioUrl: string;
+  // Preuves
+  portfolioItems: DevPortfolioItem[];
+  certifications: DevCertification[];
+}
+
+export function emptyDevOnboardingData(): DevOnboardingData {
+  return {
+    photo: '',
+    companyLogo: '',
+    companyName: '',
+    bio: '',
+    phone: '',
+    professionalEmail: '',
+    country: '',
+    city: '',
+    yearsOfExperience: null,
+    expertise: { coreStack: [], domains: [] },
+    github: '',
+    gitlab: '',
+    linkedin: '',
+    website: '',
+    portfolioUrl: '',
+    portfolioItems: [],
+    certifications: [],
+  };
+}

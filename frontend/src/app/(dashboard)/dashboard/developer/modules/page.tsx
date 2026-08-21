@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Loader } from '@/components/ui/Loader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import VerificationGateBanner from '@/components/dashboard/VerificationGateBanner';
 import { cn } from '@/lib/utils';
 import {
   useDeveloperModules,
@@ -130,6 +131,7 @@ export default function DeveloperModulesPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
+      <VerificationGateBanner />
       <PageHeader
         title="Mes Modules"
         description="Créez, gérez et publiez vos modules sur la marketplace"

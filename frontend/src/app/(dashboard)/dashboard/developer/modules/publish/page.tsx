@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { Loader } from '@/components/ui/Loader';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useCreateDeveloperModule, useUploadModuleImage } from '@/features/developerHooks';
+import VerificationGateBanner from '@/components/dashboard/VerificationGateBanner';
 import { MODULE_CATEGORIES, PRICING_LABELS } from '@/types/developer';
 import type { ModulePricingType } from '@/types/developer';
 
@@ -137,6 +138,7 @@ export default function PublishModulePage() {
 
   return (
     <div className="animate-fade-in space-y-6">
+      <VerificationGateBanner />
       <PageHeader
         title="Publier un module"
         description="Remplissez les informations ci-dessous pour créer et publier votre module sur la marketplace"
