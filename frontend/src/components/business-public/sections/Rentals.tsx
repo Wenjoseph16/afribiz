@@ -102,10 +102,10 @@ export function Rentals({ rentals }: RentalsProps) {
                     </div>
 
                     {rental.conditions && (
-                    <div className="flex items-start gap-1.5 text-xs text-gray-400 dark:text-gray-500 mb-3 line-clamp-2">
-                      <FileText className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                      <span>{rental.conditions}</span>
-                    </div>
+                      <div className="flex items-start gap-1.5 text-xs text-gray-400 dark:text-gray-500 mb-3 line-clamp-2">
+                        <FileText className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        <span>{rental.conditions}</span>
+                      </div>
                     )}
 
                     {/* Footer */}

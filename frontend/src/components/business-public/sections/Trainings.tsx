@@ -42,7 +42,10 @@ export function Trainings({ trainings, businessSlug }: TrainingsProps) {
           description="Développez vos compétences avec nos formations"
         />
 
-        <div ref={stagger.ref} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+        <div
+          ref={stagger.ref}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
+        >
           {trainings.map((training, idx) => (
             <div
               key={training.id}

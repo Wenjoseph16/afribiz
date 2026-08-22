@@ -161,7 +161,8 @@ export function Promotions({ promotions }: PromotionsProps) {
                           <CalendarClock className="w-3 h-3" />
                           {promo.startsAt &&
                             `Du ${new Date(promo.startsAt).toLocaleDateString('fr-FR')}`}
-                          {promo.endsAt && ` au ${new Date(promo.endsAt).toLocaleDateString('fr-FR')}`}
+                          {promo.endsAt &&
+                            ` au ${new Date(promo.endsAt).toLocaleDateString('fr-FR')}`}
                         </span>
                         {left !== null && (
                           <span
@@ -170,12 +171,10 @@ export function Promotions({ promotions }: PromotionsProps) {
                               left <= 3 ? 'text-red-500' : 'text-emerald-600'
                             )}
                           >
-                            {left <= 0 ? "Dernier jour !" : `${left} j restants`}
+                            {left <= 0 ? 'Dernier jour !' : `${left} j restants`}
                           </span>
                         )}
-                        {isExpired && (
-                          <span className="font-semibold text-gray-400">Expirée</span>
-                        )}
+                        {isExpired && <span className="font-semibold text-gray-400">Expirée</span>}
                       </div>
                     </div>
                   </div>

@@ -31,11 +31,7 @@ export function Services({ services, businessSlug }: ServicesProps) {
     <>
       <section id="section-services" className="scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
-          <SectionHeader
-            eyebrow="Prestations"
-            title="Nos Services"
-            count={services.length}
-          />
+          <SectionHeader eyebrow="Prestations" title="Nos Services" count={services.length} />
 
           {/* ─── Grid — double-bezel cards ─── */}
           <div
@@ -69,7 +65,9 @@ export function Services({ services, businessSlug }: ServicesProps) {
                             alt={service.name}
                             fill
                             sizes={
-                              isHero ? '(max-width: 768px) 100vw, 66vw' : '(max-width: 768px) 100vw, 33vw'
+                              isHero
+                                ? '(max-width: 768px) 100vw, 66vw'
+                                : '(max-width: 768px) 100vw, 33vw'
                             }
                             className="object-cover group-hover:scale-[1.04] transition-transform duration-[800ms] ease-[cubic-bezier(0.32,0.72,0,1)]"
                           />

@@ -550,9 +550,7 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                     {quickView.rating.toFixed(1)}
                   </span>
-                  {quickView.orderCount > 0 && (
-                    <span className="text-xs text-gray-300">·</span>
-                  )}
+                  {quickView.orderCount > 0 && <span className="text-xs text-gray-300">·</span>}
                   {quickView.orderCount > 0 && (
                     <span className="text-xs text-gray-400">{quickView.orderCount} ventes</span>
                   )}
@@ -587,9 +585,7 @@ export function Products({ businessId, businessName, products }: ProductsProps) 
                   {quickView.stock > 0 ? (
                     <span className="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      {quickView.stock <= 5
-                        ? `Plus que ${quickView.stock} en stock`
-                        : 'En stock'}
+                      {quickView.stock <= 5 ? `Plus que ${quickView.stock} en stock` : 'En stock'}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 text-xs text-red-500 font-medium">

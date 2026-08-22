@@ -2,15 +2,7 @@
 
 import Image from 'next/image';
 import { MenuCategory, MenuItem } from '@/types/business';
-import {
-  Utensils,
-  Star,
-  Flame,
-  BadgePercent,
-  Clock,
-  ShoppingBag,
-  ChefHat,
-} from 'lucide-react';
+import { Utensils, Star, Flame, BadgePercent, Clock, ShoppingBag, ChefHat } from 'lucide-react';
 import { formatPrice } from '@/utils/helpers';
 import { cn } from '@/lib/utils';
 import { SectionHeader } from '../ui/SectionHeader';

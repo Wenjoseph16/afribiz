@@ -36,8 +36,7 @@ export function SectionHeader({
           ) : (
             typeof count === 'number' && (
               <p className="mt-2 text-gray-500 dark:text-gray-400 text-sm">
-                {count}{' '}
-                {count > 1 ? 'disponibles' : 'disponible'}
+                {count} {count > 1 ? 'disponibles' : 'disponible'}
               </p>
             )
           )}
@@ -49,7 +48,15 @@ export function SectionHeader({
 }
 
 /** Compteur avec unité personnalisée (ex : "12 plats", "3 événements"). */
-export function SectionCount({ count, singular, plural }: { count: number; singular: string; plural?: string }) {
+export function SectionCount({
+  count,
+  singular,
+  plural,
+}: {
+  count: number;
+  singular: string;
+  plural?: string;
+}) {
   return (
     <p className="mt-2 text-gray-500 dark:text-gray-400 text-sm">
       {count} {count > 1 ? plural || `${singular}s` : singular}

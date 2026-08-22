@@ -217,11 +217,7 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
   const show = (key: string) => isSectionVisible(vis, key);
 
   return (
-    <div
-      className="min-h-screen bg-white dark:bg-gray-900"
-      {...dataAttrs}
-      style={themeStyle}
-    >
+    <div className="min-h-screen bg-white dark:bg-gray-900" {...dataAttrs} style={themeStyle}>
       <PageViewTracker businessId={business.id} />
       <GlobalHeader />
       <div className="pt-16">

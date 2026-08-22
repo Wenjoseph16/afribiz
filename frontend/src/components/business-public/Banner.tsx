@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Business } from '@/types/business';
 import { MapPin, Star, ShieldCheck, Crown, Zap, Award, BadgeCheck, TrendingUp } from 'lucide-react';
 import { getBusinessTypeLabel } from '@/utils/helpers';
+import { VERIFICATION_LEVEL_LABELS } from '@afribiz/shared';
 import { LiveVisitorCounter } from './LiveVisitorCounter';
 
 interface BannerProps {
@@ -21,11 +22,10 @@ export function Banner({ business, slug }: BannerProps) {
       className: 'bg-blue-500/20 backdrop-blur-sm text-blue-100 border border-blue-400/30',
     });
   }
-  const vl = (business as any).verificationLevel;
+  const vl = business.verificationLevel;
   if (vl && vl !== 'ARGENT') {
-    const levelLabel = vl === 'OR' ? 'Or' : vl === 'PLATINE' ? 'Platine' : vl;
     badges.push({
-      label: levelLabel,
+      label: VERIFICATION_LEVEL_LABELS[vl],
       icon: <Crown className="w-3.5 h-3.5" />,
       className: 'bg-amber-500/20 backdrop-blur-sm text-amber-100 border border-amber-400/30',
     });
