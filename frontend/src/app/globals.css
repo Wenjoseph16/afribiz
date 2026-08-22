@@ -17,6 +17,19 @@
   --brand: #059669;
   --brand-light: #10b981;
 
+  /* Palette brand en triplets RGB (consommée par tailwind via <alpha-value>) */
+  --biz-brand-50: 236 253 245;
+  --biz-brand-100: 209 250 229;
+  --biz-brand-200: 167 243 208;
+  --biz-brand-300: 110 231 183;
+  --biz-brand-400: 52 211 153;
+  --biz-brand-500: 16 185 129;
+  --biz-brand-600: 5 150 105;
+  --biz-brand-700: 4 120 87;
+  --biz-brand-800: 6 95 70;
+  --biz-brand-900: 6 78 59;
+  --biz-brand-950: 2 44 34;
+
   /* Couleurs de fond et texte - mode clair */
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
@@ -277,4 +290,42 @@ select:-webkit-autofill {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VITRINE BUSINESS — moteur de thème (scopé sous [data-biz-theme])
+   Les variables --biz-brand-* sont surchargées inline par le wrapper.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Densité de mise en page */
+[data-biz-layout='compact'] section[id^='section-'] > div {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+[data-biz-layout='elegant'] section[id^='section-'] > div {
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+}
+
+/* Animations désactivées */
+[data-biz-anim='off'] .biz-reveal {
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+[data-biz-anim='off'] .biz-reveal,
+[data-biz-anim='off'] .biz-reveal * {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+}
+
+/* Rayons de bordure */
+[data-biz-radius='sm'] .biz-card {
+  border-radius: 0.625rem;
+}
+[data-biz-radius='xl'] .biz-card {
+  border-radius: 1.25rem;
+}
+[data-biz-radius='2xl'] .biz-card {
+  border-radius: 1.75rem;
 }

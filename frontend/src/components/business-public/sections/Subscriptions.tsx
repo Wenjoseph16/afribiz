@@ -12,7 +12,6 @@ import {
   Gift,
   Info,
   Loader2,
-  Repeat,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -23,6 +22,7 @@ import { Modal } from '@/components/ui/Modal';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useSubscribeToPlan, useConfirmSubscriptionPayment } from '@/features/hooks';
+import { SectionHeader } from '../ui/SectionHeader';
 
 const CYCLE_LABELS: Record<string, string> = {
   WEEKLY: '/ semaine',
@@ -242,21 +242,14 @@ export function Subscriptions({ slug, plans }: SubscriptionsProps) {
 
   return (
     <section id="section-subscriptions" className="scroll-mt-24">
-      <div className="mb-8">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-brand-500/15 to-emerald-500/15 text-brand">
-            <Repeat className="h-5 w-5" />
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Abonnements
-          </h2>
-        </div>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
-          Choisissez la formule qui vous ressemble et profitez de tous nos avantages
-        </p>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        <SectionHeader
+          eyebrow="Formules"
+          title="Abonnements"
+          description="Choisissez la formule qui vous ressemble et profitez de tous nos avantages"
+        />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
         {activePlans.map((plan) => {
           const isFeatured = !!plan.featured;
           return (
@@ -588,6 +581,7 @@ export function Subscriptions({ slug, plans }: SubscriptionsProps) {
           )}
         </div>
       </Modal>
+      </div>
     </section>
   );
 }

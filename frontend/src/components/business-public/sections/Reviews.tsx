@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
 import { useCreateBusinessReview } from '@/features/hooks/business';
+import { SectionHeader } from '../ui/SectionHeader';
 
 interface ReviewsProps {
   reviews: BusinessReview[];
@@ -69,7 +70,7 @@ function BusinessReviewForm({ slug, onSuccess }: { slug: string; onSuccess: () =
         onChange={(e) => setComment(e.target.value)}
         placeholder="Partagez votre expérience avec ce business (optionnel)"
         rows={3}
-        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none"
+        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-transparent dark:text-gray-100 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none resize-none"
       />
 
       <div className="flex items-center gap-2">
@@ -126,44 +127,46 @@ export function Reviews({ reviews, slug }: ReviewsProps) {
   });
 
   return (
-    <section id="section-reviews" className="scroll-mt-32">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-            Avis Clients
-          </h2>
-          <div className="flex items-center gap-3">
-            {canReview && !showForm && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setShowForm(true)}
-                className="flex items-center gap-1.5"
-              >
-                <Star className="w-4 h-4 fill-current" />
-                Laisser un avis
-              </Button>
-            )}
-            {reviews.length > 3 && (
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  onClick={() => scroll('left')}
-                  disabled={!canScrollLeft}
-                  className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+    <section id="section-reviews" className="scroll-mt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        <SectionHeader
+          eyebrow="Témoignages"
+          title="Avis Clients"
+          count={reviews.length}
+          action={
+            <div className="flex items-center gap-3">
+              {canReview && !showForm && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setShowForm(true)}
+                  className="flex items-center gap-1.5 rounded-full"
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => scroll('right')}
-                  disabled={!canScrollRight}
-                  className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+                  <Star className="w-4 h-4 fill-current" />
+                  Laisser un avis
+                </Button>
+              )}
+              {reviews.length > 3 && (
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    onClick={() => scroll('left')}
+                    disabled={!canScrollLeft}
+                    className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scroll('right')}
+                    disabled={!canScrollRight}
+                    className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          }
+        />
 
         {showForm && slug && (
           <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -222,7 +225,7 @@ export function Reviews({ reviews, slug }: ReviewsProps) {
             {reviews.map((review) => (
               <div
                 key={review.id}
-                className="min-w-[280px] sm:min-w-[320px] max-w-[320px] snap-start bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 flex-shrink-0"
+                className="min-w-[280px] sm:min-w-[320px] max-w-[320px] snap-start bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex-shrink-0"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-brand font-semibold text-sm flex-shrink-0 relative overflow-hidden">

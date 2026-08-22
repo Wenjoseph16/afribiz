@@ -63,6 +63,10 @@ export type BusinessType =
   | 'ENTREPRISE_PRIVEE'
   | 'AUTRE';
 
+export type VerificationLevel = 'ARGENT' | 'OR' | 'PLATINE';
+
+export type BusinessVerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
+
 export type BusinessModule =
   | 'PRODUCTS'
   | 'SERVICES'
@@ -126,6 +130,16 @@ export interface DeliveryZone {
   isActive?: boolean;
 }
 
+export interface BusinessTheme {
+  primaryColor?: string;
+  backgroundColor?: string;
+  borderRadius?: 'sm' | 'md' | 'xl' | '2xl';
+  fontFamily?: 'inter' | 'geist' | 'system';
+  enableAnimations?: boolean;
+  layout?: 'standard' | 'compact' | 'elegant';
+  sectionVisibility?: Record<string, boolean>;
+}
+
 export interface Business {
   id: string;
   ownerId: string;
@@ -135,6 +149,8 @@ export interface Business {
   modules: BusinessModule[];
   description: string | null;
   shortDescription: string | null;
+  theme?: BusinessTheme | null;
+  gallery?: string[];
   email: string | null;
   phone: string | null;
   website: string | null;
@@ -169,7 +185,14 @@ export interface Business {
   reviewCount: number;
   isActive: boolean;
   isVerified: boolean;
-  verificationLevel: string;
+  verificationStatus: BusinessVerificationStatus;
+  verificationLevel: VerificationLevel;
+  managerName: string | null;
+  managerBio: string | null;
+  experience: number | null;
+  skills: string[];
+  certifications: string[];
+  certificationImages: string[];
   isPremium: boolean;
   isNew: boolean;
   isTopSeller: boolean;
@@ -182,6 +205,8 @@ export interface Business {
   portfolioImages?: string[];
   setup?: Record<string, { configured: boolean; missing: string[] }>;
   setupComplete?: boolean;
+  frozenUntil?: string | null;
+  freezeReason?: string | null;
   owner: {
     id: string;
     firstName: string;

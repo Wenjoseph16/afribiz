@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { apiClient } from '@/services/apiClient';
 import type { Business, BusinessHour } from '@/types/business';
 import { cn } from '@/lib/utils';
+import { SectionHeader } from '../ui/SectionHeader';
 
 interface ContactProps {
   business: Business;
@@ -91,8 +92,8 @@ export function Contact({ business }: ContactProps) {
   };
 
   // Réseaux sociaux renseignés (handle court ou URL complète)
-  const socials = SOCIALS.filter((s) => (business as any)[s.key]).map((s) => {
-    const raw = String((business as any)[s.key]);
+  const socials = SOCIALS.filter((s) => business[s.key as keyof Business]).map((s) => {
+    const raw = String(business[s.key as keyof Business]);
     const href = raw.startsWith('http') ? raw : `${s.prefix}${raw.replace(/^@/, '')}`;
     return { ...s, handle: raw.replace(/^@/, ''), href };
   });
@@ -141,22 +142,20 @@ export function Contact({ business }: ContactProps) {
 
   return (
     <section id="section-contact" className="scroll-mt-24">
-      <div className="mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Nous contacter
-        </h2>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
-          Laissez-nous un message ou retrouvez-nous
-        </p>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        <SectionHeader
+          eyebrow="Parlons-en"
+          title="Nous contacter"
+          description="Laissez-nous un message ou retrouvez-nous"
+        />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Contact Form */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
           {sent ? (
             <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-                <CheckCircle className="h-8 w-8 text-emerald-500" />
+              <div className="w-16 h-16 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center mb-4">
+                <CheckCircle className="h-8 w-8 text-brand-500" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Message envoyé avec succès !
@@ -326,14 +325,14 @@ export function Contact({ business }: ContactProps) {
           {business.email && (
             <a
               href={`mailto:${business.email}`}
-              className="flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-emerald-300 hover:shadow-md transition-all group"
+              className="flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-brand/30 hover:shadow-md transition-all group"
             >
-              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform">
+              <div className="p-2.5 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 shrink-0 group-hover:scale-110 transition-transform">
                 <Mail className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email</p>
-                <p className="text-sm text-gray-500 group-hover:text-emerald-600 transition-colors">
+                <p className="text-sm text-gray-500 group-hover:text-brand-600 transition-colors">
                   {business.email}
                 </p>
               </div>
@@ -407,6 +406,7 @@ export function Contact({ business }: ContactProps) {
               <ChevronDown className="w-4 h-4 text-emerald-500 -rotate-90 group-hover:translate-x-0.5 transition-transform" />
             </a>
           )}
+        </div>
         </div>
       </div>
     </section>

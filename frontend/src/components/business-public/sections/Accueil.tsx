@@ -49,9 +49,9 @@ function StatCard({
 }) {
   const colorMap: Record<string, { outer: string; inner: string; text: string }> = {
     brand: {
-      outer: 'ring-emerald-500/10',
-      inner: 'bg-emerald-50 dark:bg-emerald-900/20',
-      text: 'text-emerald-600 dark:text-emerald-400',
+      outer: 'ring-brand-500/10',
+      inner: 'bg-brand-50 dark:bg-brand-900/20',
+      text: 'text-brand-600 dark:text-brand-400',
     },
     blue: {
       outer: 'ring-blue-500/10',
@@ -69,9 +69,9 @@ function StatCard({
       text: 'text-amber-600 dark:text-amber-400',
     },
     emerald: {
-      outer: 'ring-emerald-500/10',
-      inner: 'bg-emerald-50 dark:bg-emerald-900/20',
-      text: 'text-emerald-600 dark:text-emerald-400',
+      outer: 'ring-brand-500/10',
+      inner: 'bg-brand-50 dark:bg-brand-900/20',
+      text: 'text-brand-600 dark:text-brand-400',
     },
   };
   const c = colorMap[color] || colorMap.brand;
@@ -94,12 +94,12 @@ function StatCard({
 }
 
 export function Accueil({ business }: AccueilProps) {
-  const businessSkills = (business as any).skills || business.owner?.skills || [];
-  const businessCerts = (business as any).certifications || business.owner?.certifications || [];
-  const certImages = (business as any).certificationImages || [];
-  const experienceYears = (business as any).experience || business.owner?.yearsOfExperience || null;
-  const managerBio = (business as any).managerBio || null;
-  const managerName = (business as any).managerName || null;
+  const businessSkills = business.skills || business.owner?.skills || [];
+  const businessCerts = business.certifications || business.owner?.certifications || [];
+  const certImages = business.certificationImages || [];
+  const experienceYears = business.experience || business.owner?.yearsOfExperience || null;
+  const managerBio = business.managerBio || null;
+  const managerName = business.managerName || null;
 
   const hasContent =
     business.description ||
@@ -164,11 +164,11 @@ export function Accueil({ business }: AccueilProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
         {/* Eyebrow + Header */}
         <motion.div {...fadeUp}>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.2em] font-semibold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 mb-4">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] uppercase tracking-[0.2em] font-semibold bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 mb-4">
             À propos
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-3">
-            <span className="text-emerald-600 dark:text-emerald-400">{business.name}</span>
+            <span className="text-brand-600 dark:text-brand-400">{business.name}</span>
           </h2>
           {business.shortDescription && (
             <p className="text-gray-600 dark:text-gray-300 text-base leading-relaxed max-w-2xl">
@@ -211,9 +211,9 @@ export function Accueil({ business }: AccueilProps) {
             className="grid sm:grid-cols-3 gap-4 mt-12"
           >
             {business.mission && (
-              <div className="group p-6 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-50/50 dark:from-emerald-900/20 dark:to-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-500">
-                <div className="w-12 h-12 rounded-xl bg-white dark:bg-emerald-900/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500">
-                  <Target className="w-6 h-6 text-emerald-600" />
+              <div className="group p-6 rounded-2xl bg-gradient-to-br from-brand-50 to-brand-50/50 dark:from-brand-900/20 dark:to-brand-900/10 border border-brand-100 dark:border-brand-800/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-500">
+                <div className="w-12 h-12 rounded-xl bg-white dark:bg-brand-900/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500">
+                  <Target className="w-6 h-6 text-brand-600" />
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Notre Mission</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
@@ -252,13 +252,13 @@ export function Accueil({ business }: AccueilProps) {
             <div className="p-1.5 rounded-2xl ring-1 ring-gray-200 dark:ring-white/10">
               <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/80 dark:to-gray-900/80 p-6 sm:p-8">
                 {/* Decorative accent */}
-                <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/3" />
+                <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-brand-500/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/3" />
 
                 <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-6">
                   {/* Avatar — Double Bezel */}
                   <div className="relative shrink-0">
-                    <div className="p-1 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500">
-                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center text-2xl sm:text-3xl font-bold text-emerald-600 overflow-hidden">
+                    <div className="p-1 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-500">
+                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center text-2xl sm:text-3xl font-bold text-brand-600 overflow-hidden">
                         {business.owner?.avatar ? (
                           <Image
                             src={business.owner.avatar}
@@ -291,7 +291,7 @@ export function Accueil({ business }: AccueilProps) {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <UserCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      <UserCheck className="w-5 h-5 text-brand-600 dark:text-brand-400" />
                       <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
                         {managerName ||
                           (business.owner
@@ -319,9 +319,9 @@ export function Accueil({ business }: AccueilProps) {
                         {businessSkills.slice(0, 6).map((skill: string) => (
                           <span
                             key={skill}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-full border border-emerald-100 dark:border-emerald-800/40"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 rounded-full border border-brand-100 dark:border-brand-800/40"
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
                             {skill}
                           </span>
                         ))}
@@ -380,7 +380,7 @@ export function Accueil({ business }: AccueilProps) {
         {/* Decorative separator */}
         <div className="mt-8 flex items-center gap-4 text-gray-300 dark:text-gray-600">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
-          <div className="w-2 h-2 rounded-full bg-emerald-500 rotate-45" />
+          <div className="w-2 h-2 rounded-full bg-brand-500 rotate-45" />
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent" />
         </div>
       </div>

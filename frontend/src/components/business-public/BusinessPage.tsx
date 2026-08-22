@@ -33,6 +33,7 @@ import { Sidebar } from './sections/Sidebar';
 import { Footer } from './Footer';
 import { ErrorState } from './ErrorState';
 import { LiveBanner } from './sections/LiveBanner';
+import { useBizTheme, isSectionVisible } from './theme';
 import { BusinessModule } from '@/types/business';
 import { PageViewTracker } from '@/components/customer360/PageViewTracker';
 
@@ -210,8 +211,17 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
     business.email ||
     business.website;
 
+  // ─── Moteur de thème (couleurs, police, densité, animations) ───
+  const { style: themeStyle, dataAttrs, theme: resolvedTheme } = useBizTheme(business.theme);
+  const vis = resolvedTheme.sectionVisibility;
+  const show = (key: string) => isSectionVisible(vis, key);
+
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div
+      className="min-h-screen bg-white dark:bg-gray-900"
+      {...dataAttrs}
+      style={themeStyle}
+    >
       <PageViewTracker businessId={business.id} />
       <GlobalHeader />
       <div className="pt-16">
@@ -250,24 +260,28 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
         <div className={`flex flex-col lg:flex-row gap-8`}>
           <div className={`flex-1 min-w-0 ${hasSidebar ? '' : 'max-w-4xl mx-auto'}`}>
             <ErrorBoundary>
-              <section id="section-accueil">
-                <Accueil business={business} />
-              </section>
+              {show('accueil') && (
+                <section id="section-accueil">
+                  <Accueil business={business} />
+                </section>
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
-              <MediaStories
-                businessId={business.id}
-                businessName={business.name}
-                businessSlug={slug}
-                businessLogo={business.logo}
-                isVerified={business.isVerified}
-              />
+              {show('stories') && (
+                <MediaStories
+                  businessId={business.id}
+                  businessName={business.name}
+                  businessSlug={slug}
+                  businessLogo={business.logo}
+                  isVerified={business.isVerified}
+                />
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
-              <MediaShorts businessId={business.id} businessSlug={slug} />
+              {show('shorts') && <MediaShorts businessId={business.id} businessSlug={slug} />}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PRODUCTS') && hasProducts && (
+              {show('products') && modules.includes('PRODUCTS') && hasProducts && (
                 <Products
                   businessId={business.id}
                   businessName={business.name}
@@ -276,12 +290,12 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('SERVICES') && hasServices && (
+              {show('services') && modules.includes('SERVICES') && hasServices && (
                 <Services services={services || []} businessSlug={slug} />
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('MENU') && hasMenu && (
+              {show('menu') && modules.includes('MENU') && hasMenu && (
                 <Menu
                   categories={menu?.categories || []}
                   uncategorized={menu?.uncategorized || []}
@@ -290,10 +304,12 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('ROOMS') && hasRooms && <Rooms rooms={rooms || []} />}
+              {show('rooms') && modules.includes('ROOMS') && hasRooms && (
+                <Rooms rooms={rooms || []} />
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('BOOKINGS') && (
+              {show('bookings') && modules.includes('BOOKINGS') && (
                 <Bookings
                   whatsapp={business.whatsapp || undefined}
                   businessName={business.name}
@@ -302,45 +318,53 @@ export function BusinessPage({ slug, initialData }: BusinessPageProps) {
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('EVENTS') && hasEvents && <Events events={events || []} />}
+              {show('events') && modules.includes('EVENTS') && hasEvents && (
+                <Events events={events || []} />
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('RENTALS') && hasRentals && <Rentals rentals={rentals || []} />}
+              {show('rentals') && modules.includes('RENTALS') && hasRentals && (
+                <Rentals rentals={rentals || []} />
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PORTFOLIO') && hasPortfolio && (
+              {show('portfolio') && modules.includes('PORTFOLIO') && hasPortfolio && (
                 <Portfolio items={portfolio || []} />
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PROMOTIONS') && hasPromotions && (
+              {show('promotions') && modules.includes('PROMOTIONS') && hasPromotions && (
                 <Promotions promotions={promotions || []} />
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('PARTNERS') && hasPartners && (
+              {show('partners') && modules.includes('PARTNERS') && hasPartners && (
                 <Partners partners={partners || []} />
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('TRAINING') && hasTrainings && (
+              {show('trainings') && modules.includes('TRAINING') && hasTrainings && (
                 <Trainings trainings={trainings || []} businessSlug={slug} />
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              {modules.includes('SUBSCRIPTIONS') && hasSubscriptions && (
+              {show('subscriptions') && modules.includes('SUBSCRIPTIONS') && hasSubscriptions && (
                 <Subscriptions slug={slug} plans={subscriptionPlans || []} />
               )}
             </ErrorBoundary>
             <ErrorBoundary>
-              <section id="section-contact">
-                <Contact business={business} />
-              </section>
+              {show('contact') && (
+                <section id="section-contact">
+                  <Contact business={business} />
+                </section>
+              )}
             </ErrorBoundary>
             <ErrorBoundary>
-              <section id="section-reviews">
-                <Reviews reviews={reviews || []} slug={slug} />
-              </section>
+              {show('reviews') && (
+                <section id="section-reviews">
+                  <Reviews reviews={reviews || []} slug={slug} />
+                </section>
+              )}
             </ErrorBoundary>
           </div>
           {hasSidebar && (

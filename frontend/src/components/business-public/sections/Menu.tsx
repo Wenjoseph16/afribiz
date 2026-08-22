@@ -8,12 +8,13 @@ import {
   Flame,
   BadgePercent,
   Clock,
-  ChevronRight,
   ShoppingBag,
   ChefHat,
 } from 'lucide-react';
 import { formatPrice } from '@/utils/helpers';
 import { cn } from '@/lib/utils';
+import { SectionHeader } from '../ui/SectionHeader';
+import { useStaggerReveal, revealClasses, revealDelay } from '../ui/reveal';
 
 interface MenuProps {
   categories: MenuCategory[];
@@ -23,35 +24,35 @@ interface MenuProps {
 
 export function Menu({ categories, uncategorized, whatsapp }: MenuProps) {
   const hasContent = categories?.length || uncategorized?.length;
+  const stagger = useStaggerReveal(categories?.length || 1);
   if (!hasContent) return null;
 
   return (
     <section
       id="section-menu"
-      className="scroll-mt-32 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800/50"
+      className="scroll-mt-24 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800/50"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              Notre Menu
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Découvrez nos délicieux plats et boissons
-            </p>
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+        <SectionHeader eyebrow="Restaurant" title="Notre Carte" />
 
-        <div className="max-w-3xl mx-auto">
-          {categories?.map((category) => (
-            <div key={category.id} className="mb-10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-xl bg-brand/10">
-                  <ChefHat className="w-5 h-5 text-brand" />
+        <div ref={stagger.ref} className="max-w-3xl mx-auto">
+          {categories?.map((category, catIdx) => (
+            <div
+              key={category.id}
+              className={cn('mb-12', revealClasses(stagger.visible, catIdx))}
+              style={revealDelay(catIdx)}
+            >
+              {/* ─── Category header ─── */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2.5 rounded-xl bg-brand-50 border border-brand-100">
+                  <ChefHat className="w-5 h-5 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
                     {category.name}
+                    <span className="ml-2 text-xs font-medium text-gray-400 align-middle">
+                      {category.items?.length || 0}
+                    </span>
                   </h3>
                   {category.description && (
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -85,7 +86,7 @@ function MenuItemCard({ item, whatsapp }: { item: MenuItem; whatsapp?: string })
     item.isPromotional && item.promotionalPrice ? item.promotionalPrice : item.price;
 
   return (
-    <div className="group relative flex items-start justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-brand/20 transition-all duration-200">
+    <div className="group relative flex items-start justify-between p-4 bg-white dark:bg-gray-800 rounded-2xl biz-card border border-gray-100 dark:border-gray-700 hover:border-brand-200 dark:hover:border-brand-800 hover:shadow-lg hover:shadow-brand-900/5 transition-all duration-300">
       {/* Badges */}
       <div className="absolute -top-1.5 -left-1.5 flex gap-1 z-10">
         {item.isStar && (
@@ -101,24 +102,24 @@ function MenuItemCard({ item, whatsapp }: { item: MenuItem; whatsapp?: string })
           </span>
         )}
         {item.isPromotional && item.discountPercent && (
-          <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[10px] font-bold rounded-md flex items-center gap-0.5 shadow-sm">
+          <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-md flex items-center gap-0.5 shadow-sm">
             <BadgePercent className="w-2.5 h-2.5" />-{item.discountPercent}%
           </span>
         )}
       </div>
 
       {/* Content */}
-      <div className="flex gap-3 flex-1 min-w-0 pt-1">
+      <div className="flex gap-3.5 flex-1 min-w-0 pt-1">
         {item.images?.[0] ? (
           <Image
             src={item.images[0]}
             alt={item.name}
             width={80}
             height={80}
-            className="rounded-xl object-cover flex-shrink-0 shadow-sm"
+            className="rounded-xl object-cover flex-shrink-0 shadow-sm group-hover:scale-[1.03] transition-transform duration-500"
           />
         ) : (
-          <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center flex-shrink-0">
             <Utensils className="w-6 h-6 text-gray-300 dark:text-gray-500" />
           </div>
         )}
@@ -194,7 +195,7 @@ function MenuItemCard({ item, whatsapp }: { item: MenuItem; whatsapp?: string })
                 </span>
               ))}
               {item.variants.length > 3 && (
-                <span className="text-[10px] text-brand font-medium">
+                <span className="text-[10px] text-brand-600 font-medium">
                   +{item.variants.length - 3} autres
                 </span>
               )}
@@ -218,16 +219,18 @@ function MenuItemCard({ item, whatsapp }: { item: MenuItem; whatsapp?: string })
               {formatPrice(Number(item.price))}
             </span>
           )}
-          <span className="font-bold text-brand text-base">{formatPrice(Number(itemPrice))}</span>
+          <span className="font-bold text-brand-600 text-base tracking-tight">
+            {formatPrice(Number(itemPrice))}
+          </span>
         </div>
         {whatsapp && item.isAvailable && (
           <a
             href={`https://wa.me/${whatsapp}?text=Bonjour%2C%20je%20souhaite%20commander%20${encodeURIComponent(item.name)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors whitespace-nowrap"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 text-[11px] font-semibold transition-colors whitespace-nowrap active:scale-[0.97]"
           >
-            Commander <ChevronRight className="w-3 h-3" />
+            Commander
           </a>
         )}
       </div>
