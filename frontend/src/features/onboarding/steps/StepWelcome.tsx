@@ -56,7 +56,9 @@ export default function StepWelcome({ onStart }: { onStart: () => void }) {
                 <perk.icon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{perk.title}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {perk.title}
+                </p>
                 <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-0.5">{perk.desc}</p>
               </div>
             </motion.div>

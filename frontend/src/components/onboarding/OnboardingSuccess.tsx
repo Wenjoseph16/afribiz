@@ -65,7 +65,13 @@ export function OnboardingSuccess({ businessSlug, businessName }: Props) {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-white/10 p-6 inline-block">
           <div className="w-40 h-40 rounded-xl overflow-hidden flex items-center justify-center">
             {publicUrl && (
-              <QRCodeSVG value={publicUrl} size={160} level="M" bgColor="#ffffff" fgColor="#111827" />
+              <QRCodeSVG
+                value={publicUrl}
+                size={160}
+                level="M"
+                bgColor="#ffffff"
+                fgColor="#111827"
+              />
             )}
           </div>
           <p className="text-[11px] text-gray-400 mt-2">Scannez pour voir votre page</p>

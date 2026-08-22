@@ -44,7 +44,13 @@ export function OnboardingStepper({ steps, current, onStepClick }: Props) {
                     'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
                 )}
               >
-                {done ? <Check className="h-4 w-4" /> : step.icon ? <step.icon className="h-4 w-4" /> : step.id}
+                {done ? (
+                  <Check className="h-4 w-4" />
+                ) : step.icon ? (
+                  <step.icon className="h-4 w-4" />
+                ) : (
+                  step.id
+                )}
               </motion.span>
               <span className="text-left hidden sm:block">
                 <span

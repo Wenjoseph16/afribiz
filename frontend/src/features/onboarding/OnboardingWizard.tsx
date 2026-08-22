@@ -3,7 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Rocket, AlertCircle, Store, Sparkles, Images, MapPin, Blocks } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Rocket,
+  AlertCircle,
+  Store,
+  Sparkles,
+  Images,
+  MapPin,
+  Blocks,
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -85,7 +95,11 @@ export function OnboardingWizard() {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw);
-      if (saved && typeof saved === 'object' && (saved.name || saved.city || saved.modules?.length)) {
+      if (
+        saved &&
+        typeof saved === 'object' &&
+        (saved.name || saved.city || saved.modules?.length)
+      ) {
         setData((prev) => ({ ...prev, ...saved }));
         setStarted(true);
         addToast({ title: 'Brouillon restauré', variant: 'info' });
