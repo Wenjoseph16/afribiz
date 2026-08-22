@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { QRCodeCanvas as QRCode } from 'qrcode.react';
 import Image from 'next/image';
@@ -40,7 +40,7 @@ function SidebarCard({
 function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2 text-sm">
-      <span className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+      <span className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-600 dark:text-brand-400">
         {icon}
       </span>
       {children}
@@ -135,7 +135,7 @@ export function Sidebar({ business }: SidebarProps) {
             {business.phone && (
               <a
                 href={`tel:${business.phone}`}
-                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
+                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-brand-700 dark:hover:text-brand-400 transition-colors"
               >
                 <Phone className="w-4 h-4 text-gray-400 shrink-0" /> {business.phone}
               </a>
@@ -153,7 +153,7 @@ export function Sidebar({ business }: SidebarProps) {
             {business.email && (
               <a
                 href={`mailto:${business.email}`}
-                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
+                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-brand-700 dark:hover:text-brand-400 transition-colors"
               >
                 <Mail className="w-4 h-4 text-gray-400 shrink-0" /> {business.email}
               </a>
@@ -167,7 +167,7 @@ export function Sidebar({ business }: SidebarProps) {
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-emerald-600 transition-colors"
+                className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 hover:text-brand-700 dark:hover:text-brand-400 transition-colors"
               >
                 <Globe className="w-4 h-4 text-gray-400 shrink-0" /> Site web
               </a>
@@ -205,7 +205,7 @@ export function Sidebar({ business }: SidebarProps) {
               href={`https://www.google.com/maps/dir/?api=1&destination=${business.latitude},${business.longitude}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all duration-300 active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-all duration-300 active:scale-[0.98]"
             >
               <Navigation className="w-3.5 h-3.5" /> Maps
             </a>
@@ -229,7 +229,7 @@ export function Sidebar({ business }: SidebarProps) {
             {business.hours.map((h) => (
               <div
                 key={h.day}
-                className={`flex justify-between text-sm py-1 ${h.day === today ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-300'}`}
+                className={`flex justify-between text-sm py-1 ${h.day === today ? 'font-semibold text-brand-700 dark:text-brand-400' : 'text-gray-600 dark:text-gray-300'}`}
               >
                 <span>{getDayLabel(h.day)}</span>
                 <span>{h.isClosed ? 'Fermé' : `${h.open} — ${h.close}`}</span>
@@ -265,7 +265,7 @@ export function Sidebar({ business }: SidebarProps) {
                 key={pm.id}
                 className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300"
               >
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 text-xs font-bold">
+                <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-brand-700 dark:text-brand-400 text-xs font-bold">
                   {pm.method === 'MOBILE_MONEY'
                     ? 'M'
                     : pm.method === 'BANK_TRANSFER'
@@ -312,11 +312,11 @@ export function Sidebar({ business }: SidebarProps) {
       <div className="flex gap-2">
         <button
           onClick={() => navigator.clipboard.writeText(window.location.href)}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 active:scale-[0.98]"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-all duration-300 active:scale-[0.98]"
         >
           <Share2 className="w-4 h-4" /> Partager
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all duration-300 active:scale-[0.98]">
+        <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all duration-300 active:scale-[0.98]">
           <Heart className="w-4 h-4" /> Enregistrer
         </button>
       </div>

@@ -195,8 +195,8 @@ export function InternalNav({ modules, hasStories, hasShorts, hasActiveLive }: I
                   className={cn(
                     'flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
                     isActive
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/25 scale-105'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/25 scale-[1.04]'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
                   )}
                 >
                   <span className={cn('w-4 h-4', isActive ? 'text-white' : '')}>

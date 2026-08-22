@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Image from 'next/image';
@@ -60,7 +60,7 @@ const SOCIAL_CONFIG: Record<string, { icon: React.ReactNode; label: string; colo
   website: {
     icon: <Globe className="w-4 h-4" />,
     label: 'Site web',
-    color: 'hover:bg-emerald-500/10 hover:text-emerald-400',
+    color: 'hover:bg-brand-500/10 hover:text-brand-400',
   },
 };
 
@@ -93,7 +93,7 @@ export function Footer({ business }: FooterProps) {
         const config = SOCIAL_CONFIG[key.toLowerCase()] || {
           icon: <ExternalLink className="w-4 h-4" />,
           label: key,
-          color: 'hover:bg-emerald-500/10 hover:text-emerald-400',
+          color: 'hover:bg-brand-500/10 hover:text-brand-400',
         };
         socialLinks.push({ href, ...config });
       }
@@ -135,19 +135,19 @@ export function Footer({ business }: FooterProps) {
   return (
     <footer className="relative overflow-hidden">
       {/* ─── Gradient top border ─── */}
-      <div className="h-[2px] bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+      <div className="h-[2px] bg-gradient-to-r from-transparent via-brand-500 to-transparent" />
 
       {/* ─── Newsletter Section ─── */}
       <div className="bg-gray-950 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
           <div className="relative p-6 sm:p-8 md:p-10 rounded-[1.5rem] overflow-hidden">
             {/* Background glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-gray-900 to-gray-900 rounded-[1.5rem]" />
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/8 rounded-full blur-3xl" />
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-900/25 via-gray-900 to-gray-900 rounded-[1.5rem]" />
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl" />
 
             <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
               <div>
-                <span className="inline-block rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-[0.2em] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
+                <span className="inline-block rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-[0.2em] font-medium bg-brand-500/10 text-brand-400 border border-brand-500/20 mb-3">
                   Newsletter
                 </span>
                 <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Restez informé</h3>
@@ -155,9 +155,9 @@ export function Footer({ business }: FooterProps) {
               </div>
               <div className="w-full sm:w-auto sm:min-w-[340px]">
                 {subscribed ? (
-                  <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                    <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                    <span className="text-sm font-medium text-emerald-300">
+                  <div className="flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-brand-500/10 border border-brand-500/20">
+                    <CheckCircle className="w-5 h-5 text-brand-400 flex-shrink-0" />
+                    <span className="text-sm font-medium text-brand-300">
                       Inscription envoyée !
                     </span>
                   </div>
@@ -169,12 +169,12 @@ export function Footer({ business }: FooterProps) {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="votre@email.com"
                       required
-                      className="flex-1 px-4 py-3 text-sm rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/30 transition-all min-w-0"
+                      className="flex-1 px-4 py-3 text-sm rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500/30 transition-all min-w-0"
                     />
                     <button
                       type="submit"
                       disabled={subscribing || !email.trim()}
-                      className="flex items-center gap-1.5 px-5 py-3 bg-emerald-500 text-white text-sm font-semibold rounded-xl hover:bg-emerald-400 transition-all duration-300 active:scale-[0.97] disabled:opacity-40 shrink-0 shadow-lg shadow-emerald-500/20"
+                      className="flex items-center gap-1.5 px-5 py-3 bg-brand-500 text-white text-sm font-semibold rounded-xl hover:bg-brand-400 transition-all duration-300 active:scale-[0.97] disabled:opacity-40 shrink-0 shadow-lg shadow-brand-500/20"
                     >
                       {subscribing ? (
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -250,7 +250,7 @@ export function Footer({ business }: FooterProps) {
                     href={link.href}
                     className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors duration-300 group"
                   >
-                    <span className="w-1 h-1 rounded-full bg-gray-700 group-hover:bg-emerald-500 transition-colors duration-300" />
+                    <span className="w-1 h-1 rounded-full bg-gray-700 group-hover:bg-brand-500 transition-colors duration-300" />
                     {link.label}
                   </a>
                 ))}

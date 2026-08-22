@@ -132,13 +132,9 @@ export function Header({
   if (actions.length === 0 && !showShare) return null;
 
   return (
-    <div
-      className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative z-40"
-      role="region"
-      aria-label="Actions rapides"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+    <div className="relative z-40 -mt-4" role="region" aria-label="Actions rapides">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="rounded-2xl bg-white/85 dark:bg-gray-900/85 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 shadow-xl shadow-black/[0.06] px-3 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
           {actions.map((action, i) => (
             <a
               key={i}
@@ -153,10 +149,10 @@ export function Header({
               target={action.href?.startsWith('http') ? '_blank' : undefined}
               rel={action.href?.startsWith('http') ? 'noopener noreferrer' : undefined}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
+                'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97]',
                 action.variant === 'primary'
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ? 'bg-green-600 text-white shadow-lg shadow-green-600/25 hover:bg-green-700'
+                  : 'bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-gray-200/80 dark:hover:bg-white/10'
               )}
             >
               {action.icon}
@@ -169,7 +165,7 @@ export function Header({
             <button
               onClick={() => setShareOpen(true)}
               aria-label="Partager et QR code de la vitrine"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors border border-brand/30 text-brand hover:bg-brand/10 dark:text-brand-300"
+              className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] ring-1 ring-brand-200 dark:ring-brand-800 text-brand-700 dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-900/30"
             >
               <QrCode className="w-4 h-4" />
               Partager
