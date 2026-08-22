@@ -1,13 +1,14 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface OnboardingStepDef {
   id: number;
   label: string;
   caption?: string;
+  icon?: LucideIcon;
 }
 
 interface Props {
@@ -43,7 +44,7 @@ export function OnboardingStepper({ steps, current, onStepClick }: Props) {
                     'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
                 )}
               >
-                {done ? <Check className="h-4 w-4" /> : step.id}
+                {done ? <Check className="h-4 w-4" /> : step.icon ? <step.icon className="h-4 w-4" /> : step.id}
               </motion.span>
               <span className="text-left hidden sm:block">
                 <span

@@ -25,6 +25,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import type { OnboardingData } from '@/types/business';
+import { BUSINESS_TYPE_LABELS } from '@/constants/business';
 
 const ONBOARDING_MODULES = [
   {
@@ -338,6 +339,56 @@ const COLOR_MAP: Record<
   },
 };
 
+const FOOD_TYPES = ['RESTAURANT', 'FAST_FOOD', 'PATISSERIE', 'BOULANGERIE', 'CAFE', 'BAR'];
+const STAY_TYPES = ['HOTEL', 'AUBERGE', 'MAISON_D_HOTES', 'LOCATION_SAISONNIERE'];
+const RETAIL_TYPES = [
+  'BOUTIQUE_VETEMENTS',
+  'BOUTIQUE_CHAUSSURES',
+  'BOUTIQUE_COSMETIQUES',
+  'BOUTIQUE_INFORMATIQUE',
+  'BOUTIQUE_TELEPHONIQUE',
+  'BOUTIQUE_ELECTRONIQUE',
+  'SUPERMARCHE',
+  'EPICERIE',
+  'PHARMACIE',
+  'LIBRAIRIE',
+  'PAPETERIE',
+];
+const BEAUTY_TYPES = ['SALON_COIFFURE', 'SALON_BEAUTE', 'SPA', 'INSTITUT_ESTHETIQUE'];
+const CREATIVE_TYPES = ['PHOTOGRAPHE', 'VIDEOASTE', 'AGENCE_MARKETING', 'AGENCE_COMMUNICATION', 'AGENCE_DIGITALE', 'DEVELOPPEUR', 'DESIGNER_GRAPHIQUE', 'FREELANCE'];
+const OFFICE_TYPES = ['CABINET_JURIDIQUE', 'CABINET_COMPTABLE', 'CABINET_CONSEIL', 'CONSULTANT', 'COACH_PROFESSIONNEL'];
+const HEALTH_TYPES = ['CABINET_MEDICAL', 'CLINIQUE'];
+const EDUCATION_TYPES = ['CENTRE_FORMATION', 'ECOLE_PRIVEE'];
+const CRAFT_TYPES = ['ARTISAN', 'MENUISIER', 'MACON', 'PLOMBIER', 'ELECTRICIEN', 'SOUDEUR', 'MECANICIEN'];
+const AGRI_TYPES = ['ENTREPRISE_AGRICOLE', 'ELEVAGE'];
+
+const MODULES_BY_TYPE: Record<string, string[]> = {
+  food: ['MENU', 'ORDERS', 'PROMOTIONS', 'DELIVERIES'],
+  stay: ['ROOMS', 'BOOKINGS', 'PROMOTIONS'],
+  retail: ['PRODUCTS', 'ORDERS', 'PROMOTIONS', 'DELIVERIES'],
+  beauty: ['SERVICES', 'BOOKINGS', 'EMPLOYEES'],
+  creative: ['PORTFOLIO', 'QUOTES_INVOICES', 'ADVANCED_TASKS'],
+  office: ['BOOKINGS', 'QUOTES_INVOICES', 'DOCUMENTS'],
+  health: ['BOOKINGS', 'EMPLOYEES', 'DOCUMENTS'],
+  education: ['TRAINING', 'SUBSCRIPTIONS', 'BOOKINGS'],
+  craft: ['PORTFOLIO', 'QUOTES_INVOICES', 'BOOKINGS'],
+  agri: ['PRODUCTS', 'ORDERS', 'DELIVERIES'],
+};
+
+function suggestedGroup(typeId: string): string[] | null {
+  if (FOOD_TYPES.includes(typeId)) return MODULES_BY_TYPE.food;
+  if (STAY_TYPES.includes(typeId)) return MODULES_BY_TYPE.stay;
+  if (RETAIL_TYPES.includes(typeId)) return MODULES_BY_TYPE.retail;
+  if (BEAUTY_TYPES.includes(typeId)) return MODULES_BY_TYPE.beauty;
+  if (CREATIVE_TYPES.includes(typeId)) return MODULES_BY_TYPE.creative;
+  if (OFFICE_TYPES.includes(typeId)) return MODULES_BY_TYPE.office;
+  if (HEALTH_TYPES.includes(typeId)) return MODULES_BY_TYPE.health;
+  if (EDUCATION_TYPES.includes(typeId)) return MODULES_BY_TYPE.education;
+  if (CRAFT_TYPES.includes(typeId)) return MODULES_BY_TYPE.craft;
+  if (AGRI_TYPES.includes(typeId)) return MODULES_BY_TYPE.agri;
+  return null;
+}
+
 interface Props {
   data: OnboardingData;
   onChange: (partial: Partial<OnboardingData>) => void;
@@ -351,11 +402,58 @@ export default function StepModules({ data, onChange }: Props) {
     onChange({ modules });
   };
 
+  const suggested = data.typeId ? suggestedGroup(data.typeId) : null;
+  const pendingSuggestions = (suggested || []).filter((k) => !data.modules.includes(k));
+  const typeLabel = BUSINESS_TYPE_LABELS[data.typeId] || '';
+
+  const addAllSuggestions = () => {
+    onChange({ modules: Array.from(new Set([...data.modules, ...(suggested || [])])) });
+  };
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-500 dark:text-gray-400">
         Sélectionnez les outils dont vous avez besoin. Vous pourrez en ajouter ou retirer plus tard.
       </p>
+
+      {pendingSuggestions.length > 0 && (
+        <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-200/70 dark:border-emerald-800/40">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                Recommandé pour {typeLabel.toLowerCase()}
+              </p>
+              <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
+                Les modules les plus utilisés par les businesses similaires.
+              </p>
+            </div>
+            <button
+              onClick={addAllSuggestions}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shrink-0"
+            >
+              Tout ajouter
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {pendingSuggestions.map((key) => {
+              const mod = ONBOARDING_MODULES.find((m) => m.key === key);
+              if (!mod) return null;
+              const Icon = mod.icon;
+              return (
+                <button
+                  key={key}
+                  onClick={() => toggleModule(key)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-white/10 border border-emerald-200 dark:border-emerald-700 text-xs font-medium text-gray-700 dark:text-gray-200 hover:border-emerald-400 transition-colors"
+                >
+                  <Icon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  {mod.label}
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">+</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {ONBOARDING_MODULES.map((mod) => {

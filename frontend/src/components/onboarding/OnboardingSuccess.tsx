@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Copy, Share2, ExternalLink, LayoutDashboard } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useToast } from '@/components/ui/ToastProvider';
 
 interface Props {
@@ -14,7 +15,13 @@ interface Props {
 export function OnboardingSuccess({ businessSlug, businessName }: Props) {
   const { addToast } = useToast();
   const [copied, setCopied] = useState(false);
-  const publicUrl = `https://afribiz.app/business/${businessSlug}`;
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const publicUrl = `${origin}/business/${businessSlug}`;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(publicUrl);
@@ -54,14 +61,12 @@ export function OnboardingSuccess({ businessSlug, businessName }: Props) {
           </p>
         </div>
 
-        {/* QR Code placeholder */}
+        {/* QR Code */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-white/10 p-6 inline-block">
-          <div className="w-40 h-40 bg-gray-100 dark:bg-white/5 rounded-xl flex items-center justify-center">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(publicUrl)}`}
-              alt="QR Code"
-              className="w-full h-full"
-            />
+          <div className="w-40 h-40 rounded-xl overflow-hidden flex items-center justify-center">
+            {publicUrl && (
+              <QRCodeSVG value={publicUrl} size={160} level="M" bgColor="#ffffff" fgColor="#111827" />
+            )}
           </div>
           <p className="text-[11px] text-gray-400 mt-2">Scannez pour voir votre page</p>
         </div>

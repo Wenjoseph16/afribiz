@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Rocket, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Rocket, AlertCircle, Store, Sparkles, Images, MapPin, Blocks } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { apiClient } from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,14 +21,17 @@ import StepExpertise from './steps/StepExpertise';
 import StepPortfolio from './steps/StepPortfolio';
 import StepLocation from './steps/StepLocation';
 import StepModules from './steps/StepModules';
+import StepWelcome from './steps/StepWelcome';
 
 const STEPS: OnboardingStepDef[] = [
-  { id: 1, label: 'Identité', caption: 'Nom & marque' },
-  { id: 2, label: 'Compétences', caption: 'Expérience' },
-  { id: 3, label: 'Portfolio', caption: 'Réalisations' },
-  { id: 4, label: 'Localisation', caption: 'Adresse & horaires' },
-  { id: 5, label: 'Modules', caption: 'Vos outils' },
+  { id: 1, label: 'Identité', caption: 'Nom & marque', icon: Store },
+  { id: 2, label: 'Compétences', caption: 'Expérience', icon: Sparkles },
+  { id: 3, label: 'Portfolio', caption: 'Réalisations', icon: Images },
+  { id: 4, label: 'Localisation', caption: 'Adresse & horaires', icon: MapPin },
+  { id: 5, label: 'Modules', caption: 'Vos outils', icon: Blocks },
 ];
+
+const DRAFT_KEY = 'afribiz:business-onboarding-draft';
 
 // Ranges affichés → années (borne basse, stockées en Int côté backend)
 const EXPERIENCE_YEARS_MAP: Record<string, number> = {
@@ -73,7 +76,41 @@ export function OnboardingWizard() {
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [createdSlug, setCreatedSlug] = useState('');
+  const [started, setStarted] = useState(false);
   const [data, setData] = useState<OnboardingData>(initialData);
+
+  // Restauration du brouillon (refresh / retour utilisateur)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved && typeof saved === 'object' && (saved.name || saved.city || saved.modules?.length)) {
+        setData((prev) => ({ ...prev, ...saved }));
+        setStarted(true);
+        addToast({ title: 'Brouillon restauré', variant: 'info' });
+      }
+    } catch {
+      /* brouillon corrompu : ignoré */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+    } catch {
+      /* quota dépassé : ignoré */
+    }
+  }, [data]);
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignoré */
+    }
+  };
 
   const updateData = (partial: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...partial }));
@@ -230,6 +267,7 @@ export function OnboardingWizard() {
           /* non-blocking */
         }
         setCompleted(true);
+        clearDraft();
         return;
       }
       setError(res.data.error || 'Une erreur est survenue');
@@ -259,6 +297,10 @@ export function OnboardingWizard() {
 
   if (completed && createdSlug) {
     return <OnboardingSuccess businessSlug={createdSlug} businessName={data.name} />;
+  }
+
+  if (!started) {
+    return <StepWelcome onStart={() => setStarted(true)} />;
   }
 
   return (
